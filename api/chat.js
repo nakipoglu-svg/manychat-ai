@@ -22,126 +22,67 @@ function includesAny(text, keywords) {
   return keywords.some((keyword) => text.includes(keyword));
 }
 
-function pickKnowledgeFiles(message) {
+function pickKnowledgeFiles(message, userProduct) {
   const msg = normalizeText(message);
+  const product = normalizeText(userProduct);
   const files = ["core_system.txt"];
 
-  // 1) product_laser.txt
-  const laserKeywords = [
-    "lazer",
-    "resimli",
-    "foto",
-    "fotograf",
-    "resim"
-  ];
+  // Önce ürün tag/custom field bilgisi
+  if (product.includes("lazer")) {
+    files.push("product_laser.txt");
+  }
+
+  if (product.includes("atac") || product.includes("ataç") || product.includes("harf")) {
+    files.push("product_atac.txt");
+  }
+
+  // Sonra mesaj içeriği
+  const laserKeywords = ["lazer", "resimli", "foto", "fotograf", "resim"];
   if (includesAny(msg, laserKeywords)) {
     files.push("product_laser.txt");
   }
 
-  // 2) product_atac.txt
-  const atacKeywords = [
-    "atac",
-    "ataç",
-    "harf",
-    "harfli",
-    "isim"
-  ];
+  const atacKeywords = ["atac", "ataç", "harf", "harfli", "isim"];
   if (includesAny(msg, atacKeywords)) {
     files.push("product_atac.txt");
   }
 
-  // 3) pricing.txt
-  const pricingKeywords = [
-    "fiyat",
-    "ucret",
-    "ne kadar",
-    "kac tl",
-    "indirim"
-  ];
+  const pricingKeywords = ["fiyat", "ucret", "ne kadar", "kac tl", "indirim"];
   if (includesAny(msg, pricingKeywords)) {
     files.push("pricing.txt");
   }
 
-  // 4) shipping.txt
-  const shippingKeywords = [
-    "kargo",
-    "gonderim",
-    "ptt",
-    "aras",
-    "ucretsiz"
-  ];
+  const shippingKeywords = ["kargo", "gonderim", "ptt", "aras", "ucretsiz"];
   if (includesAny(msg, shippingKeywords)) {
     files.push("shipping.txt");
   }
 
-  // 5) payment.txt
-  const paymentKeywords = [
-    "odeme",
-    "iban",
-    "eft",
-    "havale",
-    "kapida odeme"
-  ];
+  const paymentKeywords = ["odeme", "iban", "eft", "havale", "kapida odeme"];
   if (includesAny(msg, paymentKeywords)) {
     files.push("payment.txt");
   }
 
-  // 6) order_flow.txt
-  const orderFlowKeywords = [
-    "siparis",
-    "adres",
-    "telefon",
-    "almak istiyorum",
-    "satın al"
-  ];
+  const orderFlowKeywords = ["siparis", "adres", "telefon", "almak istiyorum", "satin al"];
   if (includesAny(msg, orderFlowKeywords)) {
     files.push("order_flow.txt");
   }
 
-  // 7) image_rules.txt
-  const imageRulesKeywords = [
-    "arka plan",
-    "birlestirme",
-    "birlestir",
-    "arka yuze",
-    "tek kare"
-  ];
+  const imageRulesKeywords = ["arka plan", "birlestirme", "birlestir", "arka yuze", "tek kare"];
   if (includesAny(msg, imageRulesKeywords)) {
     files.push("image_rules.txt");
   }
 
-  // 8) smalltalk.txt
-  const smalltalkKeywords = [
-    "tesekkur",
-    "merhaba",
-    "iyi aksamlar",
-    "basiniz sag olsun",
-    "dogumum var"
-  ];
+  const smalltalkKeywords = ["tesekkur", "merhaba", "iyi aksamlar", "basiniz sag olsun", "dogumum var"];
   if (includesAny(msg, smalltalkKeywords)) {
     files.push("smalltalk.txt");
   }
 
-  // 9) trust.txt
-  const trustKeywords = [
-    "guven",
-    "guvenilir",
-    "dolandirici",
-    "kararma",
-    "iade"
-  ];
+  const trustKeywords = ["guven", "guvenilir", "dolandirici", "kararma", "iade"];
   if (includesAny(msg, trustKeywords)) {
     files.push("trust.txt");
   }
 
-  // 10) delivery_time.txt
-  const deliveryTimeKeywords = [
-    "kac gunde",
-    "teslim",
-    "teslimat",
-    "sure",
-    "takip"
-  ];
+  const deliveryTimeKeywords = ["kac gunde", "teslim", "teslimat", "sure", "takip"];
   if (includesAny(msg, deliveryTimeKeywords)) {
     files.push("delivery_time.txt");
   }
@@ -156,16 +97,20 @@ export default async function handler(req, res) {
     }
 
     let message = "";
+    let userProduct = "";
 
     try {
       if (typeof req.body === "string") {
         const parsed = JSON.parse(req.body);
         message = parsed.message || "";
+        userProduct = parsed.user_product || "";
       } else {
         message = req.body?.message || "";
+        userProduct = req.body?.user_product || "";
       }
     } catch (e) {
       message = "";
+      userProduct = "";
     }
 
     const apiKey = process.env.CLAUDE_API_KEY;
@@ -173,7 +118,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ reply: "" });
     }
 
-    const selectedFiles = pickKnowledgeFiles(message);
+    const selectedFiles = pickKnowledgeFiles(message, userProduct);
 
     const knowledgeText = selectedFiles
       .map((file) => {
@@ -189,16 +134,19 @@ KURALLAR:
 - Sadece verilen bilgi dosyalarına göre cevap ver.
 - Bilmediğin konuda asla uydurma.
 - Bilgi yoksa şu cevabı ver:
-  "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊"
+"Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊"
 - Kısa, net, doğal ve satış odaklı yaz.
+- Eğer user_product doluysa bunu öncelikli ürün bilgisi kabul et.
 - Müşteri sormadan gizli tutulması gereken ek ücretli veya opsiyonel bilgileri kendin söyleme.
-- Ürün belirtilmemişse ve cevap ürüne göre değişiyorsa, önce müşterinin hangi model ile ilgilendiğini sor.
-- Gereksiz uzun açıklama yapma.
+- Ürün belirtilmemişse ve user_product da boşsa, cevap ürüne göre değişiyorsa hangi model ile ilgilendiğini sor.
 `;
 
     const userPrompt = `
 KULLANICI MESAJI:
 ${message}
+
+KULLANICI ÜRÜN BİLGİSİ:
+${userProduct}
 
 KULLANILACAK EĞİTİM DOSYALARI:
 ${knowledgeText}
@@ -212,7 +160,7 @@ ${knowledgeText}
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 250,
         system: systemPrompt,
         messages: [
