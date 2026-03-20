@@ -45,3 +45,15 @@ export default async function handler(req, res) {
     });
   }
 }
+export default async function handler(req, res) {
+  try {
+    const apiKey = process.env.CLAUDE_API_KEY;
+
+    return res.status(200).json({
+      starts_with: apiKey ? apiKey.slice(0, 7) : "YOK",
+      length: apiKey ? apiKey.length : 0
+    });
+  } catch (err) {
+    return res.status(200).json({ error: String(err) });
+  }
+}
