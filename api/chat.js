@@ -33,10 +33,17 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    const reply = data?.content?.[0]?.text || "Şu an cevap veremiyorum.";
+    let reply = "Şu an cevap veremiyorum.";
+
+if (data && data.content && data.content.length > 0) {
+  if (data.content[0].text) {
+    reply = data.content[0].text;
+  }
+}
 
     return res.status(200).json({ reply });
   } catch (err) {
     return res.status(200).json({ reply: "Hata oluştu." });
   }
 }
+    console.log("CLAUDE DATA:", JSON.stringify(data));
