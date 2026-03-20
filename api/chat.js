@@ -1,6 +1,3 @@
-const fs = require("fs");
-const path = require("path");
-
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") {
@@ -8,15 +5,12 @@ export default async function handler(req, res) {
     }
 
     let message = "";
-    let topic = "";
     try {
       if (typeof req.body === "string") {
         const parsed = JSON.parse(req.body);
         message = parsed.message || "";
-        topic = parsed.topic || "";
       } else {
         message = req.body?.message || "";
-        topic = req.body?.topic || "";
       }
     } catch (e) {
       message = "";
@@ -27,67 +21,49 @@ export default async function handler(req, res) {
       return res.status(200).json({ reply: "" });
     }
 
-    // Knowledge dosyalarını oku
-    const knowledgeDir = path.join(process.cwd(), "knowledge");
-    
-    const readFile = (filename) => {
-      try {
-        return fs.readFileSync(path.join(knowledgeDir, filename), "utf8");
-      } catch {
-        return "";
-      }
-    };
+    const systemPrompt = `Sen Yudum Jewels için çalışan bir Instagram satış asistanısın.
 
-    const coreSystem = readFile("core_system.txt");
-    const smalltalk = readFile("smalltalk.txt");
-    const trust = readFile("trust.txt");
-    const pricing = readFile("pricing.txt");
-    const shipping = readFile("shipping.txt");
-    const payment = readFile("payment.txt");
-    const orderFlow = readFile("order_flow.txt");
-    const imageRules = readFile("image_rules.txt");
-
-    // Topic'e göre ürün bilgisi yükle
-    let productInfo = "";
-    if (topic === "laser") {
-      productInfo = readFile("product_laser.txt");
-    } else if (topic === "atac") {
-      productInfo = readFile("product_atac.txt");
-    } else {
-      productInfo = readFile("product_laser.txt") + "\n" + readFile("product_atac.txt");
-    }
-
-    const systemPrompt = `${coreSystem}
-
-ÜRÜN BİLGİLERİ:
-${productInfo}
-
-FİYAT BİLGİLERİ:
-${pricing}
-
-KARGO BİLGİLERİ:
-${shipping}
-
-ÖDEME BİLGİLERİ:
-${payment}
-
-SİPARİŞ SÜRECİ:
-${orderFlow}
-
-FOTOĞRAF KURALLARI:
-${imageRules}
-
-SMALLTALK:
-${smalltalk}
-
-GÜVEN SORULARI:
-${trust}
-
-ÖNEMLİ KURALLAR:
-- Sadece yukarıdaki bilgilere göre cevap ver.
-- Bilmediğin veya burada yazmayan konularda şunu yaz: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊"
+KURALLAR:
+- Sadece aşağıdaki bilgilere göre cevap ver.
+- Bilmediğin konularda şunu yaz: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊"
 - Sadece sorulanı cevapla, fazlasını söyleme.
-- Kısa ve doğal yaz, robot gibi değil.`;
+- Kısa ve doğal yaz.
+- Müşteri 2 adet sorarsa sadece 2 adet fiyatını söyle.
+- Sorulmadan ek ücretli seçenekleri söyleme.
+
+ÜRÜNLER:
+1. RESİMLİ LAZER KOLYE
+- Fiyat: EFT/havale 599 TL, kapıda ödeme 649 TL
+- Kargo dahil
+- Paslanmaz çelik, 14 ayar altın veya gümüş kaplama
+- Zincir 60 cm, kısaltılamaz
+- Suya dayanıklı, kararma yapmaz
+- Ön yüze fotoğraf işlenir
+- Arka yüze yazı veya fotoğraf eklenebilir, ek ücret yok
+- 2-5 kişi yapılabilir
+- Ayrı fotoğraflardan max 3 kişi birleştirilebilir
+
+2. HARFLİ ATAÇ KOLYE
+- Fiyat: EFT/havale 499 TL, kapıda ödeme 549 TL
+- Kargo dahil
+- Paslanmaz çelik, kararma yapmaz
+- Standart 3 harf, ek harf +50 TL (sorulursa)
+- Zincir 50 cm, uzatma +50 TL (sorulursa)
+- Hediye ataç bileklik ile birlikte gelir
+
+KARGO:
+- PTT Kargo ile gönderim
+- İstanbul içi 1-2 iş günü, dışı 2-3 iş günü
+- Kargo takip SMS ile bildirilir
+
+SİPARİŞ İÇİN:
+- Ad Soyad, telefon, il, ilçe, açık adres, ödeme türü gerekli
+- Lazer kolye için fotoğraf gerekli
+
+ÖZEL DURUMLAR:
+- İndirim isterse: "Keşke daha fazla yardımcı olabilsek efendim 🌸 Şu an verdiğimiz fiyatlar zaten özel fiyatlarımız."
+- Güven sorusu: "Siparişler kişiye özel hazırlanıyor 😊 Kapıda ödeme seçeneği de mevcut."
+- Mağaza sorusu: "İstanbul Eminönü'ndeyiz 😊 Ancak sadece kargo ile gönderim yapıyoruz."`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
