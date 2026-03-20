@@ -19,7 +19,7 @@ export default async function handler(req, res) {
 
     console.log("MESSAGE:", userMessage);
 
-    const apiKey = process.env.CLAUDE_API_KEY;
+    const apiKey = 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;
 
     if (!apiKey) {
       console.log("API KEY YOK");
