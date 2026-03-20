@@ -5,7 +5,6 @@ export default async function handler(req, res) {
     }
 
     let message = "";
-
     try {
       if (typeof req.body === "string") {
         const parsed = JSON.parse(req.body);
@@ -27,7 +26,7 @@ export default async function handler(req, res) {
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-0",
+        model: "claude-sonnet-4-6",
         max_tokens: 200,
         messages: [
           {
@@ -48,8 +47,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       reply: data?.content?.[0]?.text || JSON.stringify(data)
     });
-
   } catch (err) {
-    return res.status(200).json({ reply: "HATA" });
+    return res.status(200).json({ reply: String(err) });
   }
 }
