@@ -1,14 +1,26 @@
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") {
-      return res.status(200).json({ reply: "GET OK" });
+      return res.status(200).json({ reply: "OK" });
     }
- 
-    const message = req.body?.message || "";
+
+    let message = "";
+
+    try {
+      if (typeof req.body === "string") {
+        const parsed = JSON.parse(req.body);
+        message = parsed.message || "";
+      } else {
+        message = req.body?.message || "";
+      }
+    } catch (e) {
+      message = "";
+    }
+
     const apiKey = process.env.CLAUDE_API_KEY;
 
     if (!apiKey) {
-      return res.status(200).json({ reply: "API KEY YOK" });
+      return res.status(200).json({ reply: "" });
     }
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -20,11 +32,11 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "claude-3-haiku-20240307",
-        max_tokens: 200,
+        max_tokens: 150,
         messages: [
           {
             role: "user",
-            content: `Kullanıcı mesajı: ${message}. Kısa ve net cevap ver.`
+            content: message
           }
         ]
       })
@@ -32,28 +44,11 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    return res.status(200).json({
-      reply: data?.content?.[0]?.text || "",
-      debug_status: response.status,
-      debug_data: data
-    });
+    const reply = data?.content?.[0]?.text || "";
+
+    return res.status(200).json({ reply });
 
   } catch (err) {
-    return res.status(200).json({
-      reply: "",
-      debug_error: String(err)
-    });
-  }
-}
-export default async function handler(req, res) {
-  try {
-    const apiKey = process.env.CLAUDE_API_KEY;
-
-    return res.status(200).json({
-      starts_with: apiKey ? apiKey.slice(0, 7) : "YOK",
-      length: apiKey ? apiKey.length : 0
-    });
-  } catch (err) {
-    return res.status(200).json({ error: String(err) });
+    return res.status(200).json({ reply: "" });
   }
 }
