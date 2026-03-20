@@ -1,10 +1,12 @@
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(200).json({ reply: "çalışıyor" });
-  }
-
   try {
-    const message = req.body?.message || "";
+    if (req.method !== "POST") {
+      return res.status(200).json({ reply: "GET OK" });
+    }
+
+    console.log("BODY:", req.body);
+
+    const message = req.body?.message || "boş mesaj";
 
     const apiKey = process.env.CLAUDE_API_KEY;
 
@@ -31,19 +33,27 @@ export default async function handler(req, res) {
       })
     });
 
-    const data = await response.json();
+    const text = await response.text();
 
-    let reply = "Şu an cevap veremiyorum.";
+    console.log("RAW RESPONSE:", text);
 
-if (data && data.content && data.content.length > 0) {
-  if (data.content[0].text) {
-    reply = data.content[0].text;
-  }
-}
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      return res.status(200).json({ reply: "JSON parse hatası" });
+    }
+
+    let reply = "Cevap alınamadı";
+
+    if (data?.content?.[0]?.text) {
+      reply = data.content[0].text;
+    }
 
     return res.status(200).json({ reply });
+
   } catch (err) {
-    return res.status(200).json({ reply: "Hata oluştu." });
+    console.log("ERROR:", err);
+    return res.status(200).json({ reply: "GENEL HATA" });
   }
 }
-    console.log("CLAUDE DATA:", JSON.stringify(data));
