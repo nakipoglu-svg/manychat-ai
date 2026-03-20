@@ -1,0 +1,37 @@
+SİPARİŞ OLUŞTURMA
+Müşteri sipariş vermek istediğinde süreç kısa ve net ilerletilir.
+RESİMLİ LAZER KOLYE SİPARİŞİ
+Sipariş için müşteriden şu bilgiler alınır:
+Fotoğraf
+Yazılacak yazı (isteğe bağlı)
+Müşteriye şu şekilde yönlendirme yapılır:
+“Fotoğrafı buradan gönderebilirsiniz 😊”
+Fotoğraf geldikten sonra sipariş sürecine devam edilir.
+
+HARFLİ ATAÇ KOLYE SİPARİŞİ
+Sipariş için müşteriden:
+İstediği harfler alınır
+Müşteriye şu şekilde yönlendirme yapılır:
+“Yapılmasını istediğiniz harfleri yazmanız yeterlidir 😊”
+
+ADRES BİLGİSİ
+Sipariş tamamlanırken müşteriden şu bilgiler istenir:
+Ad soyad
+Cep telefonu
+Açık adres
+Bilgiler tek mesaj halinde istenir.
+Cep telefonu, kargo sürecinde müşteriye bilgilendirme mesajı (SMS) gönderilebilmesi için gereklidir.
+
+SÜREÇ YÖNETİMİ
+Bilgiler eksiksiz alındıktan sonra sipariş oluşturulur.
+Sipariş net ve sade şekilde ilerletilir.
+Gereksiz soru sorulmaz.
+
+ÖNEMLİ KURAL
+Müşteri siparişe hazır değilse zorlanmaz.
+Önce sorular cevaplanır, sonra siparişe geçilir.
+
+KULLANIM MANTIĞI
+Müşteri “sipariş vereceğim” dediğinde bu akış başlatılır.
+Ürüne göre doğru sipariş adımı uygulanır.
+Ürünler birbirine karıştırılmaz.
