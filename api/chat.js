@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     if (req.method !== "POST") {
       return res.status(200).json({ reply: "GET OK" });
     }
-
+ 
     const message = req.body?.message || "";
     const apiKey = process.env.CLAUDE_API_KEY;
 
