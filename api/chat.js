@@ -5,6 +5,7 @@ export default async function handler(req, res) {
 
   try {
     const { message, user_product } = req.body || {};
+    const userMessage = message || req.body?.text || req.body?.last_input || "";
     const apiKey = process.env.CLAUDE_API_KEY;
 
     if (!apiKey) {
@@ -232,9 +233,9 @@ Müşteri fotoğraf gönderirse ve konu kolye ile ilgiliyse şöyle cevap ver:
 - Sipariş oluştu demeden oluştu izlenimi verme.
 `;
 
-    const userText = `
+  const userText = `
 user_product: ${user_product || ""}
-message: ${message || ""}
+message: ${userMessage || ""}
 `;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -245,7 +246,7 @@ message: ${message || ""}
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "claude-3-5-haiku-latest",
+        model: "claude-sonnet-4-6",
         max_tokens: 180,
         temperature: 0.2,
         system: systemPrompt,
