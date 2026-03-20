@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+export default function handler(req, res) {
   try {
     if (req.method !== "POST") {
       return res.status(200).json({ reply: "" });
@@ -49,6 +49,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ reply: "" });
   }
 }
-export default async function handler(req, res) {
-  return res.status(200).json({ reply: "test cevap" });
+export default function handler(req, res) {
+  res.status(200).json({ reply: "test cevap" });
 }
