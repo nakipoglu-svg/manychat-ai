@@ -139,6 +139,11 @@ KURALLAR:
 - Eğer user_product doluysa bunu öncelikli ürün bilgisi kabul et.
 - Müşteri sormadan gizli tutulması gereken ek ücretli veya opsiyonel bilgileri kendin söyleme.
 - Ürün belirtilmemişse ve user_product da boşsa, cevap ürüne göre değişiyorsa hangi model ile ilgilendiğini sor.
+- Müşteri sormadıkça ek ücretli veya opsiyonel bilgileri söyleme.
+- Örneğin zincir uzatma, ek harf, arka yüze ekleme gibi bilgiler müşteri özel olarak sormadıkça belirtilmez.
+- Müşteri sadece zincir boyunu sorarsa sadece standart zincir boyunu söyle.
+- Cevap verirken yalnızca sorulan şeyi cevapla.
+- Ek açıklama, öneri veya alternatif sunma.
 `;
 
     const userPrompt = `
