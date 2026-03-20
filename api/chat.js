@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-
+ 
   // Sadece POST kabul
   if (req.method !== "POST") {
     return res.status(200).json({ reply: "çalışıyor" });
