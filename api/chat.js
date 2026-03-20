@@ -331,8 +331,16 @@ ${knowledgeText}
     });
 
     const data = await response.json();
-    const reply = data?.content?.[0]?.text?.trim() || "";
+    let reply = "";
 
+if (data?.content && Array.isArray(data.content)) {
+  reply = data.content
+    .map(c => c.text || "")
+    .join(" ")
+    .trim();
+}
+console.log("CLAUDE RESPONSE:", JSON.stringify(data, null, 2));
+    
     return res.status(200).json({ reply });
   } catch (err) {
     return res.status(200).json({ reply: "Hata oluştu." });
