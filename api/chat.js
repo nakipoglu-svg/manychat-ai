@@ -1,14 +1,15 @@
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") {
-      return res.status(200).json({ reply: "" });
+      return res.status(200).json({ reply: "GET OK" });
     }
 
     const message = req.body?.message || "";
+
     const apiKey = process.env.CLAUDE_API_KEY;
 
     if (!apiKey) {
-      return res.status(200).json({ reply: "" });
+      return res.status(200).json({ reply: "API KEY YOK" });
     }
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -19,7 +20,7 @@ export default async function handler(req, res) {
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "claude-3-haiku-20240307",
+        model: "claude-3-sonnet-20240229",
         max_tokens: 200,
         messages: [
           {
@@ -32,11 +33,11 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    const reply = data?.content?.[0]?.text?.trim() || "";
+    const reply = data?.content?.[0]?.text || "Cevap yok";
 
     return res.status(200).json({ reply });
 
   } catch (err) {
-    return res.status(200).json({ reply: "" });
+    return res.status(200).json({ reply: "HATA" });
   }
 }
