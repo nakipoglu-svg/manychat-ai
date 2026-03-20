@@ -1,15 +1,27 @@
 export default async function handler(req, res) {
+
   if (req.method !== "POST") {
     return res.status(200).json({ reply: "çalışıyor" });
   }
 
   try {
     const { message, user_product } = req.body || {};
-    const userMessage = message || req.body?.text || req.body?.last_input || "";
+
+    console.log("BODY:", req.body);
+
+    const userMessage =
+      message ||
+      req.body?.text ||
+      req.body?.last_input ||
+      "";
+
+    console.log("MESSAGE:", userMessage);
+
     const apiKey = process.env.CLAUDE_API_KEY;
 
     if (!apiKey) {
-      return res.status(200).json({ reply: "" });
+      console.log("API KEY YOK");
+      return res.status(200).json({ reply: "API KEY YOK" });
     }
 
     const systemPrompt = `
