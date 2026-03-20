@@ -20,7 +20,8 @@ export default async function handler(req, res) {
         messages: [
           {
             role: "user",
-            content: message
+            content: `Kullanıcı mesajı: ${message}
+Kısa ve net cevap ver.`
           }
         ]
       })
@@ -31,10 +32,7 @@ export default async function handler(req, res) {
     let reply = "";
 
     if (data?.content && Array.isArray(data.content)) {
-      reply = data.content
-        .map(x => x.text || "")
-        .join(" ")
-        .trim();
+      reply = data.content.map(x => x.text || "").join(" ").trim();
     }
 
     return res.status(200).json({ reply });
