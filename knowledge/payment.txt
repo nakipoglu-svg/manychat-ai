@@ -7,11 +7,8 @@ EFT / HAVALE
 EFT siparişlerde ödeme alındıktan sonra işlem başlatılır.
 Müşteri IBAN isterse aşağıdaki bilgiler paylaşılır:
 
-"İban:
-TR34 0015 7000 0000 0076 2524 67
-
-Alıcı:
-Servet Cihan Nakipoğlu"
+IBAN: TR34 0015 7000 0000 0076 2524 67
+Alıcı: Servet Cihan Nakipoğlu
 
 KAPIDA ÖDEME
 Sipariş teslim edilirken ödeme yapılır.
@@ -20,8 +17,5 @@ Kapıda ödeme fiyatı, EFT fiyatından farklıdır.
 ÖNEMLİ BİLGİLER
 EFT ve kapıda ödeme fiyatları farklıdır.
 Müşteri ödeme yöntemi seçmeden işlem başlatılmaz.
-
-KULLANIM KURALI
-Müşteri ödeme sorarsa bu bilgiler verilir.
 Müşteri IBAN istemeden IBAN bilgisi paylaşılmaz.
 Gereksiz detay verilmez, kısa ve net cevap verilir.
