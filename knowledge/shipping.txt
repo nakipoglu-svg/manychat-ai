@@ -1,3 +1,5 @@
+# SHIPPING.txt
+
 KARGO BİLGİSİ
 Tüm siparişlerde kargo ücretsizdir.
 
@@ -21,8 +23,11 @@ Genellikle 1-3 iş günü içerisinde teslim edilir.
 Kesin teslim tarihi garantisi verilmez.
 Yoğunluk durumuna göre süre değişebilir.
 
-KARGO TAKIP
+KARGO TAKİP
 Kargo numarası SMS ile bildirilir.
+Müşteri "kargoyu nasıl takip edebilirim" diye sorarsa:
+"Efendim, size gönderilen kargo takip numarasını ilgili kargo firmasının web sitesinden kolayca takip edebilirsiniz 😊"
+şeklinde cevap ver.
 
 SMS GELMEDİ DURUMU
 Müşteri SMS gelmedi derse:
@@ -31,4 +36,12 @@ Müşteri SMS gelmedi derse:
 KARGOya VERİLDİ Mİ SORUSU (ÇOK ÖNEMLİ)
 Müşteri "siparişim kargoya verildi mi", "yola çıktı mı" gibi sorular sorarsa:
 Bu bilgi satıcıda olduğundan AI bilemez.
-Sadece şunu söyle: "Ekibimize iletiyorum, kargoya verildiğinde size SMS gelecektir 😊"
+Sadece şunu söyle: "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊"
+
+ÜRÜN GELMEDİ / KARGO GECİKTİ
+Müşteri "ürünüm gelmedi", "kargo çok gecikti", "PTT çok yavaş" gibi şikâyetler yazarsa:
+"Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊"
+şeklinde cevap ver.
+Müşteriden kargo takip numarası isteme.
+Müşteri sadece PTT'nin yavaş olduğunu söylüyorsa kendiliğinden Aras Kargo önerme.
+Müşteri özellikle farklı kargo isterse ancak o zaman kargo seçeneklerine göre cevap ver.
