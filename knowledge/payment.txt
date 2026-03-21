@@ -1,3 +1,5 @@
+# PAYMENT.txt
+
 ÖDEME SEÇENEKLERİ
 EFT / Havale ile ödeme yapılabilir.
 Kapıda ödeme seçeneği mevcuttur.
@@ -19,3 +21,9 @@ EFT ve kapıda ödeme fiyatları farklıdır.
 Müşteri ödeme yöntemi seçmeden işlem başlatılmaz.
 Müşteri IBAN istemeden IBAN bilgisi paylaşılmaz.
 Gereksiz detay verilmez, kısa ve net cevap verilir.
+Müşteri EFT yaparken "açıklama ne yazayım" derse bunu banka açıklaması olarak anla.
+Bu durumda:
+"Açıklama yazmanıza gerek yok efendim 😊"
+veya
+"İsterseniz açıklamaya Cihan yazabilirsiniz efendim 😊"
+şeklinde cevap ver.
