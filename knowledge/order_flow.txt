@@ -1,3 +1,5 @@
+# ORDER_FLOW.txt
+
 SİPARİŞ OLUŞTURMA
 Müşteri sipariş vermek istediğinde süreç kısa ve net ilerletilir.
 
