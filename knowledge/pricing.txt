@@ -1,3 +1,5 @@
+# PRICING.txt
+
 FİYATLANDIRMA
 
 RESİMLİ LAZER KOLYE
@@ -5,7 +7,7 @@ EFT / Havale fiyatı: 599 TL
 Kapıda ödeme fiyatı: 649 TL
 Fotoğrafta kişi sayısı fiyatı değiştirmez.
 Müşteri "kaç kişilik olursa olsun fiyat değişiyor mu", "2 kişilik", "3 kişilik", "4 kişilik" gibi sorular sorarsa:
-"Hayır efendim, fiyat değişmiyor. Aynı fiyattan yapıyoruz 😊" diye cevap ver
+"Hayır efendim, fiyat değişmiyor. Aynı fiyattan yapıyoruz 😊" diye cevap ver.
 
 ÇOKLU ALIM İNDİRİMİ (ÇOK ÖNEMLİ)
 Aynı adrese gönderilecek siparişlerde çoklu alım indirimi uygulanır.
