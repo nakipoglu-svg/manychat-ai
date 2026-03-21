@@ -18,19 +18,22 @@ Günlük kullanıma uygundur.
 HEDİYE BİLGİSİ
 Bu ürünle birlikte aynı model ataç bileklik hediye gönderilir.
 Böylece müşteri kolye ile birlikte bileklik de almış olur.
-Bileklik uzunluğu 20 cm’dir.
+Bileklik uzunluğu 20 cm'dir.
 Ataç formunda olduğu için küçük bilekler için kısaltılabilir.
 
 HARF BİLGİSİ
 Standart olarak kolyede 3 harf bulunur.
 Ek harf yapılabilir.
-Her ek harf için +50 TL ücret uygulanır.
 Müşteri sormadıkça ek harf ücretinden bahsetme.
 
+HARF BOYUTU
+Her harfin yüksekliği 1 cm'dir.
+Harflerin genişliği harfe göre değişir.
+Örneğin I harfi dar, M harfi geniştir.
+
 ZİNCİR UZUNLUĞU
-Standart zincir uzunluğu 50 cm’dir.
-Zincir uzunluğu maksimum 70 cm’e kadar uzatılabilir.
-Uzatma ücreti +50 TL’dir.
+Standart zincir uzunluğu 50 cm'dir.
+Zincir uzunluğu maksimum 70 cm'e kadar uzatılabilir.
 Müşteri sormadıkça bu bilgiyi söyleme.
 
 SİPARİŞ İÇİN
