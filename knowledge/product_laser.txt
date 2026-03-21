@@ -7,6 +7,15 @@ Bu ürün fotoğraflı kolyedir.
 Müşteri istediği fotoğrafı gönderir.
 Gönderilen fotoğraf kolye üzerine özel lazer kazıma yöntemiyle işlenir.
 Ürün tamamen kişiye özel olarak hazırlanır.
+Anlamlı, hatıra değeri yüksek ve hediye amaçlı da tercih edilebilen bir modeldir.
+
+ÜRÜN KİMLİĞİ (ÇOK ÖNEMLİ)
+Bu ürün harfli ataç kolye değildir.
+Bu üründe zincir üzerine harf yerleştirilmez.
+Bu ürün fotoğraf bazlı lazer işleme ürünüdür.
+Bu üründe hediye bileklik yoktur.
+Hediye bileklik sadece harfli ataç kolye ürününde geçerlidir.
+Ataç kolye ile karıştırılmaz.
 
 ÜRÜN ÖZELLİKLERİ
 Kolye paslanmaz çelikten üretilmektedir.
@@ -18,6 +27,13 @@ Rengini ve parlaklığını korur.
 Ürün kutusunda gönderilir.
 Ayrıca ekstra bir hediye paketi bulunmamaktadır.
 
+LAZER İŞLEME GERÇEĞİ
+Bu üründe renkli baskı yoktur.
+Bu ürün mürekkep baskı gibi çalışmaz.
+Fotoğraf çeliğin üzerine lazer işleme ile uygulanır.
+Bu nedenle işlem yapılan alanlar lazer yanığı tonunda görünür.
+Renkli çıktı beklentisi oluşturma.
+
 ZİNCİR UZUNLUĞU (ÇOK ÖNEMLİ)
 Standart zincir uzunluğu 60 cm'dir.
 Ayrıca 50+5 cm ve 55+5 cm zincir modelleri de mevcuttur.
@@ -25,6 +41,12 @@ Zincirde kısaltma veya uzatma yapılamamaktadır.
 Müşteri daha uzun zincir isterse 55+5 cm veya 60 cm modellerini öner.
 Müşteri daha kısa zincir isterse 50+5 cm modelini öner.
 Lazer kolye zincirini uzatmak veya kısaltmak mümkün değildir.
+
+ZİNCİR UZUNLUĞU VE ZİNCİR MODELİ AYRIMI
+50+5 cm, 55+5 cm ve 60 cm ifadeleri zincir uzunluğunu belirtir.
+Zincir modeli ise zincirin görsel tipiyle ilgilidir.
+Müşteri bazen uzunluk sorarken model kastedebilir, model sorarken de uzunluk kastedebilir.
+Bu ayrımı bağlama göre dikkatli yorumla.
 
 ZİNCİR MODELİ SORULARI (SADECE LAZER KOLYE İÇİN)
 Müşteri "zinciri böyle istiyorum", "başka zincir modeliniz var mı", "zincir seçeneklerinizi atar mısınız" gibi bir şey söylerse:
@@ -37,16 +59,34 @@ Bu kural sadece lazer kolye için geçerlidir.
 Harfli ataç kolyede tek zincir modeli vardır, zincir modeli seçeneği sunulmaz.
 Müşteri erkek için ne modelleriniz var diye sorarsa da aynı şekilde satıcıya bırakılır; model ismi yazılmaz.
 
+ERKEK / KULLANIM AMACI
+Müşteri "erkek takacak", "babam için", "eşim için", "oğlum için" gibi ifadeler kullanırsa bunu kullanım amacı olarak anla.
+Bu, ürün tipinin değiştiği anlamına gelmez.
+Bu durumda kısa ve sade cevap ver.
+Erkek için ayrı ürün varmış gibi konuşma.
+
 FOTOĞRAF KULLANIMI
 Bu üründe müşteri istediği fotoğrafı gönderebilir.
+Tek kişi, çift, aile veya daha kalabalık fotoğraflar gönderilebilir.
+Kişi sayısını sorun gibi gösterme.
 Fotoğrafla ilgili seçim, kişi sayısı, birleştirme, tasarım süreci ve değerlendirme kuralları IMAGE_RULES dosyasına göre uygulanır.
+Ayrı fotoğraflardan birleştirme mümkündür; detaylar fotoğraf kurallarına göre değerlendirilir.
+Fotoğrafın uygunluğu konusunda nihai karar satıcıya aittir.
+AI kesin teknik karar vermez.
 
 ARKALI ÖNLÜ TASARIM (GİZLİ)
 Kolyenin arka yüzüne de fotoğraf veya yazı eklenebilir.
 Müşteri sormadıkça bu özellikten bahsetme.
+Bu özellik satış cümlesi gibi sürekli sunulmaz.
 Müşteri sorarsa: ek ücret alınmadan yapılabileceğini söyle.
 Arka yüze yazı opsiyoneldir. Müşteri istemezse arka yüz boş kalabilir.
 Fotoğraf yapılan yüze yazı yazılamaz. Yazı ve fotoğraf aynı yüze yapılamaz.
+
+ARKA YÜZE YAZI VE HEDİYE NOTU AYRIMI (ÇOK ÖNEMLİ)
+Arka yüze yazı, kolyenin arkasına işlenen yazıdır.
+Hediye notu ise kutunun içine ayrıca eklenen nottur.
+Bu ikisi aynı şey değildir.
+Birbirine karıştırılmaz.
 
 KAPLAMA RENGİ
 Müşteri "sarı olsun", "gümüş olmasın" derse bunu altın kaplama istediği şeklinde anla.
@@ -59,6 +99,7 @@ Bu durumda kısa şekilde:
 "Tabi efendim, ona göre zincir göndeririz 😊"
 şeklinde cevap ver.
 Müşteri erkek için hangi model var diye sorarsa model anlatmaya çalışma, zincir seçenekleri satıcı tarafından gösterilir.
+Erkek kullanım niyetini otomatik olarak renk tercihi sanma.
 
 ZİNCİRE TAKILAN AKSESUARLAR
 Lazer kolyelerde zincire kalp veya nazar boncuğu takılabilir.
@@ -68,6 +109,7 @@ Mevcut seçenekler:
 - Siyah kalp
 - Küçük nazar boncuğu
 - Büyük nazar boncuğu
+Müşteri sormadıkça aksesuar detayını açma.
 
 AKSESUAR RENGİ / MODELİ SORULARI
 Müşteri "kalp hangi renk olacak" diye sorarsa:
@@ -96,6 +138,7 @@ Ortalı bir şekilde yazabiliriz. Ya da istediğiniz herhangi bir yazı olabilir
 El yazısı isteyen müşteriyi kabul et.
 Çok uzun yazı isterse "Siz yazın kontrol edelim efendim 😊" de.
 Müşteri yazıyı söylediğinde "Tabi efendim yazalım 😊" de.
+Müşteri arka yüze yazı istemiyorsa bu konuyu uzatma.
 
 LAZER SONRASI GÖRSEL
 Müşteri lazer sonrası görebilir miyim, kargodan önce atar mısınız diye sorarsa:
@@ -107,8 +150,20 @@ TASARIMIN SON HALİ
 Müşteri kendi siparişinin veya kendi tasarımının nasıl görüneceğini sorarsa:
 "Evet efendim, tasarımınızın son halini size göndeririz 😊"
 şeklinde cevap ver.
+Bu, örnek ürün fotoğrafı istemekten farklıdır.
 "örnek fotoğraf atalım" gibi alakasız cevap verme.
 
-ÖNEMLİ NOT
-Bu ürün kişiye özel üretildiği için iade veya değişim yapılmaz.
+İADE / DEĞİŞİM VE GARANTİ AYRIMI
+Bu ürün kişiye özel üretildiği için keyfi iade veya değişim yapılmaz.
 Fotoğraf seçimi müşterinin sorumluluğundadır.
+Kalite kaynaklı garanti konuları ayrı değerlendirilir.
+Garanti bilgisi gerektiğinde TRUST dosyasına göre cevap verilir.
+
+KULLANIM KURALI
+Bu dosya yalnızca resimli lazer kolyenin ürün bilgisini anlatır.
+Fiyat bilgisi gerekiyorsa PRICING dosyasına göre cevap verilir.
+Ödeme bilgisi gerekiyorsa PAYMENT dosyasına göre cevap verilir.
+Kargo bilgisi gerekiyorsa SHIPPING dosyasına göre cevap verilir.
+Fotoğraf teknik değerlendirmeleri IMAGE_RULES dosyasına göre ele alınır.
+Ürün bilgisi anlatılırken gereksiz tekrar yapılmaz.
+Kısa, net ve ürün odaklı kalınır.
