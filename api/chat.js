@@ -124,7 +124,11 @@ export default async function handler(req, res) {
       });
     }
 
-    const selectedFiles = pickKnowledgeFiles(message, userProduct);
+    const selectedFiles = [
+  "core_system.txt", "product_laser.txt", "product_atac.txt",
+  "pricing.txt", "shipping.txt", "payment.txt",
+  "order_flow.txt", "image_rules.txt", "smalltalk.txt", "trust.txt"
+];
 
     const knowledgeText = selectedFiles
       .map((file) => {
