@@ -1,19 +1,40 @@
 FİYATLANDIRMA
-Resimli lazer kolye
-EFT fiyatı: 599 TL
-Kapıda ödeme fiyatı: 649 TL
 
-Harfli ataç kolye
-EFT fiyatı: 499 TL
+RESİMLİ LAZER KOLYE
+EFT / Havale fiyatı: 599 TL
+Kapıda ödeme fiyatı: 649 TL
+Fotoğrafta kişi sayısı fiyatı değiştirmez.
+Müşteri "kaç kişilik olursa olsun fiyat değişiyor mu", "2 kişilik", "3 kişilik", "4 kişilik" gibi sorular sorarsa:
+"Hayır efendim, fiyat değişmiyor. Aynı fiyattan yapıyoruz 😊" diye cevap ver
+
+ÇOKLU ALIM İNDİRİMİ (ÇOK ÖNEMLİ)
+Aynı adrese gönderilecek siparişlerde çoklu alım indirimi uygulanır.
+Müşteri kaç adet istediğini söylemeden fiyat verme, önce "Kaç adet düşünüyorsunuz?" diye sor.
+Müşteri kaç adet istediğini söylediğinde sadece o adete ait fiyatı ver. Diğer adet fiyatlarını gösterme.
+
+Fiyatlar:
+2 kolye: EFT 1000 TL, kapıda ödeme 1100 TL
+3 kolye: EFT 1400 TL, kapıda ödeme 1500 TL
+4 kolye: EFT 1700 TL (kapıda ödeme seçeneği yoktur)
+5 kolye: EFT 2000 TL (kapıda ödeme seçeneği yoktur)
+5 kolyenin üzerinde her ek kolye için +300 TL EFT (kapıda ödeme seçeneği yoktur)
+
+HARFLİ ATAÇ KOLYE (STANDART 3 HARF)
+EFT / Havale fiyatı: 499 TL
 Kapıda ödeme fiyatı: 549 TL
 
-EK ÜCRET BİLGİLERİ
-Ataç kolyede standart 3 harf bulunur.
-Eklenen her harf için +50 TL ücret uygulanır.
-Ataç kolyede zincir uzatma işlemi yapılabilir.
-Zincir uzatma ücreti +50 TL’dir.
+HARFLİ ATAÇ KOLYE EK HARF FİYATLARI
+Her ek harf için +50 TL uygulanır.
+4 harf: EFT 549 TL, kapıda ödeme 599 TL
+5 harf: EFT 599 TL, kapıda ödeme 649 TL
+6 harf: EFT 649 TL, kapıda ödeme 699 TL
+Bu şekilde devam eder.
+
+HARFLİ ATAÇ KOLYE ZİNCİR UZATMA
+Zincir uzatma ücreti +50 TL'dir.
+Müşteri sormadıkça bu bilgiyi verme.
 
 KULLANIM KURALI
 Müşteri direkt fiyat sorarsa bu bilgiler verilir.
 Müşteri ürün belirtmemişse önce ürün sorulur.
-Ek ücretler (harf ve zincir) müşteri sormadıkça belirtilmez.
+Ek ücretler müşteri sormadıkça belirtilmez.
