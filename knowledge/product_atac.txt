@@ -1,3 +1,5 @@
+# PRODUCT_ATAC.txt
+
 Harfli ataç kolye, müşterinin istediği harflerle hazırlanan kişiye özel bir kolyedir. Bu ürün zincir üzerine yerleştirilen harflerden oluşur.
 
 ÜRÜN TANIMI
@@ -14,6 +16,7 @@ Kaplama atmaz.
 Solma yapmaz.
 Günlük kullanıma uygundur.
 Ürün kutusunda gönderilir.
+Ayrıca ekstra bir hediye paketi bulunmamaktadır.
 
 HEDİYE BİLGİSİ
 Bu ürünle birlikte aynı model ataç bileklik hediye gönderilir.
