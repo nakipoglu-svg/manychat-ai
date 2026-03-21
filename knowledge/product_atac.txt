@@ -1,11 +1,21 @@
 # PRODUCT_ATAC.txt
 
-Harfli ataç kolye, müşterinin istediği harflerle hazırlanan kişiye özel bir kolyedir. Bu ürün zincir üzerine yerleştirilen harflerden oluşur.
+Harfli ataç kolye, müşterinin istediği harflerle hazırlanan kişiye özel bir kolyedir.
+Bu ürün zincir üzerine yerleştirilen harflerden oluşur.
+Harfler bu ürünün ana tasarım parçasıdır.
 
 ÜRÜN TANIMI
 Bu ürün harfli ataç kolyedir.
 Müşterinin istediği harfler zincirin üzerine yerleştirilir.
 Kişiye özel olarak hazırlanır.
+Günlük kullanıma uygun, kişisel ve hediye amaçlı tercih edilebilen bir modeldir.
+
+ÜRÜN KİMLİĞİ (ÇOK ÖNEMLİ)
+Bu ürün fotoğraflı kolye değildir.
+Bu üründe fotoğraf kullanılmaz.
+Bu üründe lazer baskı yapılmaz.
+Bu üründe arka yüze yazı uygulanmaz.
+Resimli lazer kolye ile karıştırılmaz.
 
 ÜRÜN ÖZELLİKLERİ
 Zincir paslanmaz çeliktir.
@@ -18,26 +28,63 @@ Günlük kullanıma uygundur.
 Ürün kutusunda gönderilir.
 Ayrıca ekstra bir hediye paketi bulunmamaktadır.
 
-HEDİYE BİLGİSİ
+HEDİYE BİLGİSİ (ÇOK ÖNEMLİ)
 Bu ürünle birlikte aynı model ataç bileklik hediye gönderilir.
+Bu hediye sadece harfli ataç kolye ürününde geçerlidir.
+Resimli lazer kolyede hediye bileklik yoktur.
+Başka ürünlere bu hediye bilgisi taşınmaz.
 Böylece müşteri kolye ile birlikte bileklik de almış olur.
 Bileklik uzunluğu 20 cm'dir.
 Ataç formunda olduğu için küçük bilekler için kısaltılabilir.
+Bu hediye ayrı ürün gibi anlatılmaz.
+Ayrı fiyat veya ayrı sipariş başlığı açılmaz.
 
 HARF BİLGİSİ
 Standart olarak kolyede 3 harf bulunur.
 Ek harf yapılabilir.
 Müşteri sormadıkça ek harf ücretinden bahsetme.
+Ek harf yapılabildiği söylenir, ücret bilgisi gerekiyorsa fiyat dosyasına göre cevap verilir.
+
+HARF SAYISI / YORUMLAMA KURALI
+Müşteri sadece harf yazarsa bunu ürün içeriği olarak anla.
+Örneğin müşteri "ECE", "NOA", "A L İ" gibi yazarsa bunu yapılmasını istediği harfler olarak değerlendir.
+Müşteri "4 harf olur mu", "uzun isim olur mu" gibi sorular sorarsa yapılabildiği söylenebilir.
+Ücret kısmı gerekiyorsa fiyat dosyasına göre cevap verilir.
+Çok uzun isim veya fazla harf durumunda görünümle ilgili kesin hüküm verme, gerekiyorsa satıcıya bırak.
 
 HARF BOYUTU
-Her harfin yüksekliği 1 cm'dir.
+Her harfin yüksekliği yaklaşık 1 cm'dir.
 Harflerin genişliği harfe göre değişir.
 Örneğin I harfi dar, M harfi geniştir.
+Bu nedenle yazılan harflere göre kolyenin genel görünümü ufak farklılık gösterebilir.
+
+ZİNCİR YAPISI
+Bu üründe tek zincir modeli vardır.
+Zincir modeli seçeneği sunulmaz.
+Lazer kolyedeki gibi farklı zincir modelleri bu ürün için geçerli değildir.
+Müşteriye bu üründe farklı zincir modeli varmış gibi konuşma.
 
 ZİNCİR UZUNLUĞU
 Standart zincir uzunluğu 50 cm'dir.
 Zincir uzunluğu maksimum 70 cm'e kadar uzatılabilir.
 Müşteri sormadıkça bu bilgiyi söyleme.
+Uzatma özelliği vardır ancak ücret bilgisi gerekiyorsa fiyat dosyasına göre cevap verilir.
+
+ERKEK / KULLANIM AMACI
+Müşteri ürünün erkek için kullanılacağını söylerse bunu kullanım amacı olarak anla.
+Bu durumda kısa ve sade şekilde cevap ver.
+Erkek modeli / kadın modeli diye ayrı ürün varmış gibi konuşma.
+Bu ürün kişiye göre hazırlanır, kullanım amacı ayrıca yorumlanabilir.
 
 SİPARİŞ İÇİN
 Müşteri sipariş vermek istediğinde sadece istediği harfleri yazması yeterlidir.
+Müşteri harfleri yazdıysa tekrar isteme.
+Adres, ödeme ve kargo bilgisi bu dosyada anlatılmaz; ilgili akışa göre ilerlenir.
+
+KULLANIM KURALI
+Bu dosya yalnızca harfli ataç kolyenin ürün bilgisini anlatır.
+Fiyat bilgisi gerekiyorsa fiyat dosyasına göre cevap verilir.
+Ödeme bilgisi gerekiyorsa ödeme dosyasına göre cevap verilir.
+Kargo bilgisi gerekiyorsa kargo dosyasına göre cevap verilir.
+Ürün anlatılırken aynı özellikler gereksiz yere tekrar tekrar sıralanmaz.
+Kısa, net ve ürün odaklı kalınır.
