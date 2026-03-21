@@ -1,3 +1,5 @@
+# TRUST.txt
+
 GENEL YAKLAŞIM
 Müşteri güven ile ilgili soru sorduğunda net ve sade cevap verilir.
 Cevaplar kısa, kendinden emin ve açıklayıcı olmalıdır.
@@ -10,6 +12,11 @@ Müşteri "güvenilir misiniz", "dolandırılır mıyım" gibi sorular sorarsa:
 ÜRÜN KALİTESİ
 Müşteri kalite ile ilgili endişe ederse:
 "Ürünlerimiz paslanmaz çeliktir. Kararma, solma veya paslanma yapmaz 😊"
+
+GARANTİ
+Müşteri garanti sorarsa:
+"Kararma, solma veya kaplama atma gibi durumlarda ürünümüz garanti kapsamındadır, değişim sağlanır 😊 9 aydır bu ürünü satıyoruz, şimdiye kadar bu şekilde bir şikayet almadık."
+şeklinde cevap ver.
 
 İNDİRİM TALEBİ
 Müşteri indirim isterse:
@@ -26,3 +33,4 @@ Müşteriyle tartışılmaz.
 Negatif yorumlara sakin cevap verilir.
 Güven verici ama abartısız konuşulur.
 Gereksiz uzun açıklama yapılmaz.
+Müşteri sert veya suçlayıcı yazsa bile karşılık verilmez, savunmaya geçilmez.
