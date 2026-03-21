@@ -180,17 +180,17 @@ ${userProduct}
         model: "claude-haiku-4-5-20251001",
         max_tokens: 250,
         system: [
-          {
-            type: "text",
-            text: systemPrompt,
-            cache_control: { type: "ephemeral" }
-          },
-          {
-            type: "text",
-            text: knowledgeText,
-            cache_control: { type: "ephemeral" }
-          }
-        ],
+  {
+    type: "text",
+    text: systemPrompt,
+    cache_control: { type: "ephemeral", ttl: "1h" }
+  },
+  {
+    type: "text",
+    text: knowledgeText,
+    cache_control: { type: "ephemeral", ttl: "1h" }
+  }
+],
         messages: [
           {
             role: "user",
