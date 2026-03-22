@@ -323,7 +323,8 @@ export default async function handler(req, res) {
           set_conversation_stage: "payment_selected",
           set_photo_received: "",
           set_payment_method: payment,
-          set_menu_gosterildi: ""
+          set_menu_gosterildi: "",
+          set_siparis_alindi: "evet"
         });
       }
     }
