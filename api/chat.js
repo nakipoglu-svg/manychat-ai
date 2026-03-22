@@ -302,11 +302,7 @@ export default async function handler(req, res) {
       const hasBackText = backTextKeywords.some(k => msg.includes(k));
       if (hasBackText) {
         return res.status(200).json({
-          reply: "Tabi efendim 😊 Sipariş için şu bilgileri alabilir miyiz?
-
-• İsim Soyisim
-• Açık Adres
-• Cep Telefonu",
+          reply: "Tabi efendim \U0001f60a Siparis icin su bilgileri alabilir miyiz?\n\n- Isim Soyisim\n- Acik Adres\n- Cep Telefonu",
           set_conversation_stage: "address_waiting",
           set_photo_received: "yes",
           set_payment_method: "",
