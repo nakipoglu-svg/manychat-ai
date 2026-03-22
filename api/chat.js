@@ -60,8 +60,71 @@ function normalizeText(text) {
     .trim();
 }
 
+function normalizeStageName(stage) {
+  const s = normalizeText(stage);
+  if (!s) return "";
+
+  if (s.includes("photo_wait")) return "photo_waiting";
+  if (s.includes("photo_receive")) return "photo_received";
+  if (s.includes("letter_wait")) return "letter_waiting";
+  if (s.includes("address_receive")) return "address_received";
+  if (s.includes("address_wait")) return "address_waiting";
+  if (s.includes("payment_selected")) return "payment_selected";
+  if (s.includes("payment_wait")) return "payment_waiting";
+
+  return s;
+}
+
 function includesAny(text, keywords) {
   return keywords.some((keyword) => text.includes(keyword));
+}
+
+function hasPhoneNumber(text) {
+  const cleaned = String(text || "").replace(/\s+/g, " ");
+  return /(\+?\d[\d\s]{8,}\d)/.test(cleaned);
+}
+
+function looksLikeAddressMessage(text) {
+  const msg = normalizeText(text);
+
+  const addressKeywords = [
+    "mahalle",
+    "mah",
+    "sokak",
+    "sk",
+    "cadde",
+    "cd",
+    "no",
+    "daire",
+    "kat",
+    "apartman",
+    "apt",
+    "site",
+    "blok",
+    "ilce",
+    "ilçe",
+    "semt",
+    "istanbul",
+    "ankara",
+    "izmir",
+    "turkiye",
+    "türkiye",
+    "sisli",
+    "şişli",
+    "umraniye",
+    "ümraniye",
+    "beykoz",
+    "kadikoy",
+    "kadıköy"
+  ];
+
+  const hitCount = addressKeywords.filter((k) => msg.includes(k)).length;
+  const lineCount = String(text || "")
+    .split(/\n+/)
+    .map((x) => x.trim())
+    .filter(Boolean).length;
+
+  return hasPhoneNumber(text) && (hitCount >= 2 || lineCount >= 3);
 }
 
 function pickKnowledgeFiles(message, userProduct, conversationStage = "") {
@@ -239,9 +302,10 @@ function buildCurrentContext({
     userProduct:
       unwrapManychatValue(userProduct || "") ||
       getFieldFromFullContact(fullContactData, "ilgilenilen_urun"),
-    conversationStage:
+    conversationStage: normalizeStageName(
       unwrapManychatValue(conversationStage || "") ||
-      getFieldFromFullContact(fullContactData, "conversation_stage"),
+        getFieldFromFullContact(fullContactData, "conversation_stage")
+    ),
     photoReceived:
       unwrapManychatValue(photoReceived || "") ||
       getFieldFromFullContact(fullContactData, "photo_received"),
@@ -328,6 +392,42 @@ export default async function handler(req, res) {
       return res.status(200).json({
         reply: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
         set_conversation_stage: "",
+        set_photo_received: "",
+        set_payment_method: "",
+        set_menu_gosterildi: ""
+      });
+    }
+
+    // BACKEND TABANLI ADRES ALGILAMA
+    const isAddressMessage = looksLikeAddressMessage(ctx.message);
+    const isAddressStage =
+      ctx.conversationStage === "address_waiting" ||
+      ctx.conversationStage === "address_received";
+
+    if (isAddressMessage && isAddressStage) {
+      if (ctx.paymentMethod === "eft") {
+        return res.status(200).json({
+          reply: "Tamamdır efendim 😊 Adresiniz kaydedildi. Siparişiniz hazırlanıyor.",
+          set_conversation_stage: "address_received",
+          set_photo_received: "",
+          set_payment_method: "",
+          set_menu_gosterildi: ""
+        });
+      }
+
+      if (ctx.paymentMethod === "kapida_odeme") {
+        return res.status(200).json({
+          reply: "Tamamdır efendim 😊 Adresiniz kaydedildi. Siparişiniz hazırlanıyor.",
+          set_conversation_stage: "address_received",
+          set_photo_received: "",
+          set_payment_method: "",
+          set_menu_gosterildi: ""
+        });
+      }
+
+      return res.status(200).json({
+        reply: "Tamamdır efendim 😊 Adresiniz kaydedildi.",
+        set_conversation_stage: "address_received",
         set_photo_received: "",
         set_payment_method: "",
         set_menu_gosterildi: ""
@@ -548,8 +648,8 @@ ${JSON.stringify(
       parsed?.reply?.trim() ||
       "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊";
 
-    const setConversationStage = unwrapManychatValue(
-      parsed?.set_conversation_stage || ""
+    const setConversationStage = normalizeStageName(
+      unwrapManychatValue(parsed?.set_conversation_stage || "")
     );
     const setPhotoReceived = unwrapManychatValue(
       parsed?.set_photo_received || ""
