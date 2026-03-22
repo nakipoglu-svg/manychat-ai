@@ -492,14 +492,16 @@ ${JSON.stringify(
     console.log("CLAUDE RESPONSE:", JSON.stringify(data, null, 2));
 
     const rawText =
-      data?.content?.map((block) => block?.text || "").join(" ").trim() || "";
+  data?.content?.map((block) => block?.text || "").join(" ").trim() || "";
 
-    let parsed;
-    try {
-      parsed = JSON.parse(rawText);
-    } catch {
-      parsed = null;
-    }
+const cleanedText = extractJsonText(rawText);
+
+let parsed;
+try {
+  parsed = JSON.parse(cleanedText);
+} catch {
+  parsed = null;
+}
 
     const reply =
       parsed?.reply?.trim() ||
