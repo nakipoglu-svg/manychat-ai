@@ -237,7 +237,8 @@ export default async function handler(req, res) {
             photoReceived,
             paymentMethod,
             menuGosterildi,
-            aiReply
+            aiReply,
+            subscribed_id
           },
           null,
           2
