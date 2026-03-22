@@ -274,16 +274,16 @@ export default async function handler(req, res) {
     if (ctx.conversationStage === "address_waiting") {
       if (hasPhoneNumber(ctx.message)) {
         return res.status(200).json({
-          reply: "Adresiniz kaydedildi, teşekkürler 😊 Ödemeniz nasıl olacak efendim? EFT / havale veya kapıda ödeme seçeneklerimiz mevcut.",
+          reply: "Tabi efendim 😊 Adresiniz kaydedildi, teşekkürler. Ödemeniz nasıl olacak efendim? EFT / havale veya kapıda ödeme seçeneklerimiz mevcut.",
           set_conversation_stage: "address_received",
           set_photo_received: "",
           set_payment_method: "",
           set_menu_gosterildi: ""
         });
       }
-      // Telefon henuz gelmedi - sessiz kal, Claude a gitme
+      // Telefon henuz gelmedi - kisa onay ver, Claude a gitme
       return res.status(200).json({
-        reply: "",
+        reply: "Tamamdır efendim 😊",
         set_conversation_stage: "address_waiting",
         set_photo_received: "",
         set_payment_method: "",
@@ -396,7 +396,7 @@ BAĞLAM KURALLARI:
 - photo_received=yes ise tekrar fotoğraf isteyemezsin.
 - conversation_stage=photo_waiting ise müşteri fotoğraf, fotoğraf düzeni, kişi sayısı, ön/arka yüz düzeni gibi sipariş detaylarını yazıyor olabilir.
 - conversation_stage=photo_received ise müşterinin kısa mesajlarını sipariş detayı olarak yorumla.
-- conversation_stage=photo_received iken müşteri arka yüze yazı veya fotoğraf koyulacağını net söylerse (örnek: "arkaya X yaz", "arkasına X yazalım", "arkasına şu fotoğrafı koy", "arka tarafa X") MUTLAKA set_conversation_stage="back_text_waiting" set et ve adres sor: "Adresinizi alabilir miyiz? Ad soyad, cep telefonu ve açık adresinizi yazabilirsiniz." Boş bırakma.
+- conversation_stage=photo_received iken müşteri arka yüze yazı veya fotoğraf koyulacağını net söylerse (örnek: "arkaya X yaz", "arkasına X yazalım", "arkasına şu fotoğrafı koy", "arka tarafa X") MUTLAKA set_conversation_stage="back_text_waiting" set et ve adres sor: "Sipariş için şu bilgileri alabilir miyiz? İsim Soyisim, Açık Adres, Cep Telefonu" Boş bırakma.
 - conversation_stage=photo_received iken müşteri arka yüz istemiyorsa set_conversation_stage="address_waiting" set et ve adres sor.
 - conversation_stage=letter_waiting ise kısa metinleri seçilen harfler olarak yorumla.
 - conversation_stage=address_received ise müşteri adresini zaten vermiş kabul et.
