@@ -3,6 +3,16 @@ import path from "path";
 
 const fileCache = {};
 
+console.log("MANYCHAT BODY:", JSON.stringify({
+  message,
+  userProduct,
+  conversationStage,
+  photoReceived,
+  paymentMethod,
+  menuGosterildi,
+  aiReply
+}, null, 2));
+
 function readKnowledgeFile(filename) {
   if (fileCache[filename]) return fileCache[filename];
   const filePath = path.join(process.cwd(), "knowledge", filename);
