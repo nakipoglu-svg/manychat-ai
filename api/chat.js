@@ -213,6 +213,7 @@ export default async function handler(req, res) {
     let paymentMethod = "";
     let menuGosterildi = "";
     let aiReply = "";
+    let subscribed_id = "";
 
     try {
       const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
@@ -224,6 +225,7 @@ export default async function handler(req, res) {
       paymentMethod = unwrapManychatValue(body?.payment_method || "");
       menuGosterildi = unwrapManychatValue(body?.menu_gosterildi || "");
       aiReply = unwrapManychatValue(body?.ai_reply || "");
+      subscribed_id = unwrapManychatValue(body?.subscribed_id || "");
 
       console.log(
         "MANYCHAT BODY:",
