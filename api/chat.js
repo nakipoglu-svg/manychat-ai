@@ -169,31 +169,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // --- ARKA YAZI AŞAMASI ---
-    // photo_received'dan sonra müşteri arka yazı veya "hayır" diyebilir
-    if (conversationStage === "photo_received") {
-      const msg = normalizeText(message);
-
-      // Müşteri hayır / istemiyorum / gerek yok derse adrese geç
-      if (includesAny(msg, ["hayir", "istemiyorum", "gerek yok", "yok", "bos kalsin", "kalsin"])) {
-        return res.status(200).json({
-          reply: "Tamamdır efendim 😊 Adresinizi alabilir miyiz? Ad soyad, cep telefonu ve açık adresinizi yazabilirsiniz.",
-          set_conversation_stage: "address_waiting",
-          set_photo_received: "",
-          set_payment_method: "",
-          set_menu_gosterildi: ""
-        });
-      }
-
-      // Müşteri arka yazı yazdıysa → back_text_waiting'e geç ve onaylaması için bekle
-      return res.status(200).json({
-        reply: "",
-        set_conversation_stage: "",
-        set_photo_received: "",
-        set_payment_method: "",
-        set_menu_gosterildi: ""
-      });
-    }
+    // photo_received → Claude halleder (arka yazı veya adrese geçiş)
 
     // --- ARKA YAZI BEKLENİYOR ---
     if (conversationStage === "back_text_waiting") {
