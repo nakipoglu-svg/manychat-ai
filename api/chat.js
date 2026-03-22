@@ -395,11 +395,18 @@ BAĞLAM KURALLARI:
 - conversation_stage=address_received ise artık başa dönme, ürün tanıtımı yapma.
 
 STATE GÜNCELLEME KURALLARI:
-Senden aşağıdaki alanlar için öneri istiyoruz:
-- set_conversation_stage
-- set_photo_received
-- set_payment_method
-- set_menu_gosterildi
+- Müşteri ödeme yöntemini seçtiği anda set_payment_method mutlaka doldur.
+- Müşteri "eft", "havale", "iban'a atayım", "kapıda ödeme", "kapida odeme" gibi net bir ödeme tercihi belirttiyse set_conversation_stage="payment_selected" yap.
+- payment_method doluyken stage hâlâ address_received kalmamalı.
+- Ödeme tercihi netleştiyse set_payment_method ve set_conversation_stage birlikte dönmelidir.
+- EFT seçildiyse set_payment_method="eft", kapıda ödeme seçildiyse set_payment_method="kapida_odeme" döndür.
+- Senden aşağıdaki alanlar için öneri istiyoruz:
+  - set_conversation_stage
+  - set_photo_received
+  - set_payment_method
+  - set_menu_gosterildi
+- Stage güncellemesi gerekiyorsa boş bırakma.
+- Özellikle address_received aşamasından sonraki net ödeme seçimlerinde stage mutlaka ilerletilmelidir.
 
 Kurallar:
 - Emin değilsen alanları boş bırak.
