@@ -16,8 +16,13 @@ function unwrapManychatValue(value) {
 
   let str = String(value).trim();
 
-  // "{{deger}}" veya "{{{deger}}}" kalıplarını temizle
+  // "{{deger}}" veya "{{{deger}}}" temizle
   str = str.replace(/^\{\{\{?/, "").replace(/\}\}\}?$/, "").trim();
+
+  // "{cuf_123456}" veya "{anything}" gibi placeholderları boş say
+  if (/^\{[^}]+\}$/.test(str)) {
+    return "";
+  }
 
   if (
     !str ||
@@ -70,6 +75,7 @@ function pickKnowledgeFiles(message, userProduct, conversationStage = "") {
       "foto kolye",
       "fotolu",
       "fotograf kolye",
+      "fotografli",
       "fotoğraf kolye"
     ];
 
@@ -200,6 +206,45 @@ function pickKnowledgeFiles(message, userProduct, conversationStage = "") {
   return [...new Set(files)];
 }
 
+function getFieldFromFullContact(fullContactData, key) {
+  if (!fullContactData || typeof fullContactData !== "object") return "";
+  const customFields = fullContactData.custom_fields || {};
+  return unwrapManychatValue(customFields[key] || "");
+}
+
+function buildCurrentContext({
+  message,
+  userProduct,
+  conversationStage,
+  photoReceived,
+  paymentMethod,
+  menuGosterildi,
+  aiReply,
+  fullContactData
+}) {
+  return {
+    message: unwrapManychatValue(message || ""),
+    userProduct:
+      unwrapManychatValue(userProduct || "") ||
+      getFieldFromFullContact(fullContactData, "ilgilenilen_urun"),
+    conversationStage:
+      unwrapManychatValue(conversationStage || "") ||
+      getFieldFromFullContact(fullContactData, "conversation_stage"),
+    photoReceived:
+      unwrapManychatValue(photoReceived || "") ||
+      getFieldFromFullContact(fullContactData, "photo_received"),
+    paymentMethod:
+      unwrapManychatValue(paymentMethod || "") ||
+      getFieldFromFullContact(fullContactData, "payment_method"),
+    menuGosterildi:
+      unwrapManychatValue(menuGosterildi || "") ||
+      getFieldFromFullContact(fullContactData, "menu_gosterildi"),
+    aiReply:
+      unwrapManychatValue(aiReply || "") ||
+      getFieldFromFullContact(fullContactData, "ai_reply")
+  };
+}
+
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") {
@@ -213,37 +258,19 @@ export default async function handler(req, res) {
     let paymentMethod = "";
     let menuGosterildi = "";
     let aiReply = "";
-    let subscribed_id = "";
+    let fullContactData = null;
 
     try {
       const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
 
-      message = unwrapManychatValue(body?.message || "");
-      userProduct = unwrapManychatValue(body?.user_product || body?.ilgilenilen_urun || "");
-      conversationStage = unwrapManychatValue(body?.conversation_stage || "");
-      photoReceived = unwrapManychatValue(body?.photo_received || "");
-      paymentMethod = unwrapManychatValue(body?.payment_method || "");
-      menuGosterildi = unwrapManychatValue(body?.menu_gosterildi || "");
-      aiReply = unwrapManychatValue(body?.ai_reply || "");
-      subscribed_id = unwrapManychatValue(body?.subscribed_id || "");
-
-      console.log(
-        "MANYCHAT BODY:",
-        JSON.stringify(
-          {
-            message,
-            userProduct,
-            conversationStage,
-            photoReceived,
-            paymentMethod,
-            menuGosterildi,
-            aiReply,
-            subscribed_id
-          },
-          null,
-          2
-        )
-      );
+      message = body?.message || "";
+      userProduct = body?.user_product || body?.ilgilenilen_urun || "";
+      conversationStage = body?.conversation_stage || "";
+      photoReceived = body?.photo_received || "";
+      paymentMethod = body?.payment_method || "";
+      menuGosterildi = body?.menu_gosterildi || "";
+      aiReply = body?.ai_reply || "";
+      fullContactData = body?.full_contact_data || null;
     } catch {
       message = "";
       userProduct = "";
@@ -252,22 +279,65 @@ export default async function handler(req, res) {
       paymentMethod = "";
       menuGosterildi = "";
       aiReply = "";
+      fullContactData = null;
     }
 
-    if (!message) {
+    const ctx = buildCurrentContext({
+      message,
+      userProduct,
+      conversationStage,
+      photoReceived,
+      paymentMethod,
+      menuGosterildi,
+      aiReply,
+      fullContactData
+    });
+
+    console.log(
+      "MANYCHAT BODY:",
+      JSON.stringify(
+        {
+          message: ctx.message,
+          userProduct: ctx.userProduct,
+          conversationStage: ctx.conversationStage,
+          photoReceived: ctx.photoReceived,
+          paymentMethod: ctx.paymentMethod,
+          menuGosterildi: ctx.menuGosterildi,
+          aiReply: ctx.aiReply,
+          fullContactDataId: fullContactData?.id || "",
+          fullContactDataIgId: fullContactData?.ig_id || ""
+        },
+        null,
+        2
+      )
+    );
+
+    if (!ctx.message) {
       return res.status(200).json({
-        reply: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊"
+        reply: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+        set_conversation_stage: "",
+        set_photo_received: "",
+        set_payment_method: "",
+        set_menu_gosterildi: ""
       });
     }
 
     const apiKey = process.env.CLAUDE_API_KEY;
     if (!apiKey) {
       return res.status(200).json({
-        reply: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊"
+        reply: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+        set_conversation_stage: "",
+        set_photo_received: "",
+        set_payment_method: "",
+        set_menu_gosterildi: ""
       });
     }
 
-    const selectedFiles = pickKnowledgeFiles(message, userProduct, conversationStage);
+    const selectedFiles = pickKnowledgeFiles(
+      ctx.message,
+      ctx.userProduct,
+      ctx.conversationStage
+    );
 
     const knowledgeText = selectedFiles
       .map((file) => {
@@ -284,12 +354,15 @@ export default async function handler(req, res) {
     const systemPrompt = `
 Sen Yudum Jewels için çalışan bir Instagram satış asistanısın.
 
-KURALLAR:
-- Sadece verilen bilgi dosyalarına göre cevap ver.
-- Bilmediğin konuda asla uydurma.
+GÖREVİN:
+- Kısa, net, doğal ve satış odaklı cevap vermek.
+- Gerekirse state/field değişikliği önermek.
+- Sadece verilen bilgi dosyalarına göre cevap vermek.
+- Bilmediğin konuda asla uydurmamak.
+
+GENEL KURALLAR:
 - Bilgi yoksa şu cevabı ver:
 Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊
-- Kısa, net, doğal ve satış odaklı yaz.
 - Eğer user_product doluysa bunu öncelikli ürün bilgisi kabul et.
 - Ürün belirtilmemişse ve user_product da boşsa, cevap ürüne göre değişiyorsa hangi model ile ilgilendiğini sor.
 - Müşteri sormadıkça ek ücretli veya opsiyonel bilgileri söyleme.
@@ -297,45 +370,88 @@ Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊
 - Ek açıklama, öneri veya alternatif sunma.
 - Ürünleri birbirine karıştırma.
 - Belirsiz ifadelerde tahmin yapma; gerekirse kısa netleştirme sorusu sor.
+- Müşteri daha önce hangi aşamadaysa, tekrar merhaba diyerek başa dönme.
+- Kısa cevapları bağlama göre yorumla.
+- "evet", "tamam", "olur", "amin", isim, tarih gibi kısa mesajları son aktif aşamaya göre değerlendir.
 
 BAĞLAM KURALLARI:
-- conversation_stage çok önemlidir. Müşterinin konuşmadaki mevcut aşamasını gösterir.
-- Eğer conversation_stage doluysa, konuşmayı o aşamaya göre yorumla.
-- photo_received=yes ise müşteriye tekrar fotoğraf gönderin deme.
-- conversation_stage=photo_waiting ise müşteri yeni mesaj gönderdiğinde bunun büyük ihtimalle fotoğraf veya fotoğrafla ilgili sipariş içeriği olduğunu dikkate al.
-- conversation_stage=photo_received ise müşterinin sonraki kısa mesajlarını (isim, tarih, yazı, renk, kısa onay vb.) sipariş detayı olarak yorumla.
-- conversation_stage=letter_waiting ise gelen kısa mesajları seçilen harfler olarak yorumla.
-- conversation_stage=address_received ise artık ürün tanıtımı veya başa dönüş yapma.
-- "evet", "tamam", "olur", "amin", "bulut", tarih, isim gibi kısa mesajları son aktif bağlama göre yorumla.
-- Müşteri daha önce hangi aşamadaysa, tekrar merhaba diyerek başa dönme.
+- conversation_stage çok önemlidir.
+- photo_received=yes ise tekrar fotoğraf isteyemezsin.
+- conversation_stage=photo_waiting ise müşteri fotoğraf, fotoğraf düzeni, kişi sayısı, ön/arka yüz düzeni gibi sipariş detaylarını yazıyor olabilir.
+- conversation_stage=photo_received ise müşterinin kısa mesajlarını sipariş detayı olarak yorumla.
+- conversation_stage=letter_waiting ise kısa metinleri seçilen harfler olarak yorumla.
+- conversation_stage=address_received ise artık başa dönme, ürün tanıtımı yapma.
+
+STATE GÜNCELLEME KURALLARI:
+Senden aşağıdaki alanlar için öneri istiyoruz:
+- set_conversation_stage
+- set_photo_received
+- set_payment_method
+- set_menu_gosterildi
+
+Kurallar:
+- Emin değilsen alanları boş bırak.
+- Sadece gerçekten gerekiyorsa değişiklik öner.
+- Müşteri EFT seçtiyse set_payment_method="eft"
+- Müşteri kapıda ödeme seçtiyse set_payment_method="kapida_odeme"
+- Müşteri ürün seçiminden sonra sipariş detayına ilerlediyse uygun stage öner.
+- Fotoğraf geldiğini kesin anlayamıyorsan set_photo_received boş kalsın.
+- Eğer fotoğrafın geldiğine dair net sistemsel kanıt yoksa sırf tahminle photo_received=yes deme.
+
+ÇIKIŞ FORMATI:
+YALNIZCA geçerli JSON döndür.
+Asla açıklama yazma.
+Asla markdown kullanma.
+Format tam olarak şöyle olsun:
+
+{
+  "reply": "müşteriye verilecek cevap",
+  "set_conversation_stage": "",
+  "set_photo_received": "",
+  "set_payment_method": "",
+  "set_menu_gosterildi": ""
+}
 `;
 
     const userPrompt = `
 KULLANICI MESAJI:
-${message}
+${ctx.message}
 
 KULLANICI ÜRÜN BİLGİSİ:
-${userProduct || "-"}
+${ctx.userProduct || "-"}
 
 KONUŞMA AŞAMASI:
-${conversationStage || "-"}
+${ctx.conversationStage || "-"}
 
 FOTOĞRAF GELDİ Mİ:
-${photoReceived || "-"}
+${ctx.photoReceived || "-"}
 
 ÖDEME YÖNTEMİ:
-${paymentMethod || "-"}
+${ctx.paymentMethod || "-"}
 
 MENÜ GÖSTERİLDİ Mİ:
-${menuGosterildi || "-"}
+${ctx.menuGosterildi || "-"}
 
 ÖNCEKİ AI CEVABI:
-${aiReply || "-"}
+${ctx.aiReply || "-"}
+
+EK TEMAS VERİSİ:
+${JSON.stringify(
+  {
+    id: fullContactData?.id || "",
+    ig_id: fullContactData?.ig_id || "",
+    ig_username: fullContactData?.ig_username || "",
+    last_input_text: fullContactData?.last_input_text || "",
+    custom_fields: fullContactData?.custom_fields || {}
+  },
+  null,
+  2
+)}
 `;
 
     const payload = {
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 250,
+      max_tokens: 300,
       system: [
         {
           type: "text",
@@ -373,18 +489,50 @@ ${aiReply || "-"}
     });
 
     const data = await response.json();
-
     console.log("CLAUDE RESPONSE:", JSON.stringify(data, null, 2));
 
+    const rawText =
+      data?.content?.map((block) => block?.text || "").join(" ").trim() || "";
+
+    let parsed;
+    try {
+      parsed = JSON.parse(rawText);
+    } catch {
+      parsed = null;
+    }
+
     const reply =
-      data?.content?.map((block) => block?.text || "").join(" ").trim() ||
+      parsed?.reply?.trim() ||
       "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊";
 
-    return res.status(200).json({ reply });
+    const setConversationStage = unwrapManychatValue(
+      parsed?.set_conversation_stage || ""
+    );
+    const setPhotoReceived = unwrapManychatValue(
+      parsed?.set_photo_received || ""
+    );
+    const setPaymentMethod = unwrapManychatValue(
+      parsed?.set_payment_method || ""
+    );
+    const setMenuGosterildi = unwrapManychatValue(
+      parsed?.set_menu_gosterildi || ""
+    );
+
+    return res.status(200).json({
+      reply,
+      set_conversation_stage: setConversationStage,
+      set_photo_received: setPhotoReceived,
+      set_payment_method: setPaymentMethod,
+      set_menu_gosterildi: setMenuGosterildi
+    });
   } catch (err) {
     console.error("chat.js error:", err);
     return res.status(200).json({
-      reply: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊"
+      reply: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      set_conversation_stage: "",
+      set_photo_received: "",
+      set_payment_method: "",
+      set_menu_gosterildi: ""
     });
   }
 }
