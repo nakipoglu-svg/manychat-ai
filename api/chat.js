@@ -291,6 +291,27 @@ export default async function handler(req, res) {
       });
     }
 
+    // ── PHOTO_RECEIVED → arka yazi netlestiyse adres sor ──────────────────
+    if (ctx.conversationStage === "photo_received") {
+      const msg = normalizeText(ctx.message);
+      const backTextKeywords = [
+        "arkaya", "arkasina", "arka tarafa", "arka yuze", "arka yuze",
+        "yazalim", "yazsin", "yazsin", "yazin", "yazin",
+        "yaz ", "koy ", "koysun", "koyalim", "koyalim"
+      ];
+      const hasBackText = backTextKeywords.some(k => msg.includes(k));
+      if (hasBackText) {
+        const adresMsg = "Tabi efendim " + String.fromCodePoint(0x1F60A) + " Siparis icin su bilgileri alabilir miyiz?\n\n- Isim Soyisim\n- Acik Adres\n- Cep Telefonu";
+        return res.status(200).json({
+          reply: adresMsg,
+          set_conversation_stage: "address_waiting",
+          set_photo_received: "yes",
+          set_payment_method: "",
+          set_menu_gosterildi: ""
+        });
+      }
+    }
+
     // ── YENİ: ADDRESS_RECEIVED → ödeme algılama, Claude'a gitmeden yakala ──
     if (ctx.conversationStage === "address_received") {
       const payment = detectPaymentMethod(ctx.message);
