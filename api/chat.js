@@ -36,6 +36,18 @@ function unwrapManychatValue(value) {
   return str;
 }
 
+function extractJsonText(rawText) {
+  if (!rawText) return "";
+
+  let text = String(rawText).trim();
+
+  // ```json ... ``` veya ``` ... ``` bloklarını temizle
+  text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "");
+  text = text.replace(/\s*```$/, "").trim();
+
+  return text;
+}
+
 function normalizeText(text) {
   return (text || "")
     .toLowerCase()
@@ -492,16 +504,16 @@ ${JSON.stringify(
     console.log("CLAUDE RESPONSE:", JSON.stringify(data, null, 2));
 
     const rawText =
-  data?.content?.map((block) => block?.text || "").join(" ").trim() || "";
+      data?.content?.map((block) => block?.text || "").join(" ").trim() || "";
 
-const cleanedText = extractJsonText(rawText);
+    const cleanedText = extractJsonText(rawText);
 
-let parsed;
-try {
-  parsed = JSON.parse(cleanedText);
-} catch {
-  parsed = null;
-}
+    let parsed;
+    try {
+      parsed = JSON.parse(cleanedText);
+    } catch {
+      parsed = null;
+    }
 
     const reply =
       parsed?.reply?.trim() ||
