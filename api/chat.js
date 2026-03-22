@@ -283,7 +283,7 @@ export default async function handler(req, res) {
       }
       // Telefon henuz gelmedi - sessiz kal
       return res.status(200).json({
-        reply: "",
+        reply: "__SKIP__",
         set_conversation_stage: "address_waiting",
         set_photo_received: "",
         set_payment_method: "",
