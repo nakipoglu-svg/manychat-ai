@@ -3,16 +3,6 @@ import path from "path";
 
 const fileCache = {};
 
-console.log("MANYCHAT BODY:", JSON.stringify({
-  message,
-  userProduct,
-  conversationStage,
-  photoReceived,
-  paymentMethod,
-  menuGosterildi,
-  aiReply
-}, null, 2));
-
 function readKnowledgeFile(filename) {
   if (fileCache[filename]) return fileCache[filename];
   const filePath = path.join(process.cwd(), "knowledge", filename);
@@ -46,20 +36,31 @@ function pickKnowledgeFiles(message, userProduct, conversationStage = "") {
   let productFile = null;
   let topicFile = null;
 
-  // 1) Önce user_product'tan ürün seç
   if (product.includes("lazer")) {
     productFile = "product_laser.txt";
   } else if (product.includes("atac") || product.includes("harf")) {
     productFile = "product_atac.txt";
   } else {
-    // 2) user_product boşsa mesajdan ürün tahmini
     const laserKeywords = [
-      "lazer", "lazer kolye", "lazerli", "resimli", "resimli kolye",
-      "foto kolye", "fotolu", "fotograf kolye", "fotoğraf kolye"
+      "lazer",
+      "lazer kolye",
+      "lazerli",
+      "resimli",
+      "resimli kolye",
+      "foto kolye",
+      "fotolu",
+      "fotograf kolye",
+      "fotoğraf kolye"
     ];
+
     const atacKeywords = [
-      "atac", "ataç", "harf", "harfli", "harf kolye",
-      "isim kolye", "isimli kolye"
+      "atac",
+      "ataç",
+      "harf",
+      "harfli",
+      "harf kolye",
+      "isim kolye",
+      "isimli kolye"
     ];
 
     if (includesAny(msg, laserKeywords)) {
@@ -69,7 +70,6 @@ function pickKnowledgeFiles(message, userProduct, conversationStage = "") {
     }
   }
 
-  // 3) Stage bazlı yardımcı dosya seçimi
   if (stage.includes("photo_waiting") || stage.includes("photo_received")) {
     topicFile = "image_rules.txt";
   } else if (stage.includes("letter_waiting") || stage.includes("letter_received")) {
@@ -80,37 +80,96 @@ function pickKnowledgeFiles(message, userProduct, conversationStage = "") {
     topicFile = "order_flow.txt";
   }
 
-  // 4) Mesaj bazlı tek konu dosyası seç
   if (!topicFile) {
-    if (includesAny(msg, [
-      "fiyat", "ucret", "ücret", "indirim", "ne kadar", "kaç tl", "kac tl", "son fiyat"
-    ])) {
+    if (
+      includesAny(msg, [
+        "fiyat",
+        "ucret",
+        "ücret",
+        "indirim",
+        "ne kadar",
+        "kaç tl",
+        "kac tl",
+        "son fiyat"
+      ])
+    ) {
       topicFile = "pricing.txt";
-    } else if (includesAny(msg, [
-      "kargo", "teslim", "teslimat", "kaç günde", "kac gunde", "takip"
-    ])) {
+    } else if (
+      includesAny(msg, [
+        "kargo",
+        "teslim",
+        "teslimat",
+        "kaç günde",
+        "kac gunde",
+        "takip"
+      ])
+    ) {
       topicFile = "shipping.txt";
-    } else if (includesAny(msg, [
-      "odeme", "ödeme", "iban", "eft", "havale", "kapida odeme", "kapıda ödeme"
-    ])) {
+    } else if (
+      includesAny(msg, [
+        "odeme",
+        "ödeme",
+        "iban",
+        "eft",
+        "havale",
+        "kapida odeme",
+        "kapıda ödeme"
+      ])
+    ) {
       topicFile = "payment.txt";
-    } else if (includesAny(msg, [
-      "kararma", "kararir", "kararır", "paslanir", "paslanır",
-      "guven", "güven", "iade", "degisim", "değişim", "garanti"
-    ])) {
+    } else if (
+      includesAny(msg, [
+        "kararma",
+        "kararir",
+        "kararır",
+        "paslanir",
+        "paslanır",
+        "guven",
+        "güven",
+        "iade",
+        "degisim",
+        "değişim",
+        "garanti"
+      ])
+    ) {
       topicFile = "trust.txt";
-    } else if (includesAny(msg, [
-      "foto", "fotograf", "fotoğraf", "resim", "kaç kişi", "kac kisi",
-      "iki kisi", "iki kişi", "arka plan", "netlestirme", "netleştirme"
-    ])) {
+    } else if (
+      includesAny(msg, [
+        "foto",
+        "fotograf",
+        "fotoğraf",
+        "resim",
+        "kaç kişi",
+        "kac kisi",
+        "iki kisi",
+        "iki kişi",
+        "arka plan",
+        "netlestirme",
+        "netleştirme"
+      ])
+    ) {
       topicFile = "image_rules.txt";
-    } else if (includesAny(msg, [
-      "siparis", "sipariş", "adres", "telefon", "numara", "satin al", "satın al"
-    ])) {
+    } else if (
+      includesAny(msg, [
+        "siparis",
+        "sipariş",
+        "adres",
+        "telefon",
+        "numara",
+        "satin al",
+        "satın al"
+      ])
+    ) {
       topicFile = "order_flow.txt";
-    } else if (includesAny(msg, [
-      "tesekkur", "teşekkür", "sağol", "sagol", "memnun"
-    ])) {
+    } else if (
+      includesAny(msg, [
+        "tesekkur",
+        "teşekkür",
+        "sağol",
+        "sagol",
+        "memnun"
+      ])
+    ) {
       topicFile = "smalltalk.txt";
     }
   }
@@ -145,6 +204,23 @@ export default async function handler(req, res) {
       paymentMethod = body?.payment_method || "";
       menuGosterildi = body?.menu_gosterildi || "";
       aiReply = body?.ai_reply || "";
+
+      console.log(
+        "MANYCHAT BODY:",
+        JSON.stringify(
+          {
+            message,
+            userProduct,
+            conversationStage,
+            photoReceived,
+            paymentMethod,
+            menuGosterildi,
+            aiReply
+          },
+          null,
+          2
+        )
+      );
     } catch {
       message = "";
       userProduct = "";
@@ -274,6 +350,8 @@ ${aiReply || "-"}
     });
 
     const data = await response.json();
+
+    console.log("CLAUDE RESPONSE:", JSON.stringify(data, null, 2));
 
     const reply =
       data?.content?.map((block) => block?.text || "").join(" ").trim() ||
