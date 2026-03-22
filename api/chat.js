@@ -27,9 +27,10 @@ function includesAny(text, keywords) {
   return keywords.some((keyword) => text.includes(keyword));
 }
 
-function pickKnowledgeFiles(message, userProduct) {
+function pickKnowledgeFiles(message, userProduct, conversationStage = "") {
   const msg = normalizeText(message);
   const product = normalizeText(userProduct);
+  const stage = normalizeText(conversationStage);
 
   const files = ["core_system.txt"];
   let productFile = null;
@@ -58,33 +59,50 @@ function pickKnowledgeFiles(message, userProduct) {
     }
   }
 
-  // 3) Tek konu dosyası seç
-  if (includesAny(msg, [
-    "fiyat", "ucret", "ücret", "indirim", "ne kadar", "kaç tl", "kac tl", "son fiyat"
-  ])) {
-    topicFile = "pricing.txt";
-  } else if (includesAny(msg, [
-    "kargo", "teslim", "teslimat", "kaç günde", "kac gunde", "takip"
-  ])) {
-    topicFile = "shipping.txt";
-  } else if (includesAny(msg, [
-    "odeme", "ödeme", "iban", "eft", "havale", "kapida odeme", "kapıda ödeme"
-  ])) {
-    topicFile = "payment.txt";
-  } else if (includesAny(msg, [
-    "kararma", "kararir", "kararır", "paslanir", "paslanır",
-    "guven", "güven", "iade", "degisim", "değişim"
-  ])) {
-    topicFile = "trust.txt";
-  } else if (includesAny(msg, [
-    "foto", "fotograf", "fotoğraf", "resim", "kaç kişi", "kac kisi",
-    "iki kisi", "iki kişi", "arka plan", "netlestirme", "netleştirme"
-  ])) {
+  // 3) Stage bazlı yardımcı dosya seçimi
+  if (stage.includes("photo_waiting") || stage.includes("photo_received")) {
     topicFile = "image_rules.txt";
-  } else if (includesAny(msg, [
-    "siparis", "sipariş", "adres", "telefon", "numara", "satin al", "satın al"
-  ])) {
+  } else if (stage.includes("letter_waiting") || stage.includes("letter_received")) {
     topicFile = "order_flow.txt";
+  } else if (stage.includes("payment")) {
+    topicFile = "payment.txt";
+  } else if (stage.includes("address")) {
+    topicFile = "order_flow.txt";
+  }
+
+  // 4) Mesaj bazlı tek konu dosyası seç
+  if (!topicFile) {
+    if (includesAny(msg, [
+      "fiyat", "ucret", "ücret", "indirim", "ne kadar", "kaç tl", "kac tl", "son fiyat"
+    ])) {
+      topicFile = "pricing.txt";
+    } else if (includesAny(msg, [
+      "kargo", "teslim", "teslimat", "kaç günde", "kac gunde", "takip"
+    ])) {
+      topicFile = "shipping.txt";
+    } else if (includesAny(msg, [
+      "odeme", "ödeme", "iban", "eft", "havale", "kapida odeme", "kapıda ödeme"
+    ])) {
+      topicFile = "payment.txt";
+    } else if (includesAny(msg, [
+      "kararma", "kararir", "kararır", "paslanir", "paslanır",
+      "guven", "güven", "iade", "degisim", "değişim", "garanti"
+    ])) {
+      topicFile = "trust.txt";
+    } else if (includesAny(msg, [
+      "foto", "fotograf", "fotoğraf", "resim", "kaç kişi", "kac kisi",
+      "iki kisi", "iki kişi", "arka plan", "netlestirme", "netleştirme"
+    ])) {
+      topicFile = "image_rules.txt";
+    } else if (includesAny(msg, [
+      "siparis", "sipariş", "adres", "telefon", "numara", "satin al", "satın al"
+    ])) {
+      topicFile = "order_flow.txt";
+    } else if (includesAny(msg, [
+      "tesekkur", "teşekkür", "sağol", "sagol", "memnun"
+    ])) {
+      topicFile = "smalltalk.txt";
+    }
   }
 
   if (productFile) files.push(productFile);
@@ -101,14 +119,30 @@ export default async function handler(req, res) {
 
     let message = "";
     let userProduct = "";
+    let conversationStage = "";
+    let photoReceived = "";
+    let paymentMethod = "";
+    let menuGosterildi = "";
+    let aiReply = "";
 
     try {
       const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+
       message = body?.message || "";
-      userProduct = body?.user_product || "";
+      userProduct = body?.user_product || body?.ilgilenilen_urun || "";
+      conversationStage = body?.conversation_stage || "";
+      photoReceived = body?.photo_received || "";
+      paymentMethod = body?.payment_method || "";
+      menuGosterildi = body?.menu_gosterildi || "";
+      aiReply = body?.ai_reply || "";
     } catch {
       message = "";
       userProduct = "";
+      conversationStage = "";
+      photoReceived = "";
+      paymentMethod = "";
+      menuGosterildi = "";
+      aiReply = "";
     }
 
     if (!message) {
@@ -124,11 +158,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const selectedFiles = [
-  "core_system.txt", "product_laser.txt", "product_atac.txt",
-  "pricing.txt", "shipping.txt", "payment.txt",
-  "order_flow.txt", "image_rules.txt", "smalltalk.txt", "trust.txt"
-];
+    const selectedFiles = pickKnowledgeFiles(message, userProduct, conversationStage);
 
     const knowledgeText = selectedFiles
       .map((file) => {
@@ -158,6 +188,17 @@ Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊
 - Ek açıklama, öneri veya alternatif sunma.
 - Ürünleri birbirine karıştırma.
 - Belirsiz ifadelerde tahmin yapma; gerekirse kısa netleştirme sorusu sor.
+
+BAĞLAM KURALLARI:
+- conversation_stage çok önemlidir. Müşterinin konuşmadaki mevcut aşamasını gösterir.
+- Eğer conversation_stage doluysa, konuşmayı o aşamaya göre yorumla.
+- photo_received=yes ise müşteriye tekrar fotoğraf gönderin deme.
+- conversation_stage=photo_waiting ise müşteri yeni mesaj gönderdiğinde bunun büyük ihtimalle fotoğraf veya fotoğrafla ilgili sipariş içeriği olduğunu dikkate al.
+- conversation_stage=photo_received ise müşterinin sonraki kısa mesajlarını (isim, tarih, yazı, renk, kısa onay vb.) sipariş detayı olarak yorumla.
+- conversation_stage=letter_waiting ise gelen kısa mesajları seçilen harfler olarak yorumla.
+- conversation_stage=address_received ise artık ürün tanıtımı veya başa dönüş yapma.
+- "evet", "tamam", "olur", "amin", "bulut", tarih, isim gibi kısa mesajları son aktif bağlama göre yorumla.
+- Müşteri daha önce hangi aşamadaysa, tekrar merhaba diyerek başa dönme.
 `;
 
     const userPrompt = `
@@ -165,8 +206,51 @@ KULLANICI MESAJI:
 ${message}
 
 KULLANICI ÜRÜN BİLGİSİ:
-${userProduct}
+${userProduct || "-"}
+
+KONUŞMA AŞAMASI:
+${conversationStage || "-"}
+
+FOTOĞRAF GELDİ Mİ:
+${photoReceived || "-"}
+
+ÖDEME YÖNTEMİ:
+${paymentMethod || "-"}
+
+MENÜ GÖSTERİLDİ Mİ:
+${menuGosterildi || "-"}
+
+ÖNCEKİ AI CEVABI:
+${aiReply || "-"}
 `;
+
+    const payload = {
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 250,
+      system: [
+        {
+          type: "text",
+          text: systemPrompt,
+          cache_control: { type: "ephemeral", ttl: "1h" }
+        },
+        {
+          type: "text",
+          text: knowledgeText,
+          cache_control: { type: "ephemeral", ttl: "1h" }
+        }
+      ],
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: userPrompt
+            }
+          ]
+        }
+      ]
+    };
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -176,33 +260,7 @@ ${userProduct}
         "anthropic-version": "2023-06-01",
         "anthropic-beta": "prompt-caching-2024-07-31"
       },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 250,
-        system: [
-  {
-    type: "text",
-    text: systemPrompt,
-    cache_control: { type: "ephemeral", ttl: "1h" }
-  },
-  {
-    type: "text",
-    text: knowledgeText,
-    cache_control: { type: "ephemeral", ttl: "1h" }
-  }
-],
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: userPrompt
-              }
-            ]
-          }
-        ]
-      })
+      body: JSON.stringify(payload)
     });
 
     const data = await response.json();
@@ -212,7 +270,8 @@ ${userProduct}
       "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊";
 
     return res.status(200).json({ reply });
-  } catch {
+  } catch (err) {
+    console.error("chat.js error:", err);
     return res.status(200).json({
       reply: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊"
     });
