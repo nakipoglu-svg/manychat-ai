@@ -399,6 +399,14 @@ BAĞLAM KURALLARI:
 - conversation_stage=payment_selected olduktan sonra aynı konuşmada tekrar adres istemek yasaktır.
 - conversation_stage=address_received ise artık başa dönme, ürün tanıtımı yapma.
 - Daha önce alınmış bilgileri tekrar isteme. Özellikle address_received, photo_received ve payment_selected aşamalarında önceki bilgiler korunmalıdır.
+- Müşteri tek mesajda ad soyad, telefon numarası ve açık adres benzeri bilgiler yazdıysa bunu adres bilgisi olarak kabul et.
+- Mesaj içinde kişi adı, telefon numarası ve il/ilçe/mahalle/sokak/no/daire/apartman/kat/daire/Türkiye gibi adres öğeleri birlikte geçiyorsa yeniden adres isteme.
+- Telefon numarası kart olarak algılansa bile, aynı mesajdaki metni adres teslim bilgisi olarak yorumla.
+- Müşteri adres bilgisini verdikten sonra aynı adres istemini tekrar etme.
+- Aşağıdaki tür mesajlar adres mesajı sayılır:
+  ad soyad + telefon + il/ilçe/mahalle/sokak/no/daire içeren tek mesajlar.
+- conversation_stage address beklerken müşteri tam teslimat bilgisi yazdıysa bunu başarıyla alınmış adres olarak yorumla.
+- "Evet geldim" gibi kısa geçiş mesajlarından sonra gelen uzun teslimat mesajını adres olarak kabul et.
 
 STATE GÜNCELLEME KURALLARI:
 - Müşteri ödeme yöntemini seçtiği anda set_payment_method mutlaka doldur.
@@ -410,6 +418,10 @@ STATE GÜNCELLEME KURALLARI:
 - conversation_stage=address_received iken müşteri kapıda ödeme seçerse set_payment_method="kapida_odeme" ve set_conversation_stage="payment_selected" döndür.
 - conversation_stage=address_received veya payment_selected durumunda ödeme ile ilgili net mesajlarda adres isteme.
 - Adres zaten alınmışsa ödeme mesajlarına karşılık IBAN / ödeme yönlendirmesi ver veya ödemenin tamamlanmasını bekle.
+- Müşteri ad soyad + telefon + açık adres bilgilerini tek mesajda verdiyse set_conversation_stage="address_received" döndür.
+- Adres bilgisi net şekilde alınmışsa tekrar adres isteme.
+- conversation_stage address beklerken müşteri tam teslimat bilgisi yazdıysa bir sonraki mantıklı aşamaya geç.
+- Eğer ödeme yöntemi daha önce seçilmişse ve adres de bu mesajda geldiyse siparişi tamamlanmış kabul eden cevap ver.
 - Senden aşağıdaki alanlar için öneri istiyoruz:
   - set_conversation_stage
   - set_photo_received
