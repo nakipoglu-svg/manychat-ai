@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-// ─── KNOWLEDGE CACHE ───────────────────────────────────────────────────────
+// ─── KNOWLEDGE CACHE ──────────────────────────────────────────────────────
 const fileCache = {};
 function readKnowledgeFile(filename) {
   if (fileCache[filename]) return fileCache[filename];
@@ -11,7 +11,7 @@ function readKnowledgeFile(filename) {
   return content;
 }
 
-// ─── HELPERS ───────────────────────────────────────────────────────────────
+// ─── HELPERS ──────────────────────────────────────────────────────────────
 function unwrap(value) {
   if (value === null || value === undefined) return "";
   let str = String(value).trim();
@@ -75,7 +75,6 @@ function pickKnowledge(message, userProduct, stage) {
   const s = normalize(stage);
   const files = ["core_system.txt"];
 
-  // Ürün dosyası
   if (product.includes("lazer") || product.includes("resim") || product.includes("foto")) {
     files.push("product_laser.txt");
   } else if (product.includes("atac") || product.includes("harf")) {
@@ -88,7 +87,6 @@ function pickKnowledge(message, userProduct, stage) {
     }
   }
 
-  // Konu dosyası
   if (s.includes("photo") || s.includes("back_text") || includesAny(msg, ["foto", "fotograf", "resim", "arka"])) {
     files.push("image_rules.txt");
   }
@@ -114,18 +112,21 @@ function pickKnowledge(message, userProduct, stage) {
   return [...new Set(files)];
 }
 
-// ─── SABIT CEVAPLAR ────────────────────────────────────────────────────────
-function reply(res, text, stage = "", payment = "", photo = "") {
-  return res.status(200).json({
-    reply: text,
+// ─── RESPONSE HELPER ─────────────────────────────────────────────────────
+// stage HER ZAMAN dolu gönderilir — ManyChat boş string gelince eski değeri koruyor!
+function respond(res, replyText, stage, payment, photo) {
+  const out = {
+    reply: replyText,
     set_conversation_stage: stage,
-    set_payment_method: payment,
-    set_photo_received: photo,
+    set_payment_method: payment || "",
+    set_photo_received: photo || "",
     set_menu_gosterildi: "",
-  });
+  };
+  console.log("RESPONSE:", JSON.stringify(out, null, 2));
+  return res.status(200).json(out);
 }
 
-// ─── HANDLER ───────────────────────────────────────────────────────────────
+// ─── HANDLER ──────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") return res.status(200).json({ reply: "" });
@@ -140,83 +141,78 @@ export default async function handler(req, res) {
 
     console.log("INPUT:", JSON.stringify({ message, userProduct, stage, photoReceived, paymentMethod }, null, 2));
 
-    // ── 1. FOTOĞRAF MESAJI ────────────────────────────────────────────────
+    // ── 1. FOTOĞRAF MESAJI ───────────────────────────────────────────────
     const isPhoto =
       body?.message_type === "image" ||
       body?.attachments?.some((a) => a?.type === "image") ||
       body?.full_contact_data?.last_input_type === "image";
 
     if (isPhoto && stage === "photo_waiting") {
-      return reply(
-        res,
-        "Fotoğrafınız ulaştı 😊 Ekibimiz inceleyip size hemen dönüş sağlayacak.",
-        "photo_received",
-        "",
-        "yes"
+      return respond(res,
+        "Fotoğrafınız ulaştı 😊 İnceleyip size döneceğiz.",
+        "photo_received", paymentMethod, "yes"
       );
     }
 
-    // ── 2. BOŞ MESAJ ──────────────────────────────────────────────────────
-    if (!message) return reply(res, "");
+    // ── 2. BOŞ MESAJ ─────────────────────────────────────────────────────
+    if (!message) {
+      return respond(res, "", stage, paymentMethod, photoReceived);
+    }
 
-    // ── 3. ARKA YAZI ALINDI → ADRES SOR ──────────────────────────────────
+    // ── 3. ARKA YAZI ALINDI → ADRES SOR ─────────────────────────────────
+    // Bu aşamada müşteri ne yazarsa yazsın adres soruyoruz
     if (stage === "back_text_waiting") {
-      return reply(
-        res,
+      return respond(res,
         "Tamamdır efendim 😊 Adresinizi alabilir miyiz? Ad soyad, cep telefonu ve açık adresinizi yazabilirsiniz.",
-        "address_waiting"
+        "address_waiting", paymentMethod, photoReceived
       );
     }
 
-    // ── 4. HARF ALINDI → ADRES SOR ────────────────────────────────────────
+    // ── 4. HARF ALINDI → ADRES SOR ───────────────────────────────────────
     if (stage === "letter_waiting") {
-      return reply(
-        res,
+      return respond(res,
         "Tamamdır efendim 😊 Adresinizi alabilir miyiz? Ad soyad, cep telefonu ve açık adresinizi yazabilirsiniz.",
-        "address_waiting"
+        "address_waiting", paymentMethod, photoReceived
       );
     }
 
-    // ── 5. ADRES BEKLENİYOR ───────────────────────────────────────────────
+    // ── 5. ADRES BEKLENİYOR ──────────────────────────────────────────────
     if (stage === "address_waiting") {
       if (hasPhone(message)) {
-        // Ödeme zaten seçilmişse direkt tamamla
         if (paymentMethod === "eft" || paymentMethod === "kapida_odeme") {
-          return reply(res, "Adresiniz kaydedildi, teşekkürler 😊", "order_complete", paymentMethod);
+          return respond(res,
+            "Adresiniz kaydedildi, teşekkürler 😊",
+            "order_complete", paymentMethod, photoReceived
+          );
         }
-        // Ödeme seçilmemişse sor
-        return reply(
-          res,
+        return respond(res,
           "Adresiniz kaydedildi, teşekkürler 😊 Ödemeniz nasıl olacak efendim? EFT / havale veya kapıda ödeme seçeneklerimiz mevcut.",
-          "address_received"
+          "address_received", "", photoReceived
         );
       }
-      // Telefon yok — bilgi alınmaya devam, stage koru, sessiz kal
-      return reply(res, "", "address_waiting");
+      // Telefon henüz gelmedi — stage'i koru, sessiz bekle
+      return respond(res, "", "address_waiting", paymentMethod, photoReceived);
     }
 
-    // ── 6. ADRES ALINDI, ÖDEME BEKLENİYOR ────────────────────────────────
+    // ── 6. ADRES ALINDI, ÖDEME BEKLENİYOR ───────────────────────────────
     if (stage === "address_received") {
       const payment = detectPayment(message);
       if (payment) {
-        const replyText =
-          payment === "eft"
-            ? "Tamamdır efendim 😊 IBAN bilgimiz:\nTR34 0015 7000 0000 0076 2524 67\nAlıcı: Servet Cihan Nakipoğlu"
-            : "Tamamdır efendim 😊 Kapıda ödeme ile siparişiniz hazırlanacaktır.";
-        return reply(res, replyText, "order_complete", payment);
+        const replyText = payment === "eft"
+          ? "Tamamdır efendim 😊 IBAN bilgimiz:\nTR34 0015 7000 0000 0076 2524 67\nAlıcı: Servet Cihan Nakipoğlu"
+          : "Tamamdır efendim 😊 Kapıda ödeme ile siparişiniz hazırlanacaktır.";
+        return respond(res, replyText, "order_complete", payment, photoReceived);
       }
-      // Ödeme belli değilse Claude halleder (aşağıya düş)
+      // Ödeme net değilse Claude halleder — stage korunacak (aşağıda güvenlik var)
     }
 
-    // ── 7. SİPARİŞ TAMAMLANDI ─────────────────────────────────────────────
-    if (stage === "order_complete") {
-      // Claude'a bırak — satış sonrası konuşma
-    }
-
-    // ── 8. CLAUDE API ─────────────────────────────────────────────────────
+    // ── 7. CLAUDE API ────────────────────────────────────────────────────
     const apiKey = process.env.CLAUDE_API_KEY;
     if (!apiKey) {
-      return reply(res, "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊");
+      return respond(res,
+        "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+        stage, paymentMethod, photoReceived
+      );
     }
 
     const selectedFiles = pickKnowledge(message, userProduct, stage);
@@ -234,29 +230,30 @@ MEVCUT DURUM:
 - photo_received: ${photoReceived || "hayır"}
 - payment_method: ${paymentMethod || "belirsiz"}
 
-STAGE KURALLARI:
-- photo_waiting: Fotoğraf bekliyoruz. Fotoğraf gelmeden adres veya ödeme sorma.
-- photo_received: Fotoğraf geldi. Arka yüz içeriği KESİNLEŞİRSE (müşteri net yazı/yön belirttiyse) set_conversation_stage="back_text_waiting" dön ve adres sor. Henüz netleşmediyse konuşmaya devam et.
-- address_waiting: Adres bekleniyor. Bu aşamayı ASLA tekrar set etme. Sessiz bekle.
-- address_received: Ödeme bekleniyor. Adres tekrar isteme. Sadece ödeme yöntemi sor.
-- order_complete: Sipariş tamamlandı. Satış sonrası destek modunda kal.
+STAGE KURALLARI — ÇOK ÖNEMLİ:
+set_conversation_stage değeri HER ZAMAN dolu olmalı. ASLA boş string gönderme.
+Değişmiyorsa mevcut stage'i aynen yaz: "${stage || "belirsiz"}"
 
-ÖDEME KURALLARI:
-- Müşteri sadece fiyat soruyorsa payment_method SET ETME.
-- payment_method SADECE müşteri açıkça "EFT olsun", "kapıda olsun" gibi karar verirse set edilir.
+Geçiş kuralları:
+- photo_received aşamasında → arka yüz konusunu kısa sor: "Arka yüze yazı ister misiniz? İsim, tarih, 'Canım Oğlum' gibi yazılar yazabiliyoruz 😊"
+  * Müşteri yazı verirse: set_conversation_stage="back_text_waiting"
+  * Müşteri istemiyorsa: set_conversation_stage="address_waiting" + adres sor
+- order_complete aşamasında: satış sonrası destek, set_conversation_stage="order_complete" koru
+
+WHATSAPP KURALI:
+Fotoğraf sorusunda WhatsApp linki VERME.
+Sadece müşteri "WhatsApp'tan gönderebilir miyim" diye sorarsa: wa.me/905054713545
 
 FOTOĞRAF KURALLARI:
-- Fotoğraf hakkında kesinlikle yorum yapma (güzel, kötü, net, bulanık gibi).
-- photo_received=yes ise tekrar fotoğraf isteme.
+- Fotoğraf hakkında yorum yapma (güzel, kötü, net, bulanık vs).
+- photo_received=yes ise tekrar fotoğraf isteme, "Gönderin efendim" YAZMA.
 
 GENEL:
 - Daha önce alınan bilgileri tekrar isteme.
 - Bilgi yoksa: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊"
 
-ÇIKIŞ FORMATI — SADECE GEÇERLİ JSON, başka hiçbir şey yazma:
-{"reply":"cevap metni","set_conversation_stage":"","set_payment_method":"","set_photo_received":"","set_menu_gosterildi":""}`;
-
-    const userPrompt = `Müşteri mesajı: ${message}`;
+ÇIKIŞ — SADECE GEÇERLİ JSON:
+{"reply":"cevap","set_conversation_stage":"DOLU_OLMALI","set_payment_method":"","set_photo_received":"","set_menu_gosterildi":""}`;
 
     const payload = {
       model: "claude-haiku-4-5-20251001",
@@ -265,7 +262,7 @@ GENEL:
         { type: "text", text: systemPrompt, cache_control: { type: "ephemeral", ttl: "1h" } },
         { type: "text", text: knowledgeText, cache_control: { type: "ephemeral", ttl: "1h" } },
       ],
-      messages: [{ role: "user", content: userPrompt }],
+      messages: [{ role: "user", content: `Müşteri mesajı: ${message}` }],
     };
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -280,7 +277,7 @@ GENEL:
     });
 
     const data = await response.json();
-    console.log("CLAUDE RESPONSE:", JSON.stringify(data, null, 2));
+    console.log("CLAUDE:", JSON.stringify(data, null, 2));
 
     const rawText = data?.content?.map((b) => b?.text || "").join(" ").trim() || "";
     const cleaned = extractJson(rawText);
@@ -288,33 +285,34 @@ GENEL:
     let parsed = null;
     try { parsed = JSON.parse(cleaned); } catch { parsed = null; }
 
-    const replyText   = parsed?.reply?.trim() || "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊";
-    const newStage    = normalizeStage(unwrap(parsed?.set_conversation_stage || ""));
-    const newPayment  = unwrap(parsed?.set_payment_method || "");
-    const newPhoto    = unwrap(parsed?.set_photo_received || "");
+    const replyText  = parsed?.reply?.trim() || "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊";
+    let newStage     = normalizeStage(unwrap(parsed?.set_conversation_stage || ""));
+    const newPayment = unwrap(parsed?.set_payment_method || "");
+    const newPhoto   = unwrap(parsed?.set_photo_received || "");
 
-    // Güvenlik: Claude address_waiting'i set etmeye çalışıyorsa engelle
-    // (adres aşaması zaten akışla yönetiliyor)
-    const finalStage = newStage === "address_waiting" && stage === "address_waiting" ? "" : newStage;
+    // GÜVENLİK 1: Claude boş stage döndürdüyse mevcut stage'i koru
+    if (!newStage) newStage = stage;
 
-    // Güvenlik: address_received'dayken Claude yanlış stage set etmesin
-    const safeStage = stage === "address_received" && !["order_complete", ""].includes(finalStage)
-      ? ""
-      : finalStage;
+    // GÜVENLİK 2: address_waiting'deyken Claude başka yere atmasın
+    if (stage === "address_waiting") newStage = "address_waiting";
 
-    return res.status(200).json({
-      reply: replyText,
-      set_conversation_stage: safeStage,
-      set_payment_method: newPayment,
-      set_photo_received: newPhoto,
-      set_menu_gosterildi: unwrap(parsed?.set_menu_gosterildi || ""),
-    });
+    // GÜVENLİK 3: address_received'dayken sadece order_complete'e geçebilir
+    if (stage === "address_received" && newStage !== "order_complete") {
+      newStage = "address_received";
+    }
+
+    return respond(res,
+      replyText,
+      newStage,
+      newPayment || paymentMethod,
+      newPhoto || photoReceived
+    );
 
   } catch (err) {
     console.error("chat.js error:", err);
     return res.status(200).json({
       reply: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
-      set_conversation_stage: "",
+      set_conversation_stage: "photo_waiting",
       set_payment_method: "",
       set_photo_received: "",
       set_menu_gosterildi: "",
