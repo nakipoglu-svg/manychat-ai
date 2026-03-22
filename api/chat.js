@@ -312,6 +312,23 @@ export default async function handler(req, res) {
       }
     }
 
+    // ── ODEME SECILDI AMA ADRES ALINMADI → fiyat ver + adres sor ──────────
+    if (!ctx.conversationStage || ctx.conversationStage === "photo_received") {
+      const payment = detectPaymentMethod(ctx.message);
+      if (payment) {
+        const fiyat = payment === "eft" ? "599 TL" : "649 TL";
+        const odeme = payment === "eft" ? "EFT" : "Kapida odeme";
+        const msg = "Tabi efendim " + String.fromCodePoint(0x1F60A) + " " + odeme + " fiyatimiz " + fiyat + "'dir. Siparis icin su bilgileri alabilir miyiz?\n\n- Isim Soyisim\n- Acik Adres\n- Cep Telefonu";
+        return res.status(200).json({
+          reply: msg,
+          set_conversation_stage: "address_waiting",
+          set_photo_received: "",
+          set_payment_method: payment,
+          set_menu_gosterildi: ""
+        });
+      }
+    }
+
     // ── YENİ: ADDRESS_RECEIVED → ödeme algılama, Claude'a gitmeden yakala ──
     if (ctx.conversationStage === "address_received") {
       const payment = detectPaymentMethod(ctx.message);
