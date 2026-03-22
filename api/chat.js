@@ -190,15 +190,20 @@ export default async function handler(req, res) {
     }
 
     // --- ADRES ASAMASI ---
-    if (conversationStage === "address_waiting") {
-      if (hasPhoneNumber(message)) {
-        if (paymentMethod === "eft" || paymentMethod === "kapida_odeme") {
-          return res.status(200).json({
-            reply: "Adresiniz kaydedildi, teşekkürler 😊",
-            set_conversation_stage: "order_complete",
-            set_photo_received: "",
-            set_payment_method: "",
-            set_menu_gosterildi: ""
+    if (conversationStage === "address_received") {
+  const payment = detectPaymentMethod(message);
+  if (payment) {  // isDefinitePaymentDecision yerine direkt detectPaymentMethod kullan
+    return res.status(200).json({
+      reply: payment === "eft"
+        ? "Tamamdır efendim 😊 IBAN bilgimiz:\nTR34 0015 7000 0000 0076 2524 67\nAlıcı: Servet Cihan Nakipoğlu"
+        : "Tamamdır efendim 😊 Kapıda ödeme ile siparişiniz hazırlanacaktır.",
+      set_conversation_stage: "order_complete",
+      set_payment_method: payment,
+      set_photo_received: "",
+      set_menu_gosterildi: ""
+    });
+  }
+}
           });
         }
         return res.status(200).json({
