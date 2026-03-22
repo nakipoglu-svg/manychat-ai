@@ -1,8 +1,8 @@
 import fs from "fs";
 import path from "path";
- 
+
 const fileCache = {};
- 
+
 function readKnowledgeFile(filename) {
   if (fileCache[filename]) return fileCache[filename];
   const filePath = path.join(process.cwd(), "knowledge", filename);
@@ -10,18 +10,18 @@ function readKnowledgeFile(filename) {
   fileCache[filename] = content;
   return content;
 }
- 
+
 function unwrapManychatValue(value) {
   if (value === null || value === undefined) return "";
- 
+
   let str = String(value).trim();
- 
+
   str = str.replace(/^\{\{\{?/, "").replace(/\}\}\}?$/, "").trim();
- 
+
   if (/^\{[^}]+\}$/.test(str)) {
     return "";
   }
- 
+
   if (
     !str ||
     str.toLowerCase() === "no field selected" ||
@@ -30,21 +30,21 @@ function unwrapManychatValue(value) {
   ) {
     return "";
   }
- 
+
   return str;
 }
- 
+
 function extractJsonText(rawText) {
   if (!rawText) return "";
- 
+
   let text = String(rawText).trim();
- 
+
   text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "");
   text = text.replace(/\s*```$/, "").trim();
- 
+
   return text;
 }
- 
+
 function normalizeText(text) {
   return (text || "")
     .toLowerCase()
@@ -56,11 +56,11 @@ function normalizeText(text) {
     .replace(/ü/g, "u")
     .trim();
 }
- 
+
 function normalizeStageName(stage) {
   const s = normalizeText(stage);
   if (!s) return "";
- 
+
   if (s.includes("photo_wait")) return "photo_waiting";
   if (s.includes("photo_receive")) return "photo_received";
   if (s.includes("letter_wait")) return "letter_waiting";
@@ -68,38 +68,38 @@ function normalizeStageName(stage) {
   if (s.includes("address_wait")) return "address_waiting";
   if (s.includes("payment_selected")) return "payment_selected";
   if (s.includes("payment_wait")) return "payment_waiting";
- 
+
   return s;
 }
- 
+
 function includesAny(text, keywords) {
   return keywords.some((keyword) => text.includes(keyword));
 }
- 
+
 function hasPhoneNumber(text) {
   const cleaned = String(text || "").replace(/\s+/g, " ");
   return /(\+?\d[\d\s]{8,}\d)/.test(cleaned);
 }
- 
+
 function looksLikeAddressMessage(text) {
   const msg = normalizeText(text);
- 
+
   const addressKeywords = [
     "mahalle", "mah", "sokak", "sk", "cadde", "cd", "no", "daire", "kat",
     "apartman", "apt", "site", "blok", "ilce", "ilçe", "semt",
     "istanbul", "ankara", "izmir", "turkiye", "türkiye",
     "sisli", "şişli", "umraniye", "ümraniye", "beykoz", "kadikoy", "kadıköy"
   ];
- 
+
   const hitCount = addressKeywords.filter((k) => msg.includes(k)).length;
   const lineCount = String(text || "")
     .split(/\n+/)
     .map((x) => x.trim())
     .filter(Boolean).length;
- 
+
   return hasPhoneNumber(text) && (hitCount >= 2 || lineCount >= 3);
 }
- 
+
 // ── YENİ: Ödeme yöntemi algılama ──────────────────────────────────────────
 function detectPaymentMethod(text) {
   const msg = normalizeText(text);
@@ -107,16 +107,16 @@ function detectPaymentMethod(text) {
   if (includesAny(msg, ["eft", "havale", "iban", "transfer"])) return "eft";
   return "";
 }
- 
+
 function pickKnowledgeFiles(message, userProduct, conversationStage = "") {
   const msg = normalizeText(message);
   const product = normalizeText(userProduct);
   const stage = normalizeText(conversationStage);
- 
+
   const files = ["core_system.txt"];
   let productFile = null;
   let topicFile = null;
- 
+
   if (product.includes("lazer")) {
     productFile = "product_laser.txt";
   } else if (product.includes("atac") || product.includes("harf")) {
@@ -126,18 +126,18 @@ function pickKnowledgeFiles(message, userProduct, conversationStage = "") {
       "lazer", "lazer kolye", "lazerli", "resimli", "resimli kolye",
       "foto kolye", "fotolu", "fotograf kolye", "fotografli", "fotoğraf kolye"
     ];
- 
+
     const atacKeywords = [
       "atac", "ataç", "harf", "harfli", "harf kolye", "isim kolye", "isimli kolye"
     ];
- 
+
     if (includesAny(msg, laserKeywords)) {
       productFile = "product_laser.txt";
     } else if (includesAny(msg, atacKeywords)) {
       productFile = "product_atac.txt";
     }
   }
- 
+
   if (stage.includes("photo_waiting") || stage.includes("photo_received")) {
     topicFile = "image_rules.txt";
   } else if (stage.includes("letter_waiting") || stage.includes("letter_received")) {
@@ -147,7 +147,7 @@ function pickKnowledgeFiles(message, userProduct, conversationStage = "") {
   } else if (stage.includes("address")) {
     topicFile = "order_flow.txt";
   }
- 
+
   if (!topicFile) {
     if (includesAny(msg, ["fiyat", "ucret", "ücret", "indirim", "ne kadar", "kaç tl", "kac tl", "son fiyat"])) {
       topicFile = "pricing.txt";
@@ -165,19 +165,19 @@ function pickKnowledgeFiles(message, userProduct, conversationStage = "") {
       topicFile = "smalltalk.txt";
     }
   }
- 
+
   if (productFile) files.push(productFile);
   if (topicFile) files.push(topicFile);
- 
+
   return [...new Set(files)];
 }
- 
+
 function getFieldFromFullContact(fullContactData, key) {
   if (!fullContactData || typeof fullContactData !== "object") return "";
   const customFields = fullContactData.custom_fields || {};
   return unwrapManychatValue(customFields[key] || "");
 }
- 
+
 function buildCurrentContext({
   message, userProduct, conversationStage, photoReceived,
   paymentMethod, menuGosterildi, aiReply, fullContactData
@@ -205,13 +205,13 @@ function buildCurrentContext({
       getFieldFromFullContact(fullContactData, "ai_reply")
   };
 }
- 
+
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") {
       return res.status(200).json({ reply: "" });
     }
- 
+
     let message = "";
     let userProduct = "";
     let conversationStage = "";
@@ -220,10 +220,10 @@ export default async function handler(req, res) {
     let menuGosterildi = "";
     let aiReply = "";
     let fullContactData = null;
- 
+
     try {
       const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
- 
+
       message = body?.message || "";
       userProduct = body?.user_product || body?.ilgilenilen_urun || "";
       conversationStage = body?.conversation_stage || "";
@@ -242,12 +242,12 @@ export default async function handler(req, res) {
       aiReply = "";
       fullContactData = null;
     }
- 
+
     const ctx = buildCurrentContext({
       message, userProduct, conversationStage, photoReceived,
       paymentMethod, menuGosterildi, aiReply, fullContactData
     });
- 
+
     console.log("MANYCHAT BODY:", JSON.stringify({
       message: ctx.message,
       userProduct: ctx.userProduct,
@@ -259,7 +259,7 @@ export default async function handler(req, res) {
       fullContactDataId: fullContactData?.id || "",
       fullContactDataIgId: fullContactData?.ig_id || ""
     }, null, 2));
- 
+
     if (!ctx.message) {
       return res.status(200).json({
         reply: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
@@ -269,18 +269,28 @@ export default async function handler(req, res) {
         set_menu_gosterildi: ""
       });
     }
- 
-    // ── YENİ: ADRES_WAITING → telefon gelince address_received set et ──────
-    if (ctx.conversationStage === "address_waiting" && hasPhoneNumber(ctx.message)) {
+
+    // ── ADRES_WAITING → telefon gelince adres kaydedildi + odeme sor ───────
+    if (ctx.conversationStage === "address_waiting") {
+      if (hasPhoneNumber(ctx.message)) {
+        return res.status(200).json({
+          reply: "Adresiniz kaydedildi, teşekkürler 😊 Ödemeniz nasıl olacak efendim? EFT / havale veya kapıda ödeme seçeneklerimiz mevcut.",
+          set_conversation_stage: "address_received",
+          set_photo_received: "",
+          set_payment_method: "",
+          set_menu_gosterildi: ""
+        });
+      }
+      // Telefon henuz gelmedi - sessiz kal, Claude a gitme
       return res.status(200).json({
-        reply: "Adresiniz kaydedildi, teşekkürler 😊 Ödemeniz nasıl olacak efendim? EFT / havale veya kapıda ödeme seçeneklerimiz mevcut.",
-        set_conversation_stage: "address_received",
+        reply: "",
+        set_conversation_stage: "address_waiting",
         set_photo_received: "",
         set_payment_method: "",
         set_menu_gosterildi: ""
       });
     }
- 
+
     // ── YENİ: ADDRESS_RECEIVED → ödeme algılama, Claude'a gitmeden yakala ──
     if (ctx.conversationStage === "address_received") {
       const payment = detectPaymentMethod(ctx.message);
@@ -296,13 +306,13 @@ export default async function handler(req, res) {
         });
       }
     }
- 
+
     // BACKEND TABANLI ADRES ALGILAMA
     const isAddressMessage = looksLikeAddressMessage(ctx.message);
     const isAddressStage =
       ctx.conversationStage === "address_waiting" ||
       ctx.conversationStage === "address_received";
- 
+
     if (isAddressMessage && isAddressStage) {
       if (ctx.paymentMethod === "eft") {
         return res.status(200).json({
@@ -313,7 +323,7 @@ export default async function handler(req, res) {
           set_menu_gosterildi: ""
         });
       }
- 
+
       if (ctx.paymentMethod === "kapida_odeme") {
         return res.status(200).json({
           reply: "Tamamdır efendim 😊 Adresiniz kaydedildi. Siparişiniz hazırlanıyor.",
@@ -323,7 +333,7 @@ export default async function handler(req, res) {
           set_menu_gosterildi: ""
         });
       }
- 
+
       return res.status(200).json({
         reply: "Tamamdır efendim 😊 Adresiniz kaydedildi.",
         set_conversation_stage: "address_received",
@@ -332,7 +342,7 @@ export default async function handler(req, res) {
         set_menu_gosterildi: ""
       });
     }
- 
+
     const apiKey = process.env.CLAUDE_API_KEY;
     if (!apiKey) {
       return res.status(200).json({
@@ -343,9 +353,9 @@ export default async function handler(req, res) {
         set_menu_gosterildi: ""
       });
     }
- 
+
     const selectedFiles = pickKnowledgeFiles(ctx.message, ctx.userProduct, ctx.conversationStage);
- 
+
     const knowledgeText = selectedFiles
       .map((file) => {
         try {
@@ -357,16 +367,16 @@ export default async function handler(req, res) {
       })
       .filter(Boolean)
       .join("\n\n");
- 
+
     const systemPrompt = `
 Sen Yudum Jewels için çalışan bir Instagram satış asistanısın.
- 
+
 GÖREVİN:
 - Kısa, net, doğal ve satış odaklı cevap vermek.
 - Gerekirse state/field değişikliği önermek.
 - Sadece verilen bilgi dosyalarına göre cevap vermek.
 - Bilmediğin konuda asla uydurmamak.
- 
+
 GENEL KURALLAR:
 - Bilgi yoksa şu cevabı ver:
 Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊
@@ -380,7 +390,7 @@ Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊
 - Müşteri daha önce hangi aşamadaysa, tekrar merhaba diyerek başa dönme.
 - Kısa cevapları bağlama göre yorumla.
 - "evet", "tamam", "olur", "amin", isim, tarih gibi kısa mesajları son aktif aşamaya göre değerlendir.
- 
+
 BAĞLAM KURALLARI:
 - conversation_stage çok önemlidir.
 - photo_received=yes ise tekrar fotoğraf isteyemezsin.
@@ -402,7 +412,7 @@ BAĞLAM KURALLARI:
   ad soyad + telefon + il/ilçe/mahalle/sokak/no/daire içeren tek mesajlar.
 - conversation_stage address beklerken müşteri tam teslimat bilgisi yazdıysa bunu başarıyla alınmış adres olarak yorumla.
 - "Evet geldim" gibi kısa geçiş mesajlarından sonra gelen uzun teslimat mesajını adres olarak kabul et.
- 
+
 STATE GÜNCELLEME KURALLARI:
 - Müşteri ödeme yöntemini seçtiği anda set_payment_method mutlaka doldur.
 - Müşteri "eft", "havale", "iban'a atayım", "kapıda ödeme", "kapida odeme" gibi net bir ödeme tercihi belirttiyse set_conversation_stage="payment_selected" yap.
@@ -424,7 +434,7 @@ STATE GÜNCELLEME KURALLARI:
   - set_menu_gosterildi
 - Stage güncellemesi gerekiyorsa boş bırakma.
 - Özellikle address_received aşamasından sonraki net ödeme seçimlerinde stage mutlaka ilerletilmelidir.
- 
+
 Kurallar:
 - Emin değilsen alanları boş bırak.
 - Sadece gerçekten gerekiyorsa değişiklik öner.
@@ -433,13 +443,13 @@ Kurallar:
 - Müşteri ürün seçiminden sonra sipariş detayına ilerlediyse uygun stage öner.
 - Fotoğraf geldiğini kesin anlayamıyorsan set_photo_received boş kalsın.
 - Eğer fotoğrafın geldiğine dair net sistemsel kanıt yoksa sırf tahminle photo_received=yes deme.
- 
+
 ÇIKIŞ FORMATI:
 YALNIZCA geçerli JSON döndür.
 Asla açıklama yazma.
 Asla markdown kullanma.
 Format tam olarak şöyle olsun:
- 
+
 {
   "reply": "müşteriye verilecek cevap",
   "set_conversation_stage": "",
@@ -448,29 +458,29 @@ Format tam olarak şöyle olsun:
   "set_menu_gosterildi": ""
 }
 `;
- 
+
     const userPrompt = `
 KULLANICI MESAJI:
 ${ctx.message}
- 
+
 KULLANICI ÜRÜN BİLGİSİ:
 ${ctx.userProduct || "-"}
- 
+
 KONUŞMA AŞAMASI:
 ${ctx.conversationStage || "-"}
- 
+
 FOTOĞRAF GELDİ Mİ:
 ${ctx.photoReceived || "-"}
- 
+
 ÖDEME YÖNTEMİ:
 ${ctx.paymentMethod || "-"}
- 
+
 MENÜ GÖSTERİLDİ Mİ:
 ${ctx.menuGosterildi || "-"}
- 
+
 ÖNCEKİ AI CEVABI:
 ${ctx.aiReply || "-"}
- 
+
 EK TEMAS VERİSİ:
 ${JSON.stringify({
   id: fullContactData?.id || "",
@@ -480,7 +490,7 @@ ${JSON.stringify({
   custom_fields: fullContactData?.custom_fields || {}
 }, null, 2)}
 `;
- 
+
     const payload = {
       model: "claude-haiku-4-5-20251001",
       max_tokens: 300,
@@ -508,7 +518,7 @@ ${JSON.stringify({
         }
       ]
     };
- 
+
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -519,33 +529,33 @@ ${JSON.stringify({
       },
       body: JSON.stringify(payload)
     });
- 
+
     const data = await response.json();
     console.log("CLAUDE RESPONSE:", JSON.stringify(data, null, 2));
- 
+
     const rawText =
       data?.content?.map((block) => block?.text || "").join(" ").trim() || "";
- 
+
     const cleanedText = extractJsonText(rawText);
- 
+
     let parsed;
     try {
       parsed = JSON.parse(cleanedText);
     } catch {
       parsed = null;
     }
- 
+
     const reply =
       parsed?.reply?.trim() ||
       "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊";
- 
+
     const setConversationStage = normalizeStageName(
       unwrapManychatValue(parsed?.set_conversation_stage || "")
     );
     const setPhotoReceived = unwrapManychatValue(parsed?.set_photo_received || "");
     const setPaymentMethod = unwrapManychatValue(parsed?.set_payment_method || "");
     const setMenuGosterildi = unwrapManychatValue(parsed?.set_menu_gosterildi || "");
- 
+
     return res.status(200).json({
       reply,
       set_conversation_stage: setConversationStage,
