@@ -1,8 +1,6 @@
 import fs from "fs";
 import path from "path";
 
-// --- YARDIMCI FONKSİYONLAR ---
-
 const fileCache = {};
 
 function readKnowledgeFile(filename) {
@@ -32,8 +30,9 @@ function extractJsonText(rawText) {
 function normalizeText(text) {
   return (text || "")
     .toLowerCase()
-    .replace(/ç/g, "c").replace(/ğ/g, "g").replace(/ı/g, "i")
-    .replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u")
+    .replace(/ç/g, "c").replace(/ğ/g, "g")
+    .replace(/ı/g, "i").replace(/ö/g, "o")
+    .replace(/ş/g, "s").replace(/ü/g, "u")
     .trim();
 }
 
@@ -44,10 +43,8 @@ function normalizeStageName(stage) {
   if (s.includes("photo_receive")) return "photo_received";
   if (s.includes("back_text")) return "back_text_waiting";
   if (s.includes("letter_wait")) return "letter_waiting";
-  if (s.includes("letter_receive")) return "letter_received";
   if (s.includes("address_receive")) return "address_received";
   if (s.includes("address_wait")) return "address_waiting";
-  if (s.includes("payment_selected")) return "payment_selected";
   if (s.includes("order_complete")) return "order_complete";
   if (s.includes("menu")) return "menu_gosterildi";
   return s;
@@ -62,13 +59,28 @@ function hasPhoneNumber(text) {
   return /(\+?[\d]{10,})/.test(cleaned);
 }
 
-// --- ÜRÜNE GÖRE DOSYA SEÇİMİ ---
+function isDefinitePaymentDecision(text) {
+  const msg = normalizeText(text);
+  return includesAny(msg, [
+    "eft yapacagim", "eft yapayim", "eft olsun", "eft ile",
+    "havale yapacagim", "havale yapayim", "havale olsun",
+    "kapida odeme olsun", "kapida odeme istiyorum", "kapida odeme yapacagim",
+    "kapida olsun", "kapida yapacagim", "kapida istiyorum",
+    "eft istiyorum", "eft seciyorum"
+  ]);
+}
+
+function detectPaymentMethod(text) {
+  const msg = normalizeText(text);
+  if (includesAny(msg, ["kapida", "kapi"])) return "kapida_odeme";
+  if (includesAny(msg, ["eft", "havale", "iban", "transfer"])) return "eft";
+  return "";
+}
 
 function pickKnowledgeFiles(message, userProduct, conversationStage) {
   const msg = normalizeText(message);
   const product = normalizeText(userProduct);
   const stage = normalizeText(conversationStage);
-
   const files = ["core_system.txt"];
   let productFile = null;
   let topicFile = null;
@@ -80,46 +92,37 @@ function pickKnowledgeFiles(message, userProduct, conversationStage) {
   } else {
     if (includesAny(msg, ["lazer", "resimli", "fotografli", "fotograf", "foto"])) {
       productFile = "product_laser.txt";
-    } else if (includesAny(msg, ["atac", "ataç", "harf", "harfli", "isim kolye"])) {
+    } else if (includesAny(msg, ["atac", "harf", "harfli", "isim kolye"])) {
       productFile = "product_atac.txt";
     }
   }
 
-  if (stage.includes("photo_wait") || stage.includes("photo_receive") || stage.includes("back_text")) {
+  if (stage.includes("photo") || stage.includes("back_text")) {
     topicFile = "image_rules.txt";
   } else if (stage.includes("letter")) {
     topicFile = "order_flow.txt";
-  } else if (stage.includes("payment")) {
-    topicFile = "payment.txt";
   } else if (stage.includes("address")) {
     topicFile = "order_flow.txt";
-  }
-
-  if (!topicFile) {
-    if (includesAny(msg, ["fiyat", "ucret", "ne kadar", "kac tl", "indirim"])) {
-      topicFile = "pricing.txt";
-    } else if (includesAny(msg, ["kargo", "teslim", "teslimat", "takip"])) {
-      topicFile = "shipping.txt";
-    } else if (includesAny(msg, ["odeme", "iban", "eft", "havale", "kapida"])) {
-      topicFile = "payment.txt";
-    } else if (includesAny(msg, ["guven", "garanti", "iade", "kararma", "paslanir"])) {
-      topicFile = "trust.txt";
-    } else if (includesAny(msg, ["foto", "fotograf", "resim", "kac kisi", "arka"])) {
-      topicFile = "image_rules.txt";
-    } else if (includesAny(msg, ["siparis", "adres", "telefon", "satin al"])) {
-      topicFile = "order_flow.txt";
-    } else if (includesAny(msg, ["tesekkur", "sagol", "memnun"])) {
-      topicFile = "smalltalk.txt";
-    }
+  } else if (includesAny(msg, ["fiyat", "ucret", "ne kadar", "kac tl", "indirim"])) {
+    topicFile = "pricing.txt";
+  } else if (includesAny(msg, ["kargo", "teslim", "teslimat", "takip"])) {
+    topicFile = "shipping.txt";
+  } else if (includesAny(msg, ["odeme", "iban", "eft", "havale", "kapida"])) {
+    topicFile = "payment.txt";
+  } else if (includesAny(msg, ["guven", "garanti", "iade", "kararma", "paslanir"])) {
+    topicFile = "trust.txt";
+  } else if (includesAny(msg, ["foto", "fotograf", "resim", "arka"])) {
+    topicFile = "image_rules.txt";
+  } else if (includesAny(msg, ["siparis", "adres", "telefon"])) {
+    topicFile = "order_flow.txt";
+  } else if (includesAny(msg, ["tesekkur", "sagol", "memnun"])) {
+    topicFile = "smalltalk.txt";
   }
 
   if (productFile) files.push(productFile);
   if (topicFile) files.push(topicFile);
-
   return [...new Set(files)];
 }
-
-// --- ANA HANDLER ---
 
 export default async function handler(req, res) {
   try {
@@ -128,21 +131,16 @@ export default async function handler(req, res) {
     }
 
     const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
-
     const message = unwrapManychatValue(body?.message || "");
     const userProduct = unwrapManychatValue(body?.user_product || body?.ilgilenilen_urun || "");
     const conversationStage = normalizeStageName(unwrapManychatValue(body?.conversation_stage || ""));
     const photoReceived = unwrapManychatValue(body?.photo_received || "");
     const paymentMethod = unwrapManychatValue(body?.payment_method || "");
-    const menuGosterildi = unwrapManychatValue(body?.menu_gosterildi || "");
     const fullContactData = body?.full_contact_data || null;
 
-    console.log("BODY:", JSON.stringify({
-      message, userProduct, conversationStage,
-      photoReceived, paymentMethod
-    }, null, 2));
+    console.log("BODY:", JSON.stringify({ message, userProduct, conversationStage, photoReceived, paymentMethod }, null, 2));
 
-    // --- FOTOĞRAF ALGILAMA ---
+    // --- FOTOGRAF ALGILAMA ---
     const isPhotoMessage =
       body?.message_type === "image" ||
       body?.attachments?.some((a) => a?.type === "image") ||
@@ -158,7 +156,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // Mesaj boşsa sessiz kal
+    // Mesaj bossa sessiz kal
     if (!message) {
       return res.status(200).json({
         reply: "",
@@ -169,26 +167,10 @@ export default async function handler(req, res) {
       });
     }
 
-    // photo_received → Claude halleder (arka yazı veya adrese geçiş)
-
-    // --- ARKA YAZI BEKLENİYOR ---
+    // --- ARKA YAZI ALINDI → ADRES SOR ---
     if (conversationStage === "back_text_waiting") {
-      const msg = normalizeText(message);
-
-      // Müşteri hayır / istemiyorum derse adrese geç
-      if (includesAny(msg, ["hayir", "istemiyorum", "gerek yok", "yok", "bos kalsin"])) {
-        return res.status(200).json({
-          reply: "Tamamdır efendim 😊 Adresinizi alabilir miyiz? Ad soyad, cep telefonu ve açık adresinizi yazabilirsiniz.",
-          set_conversation_stage: "address_waiting",
-          set_photo_received: "",
-          set_payment_method: "",
-          set_menu_gosterildi: ""
-        });
-      }
-
-      // Müşteri arka yazıyı onayladıysa veya bir şey yazdıysa adrese geç
       return res.status(200).json({
-        reply: "Tabi efendim, yazarız 😊 Adresinizi alabilir miyiz? Ad soyad, cep telefonu ve açık adresinizi yazabilirsiniz.",
+        reply: "Tamamdır efendim 😊 Adresinizi alabilir miyiz? Ad soyad, cep telefonu ve açık adresinizi yazabilirsiniz.",
         set_conversation_stage: "address_waiting",
         set_photo_received: "",
         set_payment_method: "",
@@ -196,7 +178,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // --- ATAÇ KOLYE HARF AŞAMASI ---
+    // --- ATAC KOLYE HARFLERI → ADRES SOR ---
     if (conversationStage === "letter_waiting") {
       return res.status(200).json({
         reply: "Tamamdır efendim 😊 Adresinizi alabilir miyiz? Ad soyad, cep telefonu ve açık adresinizi yazabilirsiniz.",
@@ -207,7 +189,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // --- ADRES AŞAMASI ---
+    // --- ADRES ASAMASI ---
     if (conversationStage === "address_waiting") {
       if (hasPhoneNumber(message)) {
         if (paymentMethod === "eft" || paymentMethod === "kapida_odeme") {
@@ -220,14 +202,13 @@ export default async function handler(req, res) {
           });
         }
         return res.status(200).json({
-          reply: "Adresiniz kaydedildi, teşekkürler 😊 EFT mi yoksa kapıda ödeme mi tercih edersiniz?",
+          reply: "Adresiniz kaydedildi, teşekkürler 😊 Ödemeniz nasıl olacak efendim? EFT / havale veya kapıda ödeme seçeneklerimiz mevcut.",
           set_conversation_stage: "address_received",
           set_photo_received: "",
           set_payment_method: "",
           set_menu_gosterildi: ""
         });
       }
-
       // Telefon gelmedi - sessiz kal
       return res.status(200).json({
         reply: "",
@@ -238,31 +219,26 @@ export default async function handler(req, res) {
       });
     }
 
-    // --- ADRES ALINDI, ÖDEME BEKLENİYOR ---
+    // --- ADRES ALINDI, ODEME BEKLENIYOR ---
     if (conversationStage === "address_received") {
-      const msg = normalizeText(message);
-      let detectedPayment = "";
-
-      if (includesAny(msg, ["eft", "havale", "iban", "transfer", "gondereyim", "atayim"])) {
-        detectedPayment = "eft";
-      } else if (includesAny(msg, ["kapida", "kapi", "kapıda", "kapı"])) {
-        detectedPayment = "kapida_odeme";
+      if (isDefinitePaymentDecision(message)) {
+        const payment = detectPaymentMethod(message);
+        if (payment) {
+          return res.status(200).json({
+            reply: payment === "eft"
+              ? "Tamamdır efendim 😊 IBAN bilgimiz:\nTR34 0015 7000 0000 0076 2524 67\nAlıcı: Servet Cihan Nakipoğlu"
+              : "Tamamdır efendim 😊 Kapıda ödeme ile siparişiniz hazırlanacaktır.",
+            set_conversation_stage: "order_complete",
+            set_photo_received: "",
+            set_payment_method: payment,
+            set_menu_gosterildi: ""
+          });
+        }
       }
-
-      if (detectedPayment) {
-        return res.status(200).json({
-          reply: detectedPayment === "eft"
-            ? "Tamamdır efendim 😊 IBAN bilgimiz:\nTR34 0015 7000 0000 0076 2524 67\nAlıcı: Servet Cihan Nakipoğlu"
-            : "Tamamdır efendim 😊 Kapıda ödeme ile siparişiniz hazırlanacaktır.",
-          set_conversation_stage: "order_complete",
-          set_photo_received: "",
-          set_payment_method: detectedPayment,
-          set_menu_gosterildi: ""
-        });
-      }
+      // Sadece soru soruyorsa Claude halleder - asagida devam eder
     }
 
-    // --- ÖDEME SEÇİLDİ AMA ADRES HENÜZ GELMEDİ ---
+    // --- ODEME SECILDI AMA ADRES HENUZ GELMEDİ ---
     if (paymentMethod && conversationStage !== "order_complete" && conversationStage !== "address_waiting") {
       if (hasPhoneNumber(message)) {
         return res.status(200).json({
@@ -289,101 +265,61 @@ export default async function handler(req, res) {
 
     const selectedFiles = pickKnowledgeFiles(message, userProduct, conversationStage);
     const knowledgeText = selectedFiles
-      .map((file) => {
-        try {
-          return `### ${file}\n${readKnowledgeFile(file)}`;
-        } catch {
-          return "";
-        }
-      })
-      .filter(Boolean)
-      .join("\n\n");
+      .map((file) => { try { return `### ${file}\n${readKnowledgeFile(file)}`; } catch { return ""; } })
+      .filter(Boolean).join("\n\n");
 
-    const systemPrompt = `
-Sen Yudum Jewels için çalışan bir Instagram satış asistanısın.
-
-GÖREVİN:
-- Kısa, net, doğal ve satış odaklı cevap vermek.
-- Sadece verilen bilgi dosyalarına göre cevap vermek.
-- Bilmediğin konuda asla uydurmamak.
+    const systemPrompt = `Sen Yudum Jewels icin calisan bir Instagram satis asistanisin.
+Kisa, net, dogal cevaplar ver. Sadece verilen bilgi dosyalarina gore cevap ver.
 
 GENEL KURALLAR:
-- Bilgi yoksa: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊"
-- user_product doluysa bunu öncelikli ürün bilgisi kabul et.
-- Ürün belirtilmemişse ve cevap ürüne göre değişiyorsa hangi model olduğunu sor.
-- Müşteri sormadıkça ek ücretli veya opsiyonel bilgileri söyleme.
-- Sadece sorulan şeyi cevapla, gereksiz ek bilgi verme.
-- Ürünleri birbirine karıştırma.
-- Müşteri daha önce hangi aşamadaysa tekrar başa dönme.
-- Kısa cevapları bağlama göre yorumla.
+- Bilgi yoksa: "Ekibimize iletiyorum, en kisa surede donus yapilacaktir"
+- user_product doluysa bunu oncelikli urun bilgisi kabul et.
+- Urun belirtilmemisse hangi model oldugunu sor.
+- Sadece sorulan seyi cevapla. Urunleri karistirma.
 
-FOTOĞRAF KURALLARI (ÇOK ÖNEMLİ):
-- Fotoğraf hakkında KESİNLİKLE yorum yapma. "Güzel", "kötü", "olur", "olmaz" deme.
-- Fotoğraf geldiğinde sadece: "Fotoğrafınız ulaştı 😊 Ekibimiz inceleyip size hemen dönüş sağlayacak."
-- Müşteri "bu fotoğraf olur mu" diye sorarsa: "Ekibimiz inceleyip size dönüş sağlayacak efendim 😊"
-- photo_received=yes ise tekrar fotoğraf isteme.
+FOTOGRAF KURALLARI:
+- Fotograf hakkinda KESINLIKLE yorum yapma.
+- "bu fotograf olur mu" sorusuna: "Ekibimiz inceleyip size donus saglayacak efendim"
+- photo_received=yes ise tekrar fotograf isteme.
 
-ARKA YAZI KURALLARI:
-- conversation_stage=photo_received iken müşteri mesaj yazıyorsa bu arka yazı talebi veya sorusudur.
-- Müşteri arka yazı sorarsa: "Ne isterseniz yazarız efendim, aklınıza ne gelirse. Çok uzun olursa sizi uyarırız 😊" de ve set_conversation_stage="back_text_waiting" döndür.
-- Müşteri arka yazı yazdıysa: "Tabi efendim, yazarız 😊" de ve set_conversation_stage="back_text_waiting" döndür.
-- Kendi kafandan öneri yapma, abartılı övgü yapma.
+ARKA YAZI / ARKA RESIM KURALLARI (COK ONEMLI):
+- conversation_stage=photo_received iken musteri arka yuze bir sey yapilmasini istiyorsa:
+  1. Onay ver: "Tabi efendim, yazariz" veya "Tabi efendim, yapariz"
+  2. Hemen ardindan adres sor: "Adresinizi alabilir miyiz? Ad soyad, cep telefonu ve acik adresinizi yazabilirsiniz."
+  3. set_conversation_stage="back_text_waiting" dondur
+- Musteri arka yuz istemiyorsa: "Tamamdir efendim" de, set_conversation_stage="address_waiting" dondur.
+- Musteri ne yazilir diye sorarsa once ornekler ver (isim, tarih, anlamli cumle), sonra back_text_waiting set et.
 
-BAĞLAM KURALLARI:
-- conversation_stage=photo_received ise kısa mesajları arka yazı talebi olarak yorumla.
-- conversation_stage=back_text_waiting ise müşteri arka yazıyı vermiş kabul et, adrese geç.
-- conversation_stage=letter_waiting ise kısa metinleri seçilen harfler olarak yorumla.
-- conversation_stage=address_received ise adres zaten alınmış, tekrar adres isteme.
-- Daha önce alınmış bilgileri tekrar isteme.
+ODEME KURALLARI (COK ONEMLI):
+- Musteri sadece FIYAT SORUYORSA payment SET ETME. Sadece fiyat soyle.
+- Payment SADECE su durumlarda set edilir:
+  * Musteri "EFT yapacagim / olsun / istiyorum" derse → set_payment_method="eft"
+  * Musteri "kapida odeme olsun / istiyorum / yapacagim" derse → set_payment_method="kapida_odeme"
+  * Sen odeme sorduktan sonra sadece "EFT" veya "kapida" yazarsa → set et
+- Karar vermeden set etme!
 
-STATE GÜNCELLEME KURALLARI:
-- Müşteri EFT seçerse: set_payment_method="eft"
-- Müşteri kapıda ödeme seçerse: set_payment_method="kapida_odeme"
-- Emin değilsen alanları boş bırak.
+BAGLA M KURALLARI:
+- conversation_stage=photo_received → arka yuz konusu → back_text_waiting set et + adres sor
+- conversation_stage=address_received → odeme bekleniyor, adres tekrar isteme
+- Daha once alinmis bilgileri tekrar isteme.
 
-ÇIKIŞ FORMATI - YALNIZCA GEÇERLİ JSON:
-{
-  "reply": "müşteriye verilecek cevap",
-  "set_conversation_stage": "",
-  "set_photo_received": "",
-  "set_payment_method": "",
-  "set_menu_gosterildi": ""
-}
-`;
+CIKIS FORMATI - SADECE GECERLI JSON:
+{"reply":"cevap","set_conversation_stage":"","set_photo_received":"","set_payment_method":"","set_menu_gosterildi":""}`;
 
-    const userPrompt = `
-KULLANICI MESAJI: ${message}
-ÜRÜN: ${userProduct || "-"}
-KONUŞMA AŞAMASI: ${conversationStage || "-"}
-FOTOĞRAF GELDİ Mİ: ${photoReceived || "-"}
-ÖDEME YÖNTEMİ: ${paymentMethod || "-"}
-KULLANICI: ${JSON.stringify({
-  ig_username: fullContactData?.ig_username || "",
-  last_input: fullContactData?.last_input_text || ""
-})}
-`;
+    const userPrompt = `MESAJ: ${message}
+URUN: ${userProduct || "-"}
+STAGE: ${conversationStage || "-"}
+FOTOGRAF: ${photoReceived || "-"}
+ODEME: ${paymentMethod || "-"}`;
 
     const payload = {
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 300,
+      max_tokens: 350,
       system: [
-        {
-          type: "text",
-          text: systemPrompt,
-          cache_control: { type: "ephemeral", ttl: "1h" }
-        },
-        {
-          type: "text",
-          text: knowledgeText,
-          cache_control: { type: "ephemeral", ttl: "1h" }
-        }
+        { type: "text", text: systemPrompt, cache_control: { type: "ephemeral", ttl: "1h" } },
+        { type: "text", text: knowledgeText, cache_control: { type: "ephemeral", ttl: "1h" } }
       ],
-      messages: [
-        {
-          role: "user",
-          content: [{ type: "text", text: userPrompt }]
-        }
-      ]
+      messages: [{ role: "user", content: [{ type: "text", text: userPrompt }] }]
     };
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -404,11 +340,7 @@ KULLANICI: ${JSON.stringify({
     const cleanedText = extractJsonText(rawText);
 
     let parsed = null;
-    try {
-      parsed = JSON.parse(cleanedText);
-    } catch {
-      parsed = null;
-    }
+    try { parsed = JSON.parse(cleanedText); } catch { parsed = null; }
 
     const reply = parsed?.reply?.trim() || "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊";
     const newStage = normalizeStageName(unwrapManychatValue(parsed?.set_conversation_stage || ""));
@@ -416,7 +348,6 @@ KULLANICI: ${JSON.stringify({
     const currentPayment = newPayment || paymentMethod;
     const currentStage = newStage || conversationStage;
 
-    // Adres + ödeme ikisi de tamamsa order_complete
     const isOrderComplete =
       currentStage === "address_received" &&
       (currentPayment === "eft" || currentPayment === "kapida_odeme");
