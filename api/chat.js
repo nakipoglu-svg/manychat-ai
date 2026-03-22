@@ -11,6 +11,26 @@ function readKnowledgeFile(filename) {
   return content;
 }
 
+function unwrapManychatValue(value) {
+  if (value === null || value === undefined) return "";
+
+  let str = String(value).trim();
+
+  // "{{deger}}" veya "{{{deger}}}" kalıplarını temizle
+  str = str.replace(/^\{\{\{?/, "").replace(/\}\}\}?$/, "").trim();
+
+  if (
+    !str ||
+    str.toLowerCase() === "no field selected" ||
+    str.toLowerCase() === "undefined" ||
+    str.toLowerCase() === "null"
+  ) {
+    return "";
+  }
+
+  return str;
+}
+
 function normalizeText(text) {
   return (text || "")
     .toLowerCase()
@@ -197,13 +217,13 @@ export default async function handler(req, res) {
     try {
       const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
 
-      message = body?.message || "";
-      userProduct = body?.user_product || body?.ilgilenilen_urun || "";
-      conversationStage = body?.conversation_stage || "";
-      photoReceived = body?.photo_received || "";
-      paymentMethod = body?.payment_method || "";
-      menuGosterildi = body?.menu_gosterildi || "";
-      aiReply = body?.ai_reply || "";
+      message = unwrapManychatValue(body?.message || "");
+      userProduct = unwrapManychatValue(body?.user_product || body?.ilgilenilen_urun || "");
+      conversationStage = unwrapManychatValue(body?.conversation_stage || "");
+      photoReceived = unwrapManychatValue(body?.photo_received || "");
+      paymentMethod = unwrapManychatValue(body?.payment_method || "");
+      menuGosterildi = unwrapManychatValue(body?.menu_gosterildi || "");
+      aiReply = unwrapManychatValue(body?.ai_reply || "");
 
       console.log(
         "MANYCHAT BODY:",
