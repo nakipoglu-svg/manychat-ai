@@ -42,11 +42,12 @@ function normalizeStageName(stage) {
   if (!s) return "";
   if (s.includes("photo_wait")) return "photo_waiting";
   if (s.includes("photo_receive")) return "photo_received";
+  if (s.includes("back_text")) return "back_text_waiting";
   if (s.includes("letter_wait")) return "letter_waiting";
+  if (s.includes("letter_receive")) return "letter_received";
   if (s.includes("address_receive")) return "address_received";
   if (s.includes("address_wait")) return "address_waiting";
   if (s.includes("payment_selected")) return "payment_selected";
-  if (s.includes("payment_wait")) return "payment_waiting";
   if (s.includes("order_complete")) return "order_complete";
   if (s.includes("menu")) return "menu_gosterildi";
   return s;
@@ -84,9 +85,9 @@ function pickKnowledgeFiles(message, userProduct, conversationStage) {
     }
   }
 
-  if (stage.includes("photo_wait") || stage.includes("photo_receive")) {
+  if (stage.includes("photo_wait") || stage.includes("photo_receive") || stage.includes("back_text")) {
     topicFile = "image_rules.txt";
-  } else if (stage.includes("letter_wait")) {
+  } else if (stage.includes("letter")) {
     topicFile = "order_flow.txt";
   } else if (stage.includes("payment")) {
     topicFile = "payment.txt";
@@ -103,7 +104,7 @@ function pickKnowledgeFiles(message, userProduct, conversationStage) {
       topicFile = "payment.txt";
     } else if (includesAny(msg, ["guven", "garanti", "iade", "kararma", "paslanir"])) {
       topicFile = "trust.txt";
-    } else if (includesAny(msg, ["foto", "fotograf", "resim", "kac kisi", "arka plan"])) {
+    } else if (includesAny(msg, ["foto", "fotograf", "resim", "kac kisi", "arka"])) {
       topicFile = "image_rules.txt";
     } else if (includesAny(msg, ["siparis", "adres", "telefon", "satin al"])) {
       topicFile = "order_flow.txt";
@@ -141,17 +142,6 @@ export default async function handler(req, res) {
       photoReceived, paymentMethod
     }, null, 2));
 
-    // Mesaj boşsa ve fotoğraf da yoksa sessiz kal
-    if (!message) {
-      return res.status(200).json({
-        reply: "",
-        set_conversation_stage: "",
-        set_photo_received: "",
-        set_payment_method: "",
-        set_menu_gosterildi: ""
-      });
-    }
-
     // --- FOTOĞRAF ALGILAMA ---
     const isPhotoMessage =
       body?.message_type === "image" ||
@@ -168,10 +158,82 @@ export default async function handler(req, res) {
       });
     }
 
+    // Mesaj boşsa sessiz kal
+    if (!message) {
+      return res.status(200).json({
+        reply: "",
+        set_conversation_stage: "",
+        set_photo_received: "",
+        set_payment_method: "",
+        set_menu_gosterildi: ""
+      });
+    }
+
+    // --- ARKA YAZI AŞAMASI ---
+    // photo_received'dan sonra müşteri arka yazı veya "hayır" diyebilir
+    if (conversationStage === "photo_received") {
+      const msg = normalizeText(message);
+
+      // Müşteri hayır / istemiyorum / gerek yok derse adrese geç
+      if (includesAny(msg, ["hayir", "istemiyorum", "gerek yok", "yok", "bos kalsin", "kalsin"])) {
+        return res.status(200).json({
+          reply: "Tamamdır efendim 😊 Adresinizi alabilir miyiz? Ad soyad, cep telefonu ve açık adresinizi yazabilirsiniz.",
+          set_conversation_stage: "address_waiting",
+          set_photo_received: "",
+          set_payment_method: "",
+          set_menu_gosterildi: ""
+        });
+      }
+
+      // Müşteri arka yazı yazdıysa → back_text_waiting'e geç ve onaylaması için bekle
+      return res.status(200).json({
+        reply: "",
+        set_conversation_stage: "",
+        set_photo_received: "",
+        set_payment_method: "",
+        set_menu_gosterildi: ""
+      });
+    }
+
+    // --- ARKA YAZI BEKLENİYOR ---
+    if (conversationStage === "back_text_waiting") {
+      const msg = normalizeText(message);
+
+      // Müşteri hayır / istemiyorum derse adrese geç
+      if (includesAny(msg, ["hayir", "istemiyorum", "gerek yok", "yok", "bos kalsin"])) {
+        return res.status(200).json({
+          reply: "Tamamdır efendim 😊 Adresinizi alabilir miyiz? Ad soyad, cep telefonu ve açık adresinizi yazabilirsiniz.",
+          set_conversation_stage: "address_waiting",
+          set_photo_received: "",
+          set_payment_method: "",
+          set_menu_gosterildi: ""
+        });
+      }
+
+      // Müşteri arka yazıyı onayladıysa veya bir şey yazdıysa adrese geç
+      return res.status(200).json({
+        reply: "Tabi efendim, yazarız 😊 Adresinizi alabilir miyiz? Ad soyad, cep telefonu ve açık adresinizi yazabilirsiniz.",
+        set_conversation_stage: "address_waiting",
+        set_photo_received: "",
+        set_payment_method: "",
+        set_menu_gosterildi: ""
+      });
+    }
+
+    // --- ATAÇ KOLYE HARF AŞAMASI ---
+    if (conversationStage === "letter_waiting") {
+      return res.status(200).json({
+        reply: "Tamamdır efendim 😊 Adresinizi alabilir miyiz? Ad soyad, cep telefonu ve açık adresinizi yazabilirsiniz.",
+        set_conversation_stage: "address_waiting",
+        set_photo_received: "",
+        set_payment_method: "",
+        set_menu_gosterildi: ""
+      });
+    }
+
     // --- ADRES AŞAMASI ---
     if (conversationStage === "address_waiting") {
       if (hasPhoneNumber(message)) {
-        // Ödeme de seçildiyse direkt order_complete
         if (paymentMethod === "eft" || paymentMethod === "kapida_odeme") {
           return res.status(200).json({
             reply: "Adresiniz kaydedildi, teşekkürler 😊",
@@ -181,7 +243,6 @@ export default async function handler(req, res) {
             set_menu_gosterildi: ""
           });
         }
-        // Ödeme henüz seçilmemişse adres aldık, ödeme sor
         return res.status(200).json({
           reply: "Adresiniz kaydedildi, teşekkürler 😊 EFT mi yoksa kapıda ödeme mi tercih edersiniz?",
           set_conversation_stage: "address_received",
@@ -287,12 +348,14 @@ FOTOĞRAF KURALLARI (ÇOK ÖNEMLİ):
 - photo_received=yes ise tekrar fotoğraf isteme.
 
 ARKA YAZI KURALLARI:
-- Müşteri arka yazı sorarsa: "Ne isterseniz yazarız efendim, aklınıza ne gelirse. Çok uzun olursa sizi uyarırız 😊"
-- Müşteri arka yazı söylediğinde sadece: "Tabi efendim, yazarız 😊"
+- conversation_stage=photo_received iken müşteri mesaj yazıyorsa bu arka yazı talebi veya sorusudur.
+- Müşteri arka yazı sorarsa: "Ne isterseniz yazarız efendim, aklınıza ne gelirse. Çok uzun olursa sizi uyarırız 😊" de ve set_conversation_stage="back_text_waiting" döndür.
+- Müşteri arka yazı yazdıysa: "Tabi efendim, yazarız 😊" de ve set_conversation_stage="back_text_waiting" döndür.
 - Kendi kafandan öneri yapma, abartılı övgü yapma.
 
 BAĞLAM KURALLARI:
-- conversation_stage=photo_received ise kısa mesajları sipariş detayı olarak yorumla.
+- conversation_stage=photo_received ise kısa mesajları arka yazı talebi olarak yorumla.
+- conversation_stage=back_text_waiting ise müşteri arka yazıyı vermiş kabul et, adrese geç.
 - conversation_stage=letter_waiting ise kısa metinleri seçilen harfler olarak yorumla.
 - conversation_stage=address_received ise adres zaten alınmış, tekrar adres isteme.
 - Daha önce alınmış bilgileri tekrar isteme.
