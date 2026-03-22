@@ -281,14 +281,38 @@ export default async function handler(req, res) {
           set_menu_gosterildi: ""
         });
       }
-      // Telefon henuz gelmedi - kisa onay ver, Claude a gitme
+      // Telefon henuz gelmedi - sessiz kal
       return res.status(200).json({
-        reply: "Tamamdır efendim 😊",
+        reply: "",
         set_conversation_stage: "address_waiting",
         set_photo_received: "",
         set_payment_method: "",
         set_menu_gosterildi: ""
       });
+    }
+
+    // ── PHOTO_RECEIVED → arka yazi netlestiyse back_text_waiting set et ────
+    if (ctx.conversationStage === "photo_received") {
+      const msg = normalizeText(ctx.message);
+      const backTextKeywords = [
+        "arkaya", "arkasina", "arka tarafa", "arka yuze", "arka yüze",
+        "yazalim", "yazsin", "yazsın", "yazin", "yazın",
+        "yaz ", "koy ", "koysun", "koyalim", "koyalım"
+      ];
+      const hasBackText = backTextKeywords.some(k => msg.includes(k));
+      if (hasBackText) {
+        return res.status(200).json({
+          reply: "Tabi efendim 😊 Sipariş için şu bilgileri alabilir miyiz?
+
+• İsim Soyisim
+• Açık Adres
+• Cep Telefonu",
+          set_conversation_stage: "address_waiting",
+          set_photo_received: "yes",
+          set_payment_method: "",
+          set_menu_gosterildi: ""
+        });
+      }
     }
 
     // ── YENİ: ADDRESS_RECEIVED → ödeme algılama, Claude'a gitmeden yakala ──
