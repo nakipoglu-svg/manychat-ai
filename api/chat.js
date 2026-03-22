@@ -134,17 +134,17 @@ export default async function handler(req, res) {
     const photoReceived = unwrapManychatValue(body?.photo_received || "");
     const paymentMethod = unwrapManychatValue(body?.payment_method || "");
     const menuGosterildi = unwrapManychatValue(body?.menu_gosterildi || "");
-    const aiReply = unwrapManychatValue(body?.ai_reply || "");
     const fullContactData = body?.full_contact_data || null;
 
     console.log("BODY:", JSON.stringify({
       message, userProduct, conversationStage,
-      photoReceived, paymentMethod, aiReply
+      photoReceived, paymentMethod
     }, null, 2));
 
+    // Mesaj boşsa ve fotoğraf da yoksa sessiz kal
     if (!message) {
       return res.status(200).json({
-        reply: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+        reply: "",
         set_conversation_stage: "",
         set_photo_received: "",
         set_payment_method: "",
@@ -191,19 +191,9 @@ export default async function handler(req, res) {
         });
       }
 
-      // Telefon gelmedi - ilk mesajsa bekliyorum de, sonrakinde devam edin de
-      if (!aiReply) {
-        return res.status(200).json({
-          reply: "Evet efendim, adresinizi bekliyorum 😊",
-          set_conversation_stage: "",
-          set_photo_received: "",
-          set_payment_method: "",
-          set_menu_gosterildi: ""
-        });
-      }
-
+      // Telefon gelmedi - sessiz kal
       return res.status(200).json({
-        reply: "Devam edin efendim 😊",
+        reply: "",
         set_conversation_stage: "",
         set_photo_received: "",
         set_payment_method: "",
@@ -328,7 +318,6 @@ KULLANICI MESAJI: ${message}
 KONUŞMA AŞAMASI: ${conversationStage || "-"}
 FOTOĞRAF GELDİ Mİ: ${photoReceived || "-"}
 ÖDEME YÖNTEMİ: ${paymentMethod || "-"}
-ÖNCEKİ AI CEVABI: ${aiReply || "-"}
 KULLANICI: ${JSON.stringify({
   ig_username: fullContactData?.ig_username || "",
   last_input: fullContactData?.last_input_text || ""
