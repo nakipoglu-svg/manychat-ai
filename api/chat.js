@@ -10,7 +10,7 @@ function readKnowledgeFile(filename) {
   fileCache[filename] = content;
   return content;
 }
- 
+
 function unwrapManychatValue(value) {
   if (value === null || value === undefined) return "";
 
@@ -382,7 +382,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const apiKey = process.env.CLAUDE_API_KEY;
+    const apiKey = process.env.DEEPSEEK_API_KEY;
     if (!apiKey) {
       return res.status(200).json({
         reply: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
@@ -524,58 +524,39 @@ ${ctx.aiReply || "-"}
 
 EK TEMAS VERİSİ:
 ${JSON.stringify({
-  id: fullContactData?.id || "",
-  ig_id: fullContactData?.ig_id || "",
-  ig_username: fullContactData?.ig_username || "",
-  last_input_text: fullContactData?.last_input_text || "",
-  custom_fields: fullContactData?.custom_fields || {}
+  ig_username: fullContactData?.ig_username || ""
 }, null, 2)}
 `;
 
     const payload = {
-      model: "claude-haiku-4-5-20251001",
+      model: "deepseek-chat",
       max_tokens: 300,
-      system: [
-        {
-          type: "text",
-          text: systemPrompt,
-          cache_control: { type: "ephemeral", ttl: "1h" }
-        },
-        {
-          type: "text",
-          text: knowledgeText,
-          cache_control: { type: "ephemeral", ttl: "1h" }
-        }
-      ],
       messages: [
         {
+          role: "system",
+          content: systemPrompt + "\n\n" + knowledgeText
+        },
+        {
           role: "user",
-          content: [
-            {
-              type: "text",
-              text: userPrompt
-            }
-          ]
+          content: userPrompt
         }
       ]
     };
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "anthropic-beta": "prompt-caching-2024-07-31"
+        "Authorization": "Bearer " + apiKey
       },
       body: JSON.stringify(payload)
     });
 
     const data = await response.json();
-    console.log("CLAUDE RESPONSE:", JSON.stringify(data, null, 2));
+    console.log("DEEPSEEK RESPONSE:", JSON.stringify(data, null, 2));
 
     const rawText =
-      data?.content?.map((block) => block?.text || "").join(" ").trim() || "";
+      data?.choices?.[0]?.message?.content?.trim() || "";
 
     const cleanedText = extractJsonText(rawText);
 
