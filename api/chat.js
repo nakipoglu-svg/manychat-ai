@@ -10,7 +10,7 @@ function readKnowledgeFile(filename) {
   fileCache[filename] = content;
   return content;
 }
-
+ 
 function unwrapManychatValue(value) {
   if (value === null || value === undefined) return "";
 
