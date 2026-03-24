@@ -1,5 +1,3 @@
-# ORDER_FLOW.txt
-
 SİPARİŞ OLUŞTURMA
 Müşteri sipariş vermek istediğinde süreç kısa ve net ilerletilir.
 Müşteri sadece bilgi alıyorsa hemen sipariş akışına geçilmez.
@@ -46,6 +44,26 @@ Müşteri arka yüze yazı yazdırmak istemiyorsa sormaya devam etme.
 Müşteri arkalı önlü fotoğraf istemiyorsa arka yazı konusunu uzatma.
 Müşteri arka yazıyı zaten yazdıysa tekrar "ne yazalım" deme.
 Müşteri fotoğrafı gönderip sadece kontrol istiyorsa hemen adres aşamasına geçme.
+
+FOTOĞRAF GELMEDEN ADRES AŞAMASINA GEÇME
+Müşteri arka yazı, isim, dua, not veya tasarım detayı sorsa bile fotoğraf henüz gönderilmediyse adres bilgisi isteme.
+Önce fotoğraf alınır.
+Resimli lazer kolyede adres aşaması fotoğraftan sonra gelir.
+
+Örnek:
+Müşteri "arkasına isim yazılır mı", "dua yazılır mı", "isim arka kısmına olsun" diyorsa:
+önce kısa onay verilir.
+Fotoğraf henüz yoksa adres istenmez.
+Gerekirse sadece aktif konuya cevap verilir.
+
+YANLIŞ HIZLI GEÇİŞ YASAĞI
+Resimli lazer kolyede şu sırayı bozma:
+1. Fotoğraf alınır
+2. Gerekirse arka yazı netleşir
+3. Ödeme yöntemi netleşir
+4. Adres bilgisi alınır
+
+Müşteri sadece yazı detayına cevap verdiyse bunu sipariş tamamlandı gibi yorumlama.
 
 HARFLİ ATAÇ KOLYE SİPARİŞİ
 Sipariş için müşteriden istediği harfler alınır.
