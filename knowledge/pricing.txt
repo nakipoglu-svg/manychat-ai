@@ -1,5 +1,3 @@
-# PRICING.txt
-
 FİYATLANDIRMA
 Fiyat verirken yalnızca gerekli bilgiyi ver.
 Tek seferde tüm fiyat listesini müşteriye dökme.
@@ -23,6 +21,22 @@ Dosyada olmayan özel fiyat, kampanya veya indirim oluşturma.
 Müşteri pazarlık yapsa bile yeni fiyat uydurma.
 Standart fiyatlar ve tanımlı çoklu alım fiyatları dışında fiyat verme.
 
+ÖDEME YÖNTEMİ BELİRTİLMEDİYSE
+Müşteri özellikle EFT veya kapıda ödeme demediyse, fiyat sorularında iki ödeme seçeneği birlikte verilir.
+AI müşteri adına ödeme yöntemi seçmez.
+Tek fiyat yazmaz.
+
+TEK KELİMELİ FİYAT SORULARI
+Müşteri sadece "fiyat", "ne kadar", "kaç TL", "ücret", "fiyati" gibi kısa bir fiyat sorusu yazarsa ve ürün bağlamdan net olarak belliyse, ödeme yöntemi henüz belirtilmemiş kabul edilir.
+Bu durumda tek fiyat verilmez.
+EFT / Havale ve kapıda ödeme fiyatı birlikte yazılır.
+
+Resimli lazer kolye için:
+"EFT / havale fiyatımız 599 TL, kapıda ödeme fiyatımız 649 TL'dir efendim 😊"
+
+Harfli ataç kolye için:
+"EFT / havale fiyatımız 499 TL, kapıda ödeme fiyatımız 549 TL'dir efendim 😊"
+
 RESİMLİ LAZER KOLYE
 EFT / Havale fiyatı: 599 TL
 Kapıda ödeme fiyatı: 649 TL
@@ -32,8 +46,7 @@ Müşteri "kaç kişilik olursa olsun fiyat değişiyor mu", "2 kişilik", "3 ki
 "Hayır efendim, fiyat değişmiyor. Aynı fiyattan yapıyoruz 😊" diye cevap ver.
 
 LAZER KOLYE FİYAT CEVABI KURALI
-Müşteri sadece lazer kolyenin fiyatını sorarsa temel fiyat verilir.
-Müşteri ödeme yöntemini belirtmediyse EFT ve kapıda ödeme fiyatı birlikte söylenebilir.
+Müşteri sadece lazer kolyenin fiyatını sorarsa ödeme yöntemi belirtilmediyse EFT ve kapıda ödeme fiyatı birlikte söylenir.
 Müşteri özellikle EFT fiyatını soruyorsa sadece EFT fiyatını ver.
 Müşteri özellikle kapıda ödeme fiyatını soruyorsa sadece kapıda ödeme fiyatını ver.
 
@@ -50,17 +63,58 @@ Fiyatlar:
 5 kolye: EFT 2000 TL (kapıda ödeme seçeneği yoktur)
 5 kolyenin üzerinde her ek kolye için +300 TL EFT (kapıda ödeme seçeneği yoktur)
 
+ÇOKLU ALIM / ADET SORULARI
+Müşteri "2li alımda indirim var mı", "çoklu alımda indirim oluyor mu", "2 tane alırsam ne kadar olur", "iki adet fiyatı nedir" gibi sorular sorarsa bu soru fiyat sorusudur, kapsam dışı değildir.
+
+Eğer ürün net değilse önce hangi ürün ile ilgilendiği sorulur.
+Eğer ürün resimli lazer kolye olarak belliyse ve müşteri 2 adet soruyorsa:
+"Tabi efendim, 2 kolye aynı adrese olacaksa EFT 1000 TL, kapıda ödeme 1100 TL'dir 😊"
+şeklinde cevap ver.
+
+Müşteri sadece "indirim var mı" diye soruyorsa ve adet belli değilse:
+"Tabi efendim, çoklu alımlarda indirimimiz oluyor 😊 Kaç adet düşünüyorsunuz?"
+şeklinde cevap ver.
+
 ÇOKLU ALIM UYARI KURALI
 4 ve üzeri lazer kolye çoklu alımlarda kapıda ödeme seçeneği yoktur.
 Bu konuda yanlış bilgi verme.
 Kapıda ödeme varmış gibi konuşma.
+
+GÖRSEL / MESAJ BAĞLAMINDA FİYAT KURALI
+AI görsele bakarak veya bağlamdan tahmini fiyat oluşturmaz.
+Yalnızca bu dosyadaki tanımlı fiyatlar kullanılabilir.
+Ürün bağlamı netse sadece o ürüne ait fiyat verilir.
+Dosyada olmayan hiçbir fiyat müşteriye yazılmaz.
+
+ZİNCİR DAHİL Mİ / KAPLAMA DAHİL Mİ SORULARI
+Müşteri "zinciri dahil mi", "kaplama dahil mi", "bu fiyat zincirle birlikte mi" diye sorarsa yeni fiyat üretme.
+Bu soru ürün içeriği sorusudur.
+Fiyat zaten ürün fiyatıdır.
+Bu durumda kısa şekilde:
+"Evet efendim, zinciri ile birlikte fiyatımız budur 😊"
+şeklinde cevap ver.
+
+RESİMLİ LAZER KOLYEDE KİŞİ / FOTOĞRAF SAYISI FİYAT KURALI
+Müşteri "tek zincir ama iki fotoğraf", "iki kişi olacak", "çift fotoğraf", "aynı kolyede iki kişi", "tek kolyede iki fotoğraf" gibi ifadelerle fiyat sorarsa bunu tek ürün içeriği olarak yorumla.
+İkinci ürün gibi anlama.
+Bu durumda:
+"Hayır efendim, fiyat değişmiyor. Aynı fiyattan yapıyoruz 😊"
+şeklinde cevap ver.
+
+BİRDEN FAZLA PLAKA / BİRDEN FAZLA ÜRÜN AYRIMI
+Müşteri aynı zincirde birden fazla plaka, birden fazla kolye ucu veya ayrı ayrı birden fazla plaka isterse bunu tek standart ürün fiyatı gibi değerlendirme.
+Bu durum standart resimli lazer kolye ürünü değildir.
+Standart fiyat ezbere yazılmaz.
+Bu durumda kısa şekilde:
+"Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊"
+şeklinde cevap ver.
 
 HARFLİ ATAÇ KOLYE (STANDART 3 HARF)
 EFT / Havale fiyatı: 499 TL
 Kapıda ödeme fiyatı: 549 TL
 
 ATAÇ KOLYE FİYAT CEVABI KURALI
-Müşteri sadece ataç kolyenin fiyatını sorarsa önce standart 3 harf fiyatını ver.
+Müşteri sadece ataç kolyenin fiyatını sorarsa ödeme yöntemi belirtilmediyse önce standart 3 harf için EFT ve kapıda ödeme fiyatı birlikte ver.
 Müşteri harf sayısını belirtmediyse tüm ek harf tablosunu birden dökme.
 Müşteri özellikle EFT fiyatını soruyorsa sadece EFT fiyatını ver.
 Müşteri özellikle kapıda ödeme fiyatını soruyorsa sadece kapıda ödeme fiyatını ver.
