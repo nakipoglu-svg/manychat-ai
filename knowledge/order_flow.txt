@@ -65,6 +65,10 @@ Resimli lazer kolyede şu sırayı bozma:
 
 Müşteri sadece yazı detayına cevap verdiyse bunu sipariş tamamlandı gibi yorumlama.
 
+AKTİF KONUYU KORUMA
+Müşteri arka yazı, dua, isim, ön / arka yüz tasarımı, zincir boyu veya uygunluk soruyorsa önce sadece o konuya cevap ver.
+Henüz sorulmamış ödeme veya adres aşamasına geçme.
+
 HARFLİ ATAÇ KOLYE SİPARİŞİ
 Sipariş için müşteriden istediği harfler alınır.
 "Yapılmasını istediğiniz harfleri yazmanız yeterlidir 😊" de.
