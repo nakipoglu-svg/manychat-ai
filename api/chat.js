@@ -528,16 +528,12 @@ function applyHardGuards({ answer, ctx, topic, product }) {
   if (!text) {
     return "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊";
   }
-if (
+
+  if (
   (ctx.ilgilenilenUrun === "lazer" || ctx.ilgilenilenUrun === "atac") &&
-  normalizeText(answer).includes("hangi model ile ilgileniyorsunuz")
+  normalizeText(text).includes("hangi model ile ilgileniyorsunuz")
 ) {
-  if (ctx.ilgilenilenUrun === "lazer") {
-    return "Tabi efendim 😊";
-  }
-  if (ctx.ilgilenilenUrun === "atac") {
-    return "Tabi efendim 😊";
-  }
+  return "Tabi efendim 😊";
 }
   if (hasForbiddenPrice(text)) {
     if (product === "laser") {
@@ -645,12 +641,12 @@ function finalizeOutput(parsed, ctx, topic, product) {
   const setCancelReason = unwrapManychatValue(parsed?.set_cancel_reason || "");
   const setContextLock = unwrapManychatValue(parsed?.set_context_lock || "");
 
-let finalContextLock = setContextLock;
-let finalConversationStage = setConversationStage;
+let finalLastIntent = setLastIntent;
 
 if (setIlgilenilenUrun === "lazer" || setIlgilenilenUrun === "atac") {
   if (!finalContextLock) finalContextLock = "product_locked";
   if (!finalConversationStage) finalConversationStage = "product_selected";
+  if (!finalLastIntent) finalLastIntent = "product";
 }
   
   if (ctx.conversationStage === "address_received" && setConversationStage === "address_waiting") {
@@ -663,39 +659,39 @@ if (setIlgilenilenUrun === "lazer" || setIlgilenilenUrun === "atac") {
 
   if (ctx.photoReceived !== "yes" && setPhotoReceived === "yes" && !hasPhotoHint(ctx.message)) {
     return {
-      reply,
-      set_conversation_stage: setConversationStage,
-      set_last_intent: setLastIntent,
-      set_ilgilenilen_urun: setIlgilenilenUrun,
-      set_photo_received: "",
-      set_payment_method: setPaymentMethod,
-      set_order_status: setOrderStatus,
-      set_back_text_status: setBackTextStatus,
-      set_address_status: setAddressStatus,
-      set_support_mode: setSupportMode,
-      set_siparis_alindi: setSiparisAlindi,
-      set_cancel_reason: setCancelReason,
-      set_context_lock: setContextLock,
-      set_menu_gosterildi: setMenuGosterildi
-    };
+  reply,
+  set_conversation_stage: finalConversationStage,
+  set_last_intent: finalLastIntent,
+  set_ilgilenilen_urun: setIlgilenilenUrun,
+  set_photo_received: "",
+  set_payment_method: setPaymentMethod,
+  set_order_status: setOrderStatus,
+  set_back_text_status: setBackTextStatus,
+  set_address_status: setAddressStatus,
+  set_support_mode: setSupportMode,
+  set_siparis_alindi: setSiparisAlindi,
+  set_cancel_reason: setCancelReason,
+  set_context_lock: finalContextLock,
+  set_menu_gosterildi: setMenuGosterildi
+};
   }
 
   return {
-    reply,
-    set_conversation_stage: setConversationStage,
-    set_last_intent: setLastIntent,
-    set_ilgilenilen_urun: setIlgilenilenUrun,
-    set_photo_received: setPhotoReceived,
-    set_payment_method: setPaymentMethod,
-    set_order_status: setOrderStatus,
-    set_back_text_status: setBackTextStatus,
-    set_address_status: setAddressStatus,
-    set_support_mode: setSupportMode,
-    set_siparis_alindi: setSiparisAlindi,
-    set_cancel_reason: setCancelReason,
-    set_context_lock: setContextLock,
-    set_menu_gosterildi: setMenuGosterildi
-  };
+  reply,
+  set_conversation_stage: finalConversationStage,
+  set_last_intent: finalLastIntent,
+  set_ilgilenilen_urun: setIlgilenilenUrun,
+  set_photo_received: setPhotoReceived,
+  set_payment_method: setPaymentMethod,
+  set_order_status: setOrderStatus,
+  set_back_text_status: setBackTextStatus,
+  set_address_status: setAddressStatus,
+  set_support_mode: setSupportMode,
+  set_siparis_alindi: setSiparisAlindi,
+  set_cancel_reason: setCancelReason,
+  set_context_lock: finalContextLock,
+  set_menu_gosterildi: setMenuGosterildi
+};
 }
 
 export default async function handler(req, res) {
@@ -1000,6 +996,8 @@ BAĞLAM KURALLARI:
 - Müşteri tek mesajda ad soyad, telefon numarası ve açık adres benzeri bilgiler yazdıysa bunu adres bilgisi olarak kabul et ve set_address_status="received" dön.
 - Sipariş aktifken müşteri ödeme yöntemini değiştirebilir. Son net ödeme tercihi geçerlidir.
 - order_status=completed veya cancelled ise ödeme yöntemini otomatik değiştirme.
+- ilgilenilen_urun doluysa tekrar ürün sormak yasaktır.
+- context_lock=product_locked ise kısa cevaplar mevcut ürüne göre yorumlanır.
 
 FIELD KURALLARI:
 - set_ilgilenilen_urun: lazer / atac
