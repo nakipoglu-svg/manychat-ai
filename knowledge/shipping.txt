@@ -1,5 +1,3 @@
-# SHIPPING.txt
-
 KARGO BİLGİSİ
 Tüm siparişlerde kargo ücretsizdir.
 Kargo bilgisi sadece kargo konusu açıldığında verilir.
