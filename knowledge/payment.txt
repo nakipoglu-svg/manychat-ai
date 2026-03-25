@@ -1,5 +1,3 @@
-# PAYMENT.txt
-
 ÖDEME SEÇENEKLERİ
 EFT / Havale ile ödeme yapılabilir.
 Kapıda ödeme seçeneği mevcuttur.
@@ -53,6 +51,24 @@ Sipariş teslim edilirken ödeme yapılır.
 Kapıda ödeme fiyatı, EFT fiyatından farklıdır.
 Kapıda ödemede ön ödeme istenmez.
 Müşteri kapıda ödeme istiyorsa banka / havale cümlesine kayma.
+
+KAPIDA ÖDEME VAR MI SORUSUNDA FİYAT KURALI
+Müşteri "kapıda ödeme var mı" diye sorarsa ve ürün bağlamı netse sadece seçenek var demekle yetinme.
+Kapıda ödeme seçeneği olduğu ve ilgili ürünün kapıda ödeme fiyatı birlikte söylenir.
+
+Resimli lazer kolye için uygun cevap:
+"Evet efendim, kapıda ödeme seçeneğimiz mevcut. Kapıda ödeme fiyatımız 649 TL'dir 😊"
+
+Harfli ataç kolye için uygun cevap:
+"Evet efendim, kapıda ödeme seçeneğimiz mevcut. Kapıda ödeme fiyatımız 549 TL'dir 😊"
+
+ÖDEME SEÇENEĞİ SORULARINDA BAĞLAM KORUMA
+Müşteri önce fiyat veya ürün bağlamı konuşup sonra sadece "kapıda ödeme var mı" diye sorarsa bu soru yeni konu gibi yorumlanmaz.
+Aynı ürün bağlamında cevap verilir.
+
+Müşteri sadece "kapıda ödeme" yazarsa ve ürün bağlamı netse bunu ödeme sorusu olarak yorumla.
+Sadece "var" deme.
+İlgili ürünün kapıda ödeme fiyatını da birlikte söyle.
 
 ÖDEME FARKI SORULARI
 Müşteri "neden kapıda ödeme pahalı", "neden fiyat farklı", "EFT daha uygun mu" gibi sorular sorarsa:
