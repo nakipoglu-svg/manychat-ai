@@ -14,7 +14,8 @@ function readKnowledgeFile(filename) {
 function safeReadKnowledgeFile(filename) {
   try {
     return readKnowledgeFile(filename);
-  } catch {
+  } catch (err) {
+    console.warn(`Knowledge file missing: ${filename}`);
     return "";
   }
 }
@@ -46,7 +47,6 @@ function extractJsonText(rawText) {
   if (!rawText) return "";
 
   let text = String(rawText).trim();
-
   text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "");
   text = text.replace(/\s*```$/, "").trim();
 
@@ -80,6 +80,10 @@ function normalizeStageName(stage) {
   if (s.includes("address_wait")) return "address_waiting";
   if (s.includes("payment_selected")) return "payment_selected";
   if (s.includes("payment_wait")) return "payment_waiting";
+  if (s.includes("order_completed")) return "order_completed";
+  if (s.includes("order_cancelled")) return "order_cancelled";
+  if (s.includes("support_shipping")) return "support_shipping";
+  if (s.includes("support_general")) return "support_general";
 
   return s;
 }
@@ -261,12 +265,10 @@ function detectTopic(userMessage, historyText = "") {
     image: countMatches(text, imageWords),
     trust: countMatches(text, trustWords),
     order: countMatches(text, orderWords),
-    smalltalk: countMatches(text, smalltalkWords),
+    smalltalk: countMatches(text, smalltalkWords)
   };
 
-  const shortPriceAsks = [
-    "fiyat", "ne kadar", "kac tl", "kaç tl", "ucret", "ücret", "kac para", "kaç para"
-  ];
+  const shortPriceAsks = ["fiyat", "ne kadar", "kac tl", "kaç tl", "ucret", "ücret", "kac para", "kaç para"];
   if (shortPriceAsks.includes(last)) return "pricing";
 
   if (includesAny(last, ["kapida odeme", "kapıda ödeme", "eft", "havale", "iban", "odeme", "ödeme", "dekont"])) {
@@ -321,7 +323,7 @@ function detectProduct(userMessage, historyText = "", existingProduct = "") {
   const last = normalizeText(userMessage);
   const existing = normalizeText(existingProduct);
 
-  if (existing.includes("lazer")) return "laser";
+  if (existing.includes("lazer") || existing.includes("laser")) return "laser";
   if (existing.includes("atac") || existing.includes("ataç") || existing.includes("harf")) return "atac";
 
   const laserHints = [
@@ -355,50 +357,50 @@ function detectProduct(userMessage, historyText = "", existingProduct = "") {
   return "unknown";
 }
 
-function pickKnowledgeFiles(message, userProduct, conversationStage = "", historyText = "") {
+function pickKnowledgeFiles(message, product, conversationStage = "", historyText = "") {
   const topic = detectTopic(message, historyText);
-  const product = detectProduct(message, historyText, userProduct);
+  const detectedProduct = detectProduct(message, historyText, product);
   const stage = normalizeText(conversationStage);
 
   const commonFiles = [
-    "system_master.txt",
-    "routing_rules.txt",
-    "edge_cases.txt",
-    "few_shot_examples.txt",
-    "core_system.txt"
+    "SYSTEM_MASTER.txt",
+    "ROUTING_RULES.txt",
+    "EDGE_CASES.txt",
+    "FEW_SHOT_EXAMPLES.txt",
+    "CORE_SYSTEM.txt"
   ];
 
   const files = [...commonFiles];
 
   const topicFiles = {
-    pricing: ["pricing.txt"],
-    payment: ["payment.txt", "pricing.txt"],
-    shipping: ["shipping.txt"],
-    image: ["image_rules.txt"],
-    trust: ["trust.txt"],
-    order: ["order_flow.txt"],
-    smalltalk: ["smalltalk.txt"],
+    pricing: ["PRICING.txt"],
+    payment: ["PAYMENT.txt", "PRICING.txt"],
+    shipping: ["SHIPPING.txt"],
+    image: ["IMAGE_RULES.txt"],
+    trust: ["TRUST.txt"],
+    order: ["ORDER_FLOW.txt"],
+    smalltalk: ["SMALLTALK.txt"],
     general: []
   };
 
   const productFiles = {
-    laser: ["product_laser.txt"],
-    atac: ["product_atac.txt"],
+    laser: ["PRODUCT_LASER.txt"],
+    atac: ["PRODUCT_ATAC.txt"],
     unknown: []
   };
 
   if (stage.includes("photo_wait") || stage.includes("photo_receive") || stage.includes("back_text_wait")) {
-    files.push("image_rules.txt", "order_flow.txt");
+    files.push("IMAGE_RULES.txt", "ORDER_FLOW.txt");
   } else if (stage.includes("letter_wait")) {
-    files.push("order_flow.txt");
+    files.push("ORDER_FLOW.txt");
   } else if (stage.includes("payment")) {
-    files.push("payment.txt", "pricing.txt");
+    files.push("PAYMENT.txt", "PRICING.txt");
   } else if (stage.includes("address")) {
-    files.push("order_flow.txt", "payment.txt");
+    files.push("ORDER_FLOW.txt", "PAYMENT.txt");
   }
 
   files.push(...(topicFiles[topic] || []));
-  files.push(...(productFiles[product] || []));
+  files.push(...(productFiles[detectedProduct] || []));
 
   return [...new Set(files)];
 }
@@ -409,40 +411,74 @@ function getFieldFromFullContact(fullContactData, key) {
   return unwrapManychatValue(customFields[key] || "");
 }
 
-function buildCurrentContext({
-  message, userProduct, conversationStage, photoReceived,
-  paymentMethod, menuGosterildi, aiReply, fullContactData
-}) {
+function buildCurrentContext(body, fullContactData) {
+  const productFromBody =
+    unwrapManychatValue(body?.ilgilenilen_urun || "") ||
+    unwrapManychatValue(body?.user_product || "");
+
   return {
-    message: unwrapManychatValue(message || ""),
-    userProduct:
-      unwrapManychatValue(userProduct || "") ||
-      getFieldFromFullContact(fullContactData, "ilgilenilen_urun"),
+    message: unwrapManychatValue(body?.message || ""),
+    ilgilenilenUrun:
+      productFromBody ||
+      getFieldFromFullContact(fullContactData, "ilgilenilen_urun") ||
+      getFieldFromFullContact(fullContactData, "user_product"),
     conversationStage: normalizeStageName(
-      unwrapManychatValue(conversationStage || "") ||
+      unwrapManychatValue(body?.conversation_stage || "") ||
       getFieldFromFullContact(fullContactData, "conversation_stage")
     ),
     photoReceived:
-      unwrapManychatValue(photoReceived || "") ||
+      unwrapManychatValue(body?.photo_received || "") ||
       getFieldFromFullContact(fullContactData, "photo_received"),
     paymentMethod:
-      unwrapManychatValue(paymentMethod || "") ||
+      unwrapManychatValue(body?.payment_method || "") ||
       getFieldFromFullContact(fullContactData, "payment_method"),
     menuGosterildi:
-      unwrapManychatValue(menuGosterildi || "") ||
+      unwrapManychatValue(body?.menu_gosterildi || "") ||
       getFieldFromFullContact(fullContactData, "menu_gosterildi"),
     aiReply:
-      unwrapManychatValue(aiReply || "") ||
-      getFieldFromFullContact(fullContactData, "ai_reply")
+      unwrapManychatValue(body?.ai_reply || "") ||
+      getFieldFromFullContact(fullContactData, "ai_reply"),
+    lastIntent:
+      unwrapManychatValue(body?.last_intent || "") ||
+      getFieldFromFullContact(fullContactData, "last_intent"),
+    orderStatus:
+      unwrapManychatValue(body?.order_status || "") ||
+      getFieldFromFullContact(fullContactData, "order_status"),
+    backTextStatus:
+      unwrapManychatValue(body?.back_text_status || "") ||
+      getFieldFromFullContact(fullContactData, "back_text_status"),
+    addressStatus:
+      unwrapManychatValue(body?.address_status || "") ||
+      getFieldFromFullContact(fullContactData, "address_status"),
+    supportMode:
+      unwrapManychatValue(body?.support_mode || "") ||
+      getFieldFromFullContact(fullContactData, "support_mode"),
+    siparisAlindi:
+      unwrapManychatValue(body?.siparis_alindi || "") ||
+      getFieldFromFullContact(fullContactData, "siparis_alindi"),
+    cancelReason:
+      unwrapManychatValue(body?.cancel_reason || "") ||
+      getFieldFromFullContact(fullContactData, "cancel_reason"),
+    contextLock:
+      unwrapManychatValue(body?.context_lock || "") ||
+      getFieldFromFullContact(fullContactData, "context_lock")
   };
 }
 
 function buildHistoryText(ctx) {
   return [
-    ctx.userProduct ? `urun: ${ctx.userProduct}` : "",
+    ctx.ilgilenilenUrun ? `urun: ${ctx.ilgilenilenUrun}` : "",
     ctx.conversationStage ? `stage: ${ctx.conversationStage}` : "",
     ctx.photoReceived ? `photo_received: ${ctx.photoReceived}` : "",
     ctx.paymentMethod ? `payment_method: ${ctx.paymentMethod}` : "",
+    ctx.lastIntent ? `last_intent: ${ctx.lastIntent}` : "",
+    ctx.orderStatus ? `order_status: ${ctx.orderStatus}` : "",
+    ctx.backTextStatus ? `back_text_status: ${ctx.backTextStatus}` : "",
+    ctx.addressStatus ? `address_status: ${ctx.addressStatus}` : "",
+    ctx.supportMode ? `support_mode: ${ctx.supportMode}` : "",
+    ctx.siparisAlindi ? `siparis_alindi: ${ctx.siparisAlindi}` : "",
+    ctx.cancelReason ? `cancel_reason: ${ctx.cancelReason}` : "",
+    ctx.contextLock ? `context_lock: ${ctx.contextLock}` : "",
     ctx.aiReply ? `onceki_ai: ${ctx.aiReply}` : ""
   ].filter(Boolean).join("\n");
 }
@@ -476,6 +512,11 @@ function looksLikeAddressRequest(text) {
     normalized.includes("adres bilgilerinizi") ||
     normalized.includes("adresinizi yazar misiniz")
   );
+}
+
+function canChangePayment(ctx) {
+  const orderStatus = normalizeText(ctx.orderStatus || "active");
+  return orderStatus !== "completed" && orderStatus !== "cancelled";
 }
 
 function applyHardGuards({ answer, ctx, topic, product }) {
@@ -582,6 +623,15 @@ function finalizeOutput(parsed, ctx, topic, product) {
   const setPhotoReceived = unwrapManychatValue(parsed?.set_photo_received || "");
   const setPaymentMethod = unwrapManychatValue(parsed?.set_payment_method || "");
   const setMenuGosterildi = unwrapManychatValue(parsed?.set_menu_gosterildi || "");
+  const setLastIntent = unwrapManychatValue(parsed?.set_last_intent || "");
+  const setIlgilenilenUrun = unwrapManychatValue(parsed?.set_ilgilenilen_urun || "");
+  const setOrderStatus = unwrapManychatValue(parsed?.set_order_status || "");
+  const setBackTextStatus = unwrapManychatValue(parsed?.set_back_text_status || "");
+  const setAddressStatus = unwrapManychatValue(parsed?.set_address_status || "");
+  const setSupportMode = unwrapManychatValue(parsed?.set_support_mode || "");
+  const setSiparisAlindi = unwrapManychatValue(parsed?.set_siparis_alindi || "");
+  const setCancelReason = unwrapManychatValue(parsed?.set_cancel_reason || "");
+  const setContextLock = unwrapManychatValue(parsed?.set_context_lock || "");
 
   if (ctx.conversationStage === "address_received" && setConversationStage === "address_waiting") {
     setConversationStage = "address_received";
@@ -595,8 +645,17 @@ function finalizeOutput(parsed, ctx, topic, product) {
     return {
       reply,
       set_conversation_stage: setConversationStage,
+      set_last_intent: setLastIntent,
+      set_ilgilenilen_urun: setIlgilenilenUrun,
       set_photo_received: "",
       set_payment_method: setPaymentMethod,
+      set_order_status: setOrderStatus,
+      set_back_text_status: setBackTextStatus,
+      set_address_status: setAddressStatus,
+      set_support_mode: setSupportMode,
+      set_siparis_alindi: setSiparisAlindi,
+      set_cancel_reason: setCancelReason,
+      set_context_lock: setContextLock,
       set_menu_gosterildi: setMenuGosterildi
     };
   }
@@ -604,8 +663,17 @@ function finalizeOutput(parsed, ctx, topic, product) {
   return {
     reply,
     set_conversation_stage: setConversationStage,
+    set_last_intent: setLastIntent,
+    set_ilgilenilen_urun: setIlgilenilenUrun,
     set_photo_received: setPhotoReceived,
     set_payment_method: setPaymentMethod,
+    set_order_status: setOrderStatus,
+    set_back_text_status: setBackTextStatus,
+    set_address_status: setAddressStatus,
+    set_support_mode: setSupportMode,
+    set_siparis_alindi: setSiparisAlindi,
+    set_cancel_reason: setCancelReason,
+    set_context_lock: setContextLock,
     set_menu_gosterildi: setMenuGosterildi
   };
 }
@@ -616,50 +684,32 @@ export default async function handler(req, res) {
       return res.status(200).json({ reply: "" });
     }
 
-    let message = "";
-    let userProduct = "";
-    let conversationStage = "";
-    let photoReceived = "";
-    let paymentMethod = "";
-    let menuGosterildi = "";
-    let aiReply = "";
-    let fullContactData = null;
-
+    let body = {};
     try {
-      const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
-
-      message = body?.message || "";
-      userProduct = body?.user_product || body?.ilgilenilen_urun || "";
-      conversationStage = body?.conversation_stage || "";
-      photoReceived = body?.photo_received || "";
-      paymentMethod = body?.payment_method || "";
-      menuGosterildi = body?.menu_gosterildi || "";
-      aiReply = body?.ai_reply || "";
-      fullContactData = body?.full_contact_data || null;
+      body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
     } catch {
-      message = "";
-      userProduct = "";
-      conversationStage = "";
-      photoReceived = "";
-      paymentMethod = "";
-      menuGosterildi = "";
-      aiReply = "";
-      fullContactData = null;
+      body = {};
     }
 
-    const ctx = buildCurrentContext({
-      message, userProduct, conversationStage, photoReceived,
-      paymentMethod, menuGosterildi, aiReply, fullContactData
-    });
+    const fullContactData = body?.full_contact_data || null;
+    const ctx = buildCurrentContext(body, fullContactData);
 
     console.log("MANYCHAT BODY:", JSON.stringify({
       message: ctx.message,
-      userProduct: ctx.userProduct,
+      ilgilenilenUrun: ctx.ilgilenilenUrun,
       conversationStage: ctx.conversationStage,
       photoReceived: ctx.photoReceived,
       paymentMethod: ctx.paymentMethod,
       menuGosterildi: ctx.menuGosterildi,
       aiReply: ctx.aiReply,
+      lastIntent: ctx.lastIntent,
+      orderStatus: ctx.orderStatus,
+      backTextStatus: ctx.backTextStatus,
+      addressStatus: ctx.addressStatus,
+      supportMode: ctx.supportMode,
+      siparisAlindi: ctx.siparisAlindi,
+      cancelReason: ctx.cancelReason,
+      contextLock: ctx.contextLock,
       fullContactDataId: fullContactData?.id || "",
       fullContactDataIgId: fullContactData?.ig_id || ""
     }, null, 2));
@@ -668,20 +718,60 @@ export default async function handler(req, res) {
       return res.status(200).json({
         reply: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
         set_conversation_stage: "",
+        set_last_intent: "",
+        set_ilgilenilen_urun: "",
         set_photo_received: "",
         set_payment_method: "",
+        set_order_status: "",
+        set_back_text_status: "",
+        set_address_status: "",
+        set_support_mode: "",
+        set_siparis_alindi: "",
+        set_cancel_reason: "",
+        set_context_lock: "",
+        set_menu_gosterildi: ""
+      });
+    }
+
+    // Sipariş iptal akışı
+    if (includesAny(normalizeText(ctx.message), [
+      "iptal", "vazgectim", "vazgectim", "istemiyorum", "olmasin", "gerek kalmadi", "gerek kalmadı"
+    ])) {
+      return res.status(200).json({
+        reply: "Tabi efendim 😊",
+        set_conversation_stage: "order_cancelled",
+        set_last_intent: "cancel",
+        set_ilgilenilen_urun: "",
+        set_photo_received: "",
+        set_payment_method: "",
+        set_order_status: "cancelled",
+        set_back_text_status: "",
+        set_address_status: "",
+        set_support_mode: "",
+        set_siparis_alindi: "hayir",
+        set_cancel_reason: "changed_mind",
+        set_context_lock: "cancel_locked",
         set_menu_gosterildi: ""
       });
     }
 
     // ADDRESS_WAITING → telefon gelince adres kaydedildi + ödeme sor
     if (ctx.conversationStage === "address_waiting") {
-      if (hasPhoneNumber(ctx.message)) {
+      if (looksLikeAddressMessage(ctx.message)) {
         return res.status(200).json({
           reply: "Tabi efendim 😊 Adresiniz kaydedildi, teşekkürler. Ödemeniz nasıl olacak efendim? EFT / havale veya kapıda ödeme seçeneklerimiz mevcut.",
           set_conversation_stage: "address_received",
+          set_last_intent: "address",
+          set_ilgilenilen_urun: "",
           set_photo_received: "",
           set_payment_method: "",
+          set_order_status: "active",
+          set_back_text_status: "",
+          set_address_status: "received",
+          set_support_mode: "",
+          set_siparis_alindi: "",
+          set_cancel_reason: "",
+          set_context_lock: "order_locked",
           set_menu_gosterildi: ""
         });
       }
@@ -689,85 +779,125 @@ export default async function handler(req, res) {
       return res.status(200).json({
         reply: "__SKIP__",
         set_conversation_stage: "address_waiting",
+        set_last_intent: "",
+        set_ilgilenilen_urun: "",
         set_photo_received: "",
         set_payment_method: "",
+        set_order_status: "",
+        set_back_text_status: "",
+        set_address_status: "",
+        set_support_mode: "",
+        set_siparis_alindi: "",
+        set_cancel_reason: "",
+        set_context_lock: "",
         set_menu_gosterildi: ""
       });
     }
 
-    // PHOTO_RECEIVED → arka yazı netleşirse adres sor
+    // PHOTO_RECEIVED → arka yazı / arka taraf netleştiyse adres sor
     if (ctx.conversationStage === "photo_received") {
       const msg = normalizeText(ctx.message);
-      const backTextKeywords = [
+
+      const backProvidedKeywords = [
         "arkaya", "arkasina", "arka tarafa", "arka yuze", "arka yüze",
-        "yazalim", "yazsin", "yazin", "yaz ", "koy ", "koysun", "koyalim"
+        "yazalim", "yazsin", "yazin", "dua", "isim", "bos kalsin", "boş kalsın",
+        "arkaya fotograf", "arkaya fotoğraf", "arkaya foto", "arkaya resim"
       ];
-      const hasBackText = backTextKeywords.some((k) => msg.includes(normalizeText(k)));
-      if (hasBackText) {
-        const adresMsg = "Tabi efendim 😊 Sipariş için şu bilgileri alabilir miyiz?\n\n- İsim Soyisim\n- Açık Adres\n- Cep Telefonu";
+
+      const backProvided = backProvidedKeywords.some((k) => msg.includes(normalizeText(k)));
+
+      if (backProvided) {
         return res.status(200).json({
-          reply: adresMsg,
+          reply: "Tabi efendim 😊 Sipariş için şu bilgileri alabilir miyiz?\n\n- İsim Soyisim\n- Açık Adres\n- Cep Telefonu",
           set_conversation_stage: "address_waiting",
+          set_last_intent: "order_detail",
+          set_ilgilenilen_urun: "",
           set_photo_received: "yes",
           set_payment_method: "",
+          set_order_status: "active",
+          set_back_text_status: "provided",
+          set_address_status: "waiting",
+          set_support_mode: "",
+          set_siparis_alindi: "",
+          set_cancel_reason: "",
+          set_context_lock: "order_locked",
           set_menu_gosterildi: ""
         });
       }
     }
 
-    // ÖDEME SEÇİLDİ AMA ADRES ALINMADI → fiyat ver + adres sor
-    if (!ctx.conversationStage || ctx.conversationStage === "photo_received") {
+    // Ödeme değişebilir: sipariş tamamlanmadıysa son tercih geçerli
+    if (canChangePayment(ctx)) {
       const payment = detectPaymentMethod(ctx.message);
-      if (payment) {
-        const product = detectProduct(ctx.message, buildHistoryText(ctx), ctx.userProduct);
+      if (payment && (ctx.conversationStage === "address_received" || ctx.conversationStage === "payment_selected")) {
+        if (payment === "eft") {
+          return res.status(200).json({
+            reply: "Tamamdır efendim 😊 IBAN bilgimiz:\nTR34 0015 7000 0000 0076 2524 67\nAlıcı: Servet Cihan Nakipoğlu",
+            set_conversation_stage: "payment_selected",
+            set_last_intent: "payment",
+            set_ilgilenilen_urun: "",
+            set_photo_received: "",
+            set_payment_method: "eft",
+            set_order_status: "active",
+            set_back_text_status: "",
+            set_address_status: "",
+            set_support_mode: "",
+            set_siparis_alindi: "evet",
+            set_cancel_reason: "",
+            set_context_lock: "order_locked",
+            set_menu_gosterildi: ""
+          });
+        }
+
+        return res.status(200).json({
+          reply: "Tamamdır efendim 😊 Kapıda ödeme ile siparişiniz hazırlanacaktır.",
+          set_conversation_stage: "payment_selected",
+          set_last_intent: "payment",
+          set_ilgilenilen_urun: "",
+          set_photo_received: "",
+          set_payment_method: "kapida_odeme",
+          set_order_status: "active",
+          set_back_text_status: "",
+          set_address_status: "",
+          set_support_mode: "",
+          set_siparis_alindi: "evet",
+          set_cancel_reason: "",
+          set_context_lock: "order_locked",
+          set_menu_gosterildi: ""
+        });
+      }
+    }
+
+    // İlk ödeme seçimi: ürün bilgisi varsa fiyatla birlikte
+    if (!ctx.conversationStage || ctx.conversationStage === "photo_received" || ctx.conversationStage === "address_received") {
+      const payment = detectPaymentMethod(ctx.message);
+      if (payment && canChangePayment(ctx) && ctx.conversationStage !== "payment_selected") {
+        const product = detectProduct(ctx.message, buildHistoryText(ctx), ctx.ilgilenilenUrun);
         const isAtac = product === "atac";
         const fiyat = payment === "eft"
           ? (isAtac ? "499 TL" : "599 TL")
           : (isAtac ? "549 TL" : "649 TL");
         const odeme = payment === "eft" ? "EFT / havale" : "Kapıda ödeme";
+
         const msg = `Tabi efendim 😊 ${odeme} fiyatımız ${fiyat}'dir. Sipariş için şu bilgileri alabilir miyiz?\n\n- İsim Soyisim\n- Açık Adres\n- Cep Telefonu`;
 
         return res.status(200).json({
           reply: msg,
           set_conversation_stage: "address_waiting",
+          set_last_intent: "payment",
+          set_ilgilenilen_urun: product === "laser" ? "lazer" : product === "atac" ? "atac" : "",
           set_photo_received: "",
           set_payment_method: payment,
+          set_order_status: "active",
+          set_back_text_status: "",
+          set_address_status: "waiting",
+          set_support_mode: "",
+          set_siparis_alindi: "",
+          set_cancel_reason: "",
+          set_context_lock: "order_locked",
           set_menu_gosterildi: ""
         });
       }
-    }
-
-    // ADDRESS_RECEIVED → ödeme algılama
-    if (ctx.conversationStage === "address_received") {
-      const payment = detectPaymentMethod(ctx.message);
-      if (payment) {
-        return res.status(200).json({
-          reply: payment === "eft"
-            ? "Tamamdır efendim 😊 IBAN bilgimiz:\nTR34 0015 7000 0000 0076 2524 67\nAlıcı: Servet Cihan Nakipoğlu"
-            : "Tamamdır efendim 😊 Kapıda ödeme ile siparişiniz hazırlanacaktır.",
-          set_conversation_stage: "payment_selected",
-          set_photo_received: "",
-          set_payment_method: payment,
-          set_menu_gosterildi: "",
-          set_siparis_alindi: "evet"
-        });
-      }
-    }
-
-    // BACKEND TABANLI ADRES ALGILAMA
-    const isAddressMessage = looksLikeAddressMessage(ctx.message);
-    const isAddressStage =
-      ctx.conversationStage === "address_waiting" ||
-      ctx.conversationStage === "address_received";
-
-    if (isAddressMessage && isAddressStage) {
-      return res.status(200).json({
-        reply: "Tamamdır efendim 😊 Adresiniz kaydedildi.",
-        set_conversation_stage: "address_received",
-        set_photo_received: "",
-        set_payment_method: "",
-        set_menu_gosterildi: ""
-      });
     }
 
     const apiKey = process.env.DEEPSEEK_API_KEY;
@@ -775,19 +905,28 @@ export default async function handler(req, res) {
       return res.status(200).json({
         reply: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
         set_conversation_stage: "",
+        set_last_intent: "",
+        set_ilgilenilen_urun: "",
         set_photo_received: "",
         set_payment_method: "",
+        set_order_status: "",
+        set_back_text_status: "",
+        set_address_status: "",
+        set_support_mode: "",
+        set_siparis_alindi: "",
+        set_cancel_reason: "",
+        set_context_lock: "",
         set_menu_gosterildi: ""
       });
     }
 
     const historyText = buildHistoryText(ctx);
     const topic = detectTopic(ctx.message, historyText);
-    const product = detectProduct(ctx.message, historyText, ctx.userProduct);
+    const product = detectProduct(ctx.message, historyText, ctx.ilgilenilenUrun);
 
     const selectedFiles = pickKnowledgeFiles(
       ctx.message,
-      ctx.userProduct,
+      ctx.ilgilenilenUrun,
       ctx.conversationStage,
       historyText
     );
@@ -813,8 +952,8 @@ GÖREVİN:
 GENEL KURALLAR:
 - Bilgi yoksa şu cevabı ver:
 Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊
-- Eğer user_product doluysa bunu öncelikli ürün bilgisi kabul et.
-- Ürün belirtilmemişse ve user_product da boşsa, cevap ürüne göre değişiyorsa hangi model ile ilgilendiğini sor.
+- Eğer ilgilenilen_urun doluysa bunu öncelikli ürün bilgisi kabul et.
+- Ürün belirtilmemişse ve ilgilenilen_urun da boşsa, cevap ürüne göre değişiyorsa hangi model ile ilgilendiğini sor.
 - Müşteri sormadıkça ek ücretli veya opsiyonel bilgileri söyleme.
 - Cevap verirken yalnızca sorulan şeyi cevapla.
 - Ek açıklama, öneri veya alternatif sunma.
@@ -822,35 +961,38 @@ Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊
 - Belirsiz ifadelerde tahmin yapma; gerekirse kısa netleştirme sorusu sor.
 - Müşteri daha önce hangi aşamadaysa, tekrar merhaba diyerek başa dönme.
 - Kısa cevapları bağlama göre yorumla.
-- "evet", "tamam", "olur", "amin", isim, tarih gibi kısa mesajları son aktif aşamaya göre değerlendir.
 - Fiyat sorularında yalnızca PRICING dosyasındaki fiyatları kullan.
 - 349 TL, 399 TL, 449 TL gibi dosyada olmayan fiyatlar ASLA yazılamaz.
 - Siyah kalp, küçük nazar boncuğu, büyük nazar boncuğu gibi seçenekler açma.
 - Sadece pembe kalp ve nazar boncuğu bilgisi ver.
 - Resimli lazer kolyede fotoğraf gelmeden adres isteme.
+- Müşteri görsele cevap veriyorsa ve ürün belli ise yeniden ürün sorma.
 
 BAĞLAM KURALLARI:
 - conversation_stage çok önemlidir.
 - photo_received=yes ise tekrar fotoğraf isteyemezsin.
 - conversation_stage=photo_waiting ise müşteri fotoğraf, fotoğraf düzeni, kişi sayısı, ön/arka yüz düzeni gibi sipariş detaylarını yazıyor olabilir.
 - conversation_stage=photo_received ise müşterinin kısa mesajlarını sipariş detayı olarak yorumla.
-- conversation_stage=photo_received iken müşteri arka yüze yazı veya fotoğraf koyulacağını net söylerse MUTLAKA set_conversation_stage="address_waiting" set et ve adres sor.
-- conversation_stage=photo_received iken müşteri arka yüz istemiyorsa set_conversation_stage="address_waiting" set et ve adres sor.
-- conversation_stage=letter_waiting ise kısa metinleri seçilen harfler olarak yorumla.
+- conversation_stage=photo_received iken müşteri arka yüze yazı, fotoğraf veya boş bırakma tercihini net söylerse set_back_text_status="provided" dön.
+- conversation_stage=photo_received iken müşteri arka taraf için karar verdiyse set_conversation_stage="address_waiting" dön.
 - conversation_stage=address_received ise müşteri adresini zaten vermiş kabul et.
 - conversation_stage=address_received veya conversation_stage=payment_selected ise tekrar adres isteme.
-- Müşteri adresi zaten verildikten sonra "eft olsun", "havale yapayım", "iban", "ödeme yapayım" gibi mesajlar yazarsa bunu ödeme adımı olarak yorumla.
-- Adres alınmış bir konuşmada ödeme tercihi netleşirse IBAN / ödeme yönlendirmesi ver; yeniden adres sorma.
-- conversation_stage=payment_selected olduktan sonra aynı konuşmada tekrar adres istemek yasaktır.
-- Müşteri tek mesajda ad soyad, telefon numarası ve açık adres benzeri bilgiler yazdıysa bunu adres bilgisi olarak kabul et.
+- Müşteri tek mesajda ad soyad, telefon numarası ve açık adres benzeri bilgiler yazdıysa bunu adres bilgisi olarak kabul et ve set_address_status="received" dön.
+- Sipariş aktifken müşteri ödeme yöntemini değiştirebilir. Son net ödeme tercihi geçerlidir.
+- order_status=completed veya cancelled ise ödeme yöntemini otomatik değiştirme.
 
-STATE GÜNCELLEME KURALLARI:
-- Müşteri ödeme yöntemini seçtiği anda set_payment_method mutlaka doldur.
-- Müşteri "eft", "havale", "iban'a atayım", "kapıda ödeme", "kapida odeme" gibi net bir ödeme tercihi belirttiyse set_conversation_stage="payment_selected" yap.
-- payment_method doluyken stage hâlâ address_received kalmamalı.
-- Ödeme tercihi netleştiyse set_payment_method ve set_conversation_stage birlikte dönmelidir.
-- Müşteri ad soyad + telefon + açık adres bilgilerini tek mesajda verdiyse set_conversation_stage="address_received" döndür.
-- Eğer bir alanı kesin bilmiyorsan boş bırak.
+FIELD KURALLARI:
+- set_ilgilenilen_urun: lazer / atac
+- set_payment_method: eft / kapida_odeme
+- set_photo_received: yes / no
+- set_order_status: active / completed / cancelled
+- set_back_text_status: none / waiting / provided
+- set_address_status: none / waiting / received
+- set_support_mode: none / shipping / general
+- set_siparis_alindi: evet / hayir
+- set_cancel_reason: price / trust / changed_mind / delay / other
+- set_context_lock: none / product_locked / photo_locked / order_locked / support_locked / cancel_locked
+- set_last_intent: product / pricing / payment / image / order_detail / address / shipping / trust / smalltalk / cancel / support
 
 ÇIKIŞ FORMATI:
 YALNIZCA geçerli JSON döndür.
@@ -861,8 +1003,17 @@ Format tam olarak şöyle olsun:
 {
   "reply": "müşteriye verilecek cevap",
   "set_conversation_stage": "",
+  "set_last_intent": "",
+  "set_ilgilenilen_urun": "",
   "set_photo_received": "",
   "set_payment_method": "",
+  "set_order_status": "",
+  "set_back_text_status": "",
+  "set_address_status": "",
+  "set_support_mode": "",
+  "set_siparis_alindi": "",
+  "set_cancel_reason": "",
+  "set_context_lock": "",
   "set_menu_gosterildi": ""
 }
 `;
@@ -871,8 +1022,8 @@ Format tam olarak şöyle olsun:
 KULLANICI MESAJI:
 ${ctx.message}
 
-KULLANICI ÜRÜN BİLGİSİ:
-${ctx.userProduct || "-"}
+İLGİLENİLEN ÜRÜN:
+${ctx.ilgilenilenUrun || "-"}
 
 KONUŞMA AŞAMASI:
 ${ctx.conversationStage || "-"}
@@ -889,6 +1040,30 @@ ${ctx.menuGosterildi || "-"}
 ÖNCEKİ AI CEVABI:
 ${ctx.aiReply || "-"}
 
+LAST INTENT:
+${ctx.lastIntent || "-"}
+
+ORDER STATUS:
+${ctx.orderStatus || "-"}
+
+BACK TEXT STATUS:
+${ctx.backTextStatus || "-"}
+
+ADDRESS STATUS:
+${ctx.addressStatus || "-"}
+
+SUPPORT MODE:
+${ctx.supportMode || "-"}
+
+SIPARIS ALINDI:
+${ctx.siparisAlindi || "-"}
+
+CANCEL REASON:
+${ctx.cancelReason || "-"}
+
+CONTEXT LOCK:
+${ctx.contextLock || "-"}
+
 TOPIC:
 ${topic}
 
@@ -903,7 +1078,7 @@ ${JSON.stringify({
 
     const payload = {
       model: "deepseek-chat",
-      max_tokens: 500,
+      max_tokens: 700,
       temperature: 0.1,
       response_format: { type: "json_object" },
       messages: [
@@ -930,9 +1105,7 @@ ${JSON.stringify({
     const data = await response.json();
     console.log("DEEPSEEK RESPONSE:", JSON.stringify(data, null, 2));
 
-    const rawText =
-      data?.choices?.[0]?.message?.content?.trim() || "";
-
+    const rawText = data?.choices?.[0]?.message?.content?.trim() || "";
     const cleanedText = extractJsonText(rawText);
 
     let parsed;
@@ -943,15 +1116,23 @@ ${JSON.stringify({
     }
 
     const finalData = finalizeOutput(parsed, ctx, topic, product);
-
     return res.status(200).json(finalData);
   } catch (err) {
     console.error("chat.js error:", err);
     return res.status(200).json({
       reply: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
       set_conversation_stage: "",
+      set_last_intent: "",
+      set_ilgilenilen_urun: "",
       set_photo_received: "",
       set_payment_method: "",
+      set_order_status: "",
+      set_back_text_status: "",
+      set_address_status: "",
+      set_support_mode: "",
+      set_siparis_alindi: "",
+      set_cancel_reason: "",
+      set_context_lock: "",
       set_menu_gosterildi: ""
     });
   }
