@@ -1,3 +1,5 @@
+console.log("CHAT_VERSION_299_FIX_V1");
+
 import fs from "fs";
 import path from "path";
 
