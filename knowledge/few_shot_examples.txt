@@ -1,0 +1,86 @@
+ÖRNEK 1
+Müşteri: fiyat
+Bağlam: resimli lazer kolye konuşuluyor
+Doğru cevap:
+EFT / havale fiyatımız 599 TL, kapıda ödeme fiyatımız 649 TL'dir efendim 😊
+
+ÖRNEK 2
+Müşteri: 2li alımda indirim oluyor mu
+Bağlam: resimli lazer kolye
+Doğru cevap:
+Tabi efendim, 2 kolye aynı adrese olacaksa EFT 1000 TL, kapıda ödeme 1100 TL'dir 😊
+
+ÖRNEK 3
+Müşteri: kapıda ödeme var mı
+Bağlam: harfli ataç kolye
+Doğru cevap:
+Evet efendim, kapıda ödeme seçeneğimiz mevcut. Kapıda ödeme fiyatımız 549 TL'dir 😊
+
+ÖRNEK 4
+Müşteri: önüne ablasını arkaya kardeşini yapabilir misiniz
+Bağlam: resimli lazer kolye
+Doğru cevap:
+Tabi efendim, ön yüze bir fotoğraf, arka yüze bir fotoğraf yapabiliyoruz. Fiyat farkı da olmuyor 😊
+
+ÖRNEK 5
+Müşteri: tek zincir ama iki fotoğraf kaç tl
+Bağlam: resimli lazer kolye
+Doğru cevap:
+Hayır efendim, fiyat değişmiyor. Aynı fiyattan yapıyoruz 😊
+
+ÖRNEK 6
+Müşteri: 3 resim birden olur mu
+Bağlam: resimli lazer kolye
+Doğru cevap:
+Tabi efendim, 3 fotoğraf da uygulanabiliyor 😊
+
+ÖRNEK 7
+Müşteri: dua yazılır mı
+Bağlam: resimli lazer kolye, fotoğraf henüz gelmedi
+Doğru cevap:
+Tabi efendim, yazabiliyoruz 😊
+
+ÖRNEK 8
+Müşteri: kalp hangi renk
+Bağlam: resimli lazer kolye
+Doğru cevap:
+Pembe kalbimiz mevcut efendim 😊 Dilerseniz nazar boncuğu da takabiliyoruz.
+
+ÖRNEK 9
+Müşteri: nazar boncuğu var mı
+Bağlam: resimli lazer kolye
+Doğru cevap:
+Nazar boncuğumuz mevcut efendim 😊
+
+ÖRNEK 10
+Müşteri: erkek için olur mu
+Bağlam: resimli lazer kolye
+Doğru cevap:
+Tabi efendim, erkek için 50 cm gümüş zincirimiz mevcut 😊
+
+ÖRNEK 11
+Müşteri: bir zincirde 3 plaka olur mu
+Bağlam: resimli lazer kolye
+Doğru cevap:
+Bu şekilde yapmıyoruz efendim, bir zincirde tek plaka oluyor 😊
+
+ÖRNEK 12
+Müşteri: zinciri dahil mi
+Bağlam: resimli lazer kolye fiyatı konuşuluyor
+Doğru cevap:
+Evet efendim, zinciri ile birlikte fiyatımız budur 😊
+
+ÖRNEK 13
+Müşteri: kapıda ödeme
+Bağlam: resimli lazer kolye
+Doğru cevap:
+Evet efendim, kapıda ödeme seçeneğimiz mevcut. Kapıda ödeme fiyatımız 649 TL'dir 😊
+
+ÖRNEK 14
+Müşteri: dua yazısı arkaya olsun
+Bağlam: resimli lazer kolye, fotoğraf henüz gelmedi
+Doğru cevap:
+Tabi efendim, yazabiliyoruz 😊
+
+Yanlış cevap:
+Ad soyad, telefon ve adres bilgilerinizi yazabilir misiniz
