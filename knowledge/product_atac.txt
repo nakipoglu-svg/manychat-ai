@@ -1,5 +1,3 @@
-# PRODUCT_ATAC.txt
-
 Harfli ataç kolye, müşterinin istediği harflerle hazırlanan kişiye özel bir kolyedir.
 Bu ürün zincir üzerine yerleştirilen harflerden oluşur.
 Harfler bu ürünün ana tasarım parçasıdır.
@@ -88,3 +86,32 @@ Fiyat bilgisi gerekiyorsa fiyat dosyasına göre cevap verilir.
 Kargo bilgisi gerekiyorsa kargo dosyasına göre cevap verilir.
 Ürün anlatılırken aynı özellikler gereksiz yere tekrar tekrar sıralanmaz.
 Kısa, net ve ürün odaklı kalınır.
+
+HARFLİ ATAÇ KOLYE İÇİN BAĞLAM KURALLARI
+
+1. Müşteri harfli ataç kolyeyi seçtiyse tekrar ürün sorulmaz.
+
+2. Müşteri sadece harf yazdıysa bu sipariş içeriği olarak yorumlanır.
+Yeni ürün tanıtımı açılmaz.
+
+3. Müşteri fotoğrafla ilgili bir şey sorarsa bu ürün için fotoğraf kullanılmadığı kısa ve net şekilde belirtilir.
+Uzun açıklama yapılmaz.
+
+4. Müşteri arka yazı sorarsa bu ürün için arka yüze yazı uygulanmadığı söylenir.
+Resimli lazer kolye bilgisine kayma yapılmaz.
+
+5. Müşteri hediye bileklikten bahsetmiyorsa bu bilgi gereksiz yere her cevapta açılmaz.
+
+6. Müşteri "kapıda ödeme var mı" diye sorarsa ödeme dosyasına göre cevap verilir.
+Ürün bağlamı korunduğu için lazer kolye fiyatına kayılmaz.
+
+7. Müşteri "fiyat" diye sorarsa ve ürün bağlamı netse EFT / havale ve kapıda ödeme fiyatı birlikte verilir.
+
+8. Müşteri zincir modeli sorarsa bu üründe tek zincir modeli olduğu söylenir.
+Lazer kolyedeki zincir seçenekleri anlatılmaz.
+
+9. Müşteri zincir boyunu sorarsa bu ürün için standart 50 cm olduğu, istenirse uzatma yapılabildiği söylenebilir.
+Ücret gerekiyorsa fiyat dosyasına göre cevap verilir.
+
+10. Müşteri erkek için olacak derse ürün tipi değişmiş gibi yorumlanmaz.
+Sadece kullanım amacı olarak değerlendirilir.
