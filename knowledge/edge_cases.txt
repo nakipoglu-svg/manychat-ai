@@ -1,0 +1,59 @@
+KRİTİK EDGE CASE KURALLARI
+
+1. "2li alımda indirim var mı" kapsam dışı değildir.
+Bu fiyat sorusudur.
+
+2. "Fiyat" yazıldıysa ve ürün belliyse tek fiyat verilmez.
+EFT ve kapıda ödeme birlikte verilir.
+
+3. "Kapıda ödeme var mı" sorulduysa ve ürün belliyse sadece "var" denmez.
+Kapıda ödeme fiyatı da birlikte söylenir.
+
+4. "Tek zincir ama iki fotoğraf" ifadesi tek ürün içindeki tasarım anlamına gelir.
+İkinci ürün gibi yorumlanmaz.
+Fiyat değişmiyorsa aynı fiyattan olduğu söylenir.
+
+5. "Ön yüze birini, arkaya birini yapar mısınız" sorusu arkalı önlü iki farklı fotoğraf anlamına gelir.
+Yapılabildiği ve fiyat farkı olmadığı birlikte söylenir.
+
+6. "Bir zincirde 3 plaka olur mu" sorusu standart ürün değildir.
+Bir zincirde tek plaka olduğu söylenir.
+
+7. Müşteri 3 kişi / 3 fotoğraf diyorsa AI 2 diye cevap vermez.
+Sayı korunur.
+
+8. Resimli lazer kolyede fotoğraf gelmeden adres istenmez.
+
+9. Müşteri erkek için zincir boyunu özellikle sorarsa lazer kolyede erkek için 50 cm gümüş zincir bilgisi verilir.
+
+10. "Zincir dahil mi" sorusunda yeni fiyat üretilmez.
+Mevcut fiyatın zincir ile birlikte olduğu söylenir.
+
+11. Kalp aksesuarı sorulursa siyah kalp denmez.
+Sadece pembe kalp olduğu söylenir.
+
+12. Nazar boncuğu sorulursa küçük / büyük ayrımı açılmaz.
+Sadece nazar boncuğu seçeneği olduğu söylenir.
+
+13. Aksesuar sorularında müşteriye gereksiz varyasyon açılmaz.
+Uygun cevap:
+"Pembe kalbimiz ve nazar boncuğumuz mevcut efendim 😊"
+
+14. Arkalı önlü iki farklı fotoğrafta ekstra ücret varmış gibi konuşulmaz.
+Fiyat farkı olmadığı söylenir.
+
+15. Aynı zincirde 2 veya 3 plaka yapılabiliyormuş gibi konuşulmaz.
+Bu talep standart ürün gibi fiyatlandırılmaz.
+
+16. Müşteri sadece "kapıda ödeme" yazarsa bağlam netse bunu ödeme sorusu olarak yorumla.
+Uygun ürüne göre kapıda ödeme seçeneği ve fiyatı birlikte söyle.
+
+17. Müşteri sadece "erkek için" yazarsa bunu ürün tipi değişikliği gibi değil, kullanım amacı olarak yorumla.
+
+18. Müşteri "dua yazılır mı", "isim yazılır mı", "arkasına yazı olur mu" gibi soru soruyorsa ve fotoğraf henüz gelmediyse aktif konuya cevap verilir, adres istenmez.
+
+19. Müşteri sayı belirttiyse cevapta farklı sayı kullanılmaz.
+3 denildiyse 2 yazılmaz, 4 denildiyse 3 yazılmaz.
+
+20. Fiyat sorularında dosyada olmayan hiçbir sayı yazılamaz.
+349 TL, 399 TL, 449 TL gibi sayılar asla kullanılmaz.
