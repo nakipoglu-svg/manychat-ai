@@ -528,7 +528,17 @@ function applyHardGuards({ answer, ctx, topic, product }) {
   if (!text) {
     return "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊";
   }
-
+if (
+  (ctx.ilgilenilenUrun === "lazer" || ctx.ilgilenilenUrun === "atac") &&
+  normalizeText(answer).includes("hangi model ile ilgileniyorsunuz")
+) {
+  if (ctx.ilgilenilenUrun === "lazer") {
+    return "Tabi efendim 😊";
+  }
+  if (ctx.ilgilenilenUrun === "atac") {
+    return "Tabi efendim 😊";
+  }
+}
   if (hasForbiddenPrice(text)) {
     if (product === "laser") {
       return "EFT / havale fiyatımız 599 TL, kapıda ödeme fiyatımız 649 TL'dir efendim 😊";
