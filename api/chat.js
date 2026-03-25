@@ -11,6 +11,14 @@ function readKnowledgeFile(filename) {
   return content;
 }
 
+function safeReadKnowledgeFile(filename) {
+  try {
+    return readKnowledgeFile(filename);
+  } catch {
+    return "";
+  }
+}
+
 function unwrapManychatValue(value) {
   if (value === null || value === undefined) return "";
 
@@ -51,9 +59,12 @@ function normalizeText(text) {
     .replace(/ç/g, "c")
     .replace(/ğ/g, "g")
     .replace(/ı/g, "i")
+    .replace(/i̇/g, "i")
     .replace(/ö/g, "o")
     .replace(/ş/g, "s")
     .replace(/ü/g, "u")
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
@@ -64,6 +75,7 @@ function normalizeStageName(stage) {
   if (s.includes("photo_wait")) return "photo_waiting";
   if (s.includes("photo_receive")) return "photo_received";
   if (s.includes("letter_wait")) return "letter_waiting";
+  if (s.includes("back_text_wait")) return "back_text_waiting";
   if (s.includes("address_receive")) return "address_received";
   if (s.includes("address_wait")) return "address_waiting";
   if (s.includes("payment_selected")) return "payment_selected";
@@ -73,7 +85,15 @@ function normalizeStageName(stage) {
 }
 
 function includesAny(text, keywords) {
-  return keywords.some((keyword) => text.includes(keyword));
+  return keywords.some((keyword) => text.includes(normalizeText(keyword)));
+}
+
+function countMatches(text, phrases = []) {
+  let score = 0;
+  for (const phrase of phrases) {
+    if (text.includes(normalizeText(phrase))) score++;
+  }
+  return score;
 }
 
 function hasPhoneNumber(text) {
@@ -91,7 +111,7 @@ function looksLikeAddressMessage(text) {
     "sisli", "şişli", "umraniye", "ümraniye", "beykoz", "kadikoy", "kadıköy"
   ];
 
-  const hitCount = addressKeywords.filter((k) => msg.includes(k)).length;
+  const hitCount = addressKeywords.filter((k) => msg.includes(normalizeText(k))).length;
   const lineCount = String(text || "")
     .split(/\n+/)
     .map((x) => x.trim())
@@ -100,7 +120,6 @@ function looksLikeAddressMessage(text) {
   return hasPhoneNumber(text) && (hitCount >= 2 || lineCount >= 3);
 }
 
-// ── YENİ: Ödeme yöntemi algılama ──────────────────────────────────────────
 function detectPaymentMethod(text) {
   const msg = normalizeText(text);
   if (includesAny(msg, ["kapida", "kapi", "kapıda", "kapı"])) return "kapida_odeme";
@@ -108,66 +127,278 @@ function detectPaymentMethod(text) {
   return "";
 }
 
-function pickKnowledgeFiles(message, userProduct, conversationStage = "") {
-  const msg = normalizeText(message);
-  const product = normalizeText(userProduct);
+function hasPhotoHint(text) {
+  const msg = normalizeText(text);
+  return includesAny(msg, [
+    "fotograf", "fotoğraf", "foto", "resim", "gorsel", "görsel",
+    "ekran goruntusu", "ekran görüntüsü", "vesikalik", "vesikalık"
+  ]);
+}
+
+function detectTopic(userMessage, historyText = "") {
+  const text = normalizeText(`${historyText} ${userMessage}`);
+  const last = normalizeText(userMessage);
+
+  const priceWords = [
+    "fiyat", "fiyati", "fiyat nedir", "fiyati nedir",
+    "ne kadar", "kac tl", "kaç tl", "ucret", "ücret",
+    "kac para", "kaç para", "ne tutar", "toplam ne kadar",
+    "indirim", "indirim var mi", "indirim olur mu",
+    "kampanya", "kampanya var mi",
+    "2li", "2 li", "ikili", "iki li",
+    "coklu alim", "çoklu alım", "toplu alim", "toplu alım",
+    "adet fiyati", "adet fiyatı",
+    "2 tane", "iki tane", "3 tane", "uc tane", "üç tane",
+    "eft fiyati", "eft fiyatı",
+    "havale fiyati", "havale fiyatı",
+    "kapida odeme fiyati", "kapıda ödeme fiyatı",
+    "fiyat farki", "fiyat farkı",
+    "ayni fiyattan", "aynı fiyattan"
+  ];
+
+  const paymentWords = [
+    "kapida odeme", "kapıda ödeme",
+    "eft", "havale", "iban", "odeme", "ödeme",
+    "odeme nasil", "ödeme nasıl",
+    "nasil odeyecegim", "nasıl ödeyeceğim",
+    "dekont", "ekran goruntusu", "ekran görüntüsü",
+    "aciklama ne yazayim", "açıklama ne yazayım",
+    "odeme yaptim", "ödeme yaptım",
+    "eft attim", "eft attım",
+    "havale yaptim", "havale yaptım",
+    "kapida odeme var mi", "kapıda ödeme var mı",
+    "kapida odeme olur mu", "kapıda ödeme olur mu",
+    "once urun gelsin", "önce ürün gelsin",
+    "guvenemiyorum", "güvenemiyorum",
+    "odeme atsam", "ödeme atsam"
+  ];
+
+  const shippingWords = [
+    "kargo", "kargom", "kargoya", "kargoya verildi", "kargoya verildi mi",
+    "teslim", "teslimat", "takip", "takip no", "takip numarasi", "takip numarası",
+    "ptt", "aras", "yola cikti", "yola çıktı",
+    "gelmedi", "urun gelmedi", "ürün gelmedi",
+    "gecikti", "geçikti", "kargo gelmedi",
+    "ptt yavas", "ptt yavaş",
+    "sms gelmedi", "kargo sms",
+    "hangi kargo", "hangi kargo ile", "kargo firmasi", "kargo firması",
+    "adresi yanlis verdim", "adresi yanlış verdim",
+    "adres degisecek", "adres değişecek",
+    "hizli kargo", "hızlı kargo",
+    "acil lazim", "acil lazım",
+    "bugun cikar mi", "bugün çıkar mı",
+    "ne zaman gelir", "ne zaman gelir acaba"
+  ];
+
+  const imageWords = [
+    "fotograf", "fotoğraf", "foto", "resim", "gorsel", "görsel",
+    "fotograf olur mu", "fotoğraf olur mu", "resim olur mu",
+    "uygun olur mu", "uygun mu",
+    "net mi", "bulanık", "karanlik", "karanlık",
+    "vesikalik", "vesikalık",
+    "eski foto", "uzaktan cekim", "uzaktan çekim",
+    "iki kisi", "iki kişi", "uc kisi", "üç kişi", "3 kisi", "3 kişi",
+    "4 kisi", "4 kişi", "aile fotosu", "bebek fotosu",
+    "birlestirme", "birleştirme",
+    "iki fotograf", "iki fotoğraf",
+    "uc fotograf", "üç fotoğraf", "3 fotograf", "3 fotoğraf",
+    "3 resim", "2 foto",
+    "arka yuz", "arka yüz", "on yuz", "ön yüz",
+    "onune", "önüne", "arkaya",
+    "arkali onlu", "arkalı önlü",
+    "cift fotograf", "çift fotoğraf",
+    "tek zincir iki fotograf", "tek zincir iki fotoğraf",
+    "tasarim", "tasarım",
+    "lazer sonrasi", "lazer sonrası",
+    "son hali", "son hâli",
+    "kalp", "nazar boncugu", "nazar boncuğu", "aksesuar"
+  ];
+
+  const trustWords = [
+    "guven", "güven", "guvenilir", "güvenilir",
+    "garanti", "kalite", "kaliteli mi", "kaliteli olur mu",
+    "kararma", "solma", "paslanma", "kaplama atma",
+    "dolandir", "dolandır",
+    "emin olabilir miyim",
+    "saglam mi", "sağlam mı",
+    "iade", "degisim", "değişim", "iade var mi", "iade var mı"
+  ];
+
+  const orderWords = [
+    "siparis", "sipariş",
+    "siparis vermek istiyorum", "sipariş vermek istiyorum",
+    "almak istiyorum",
+    "yaptirmak istiyorum", "yaptırmak istiyorum",
+    "hazirlayalim", "hazırlayalım",
+    "adres", "acik adres", "açık adres",
+    "telefon", "cep telefonu", "ad soyad",
+    "ilce", "ilçe", "mahalle", "sokak", "apartman", "daire",
+    "isim soyisim", "numara",
+    "gonderiyorum", "gönderiyorum",
+    "arkasina yaz", "arkasına yaz",
+    "dua yaz", "isim yaz",
+    "sari olsun", "sarı olsun",
+    "gumus olsun", "gümüş olsun",
+    "erkek icin", "erkek için",
+    "not olsun", "not ekleyelim"
+  ];
+
+  const smalltalkWords = [
+    "tesekkur", "teşekkür", "tesekkur ederim", "teşekkür ederim",
+    "saol", "sagol", "sağol", "sağ ol",
+    "merhaba", "selam", "selamun aleykum", "selamün aleyküm",
+    "tamam", "olur", "peki", "anladim", "anladım",
+    "super", "süper", "iyi gunler", "iyi günler",
+    "iyi aksamlar", "iyi akşamlar", "gorusuruz", "görüşürüz",
+    "tamamdir", "tamamdır", "aynen", "ok", "okey",
+    "rica ederim", "ne demek"
+  ];
+
+  const scores = {
+    pricing: countMatches(text, priceWords),
+    payment: countMatches(text, paymentWords),
+    shipping: countMatches(text, shippingWords),
+    image: countMatches(text, imageWords),
+    trust: countMatches(text, trustWords),
+    order: countMatches(text, orderWords),
+    smalltalk: countMatches(text, smalltalkWords),
+  };
+
+  const shortPriceAsks = [
+    "fiyat", "ne kadar", "kac tl", "kaç tl", "ucret", "ücret", "kac para", "kaç para"
+  ];
+  if (shortPriceAsks.includes(last)) return "pricing";
+
+  if (includesAny(last, ["kapida odeme", "kapıda ödeme", "eft", "havale", "iban", "odeme", "ödeme", "dekont"])) {
+    scores.payment += 3;
+  }
+
+  if (includesAny(last, ["kargo", "ptt", "aras", "takip", "teslim", "gelmedi", "gecikti", "geçikti"])) {
+    scores.shipping += 3;
+  }
+
+  if (includesAny(last, ["fotograf", "fotoğraf", "foto", "resim", "arka yuz", "arka yüz", "on yuz", "ön yüz", "arkaya", "onune", "önüne", "birlestirme", "birleştirme"])) {
+    scores.image += 3;
+  }
+
+  if (includesAny(last, ["siparis", "sipariş", "adres", "ad soyad", "cep telefonu", "mahalle", "sokak", "ilce", "ilçe"])) {
+    scores.order += 3;
+  }
+
+  if (includesAny(last, ["guven", "güven", "garanti", "kalite", "kararma", "solma", "paslanma"])) {
+    scores.trust += 3;
+  }
+
+  if (["tamam", "olur", "peki", "aynen", "super", "süper", "tesekkur", "teşekkür", "saol", "sağol", "anladim", "anladım"].includes(last)) {
+    return "smalltalk";
+  }
+
+  if (scores.pricing > 0 && includesAny(text, ["fiyat", "ne kadar", "kac tl", "kaç tl"])) {
+    scores.pricing += 2;
+  }
+
+  if (includesAny(last, ["kapida odeme var mi", "kapıda ödeme var mı"])) {
+    scores.payment += 4;
+  }
+
+  if (includesAny(last, ["indirim", "2li", "2 li", "coklu alim", "çoklu alım"])) {
+    scores.pricing += 4;
+  }
+
+  if (includesAny(last, ["olur mu"]) && includesAny(last, ["fotograf", "fotoğraf", "resim", "kisi", "kişi", "arka", "ön"])) {
+    scores.image += 2;
+  }
+
+  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  const [bestTopic, bestScore] = sorted[0];
+
+  if (bestScore <= 0) return "general";
+  return bestTopic;
+}
+
+function detectProduct(userMessage, historyText = "", existingProduct = "") {
+  const text = normalizeText(`${historyText} ${userMessage}`);
+  const last = normalizeText(userMessage);
+  const existing = normalizeText(existingProduct);
+
+  if (existing.includes("lazer")) return "laser";
+  if (existing.includes("atac") || existing.includes("ataç") || existing.includes("harf")) return "atac";
+
+  const laserHints = [
+    "resimli", "fotografli", "fotoğraflı", "foto", "fotograf", "fotoğraf",
+    "cocuk resimli", "çocuk resimli",
+    "arka yazi", "arka yazı",
+    "arka yuz", "arka yüz", "on yuz", "ön yüz",
+    "plaka", "lazer", "resimli olan",
+    "fotografli kolye", "fotoğraflı kolye",
+    "iki fotograf", "iki fotoğraf",
+    "3 fotograf", "3 fotoğraf",
+    "arkali onlu", "arkalı önlü",
+    "dua yazisi", "dua yazısı"
+  ];
+
+  const atacHints = [
+    "atac", "ataç", "harfli", "harf", "harfler",
+    "isim kolye", "3 harf", "4 harf", "5 harf", "6 harf",
+    "bileklik hediye", "ataç kolye", "harfli kolye"
+  ];
+
+  let laserScore = countMatches(text, laserHints);
+  let atacScore = countMatches(text, atacHints);
+
+  if (includesAny(last, ["resimli", "fotografli", "fotoğraflı", "resimli olan"])) laserScore += 3;
+  if (includesAny(last, ["atac", "ataç", "harfli", "harf"])) atacScore += 3;
+
+  if (laserScore > atacScore && laserScore > 0) return "laser";
+  if (atacScore > laserScore && atacScore > 0) return "atac";
+
+  return "unknown";
+}
+
+function pickKnowledgeFiles(message, userProduct, conversationStage = "", historyText = "") {
+  const topic = detectTopic(message, historyText);
+  const product = detectProduct(message, historyText, userProduct);
   const stage = normalizeText(conversationStage);
 
-  const files = ["core_system.txt"];
-  let productFile = null;
-  let topicFile = null;
+  const commonFiles = [
+    "system_master.txt",
+    "routing_rules.txt",
+    "edge_cases.txt",
+    "few_shot_examples.txt",
+    "core_system.txt"
+  ];
 
-  if (product.includes("lazer")) {
-    productFile = "product_laser.txt";
-  } else if (product.includes("atac") || product.includes("harf")) {
-    productFile = "product_atac.txt";
-  } else {
-    const laserKeywords = [
-      "lazer", "lazer kolye", "lazerli", "resimli", "resimli kolye",
-      "foto kolye", "fotolu", "fotograf kolye", "fotografli", "fotoğraf kolye"
-    ];
+  const files = [...commonFiles];
 
-    const atacKeywords = [
-      "atac", "ataç", "harf", "harfli", "harf kolye", "isim kolye", "isimli kolye"
-    ];
+  const topicFiles = {
+    pricing: ["pricing.txt"],
+    payment: ["payment.txt", "pricing.txt"],
+    shipping: ["shipping.txt"],
+    image: ["image_rules.txt"],
+    trust: ["trust.txt"],
+    order: ["order_flow.txt"],
+    smalltalk: ["smalltalk.txt"],
+    general: []
+  };
 
-    if (includesAny(msg, laserKeywords)) {
-      productFile = "product_laser.txt";
-    } else if (includesAny(msg, atacKeywords)) {
-      productFile = "product_atac.txt";
-    }
-  }
+  const productFiles = {
+    laser: ["product_laser.txt"],
+    atac: ["product_atac.txt"],
+    unknown: []
+  };
 
-  if (stage.includes("photo_waiting") || stage.includes("photo_received")) {
-    topicFile = "image_rules.txt";
-  } else if (stage.includes("letter_waiting") || stage.includes("letter_received")) {
-    topicFile = "order_flow.txt";
+  if (stage.includes("photo_wait") || stage.includes("photo_receive") || stage.includes("back_text_wait")) {
+    files.push("image_rules.txt", "order_flow.txt");
+  } else if (stage.includes("letter_wait")) {
+    files.push("order_flow.txt");
   } else if (stage.includes("payment")) {
-    topicFile = "payment.txt";
+    files.push("payment.txt", "pricing.txt");
   } else if (stage.includes("address")) {
-    topicFile = "order_flow.txt";
+    files.push("order_flow.txt", "payment.txt");
   }
 
-  if (!topicFile) {
-    if (includesAny(msg, ["fiyat", "ucret", "ücret", "indirim", "ne kadar", "kaç tl", "kac tl", "son fiyat"])) {
-      topicFile = "pricing.txt";
-    } else if (includesAny(msg, ["kargo", "teslim", "teslimat", "kaç günde", "kac gunde", "takip"])) {
-      topicFile = "shipping.txt";
-    } else if (includesAny(msg, ["odeme", "ödeme", "iban", "eft", "havale", "kapida odeme", "kapıda ödeme"])) {
-      topicFile = "payment.txt";
-    } else if (includesAny(msg, ["kararma", "kararir", "kararır", "paslanir", "paslanır", "guven", "güven", "iade", "degisim", "değişim", "garanti"])) {
-      topicFile = "trust.txt";
-    } else if (includesAny(msg, ["foto", "fotograf", "fotoğraf", "resim", "kaç kişi", "kac kisi", "iki kisi", "iki kişi", "arka plan", "netlestirme", "netleştirme"])) {
-      topicFile = "image_rules.txt";
-    } else if (includesAny(msg, ["siparis", "sipariş", "adres", "telefon", "numara", "satin al", "satın al"])) {
-      topicFile = "order_flow.txt";
-    } else if (includesAny(msg, ["tesekkur", "teşekkür", "sağol", "sagol", "memnun"])) {
-      topicFile = "smalltalk.txt";
-    }
-  }
-
-  if (productFile) files.push(productFile);
-  if (topicFile) files.push(topicFile);
+  files.push(...(topicFiles[topic] || []));
+  files.push(...(productFiles[product] || []));
 
   return [...new Set(files)];
 }
@@ -203,6 +434,179 @@ function buildCurrentContext({
     aiReply:
       unwrapManychatValue(aiReply || "") ||
       getFieldFromFullContact(fullContactData, "ai_reply")
+  };
+}
+
+function buildHistoryText(ctx) {
+  return [
+    ctx.userProduct ? `urun: ${ctx.userProduct}` : "",
+    ctx.conversationStage ? `stage: ${ctx.conversationStage}` : "",
+    ctx.photoReceived ? `photo_received: ${ctx.photoReceived}` : "",
+    ctx.paymentMethod ? `payment_method: ${ctx.paymentMethod}` : "",
+    ctx.aiReply ? `onceki_ai: ${ctx.aiReply}` : ""
+  ].filter(Boolean).join("\n");
+}
+
+function hasForbiddenPrice(text) {
+  return /\b349\b|\b399\b|\b449\b/.test(String(text || ""));
+}
+
+function mentionsSinglePriceOnly(text) {
+  const normalized = normalizeText(text);
+  const has599 = normalized.includes("599");
+  const has649 = normalized.includes("649");
+  const has499 = normalized.includes("499");
+  const has549 = normalized.includes("549");
+
+  return (
+    (has599 && !has649) ||
+    (!has599 && has649) ||
+    (has499 && !has549) ||
+    (!has499 && has549)
+  );
+}
+
+function looksLikeAddressRequest(text) {
+  const normalized = normalizeText(text);
+  return (
+    normalized.includes("ad soyad") ||
+    normalized.includes("acik adres") ||
+    normalized.includes("cep telefonu") ||
+    normalized.includes("telefon numaraniz") ||
+    normalized.includes("adres bilgilerinizi") ||
+    normalized.includes("adresinizi yazar misiniz")
+  );
+}
+
+function applyHardGuards({ answer, ctx, topic, product }) {
+  let text = String(answer || "").trim();
+  const normalizedUser = normalizeText(ctx.message);
+
+  if (!text) {
+    return "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊";
+  }
+
+  if (hasForbiddenPrice(text)) {
+    if (product === "laser") {
+      return "EFT / havale fiyatımız 599 TL, kapıda ödeme fiyatımız 649 TL'dir efendim 😊";
+    }
+    if (product === "atac") {
+      return "EFT / havale fiyatımız 499 TL, kapıda ödeme fiyatımız 549 TL'dir efendim 😊";
+    }
+  }
+
+  const shortPriceAsks = ["fiyat", "ne kadar", "kac tl", "kaç tl", "ucret", "ücret", "kac para", "kaç para"];
+  if (shortPriceAsks.includes(normalizedUser) && mentionsSinglePriceOnly(text)) {
+    if (product === "laser") {
+      return "EFT / havale fiyatımız 599 TL, kapıda ödeme fiyatımız 649 TL'dir efendim 😊";
+    }
+    if (product === "atac") {
+      return "EFT / havale fiyatımız 499 TL, kapıda ödeme fiyatımız 549 TL'dir efendim 😊";
+    }
+  }
+
+  if (
+    includesAny(normalizedUser, ["kapida odeme var mi", "kapıda ödeme var mı", "kapida odeme", "kapıda ödeme"]) &&
+    topic === "payment"
+  ) {
+    if (product === "laser" && !normalizeText(text).includes("649")) {
+      return "Evet efendim, kapıda ödeme seçeneğimiz mevcut. Kapıda ödeme fiyatımız 649 TL'dir 😊";
+    }
+    if (product === "atac" && !normalizeText(text).includes("549")) {
+      return "Evet efendim, kapıda ödeme seçeneğimiz mevcut. Kapıda ödeme fiyatımız 549 TL'dir 😊";
+    }
+  }
+
+  if (
+    product === "laser" &&
+    ctx.photoReceived !== "yes" &&
+    !hasPhotoHint(ctx.message) &&
+    looksLikeAddressRequest(text)
+  ) {
+    return "Fotoğrafı buradan gönderebilirsiniz efendim 😊";
+  }
+
+  if (
+    includesAny(normalizedUser, [
+      "3 plaka", "2 plaka", "bir zincirde 3", "bir zincirde 2",
+      "ayni zincirde 3", "aynı zincirde 3", "ayni zincirde 2", "aynı zincirde 2"
+    ])
+  ) {
+    return "Bu şekilde yapmıyoruz efendim, bir zincirde tek plaka oluyor 😊";
+  }
+
+  if (includesAny(normalizedUser, ["kalp", "nazar boncugu", "nazar boncuğu", "aksesuar"])) {
+    const n = normalizeText(text);
+    if (
+      n.includes("siyah kalp") ||
+      n.includes("kucuk nazar") ||
+      n.includes("buyuk nazar") ||
+      n.includes("küçük nazar") ||
+      n.includes("büyük nazar")
+    ) {
+      return "Pembe kalbimiz ve nazar boncuğumuz mevcut efendim 😊";
+    }
+  }
+
+  if (includesAny(normalizedUser, ["3 kisi", "3 kişi", "3 fotograf", "3 fotoğraf", "3 resim"])) {
+    const n = normalizeText(text);
+    if (n.includes("2 kisi") || n.includes("2 kişi") || n.includes("2 fotograf") || n.includes("2 fotoğraf")) {
+      return "Tabi efendim, 3 fotoğraf da uygulanabiliyor 😊";
+    }
+  }
+
+  if (
+    includesAny(normalizedUser, ["onune", "önüne", "arkaya", "arka yuz", "arka yüz", "on yuz", "ön yüz", "arkali onlu", "arkalı önlü"]) &&
+    includesAny(normalizedUser, ["abla", "kardes", "kardeş", "anne", "baba", "foto", "fotograf", "fotoğraf"])
+  ) {
+    const n = normalizeText(text);
+    if (!n.includes("fiyat farki") && !n.includes("fiyat farkı")) {
+      return "Tabi efendim, ön yüze bir fotoğraf, arka yüze bir fotoğraf yapabiliyoruz. Fiyat farkı da olmuyor 😊";
+    }
+  }
+
+  return text;
+}
+
+function finalizeOutput(parsed, ctx, topic, product) {
+  const reply = applyHardGuards({
+    answer: parsed?.reply?.trim() || "",
+    ctx,
+    topic,
+    product
+  });
+
+  let setConversationStage = normalizeStageName(
+    unwrapManychatValue(parsed?.set_conversation_stage || "")
+  );
+  const setPhotoReceived = unwrapManychatValue(parsed?.set_photo_received || "");
+  const setPaymentMethod = unwrapManychatValue(parsed?.set_payment_method || "");
+  const setMenuGosterildi = unwrapManychatValue(parsed?.set_menu_gosterildi || "");
+
+  if (ctx.conversationStage === "address_received" && setConversationStage === "address_waiting") {
+    setConversationStage = "address_received";
+  }
+
+  if (ctx.conversationStage === "payment_selected" && setConversationStage === "address_waiting") {
+    setConversationStage = "payment_selected";
+  }
+
+  if (ctx.photoReceived !== "yes" && setPhotoReceived === "yes" && !hasPhotoHint(ctx.message)) {
+    return {
+      reply,
+      set_conversation_stage: setConversationStage,
+      set_photo_received: "",
+      set_payment_method: setPaymentMethod,
+      set_menu_gosterildi: setMenuGosterildi
+    };
+  }
+
+  return {
+    reply,
+    set_conversation_stage: setConversationStage,
+    set_photo_received: setPhotoReceived,
+    set_payment_method: setPaymentMethod,
+    set_menu_gosterildi: setMenuGosterildi
   };
 }
 
@@ -270,7 +674,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // ── ADRES_WAITING → telefon gelince adres kaydedildi + odeme sor ───────
+    // ADDRESS_WAITING → telefon gelince adres kaydedildi + ödeme sor
     if (ctx.conversationStage === "address_waiting") {
       if (hasPhoneNumber(ctx.message)) {
         return res.status(200).json({
@@ -281,7 +685,7 @@ export default async function handler(req, res) {
           set_menu_gosterildi: ""
         });
       }
-      // Telefon henuz gelmedi - sessiz kal
+
       return res.status(200).json({
         reply: "__SKIP__",
         set_conversation_stage: "address_waiting",
@@ -291,17 +695,16 @@ export default async function handler(req, res) {
       });
     }
 
-    // ── PHOTO_RECEIVED → arka yazi netlestiyse adres sor ──────────────────
+    // PHOTO_RECEIVED → arka yazı netleşirse adres sor
     if (ctx.conversationStage === "photo_received") {
       const msg = normalizeText(ctx.message);
       const backTextKeywords = [
-        "arkaya", "arkasina", "arka tarafa", "arka yuze", "arka yuze",
-        "yazalim", "yazsin", "yazsin", "yazin", "yazin",
-        "yaz ", "koy ", "koysun", "koyalim", "koyalim"
+        "arkaya", "arkasina", "arka tarafa", "arka yuze", "arka yüze",
+        "yazalim", "yazsin", "yazin", "yaz ", "koy ", "koysun", "koyalim"
       ];
-      const hasBackText = backTextKeywords.some(k => msg.includes(k));
+      const hasBackText = backTextKeywords.some((k) => msg.includes(normalizeText(k)));
       if (hasBackText) {
-        const adresMsg = "Tabi efendim " + String.fromCodePoint(0x1F60A) + " Siparis icin su bilgileri alabilir miyiz?\n\n- Isim Soyisim\n- Acik Adres\n- Cep Telefonu";
+        const adresMsg = "Tabi efendim 😊 Sipariş için şu bilgileri alabilir miyiz?\n\n- İsim Soyisim\n- Açık Adres\n- Cep Telefonu";
         return res.status(200).json({
           reply: adresMsg,
           set_conversation_stage: "address_waiting",
@@ -312,13 +715,18 @@ export default async function handler(req, res) {
       }
     }
 
-    // ── ODEME SECILDI AMA ADRES ALINMADI → fiyat ver + adres sor ──────────
+    // ÖDEME SEÇİLDİ AMA ADRES ALINMADI → fiyat ver + adres sor
     if (!ctx.conversationStage || ctx.conversationStage === "photo_received") {
       const payment = detectPaymentMethod(ctx.message);
       if (payment) {
-        const fiyat = payment === "eft" ? "599 TL" : "649 TL";
-        const odeme = payment === "eft" ? "EFT" : "Kapida odeme";
-        const msg = "Tabi efendim " + String.fromCodePoint(0x1F60A) + " " + odeme + " fiyatimiz " + fiyat + "'dir. Siparis icin su bilgileri alabilir miyiz?\n\n- Isim Soyisim\n- Acik Adres\n- Cep Telefonu";
+        const product = detectProduct(ctx.message, buildHistoryText(ctx), ctx.userProduct);
+        const isAtac = product === "atac";
+        const fiyat = payment === "eft"
+          ? (isAtac ? "499 TL" : "599 TL")
+          : (isAtac ? "549 TL" : "649 TL");
+        const odeme = payment === "eft" ? "EFT / havale" : "Kapıda ödeme";
+        const msg = `Tabi efendim 😊 ${odeme} fiyatımız ${fiyat}'dir. Sipariş için şu bilgileri alabilir miyiz?\n\n- İsim Soyisim\n- Açık Adres\n- Cep Telefonu`;
+
         return res.status(200).json({
           reply: msg,
           set_conversation_stage: "address_waiting",
@@ -329,7 +737,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // ── YENİ: ADDRESS_RECEIVED → ödeme algılama, Claude'a gitmeden yakala ──
+    // ADDRESS_RECEIVED → ödeme algılama
     if (ctx.conversationStage === "address_received") {
       const payment = detectPaymentMethod(ctx.message);
       if (payment) {
@@ -353,26 +761,6 @@ export default async function handler(req, res) {
       ctx.conversationStage === "address_received";
 
     if (isAddressMessage && isAddressStage) {
-      if (ctx.paymentMethod === "eft") {
-        return res.status(200).json({
-          reply: "Tamamdır efendim 😊 Adresiniz kaydedildi. Siparişiniz hazırlanıyor.",
-          set_conversation_stage: "address_received",
-          set_photo_received: "",
-          set_payment_method: "",
-          set_menu_gosterildi: ""
-        });
-      }
-
-      if (ctx.paymentMethod === "kapida_odeme") {
-        return res.status(200).json({
-          reply: "Tamamdır efendim 😊 Adresiniz kaydedildi. Siparişiniz hazırlanıyor.",
-          set_conversation_stage: "address_received",
-          set_photo_received: "",
-          set_payment_method: "",
-          set_menu_gosterildi: ""
-        });
-      }
-
       return res.status(200).json({
         reply: "Tamamdır efendim 😊 Adresiniz kaydedildi.",
         set_conversation_stage: "address_received",
@@ -393,16 +781,21 @@ export default async function handler(req, res) {
       });
     }
 
-    const selectedFiles = pickKnowledgeFiles(ctx.message, ctx.userProduct, ctx.conversationStage);
+    const historyText = buildHistoryText(ctx);
+    const topic = detectTopic(ctx.message, historyText);
+    const product = detectProduct(ctx.message, historyText, ctx.userProduct);
+
+    const selectedFiles = pickKnowledgeFiles(
+      ctx.message,
+      ctx.userProduct,
+      ctx.conversationStage,
+      historyText
+    );
 
     const knowledgeText = selectedFiles
       .map((file) => {
-        try {
-          const content = readKnowledgeFile(file);
-          return `### ${file}\n${content}`;
-        } catch {
-          return "";
-        }
+        const content = safeReadKnowledgeFile(file);
+        return content ? `### ${file}\n${content}` : "";
       })
       .filter(Boolean)
       .join("\n\n");
@@ -415,6 +808,7 @@ GÖREVİN:
 - Gerekirse state/field değişikliği önermek.
 - Sadece verilen bilgi dosyalarına göre cevap vermek.
 - Bilmediğin konuda asla uydurmamak.
+- Dosyalarda olmayan fiyat, kampanya, ürün özelliği veya süre üretmemek.
 
 GENEL KURALLAR:
 - Bilgi yoksa şu cevabı ver:
@@ -429,61 +823,34 @@ Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊
 - Müşteri daha önce hangi aşamadaysa, tekrar merhaba diyerek başa dönme.
 - Kısa cevapları bağlama göre yorumla.
 - "evet", "tamam", "olur", "amin", isim, tarih gibi kısa mesajları son aktif aşamaya göre değerlendir.
+- Fiyat sorularında yalnızca PRICING dosyasındaki fiyatları kullan.
+- 349 TL, 399 TL, 449 TL gibi dosyada olmayan fiyatlar ASLA yazılamaz.
+- Siyah kalp, küçük nazar boncuğu, büyük nazar boncuğu gibi seçenekler açma.
+- Sadece pembe kalp ve nazar boncuğu bilgisi ver.
+- Resimli lazer kolyede fotoğraf gelmeden adres isteme.
 
 BAĞLAM KURALLARI:
 - conversation_stage çok önemlidir.
 - photo_received=yes ise tekrar fotoğraf isteyemezsin.
 - conversation_stage=photo_waiting ise müşteri fotoğraf, fotoğraf düzeni, kişi sayısı, ön/arka yüz düzeni gibi sipariş detaylarını yazıyor olabilir.
 - conversation_stage=photo_received ise müşterinin kısa mesajlarını sipariş detayı olarak yorumla.
-- conversation_stage=photo_received iken müşteri arka yüze yazı veya fotoğraf koyulacağını net söylerse (örnek: "arkaya X yaz", "arkasına X yazalım", "arkasına şu fotoğrafı koy", "arka tarafa X") MUTLAKA set_conversation_stage="back_text_waiting" set et ve adres sor: "Sipariş için şu bilgileri alabilir miyiz? İsim Soyisim, Açık Adres, Cep Telefonu" Boş bırakma.
+- conversation_stage=photo_received iken müşteri arka yüze yazı veya fotoğraf koyulacağını net söylerse MUTLAKA set_conversation_stage="address_waiting" set et ve adres sor.
 - conversation_stage=photo_received iken müşteri arka yüz istemiyorsa set_conversation_stage="address_waiting" set et ve adres sor.
 - conversation_stage=letter_waiting ise kısa metinleri seçilen harfler olarak yorumla.
 - conversation_stage=address_received ise müşteri adresini zaten vermiş kabul et.
 - conversation_stage=address_received veya conversation_stage=payment_selected ise tekrar adres isteme.
-- Müşteri adresi zaten verildikten sonra "eft olsun", "havale yapayım", "o zaman ben eft yapayım", "iban", "hesap bilgisi", "ödeme yapayım" gibi mesajlar yazarsa bunu ödeme adımı olarak yorumla, adres eksikliği olarak yorumlama.
+- Müşteri adresi zaten verildikten sonra "eft olsun", "havale yapayım", "iban", "ödeme yapayım" gibi mesajlar yazarsa bunu ödeme adımı olarak yorumla.
 - Adres alınmış bir konuşmada ödeme tercihi netleşirse IBAN / ödeme yönlendirmesi ver; yeniden adres sorma.
 - conversation_stage=payment_selected olduktan sonra aynı konuşmada tekrar adres istemek yasaktır.
-- conversation_stage=address_received ise artık başa dönme, ürün tanıtımı yapma.
-- Daha önce alınmış bilgileri tekrar isteme. Özellikle address_received, photo_received ve payment_selected aşamalarında önceki bilgiler korunmalıdır.
 - Müşteri tek mesajda ad soyad, telefon numarası ve açık adres benzeri bilgiler yazdıysa bunu adres bilgisi olarak kabul et.
-- Mesaj içinde kişi adı, telefon numarası ve il/ilçe/mahalle/sokak/no/daire/apartman/kat/daire/Türkiye gibi adres öğeleri birlikte geçiyorsa yeniden adres isteme.
-- Telefon numarası kart olarak algılansa bile, aynı mesajdaki metni adres teslim bilgisi olarak yorumla.
-- Müşteri adres bilgisini verdikten sonra aynı adres istemini tekrar etme.
-- Aşağıdaki tür mesajlar adres mesajı sayılır:
-  ad soyad + telefon + il/ilçe/mahalle/sokak/no/daire içeren tek mesajlar.
-- conversation_stage address beklerken müşteri tam teslimat bilgisi yazdıysa bunu başarıyla alınmış adres olarak yorumla.
-- "Evet geldim" gibi kısa geçiş mesajlarından sonra gelen uzun teslimat mesajını adres olarak kabul et.
 
 STATE GÜNCELLEME KURALLARI:
 - Müşteri ödeme yöntemini seçtiği anda set_payment_method mutlaka doldur.
 - Müşteri "eft", "havale", "iban'a atayım", "kapıda ödeme", "kapida odeme" gibi net bir ödeme tercihi belirttiyse set_conversation_stage="payment_selected" yap.
 - payment_method doluyken stage hâlâ address_received kalmamalı.
 - Ödeme tercihi netleştiyse set_payment_method ve set_conversation_stage birlikte dönmelidir.
-- EFT seçildiyse set_payment_method="eft", kapıda ödeme seçildiyse set_payment_method="kapida_odeme" döndür.
-- conversation_stage=address_received iken müşteri EFT / havale seçerse set_payment_method="eft" ve set_conversation_stage="payment_selected" döndür.
-- conversation_stage=address_received iken müşteri kapıda ödeme seçerse set_payment_method="kapida_odeme" ve set_conversation_stage="payment_selected" döndür.
-- conversation_stage=address_received veya payment_selected durumunda ödeme ile ilgili net mesajlarda adres isteme.
-- Adres zaten alınmışsa ödeme mesajlarına karşılık IBAN / ödeme yönlendirmesi ver veya ödemenin tamamlanmasını bekle.
 - Müşteri ad soyad + telefon + açık adres bilgilerini tek mesajda verdiyse set_conversation_stage="address_received" döndür.
-- Adres bilgisi net şekilde alınmışsa tekrar adres isteme.
-- conversation_stage address beklerken müşteri tam teslimat bilgisi yazdıysa bir sonraki mantıklı aşamaya geç.
-- Eğer ödeme yöntemi daha önce seçilmişse ve adres de bu mesajda geldiyse siparişi tamamlanmış kabul eden cevap ver.
-- Senden aşağıdaki alanlar için öneri istiyoruz:
-  - set_conversation_stage
-  - set_photo_received
-  - set_payment_method
-  - set_menu_gosterildi
-- Stage güncellemesi gerekiyorsa boş bırakma.
-- Özellikle address_received aşamasından sonraki net ödeme seçimlerinde stage mutlaka ilerletilmelidir.
-
-Kurallar:
-- Emin değilsen alanları boş bırak.
-- Sadece gerçekten gerekiyorsa değişiklik öner.
-- Müşteri EFT seçtiyse set_payment_method="eft"
-- Müşteri kapıda ödeme seçtiyse set_payment_method="kapida_odeme"
-- Müşteri ürün seçiminden sonra sipariş detayına ilerlediyse uygun stage öner.
-- Fotoğraf geldiğini kesin anlayamıyorsan set_photo_received boş kalsın.
-- Eğer fotoğrafın geldiğine dair net sistemsel kanıt yoksa sırf tahminle photo_received=yes deme.
+- Eğer bir alanı kesin bilmiyorsan boş bırak.
 
 ÇIKIŞ FORMATI:
 YALNIZCA geçerli JSON döndür.
@@ -522,6 +889,12 @@ ${ctx.menuGosterildi || "-"}
 ÖNCEKİ AI CEVABI:
 ${ctx.aiReply || "-"}
 
+TOPIC:
+${topic}
+
+PRODUCT:
+${product}
+
 EK TEMAS VERİSİ:
 ${JSON.stringify({
   ig_username: fullContactData?.ig_username || ""
@@ -530,7 +903,9 @@ ${JSON.stringify({
 
     const payload = {
       model: "deepseek-chat",
-      max_tokens: 300,
+      max_tokens: 500,
+      temperature: 0.1,
+      response_format: { type: "json_object" },
       messages: [
         {
           role: "system",
@@ -567,24 +942,9 @@ ${JSON.stringify({
       parsed = null;
     }
 
-    const reply =
-      parsed?.reply?.trim() ||
-      "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊";
+    const finalData = finalizeOutput(parsed, ctx, topic, product);
 
-    const setConversationStage = normalizeStageName(
-      unwrapManychatValue(parsed?.set_conversation_stage || "")
-    );
-    const setPhotoReceived = unwrapManychatValue(parsed?.set_photo_received || "");
-    const setPaymentMethod = unwrapManychatValue(parsed?.set_payment_method || "");
-    const setMenuGosterildi = unwrapManychatValue(parsed?.set_menu_gosterildi || "");
-
-    return res.status(200).json({
-      reply,
-      set_conversation_stage: setConversationStage,
-      set_photo_received: setPhotoReceived,
-      set_payment_method: setPaymentMethod,
-      set_menu_gosterildi: setMenuGosterildi
-    });
+    return res.status(200).json(finalData);
   } catch (err) {
     console.error("chat.js error:", err);
     return res.status(200).json({
