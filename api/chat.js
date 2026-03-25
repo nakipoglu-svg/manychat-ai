@@ -645,6 +645,14 @@ function finalizeOutput(parsed, ctx, topic, product) {
   const setCancelReason = unwrapManychatValue(parsed?.set_cancel_reason || "");
   const setContextLock = unwrapManychatValue(parsed?.set_context_lock || "");
 
+let finalContextLock = setContextLock;
+let finalConversationStage = setConversationStage;
+
+if (setIlgilenilenUrun === "lazer" || setIlgilenilenUrun === "atac") {
+  if (!finalContextLock) finalContextLock = "product_locked";
+  if (!finalConversationStage) finalConversationStage = "product_selected";
+}
+  
   if (ctx.conversationStage === "address_received" && setConversationStage === "address_waiting") {
     setConversationStage = "address_received";
   }
