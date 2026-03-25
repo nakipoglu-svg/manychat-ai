@@ -1,5 +1,3 @@
-# TRUST.txt
-
 GENEL YAKLAŞIM
 Müşteri güven ile ilgili soru sorduğunda net ve sade cevap verilir.
 Cevaplar kısa, kendinden emin ve açıklayıcı olmalıdır.
