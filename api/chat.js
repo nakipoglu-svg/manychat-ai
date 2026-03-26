@@ -408,7 +408,7 @@ function directReply(ctx) {
   // ── 5. FİYAT ──────────────────────────────────────────────────────────────
   if (topic === "pricing") {
     return {
-      reply: pricingResponse(product),
+      reply: pricingResponse(product === "unknown" ? ctx.ilgilenilenUrun : product),
       ...baseState(ctx, {
         set_last_intent: "pricing",
         set_ilgilenilen_urun: product === "unknown" ? "" : product,
