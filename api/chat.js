@@ -70,33 +70,10 @@ function looksLikeAddressMessage(text) {
   const msg = normalizeText(text);
 
   const addressKeywords = [
-    "mahalle",
-    "mah",
-    "sokak",
-    "sk",
-    "cadde",
-    "cd",
-    "no",
-    "daire",
-    "kat",
-    "apartman",
-    "apt",
-    "site",
-    "blok",
-    "ilce",
-    "ilçe",
-    "istanbul",
-    "ankara",
-    "izmir",
-    "beykoz",
-    "sisli",
-    "şişli",
-    "umraniye",
-    "ümraniye",
-    "kadikoy",
-    "kadıköy",
-    "turkiye",
-    "türkiye"
+    "mahalle", "mah", "sokak", "sk", "cadde", "cd", "no", "daire", "kat",
+    "apartman", "apt", "site", "blok", "ilce", "ilçe", "istanbul", "ankara",
+    "izmir", "beykoz", "sisli", "şişli", "umraniye", "ümraniye", "kadikoy",
+    "kadıköy", "turkiye", "türkiye"
   ];
 
   const hitCount = addressKeywords.filter((k) =>
@@ -210,15 +187,8 @@ function detectProduct(userMessage, ctx) {
 
   if (
     includesAny(msg, [
-      "resimli",
-      "fotografli",
-      "fotoğraflı",
-      "foto",
-      "fotograf",
-      "fotoğraf",
-      "resimli olan",
-      "plaka",
-      "lazer"
+      "resimli", "fotografli", "fotoğraflı", "foto", "fotograf", "fotoğraf",
+      "resimli olan", "plaka", "lazer"
     ])
   ) {
     return "lazer";
@@ -236,21 +206,8 @@ function detectTopic(text) {
 
   if (
     includesAny(msg, [
-      "fiyat",
-      "ne kadar",
-      "nekadar",
-      "kac tl",
-      "kaç tl",
-      "ucret",
-      "ücret",
-      "kac para",
-      "kaç para",
-      "indirim",
-      "2li",
-      "2 li",
-      "ikili",
-      "coklu alim",
-      "çoklu alım"
+      "fiyat", "ne kadar", "nekadar", "kac tl", "kaç tl", "ucret", "ücret",
+      "kac para", "kaç para", "indirim", "2li", "2 li", "ikili", "coklu alim", "çoklu alım"
     ])
   ) {
     return "pricing";
@@ -258,14 +215,7 @@ function detectTopic(text) {
 
   if (
     includesAny(msg, [
-      "kapida odeme",
-      "kapıda ödeme",
-      "eft",
-      "havale",
-      "iban",
-      "odeme",
-      "ödeme",
-      "dekont"
+      "kapida odeme", "kapıda ödeme", "eft", "havale", "iban", "odeme", "ödeme", "dekont"
     ])
   ) {
     return "payment";
@@ -273,14 +223,7 @@ function detectTopic(text) {
 
   if (
     includesAny(msg, [
-      "kargo",
-      "teslim",
-      "takip",
-      "ptt",
-      "aras",
-      "gelmedi",
-      "gecikti",
-      "geçikti"
+      "kargo", "teslim", "takip", "ptt", "aras", "gelmedi", "gecikti", "geçikti"
     ])
   ) {
     return "shipping";
@@ -288,22 +231,9 @@ function detectTopic(text) {
 
   if (
     includesAny(msg, [
-      "fotograf",
-      "fotoğraf",
-      "foto",
-      "resim",
-      "arka yuz",
-      "arka yüz",
-      "on yuz",
-      "ön yüz",
-      "arkali onlu",
-      "arkalı önlü",
-      "iki yuz",
-      "iki yüz",
-      "iki taraf",
-      "kalp",
-      "nazar",
-      "aksesuar"
+      "fotograf", "fotoğraf", "foto", "resim", "arka yuz", "arka yüz", "on yuz",
+      "ön yüz", "arkali onlu", "arkalı önlü", "iki yuz", "iki yüz", "iki taraf",
+      "kalp", "nazar", "aksesuar"
     ])
   ) {
     return "image";
@@ -311,16 +241,8 @@ function detectTopic(text) {
 
   if (
     includesAny(msg, [
-      "guven",
-      "güven",
-      "garanti",
-      "kalite",
-      "kararma",
-      "solma",
-      "paslanma",
-      "iade",
-      "degisim",
-      "değişim"
+      "guven", "güven", "garanti", "kalite", "kararma", "solma", "paslanma",
+      "iade", "degisim", "değişim"
     ])
   ) {
     return "trust";
@@ -328,13 +250,7 @@ function detectTopic(text) {
 
   if (
     includesAny(msg, [
-      "siparis",
-      "sipariş",
-      "adres",
-      "ad soyad",
-      "cep telefonu",
-      "dua yaz",
-      "isim yaz"
+      "siparis", "sipariş", "adres", "ad soyad", "cep telefonu", "dua yaz", "isim yaz"
     ])
   ) {
     return "order";
@@ -342,16 +258,8 @@ function detectTopic(text) {
 
   if (
     includesAny(msg, [
-      "merhaba",
-      "selam",
-      "tesekkur",
-      "teşekkür",
-      "tamam",
-      "olur",
-      "aynen",
-      "peki",
-      "tmm",
-      "tmam"
+      "merhaba", "selam", "tesekkur", "teşekkür", "tamam", "olur", "aynen", "peki",
+      "tmm", "tmam", "tamamdır", "tmmdır"
     ])
   ) {
     return "smalltalk";
@@ -383,6 +291,36 @@ function pricingResponse(product) {
   return "Hangi model ile ilgileniyorsunuz? 😊\n• Resimli lazer kolye\n• Harfli ataç kolye";
 }
 
+// ------------------- HARD GUARDS (AI yanıtını son kontrollerden geçirir) -------------------
+function applyHardGuards(answer, ctx, topic, product) {
+  let safe = answer;
+
+  // 1) Yasaklı fiyatları düzelt
+  if (hasForbiddenPrice(safe)) {
+    if (ctx.ilgilenilenUrun === "lazer") {
+      safe = "EFT / havale fiyatımız 599 TL, kapıda ödeme fiyatımız 649 TL'dir efendim 😊";
+    } else if (ctx.ilgilenilenUrun === "atac") {
+      safe = "EFT / havale fiyatımız 499 TL, kapıda ödeme fiyatımız 549 TL'dir efendim 😊";
+    } else {
+      safe = "Lütfen hangi model ile ilgilendiğinizi belirtir misiniz? 😊";
+    }
+  }
+
+  // 2) Ürün bağlamı varken "hangi model" sorusunu engelle
+  if ((ctx.ilgilenilenUrun === "lazer" || ctx.ilgilenilenUrun === "atac") &&
+      includesAny(safe, ["hangi model", "hangi ürün", "resimli lazer mi", "ataç mı"])) {
+    safe = pricingResponse(ctx.ilgilenilenUrun);
+  }
+
+  // 3) Adres durumu "received" iken adres sormayı engelle
+  if (ctx.addressStatus === "received" && includesAny(safe, ["adres", "adresiniz", "adres yazar mısınız"])) {
+    safe = "Adresiniz kayıtlı efendim. Ödemenizi nasıl yapmak istersiniz? EFT/havale veya kapıda ödeme seçeneklerimiz var 😊";
+  }
+
+  return safe;
+}
+// -------------------------------------------------------------------------------------------
+
 function directReply(ctx) {
   const msg = normalizeText(ctx.message);
   const product = detectProduct(ctx.message, ctx);
@@ -391,14 +329,8 @@ function directReply(ctx) {
   // 1) iptal
   if (
     includesAny(msg, [
-      "iptal",
-      "vazgectim",
-      "vazgeçtim",
-      "istemiyorum",
-      "olmasin",
-      "olmasın",
-      "gerek kalmadi",
-      "gerek kalmadı"
+      "iptal", "vazgectim", "vazgeçtim", "istemiyorum", "olmasin", "olmasın",
+      "gerek kalmadi", "gerek kalmadı"
     ])
   ) {
     return {
@@ -422,8 +354,7 @@ function directReply(ctx) {
   // 2) adres direkt geldiyse
   if (looksLikeAddressMessage(ctx.message)) {
     return {
-      reply:
-        "Tamamdır efendim 😊 Adresiniz kaydedildi. Ödemeniz nasıl olacak efendim? EFT / havale veya kapıda ödeme seçeneklerimiz mevcut.",
+      reply: "Tamamdır efendim 😊 Adresiniz kaydedildi. Ödemeniz nasıl olacak efendim? EFT / havale veya kapıda ödeme seçeneklerimiz mevcut.",
       set_conversation_stage: "address_received",
       set_last_intent: "address",
       set_ilgilenilen_urun: product === "unknown" ? "" : product,
@@ -443,7 +374,10 @@ function directReply(ctx) {
   // 3) ürün belli ve kısa cevap geldiyse menüye dönme
   if (
     (ctx.ilgilenilenUrun === "lazer" || ctx.ilgilenilenUrun === "atac") &&
-    includesAny(msg, ["tamam", "olur", "aynen", "peki", "tmm", "tmam", "soyle", "şöyle", "boyle", "böyle", "bekliyorum"])
+    includesAny(msg, [
+      "tamam", "olur", "aynen", "peki", "tmm", "tmam", "tamamdır", "tmmdır",
+      "soyle", "şöyle", "boyle", "böyle", "bekliyorum"
+    ])
   ) {
     return {
       reply: "Tabi efendim 😊",
@@ -575,7 +509,7 @@ function directReply(ctx) {
     };
   }
 
-  // 6) zincir uzunluğu
+  // 6) zincir uzunluğu (lazer)
   if (
     product === "lazer" &&
     includesAny(msg, ["zincirin uzunlugu", "zincir uzunlugu", "zincir ne kadar", "zincir kac cm", "zincir kaç cm"])
@@ -617,7 +551,7 @@ function directReply(ctx) {
     };
   }
 
-  // 7) çift yüz / arka taraf fotoğraf
+  // 7) çift yüz / arka taraf fotoğraf (lazer)
   if (
     product === "lazer" &&
     (
@@ -643,7 +577,7 @@ function directReply(ctx) {
     };
   }
 
-  // 8) tek zincirde birden fazla plaka
+  // 8) tek zincirde birden fazla plaka (lazer)
   if (
     product === "lazer" &&
     includesAny(msg, ["3 plaka", "2 plaka", "ayni zincirde", "aynı zincirde", "bir zincirde"])
@@ -688,8 +622,26 @@ function directReply(ctx) {
     };
   }
 
-  // 10) aksesuar
+  // 10) aksesuar (lazer) – siyah kalp kaldırıldı
   if (product === "lazer" && includesAny(msg, ["kalp", "nazar"])) {
+    if (includesAny(msg, ["siyah kalp"])) {
+      return {
+        reply: "Maalesef siyah kalp şu an stoklarımızda yok efendim. Pembe kalbimiz ve nazar boncuğumuz mevcut 😊",
+        set_conversation_stage: ctx.conversationStage || "product_selected",
+        set_last_intent: "image",
+        set_ilgilenilen_urun: "lazer",
+        set_photo_received: "",
+        set_payment_method: "",
+        set_order_status: ctx.orderStatus || "active",
+        set_back_text_status: "",
+        set_address_status: "",
+        set_support_mode: "",
+        set_siparis_alindi: "",
+        set_cancel_reason: "",
+        set_context_lock: "product_locked",
+        set_menu_gosterildi: ""
+      };
+    }
     return {
       reply: "Pembe kalbimiz ve nazar boncuğumuz mevcut efendim 😊",
       set_conversation_stage: ctx.conversationStage || "product_selected",
@@ -708,21 +660,12 @@ function directReply(ctx) {
     };
   }
 
-  // 11) fotoğraf uygunluğu / kişi sayısı
+  // 11) fotoğraf uygunluğu / kişi sayısı (lazer)
   if (
     product === "lazer" &&
     includesAny(msg, [
-      "olur mu",
-      "iki kisi",
-      "iki kişi",
-      "uc kisi",
-      "üç kişi",
-      "3 kisi",
-      "3 kişi",
-      "4 kisi",
-      "4 kişi",
-      "aile fotosu",
-      "bebek"
+      "olur mu", "iki kisi", "iki kişi", "uc kisi", "üç kişi", "3 kisi", "3 kişi",
+      "4 kisi", "4 kişi", "aile fotosu", "bebek"
     ])
   ) {
     return {
@@ -743,8 +686,14 @@ function directReply(ctx) {
     };
   }
 
-  // 12) fotoğraf gönderme
-  if (product === "lazer" && includesAny(msg, ["gondereyim", "göndereyim", "fotograf gonder", "fotoğraf gönder", "buradan gonder", "buradan gönder"])) {
+  // 12) fotoğraf gönderme (nasıl gönderirim dahil)
+  if (
+    product === "lazer" &&
+    includesAny(msg, [
+      "gondereyim", "göndereyim", "fotograf gonder", "fotoğraf gönder", "buradan gonder",
+      "buradan gönder", "nasıl gönderebilirim", "nasıl gönderiyorum", "fotoğrafı nasıl göndereyim"
+    ])
+  ) {
     return {
       reply: "Fotoğrafı buradan gönderebilirsiniz efendim 😊",
       set_conversation_stage: "photo_waiting",
@@ -763,7 +712,30 @@ function directReply(ctx) {
     };
   }
 
-  // 13) sadece "resimli / lazer / detay" gibi
+  // 13) zincir değişimi / modeli (lazer) – fallback yasak, doğrudan bilgi ver
+  if (
+    product === "lazer" &&
+    includesAny(msg, ["zincir değiş", "zincir model", "fotoğraftaki zincir", "şu zincir"])
+  ) {
+    return {
+      reply: "Zincir değişimi yapılabiliyor efendim. Fiyat farkı olmuyor, yine 60 cm standart zincir kullanıyoruz. İsterseniz farklı modeller için ekibimiz size yardımcı olur 😊",
+      set_conversation_stage: ctx.conversationStage || "product_selected",
+      set_last_intent: "image",
+      set_ilgilenilen_urun: "lazer",
+      set_photo_received: "",
+      set_payment_method: "",
+      set_order_status: ctx.orderStatus || "active",
+      set_back_text_status: "",
+      set_address_status: "",
+      set_support_mode: "",
+      set_siparis_alindi: "",
+      set_cancel_reason: "",
+      set_context_lock: "product_locked",
+      set_menu_gosterildi: ""
+    };
+  }
+
+  // 14) sadece "resimli / lazer / detay" gibi (lazer)
   if (includesAny(msg, ["resimli", "lazer", "detay", "resimli olan", "fotografli", "fotoğraflı"])) {
     return {
       reply: "Resimli lazer kolye 😊\n\nGönderdiğiniz fotoğraf lazer ile çelik plakaya işlenir.\n\nFiyat\nEFT / Havale : 599 TL\nKapıda ödeme : 649 TL\n\nFotoğrafı buradan gönderebilirsiniz.",
@@ -783,7 +755,7 @@ function directReply(ctx) {
     };
   }
 
-  // 14) ürün belirsiz ama genel fiyat / bilgi
+  // 15) ürün belirsiz ama genel fiyat / bilgi
   if (product === "unknown" && includesAny(msg, ["fiyat", "bilgi", "detay", "ne kadar", "nekadar"])) {
     return {
       reply: "Hangi model ile ilgileniyorsunuz? 😊\n• Resimli lazer kolye\n• Harfli ataç kolye",
@@ -807,6 +779,7 @@ function directReply(ctx) {
 }
 
 function selectKnowledgeFiles(ctx) {
+  // Handoff'taki tüm knowledge dosyaları (case‑sensitive)
   const files = [
     "CORE_SYSTEM.txt",
     "PRICING.txt",
@@ -817,7 +790,11 @@ function selectKnowledgeFiles(ctx) {
     "ORDER_FLOW.txt",
     "SMALLTALK.txt",
     "PRODUCT_LASER.txt",
-    "PRODUCT_ATAC.txt"
+    "PRODUCT_ATAC.txt",
+    "ROUTING_RULES.txt",
+    "EDGE_CASES.txt",
+    "FEW_SHOT_EXAMPLES.txt",
+    "SYSTEM_MASTER.txt"
   ];
 
   return files
@@ -874,7 +851,7 @@ export default async function handler(req, res) {
       contextLock: ctx.contextLock
     }, null, 2));
 
-    // Önce deterministic cevap dene
+    // Önce deterministik cevap dene
     const direct = directReply(ctx);
     if (direct) {
       return res.status(200).json(direct);
@@ -1016,12 +993,10 @@ ${product}
       parsed = null;
     }
 
-    const reply = applyHardGuards({
-      answer: parsed?.reply?.trim() || fallbackResponse(),
-      ctx,
-      topic,
-      product
-    });
+    let reply = parsed?.reply?.trim() || fallbackResponse();
+
+    // Hard guard uygula (yanlış fiyat, ürün sorma, adres sorma engeli)
+    reply = applyHardGuards(reply, ctx, topic, product);
 
     return res.status(200).json({
       reply,
