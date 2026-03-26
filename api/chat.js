@@ -22,11 +22,17 @@ function safeReadKnowledgeFile(filename) {
 function unwrapManychatValue(value) {
   if (value === null || value === undefined) return "";
   let str = String(value).trim();
+
+  if (/^cuf_\d+$/.test(str)) return "";
+
   str = str.replace(/^\{\{\{?/, "").replace(/\}\}\}?$/, "").trim();
+
   if (/^\{[^}]+\}$/.test(str)) return "";
   if (!str) return "";
+
   const lowered = str.toLowerCase();
   if (["undefined", "null", "no field selected"].includes(lowered)) return "";
+
   return str;
 }
 
