@@ -233,10 +233,36 @@ function looksLikeLetterInput(rawMessage, detectedProduct) {
   if (detectedProduct !== "atac") return false;
 
   const raw = String(rawMessage || "").trim();
+  const norm = normalizeText(raw);
+
   if (!raw) return false;
   if (raw.length > 24) return false;
   if (/[?!.:,/]/.test(raw)) return false;
   if (!/^[a-zA-ZçğıöşüÇĞİÖŞÜ\s&]+$/.test(raw)) return false;
+
+  // Ürün seçimi / genel kelimeler harf inputu sayılmasın
+  if (
+    hasAny(norm, [
+      "atac",
+      "ataç",
+      "harfli",
+      "kolye",
+      "harfli atac",
+      "harfli ataç",
+      "ataç kolye",
+      "atac kolye",
+      "istiyorum",
+      "ilgileniyorum",
+      "almak istiyorum",
+    ])
+  ) {
+    return false;
+  }
+
+  const parts = norm.split(/\s+/).filter(Boolean);
+
+  // 1-3 kısa parça olabilir ama çok genel ürün kelimesi olmayacak
+  if (parts.length > 3) return false;
 
   return true;
 }
@@ -468,9 +494,21 @@ function detectIntent(messageNorm, rawMessage = "", detectedProduct = "", stage 
     return "location";
   }
 
-  if (looksLikeLetterInput(raw, detectedProduct)) {
-    return "letters";
-  }
+  if (
+  detectedProduct === "atac" &&
+  !hasAny(messageNorm, [
+    "atac",
+    "ataç",
+    "harfli",
+    "kolye",
+    "istiyorum",
+    "ilgileniyorum",
+    "almak istiyorum",
+  ]) &&
+  looksLikeLetterInput(raw, detectedProduct)
+) {
+  return "letters";
+}
 
   return "general";
 }
