@@ -114,19 +114,25 @@ const KEYWORDS = {
       "ne zaman kargoya verilir",
     ],
     trust: [
-      "guvenilir",
-      "guven",
-      "dolandirici",
-      "orijinal",
-      "saglam",
-      "kararma",
-      "solar",
-      "solma",
-      "paslan",
-      "kaplama",
-      "kaplamasi atar",
-      "kaplaması atar",
-    ],
+  "guvenilir",
+  "guven",
+  "dolandirici",
+  "orijinal",
+  "saglam",
+  "kararma",
+  "kararir mi",
+  "kararma yapar mi",
+  "kararma olur mu",
+  "kararır mı",
+  "kararma yapar mı",
+  "kararma olur mu",
+  "solar",
+  "solma",
+  "paslan",
+  "kaplama",
+  "kaplamasi atar",
+  "kaplaması atar",
+],
     payment: [
       "kapida odeme",
       "kapıda ödeme",
@@ -148,7 +154,21 @@ const KEYWORDS = {
       "ödeme",
     ],
     price: ["fiyat", "ne kadar", "ucret", "ücret", "kac tl", "kaç tl"],
-    chain: ["zincir modeli", "zincir degisiyor mu", "zincir değişiyor mu", "zincir kisalir mi", "zincir kısalır mı", "zincir boyu", "zincir uzunlugu", "zincir uzunluğu"],
+    chain: [
+  "zincir modeli",
+  "zincir degisiyor mu",
+  "zincir değişiyor mu",
+  "zincir kisalir mi",
+  "zincir kısalır mı",
+  "zincir boyu",
+  "zincir uzunlugu",
+  "zincir uzunluğu",
+  "zincir ne kadar",
+  "uzunlugu ne kadar",
+  "uzunluğu ne kadar",
+  "zincir kac cm",
+  "zincir kaç cm",
+],
     orderStart: ["siparis vermek istiyorum", "sipariş vermek istiyorum", "siparis verecegim", "sipariş vereceğim", "almak istiyorum", "hazirlayalim", "hazırlayalım", "istiyorum", "ilgileniyorum"],
     photoQuestion: [
       "bu foto olur mu",
@@ -614,28 +634,35 @@ function detectIntent(baseContext, extracted) {
 
   if (hasAny(messageNorm, KEYWORDS.intents.backTextDirect)) return "back_text";
 
+if (conversationStage === "waiting_back_text") {
+  const blocked = hasAny(messageNorm, [
+    ...KEYWORDS.intents.smalltalk,
+    ...KEYWORDS.intents.cancel,
+    ...KEYWORDS.intents.payment,
+    ...KEYWORDS.intents.shipping,
+    ...KEYWORDS.intents.shippingPrice,
+    ...KEYWORDS.intents.trust,
+    ...KEYWORDS.intents.location,
+    ...KEYWORDS.intents.price,
+    ...KEYWORDS.intents.chain,
+    ...KEYWORDS.intents.photoQuestion,
+    ...KEYWORDS.intents.backTextInfo,
+    ...KEYWORDS.intents.backPhotoInfo,
+    ...KEYWORDS.intents.backPhotoPrice,
+    ...KEYWORDS.intents.backTextSkip,
+  ]);
+
+  const raw = String(message || "").trim();
+
   if (
-    conversationStage === "waiting_back_text" &&
-    messageNorm &&
+    raw &&
+    !blocked &&
     !looksLikePhotoUrl(message) &&
-    !hasAny(messageNorm, [
-      ...KEYWORDS.intents.smalltalk,
-      ...KEYWORDS.intents.cancel,
-      ...KEYWORDS.intents.payment,
-      ...KEYWORDS.intents.shipping,
-      ...KEYWORDS.intents.shippingPrice,
-      ...KEYWORDS.intents.trust,
-      ...KEYWORDS.intents.location,
-      ...KEYWORDS.intents.price,
-      ...KEYWORDS.intents.chain,
-      ...KEYWORDS.intents.photoQuestion,
-      ...KEYWORDS.intents.backTextInfo,
-      ...KEYWORDS.intents.backPhotoInfo,
-      ...KEYWORDS.intents.backPhotoPrice,
-    ])
+    raw.length <= 80
   ) {
     return "back_text";
   }
+}
 
   if (hasAny(messageNorm, KEYWORDS.intents.smalltalk)) return "smalltalk";
 
