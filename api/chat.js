@@ -8,6 +8,7 @@ const MAIN_MENU_TEXT =
 
 const LASER_PRICE_TEXT =
   "Resimli lazer kolye fiyatımız EFT / Havale ile 599,90 TL, kapıda ödeme ile 649,90 TL’dir efendim 😊 Siparişe devam etmek isterseniz fotoğrafı buradan gönderebilirsiniz.";
+
 const ATAC_PRICE_TEXT =
   "Harfli ataç kolye fiyatımız EFT / Havale ile 499,90 TL, kapıda ödeme ile 549,90 TL’dir efendim 😊 Siparişe devam etmek isterseniz istediğiniz harfleri yazabilirsiniz.";
 
@@ -116,40 +117,51 @@ function hasPhoneNumber(rawMessage = "") {
 function looksLikeAddress(messageNorm, rawMessage = "") {
   const raw = String(rawMessage || "").trim();
   if (!raw) return false;
-  if (raw.length < 12) return false;
+  if (raw.length < 14) return false;
 
   if (
     hasAny(messageNorm, [
-      "adres",
-      "acik adres",
-      "mahalle",
-      "mah",
-      "sokak",
-      "sk",
-      "no",
-      "daire",
-      "apt",
-      "apartman",
-      "ilce",
-      "kat",
-      "site",
-      "bulvar",
-      "cadde",
-      "cd",
-      "telefon",
-      "tel",
-      "ad soyad",
+      "adres veriyorum",
+      "adres vereyim",
+      "adresi veriyorum",
+      "adres yazayim",
+      "adres yaziyorum",
+      "adres atayim",
+      "adres atiyorum",
     ])
   ) {
-    return true;
+    return false;
   }
 
-  if (
-    /\d/.test(raw) &&
-    hasAny(messageNorm, ["mah", "sok", "cad", "no", "daire", "kat", "apt", "sk", "site", "mahallesi"])
-  ) {
-    return true;
+  const strongKeywords = [
+    "mahalle",
+    "mah",
+    "sokak",
+    "sk",
+    "cadde",
+    "cd",
+    "bulvar",
+    "no",
+    "daire",
+    "apt",
+    "apartman",
+    "kat",
+    "site",
+    "blok",
+    "ilce",
+    "ilçe",
+    "mahallesi",
+  ];
+
+  let hit = 0;
+  for (const k of strongKeywords) {
+    if (messageNorm.includes(k)) hit++;
   }
+
+  const hasNumber = /\d/.test(raw);
+
+  if (hit >= 2) return true;
+  if (hit >= 1 && hasNumber) return true;
 
   return false;
 }
@@ -232,6 +244,10 @@ function detectIntent(messageNorm, rawMessage = "", detectedProduct = "", stage 
 
   if (!messageNorm && !raw) return "unknown";
 
+  if (stage === "waiting_back_text" && looksLikePhotoUrl(raw) && detectedProduct === "lazer") {
+    return "back_text";
+  }
+
   if (looksLikePhotoUrl(raw) && detectedProduct === "lazer") {
     return "photo";
   }
@@ -242,6 +258,69 @@ function detectIntent(messageNorm, rawMessage = "", detectedProduct = "", stage 
 
   if (stage === "waiting_back_text" && isBackTextSkipMessage(messageNorm)) {
     return "back_text_skip";
+  }
+
+  if (
+    stage === "waiting_back_text" &&
+    raw &&
+    !looksLikeAddress(messageNorm, raw) &&
+    !hasPhoneNumber(raw) &&
+    !hasAny(messageNorm, [
+      "fiyat",
+      "ne kadar",
+      "kapida",
+      "eft",
+      "havale",
+      "merhaba",
+      "selam",
+      "tamamdir",
+      "tamam",
+    ])
+  ) {
+    return "back_text";
+  }
+
+  if (
+    hasAny(messageNorm, [
+      "arkasina fotograf",
+      "arkasina foto",
+      "arka tarafa foto",
+      "arkaya foto",
+      "arkasina baska fotograf",
+      "arkasina baska foto",
+      "arka yuze fotograf",
+      "arka yüze fotograf",
+      "arka yuze foto",
+      "arka yüze foto",
+      "arkasina baska bir fotograf",
+      "arkasina baska bir foto",
+      "arkasina fotograf istiyorum",
+      "arkasina foto istiyorum",
+    ])
+  ) {
+    return "back_text";
+  }
+
+  if (
+    hasAny(messageNorm, [
+      "bu foto olur mu",
+      "fotograf uygun mu",
+      "foto uygun mu",
+      "nasil olsun foto",
+      "nasil foto",
+      "hangi fotoyu atayim",
+      "buradan mi atayim",
+      "whatsapptan mi",
+      "buradan mi whatsapptan mi",
+      "nasil aticam",
+      "nasil atacam",
+      "fotoyu nasil atayim",
+      "foto atsam olur mu",
+      "fotograf atsam olur mu",
+      "gondersem olur mu",
+    ])
+  ) {
+    return "photo_question";
   }
 
   if (hasAny(messageNorm, ["fiyat", "ne kadar", "ucret", "kac tl", "kaç tl"])) {
@@ -300,21 +379,6 @@ function detectIntent(messageNorm, rawMessage = "", detectedProduct = "", stage 
       "fotografi gondericem",
       "foto yolluyorum",
       "resim yolluyorum",
-      "vesikalik olur mu",
-      "vesikalik",
-      "fotograf uygun mu",
-      "foto uygun mu",
-      "bu foto olur mu",
-      "fotograf atsam",
-      "foto atsam",
-      "resim atsam",
-      "foto atabilir miyim",
-      "fotograf atabilir miyim",
-      "foto gondereyim mi",
-      "fotograf gondereyim mi",
-      "buradan atsam olur mu",
-      "fotograf atsam olur mu",
-      "foto atsam olur mu",
     ])
   ) {
     return "photo";
@@ -417,6 +481,7 @@ function shouldLockProduct(product, intent) {
     "shipping",
     "trust",
     "photo",
+    "photo_question",
     "back_text",
     "back_text_skip",
     "chain_question",
@@ -551,6 +616,8 @@ function createHardRules(context) {
     rules.push("For laser necklace, do not mix in ATAC rules like letter count.");
     rules.push("If user newly selects laser product, answer directly with price, then continue order flow.");
     rules.push("After real photo arrives for laser, ask whether they want back text before asking payment.");
+    rules.push("If user asks whether a photo is suitable or how to send it, say they can send it here and you will check it.");
+    rules.push("If user asks price difference for back-side text or back-side photo, answer that there is no extra fee.");
   }
 
   if (detectedProduct === "atac") {
@@ -582,8 +649,9 @@ function createHardRules(context) {
   rules.push("If the answer is known from context, answer directly.");
   rules.push("If product context exists, do not ask product again.");
   rules.push("If customer already gave payment or address earlier, do not ask the same thing again.");
-  rules.push("If customer asks a side question during order flow, answer it briefly and then continue with the next missing order step.");
+  rules.push("If customer asks a side question during order flow, answer it briefly and then continue with the next missing step.");
   rules.push("Never invent extra models, collections, or options that are not in knowledge.");
+  rules.push("Do not claim the order is shipped unless this is explicitly known.");
   rules.push(`If you truly do not know, reply exactly with: ${FALLBACK_TEXT}`);
 
   return rules.join("\n");
@@ -757,7 +825,7 @@ function collectFacts(context, currentState) {
   }
 
   if (detectedIntent === "address") {
-    if (hasPhoneNumber(message)) {
+    if (hasPhoneNumber(message) || next.phone_received === "1") {
       next.phone_received = "1";
       next.address_status = "received";
     } else {
@@ -917,6 +985,10 @@ function buildGuidedReply(context, state) {
     return MAIN_MENU_TEXT;
   }
 
+  if (detectedIntent === "photo_question" && detectedProduct === "lazer") {
+    return "Buradan direkt gönderebilirsiniz efendim 😊 Siz gönderin, biz hemen kontrol edelim.";
+  }
+
   if (isFreshProductSelection(context, state) && detectedProduct === "lazer") {
     return LASER_PRICE_TEXT;
   }
@@ -983,47 +1055,73 @@ function buildGuidedReply(context, state) {
     }
   }
 
+  if (detectedIntent === "price" && detectedProduct === "lazer") {
+    if (
+      hasAny(messageNorm, [
+        "arkasina yazi",
+        "arka yazi",
+        "arkaya yazi",
+        "arkasina fotograf",
+        "arkasina foto",
+        "arka yuze foto",
+        "arka yüze foto",
+        "arka yuze fotograf",
+        "arka yüze fotograf",
+      ])
+    ) {
+      return "Arka yüze yazı veya fotoğraf eklemede ekstra ücret almıyoruz efendim 😊";
+    }
+  }
+
   if (detectedIntent === "payment") {
     if (state.payment_method === "kapida_odeme") {
-      if (nextStage === "waiting_product" && !detectedProduct) {
+      if (!detectedProduct) {
         return MAIN_MENU_TEXT;
       }
-      if (nextStage === "waiting_photo" && detectedProduct === "lazer") {
-        return "Tabi efendim 😊 Siparişe devam etmek için fotoğrafı buradan gönderebilirsiniz.";
+
+      if (detectedProduct === "lazer") {
+        if (!truthy(state.photo_received)) {
+          return "Tabi efendim 😊 Önce fotoğrafı buradan gönderebilirsiniz.";
+        }
+        if (!state.back_text_status) {
+          return "Tabi efendim 😊 Arka yüze yazı veya fotoğraf isteğinizi de netleştirelim. İsterseniz yazıyı yazın, istemezseniz 'yok' yazabilirsiniz.";
+        }
       }
-      if (nextStage === "waiting_back_text" && detectedProduct === "lazer") {
-        return "Tabi efendim 😊 Önce fotoğrafı aldıktan sonra arka yüz için yazı isteğinizi de soracağım. Şimdilik fotoğrafı buradan gönderebilirsiniz.";
+
+      if (detectedProduct === "atac" && !truthy(state.letters_received)) {
+        return "Tabi efendim 😊 Önce istediğiniz harfleri yazabilirsiniz.";
       }
-      if (nextStage === "waiting_letters" && detectedProduct === "atac") {
-        return "Tabi efendim 😊 Şimdi istediğiniz harfleri yazabilirsiniz.";
-      }
-      if (nextStage === "waiting_address") {
+
+      if (state.address_status !== "received") {
         return "Tabi efendim 😊 Siparişinizi tamamlamak için ad soyad, telefon ve açık adres bilgilerinizi tek mesajda paylaşabilir misiniz?";
       }
-      if (nextStage === "order_completed") {
-        return "Kapıda ödeme tercihinizi not aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı.";
-      }
+
+      return "Kapıda ödeme tercihinizi not aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı.";
     }
 
     if (state.payment_method === "eft_havale") {
-      if (nextStage === "waiting_product" && !detectedProduct) {
+      if (!detectedProduct) {
         return MAIN_MENU_TEXT;
       }
-      if (nextStage === "waiting_photo" && detectedProduct === "lazer") {
-        return `EFT / Havale ile ilerleyebiliriz 😊 Önce fotoğrafı buradan gönderebilirsiniz.\n\n${EFT_INFO_TEXT}`;
+
+      if (detectedProduct === "lazer") {
+        if (!truthy(state.photo_received)) {
+          return `EFT / Havale ile ilerleyebiliriz 😊 Önce fotoğrafı buradan gönderebilirsiniz.\n\n${EFT_INFO_TEXT}`;
+        }
+        if (!state.back_text_status) {
+          return `EFT / Havale ile ilerleyebiliriz 😊 Arka yüze yazı veya fotoğraf isteğinizi de netleştirelim. İsterseniz yazıyı yazın, istemezseniz 'yok' yazabilirsiniz.\n\n${EFT_INFO_TEXT}`;
+        }
       }
-      if (nextStage === "waiting_back_text" && detectedProduct === "lazer") {
-        return `EFT / Havale ile ilerleyebiliriz 😊 Önce fotoğrafı buradan gönderebilirsiniz.\n\n${EFT_INFO_TEXT}`;
-      }
-      if (nextStage === "waiting_letters" && detectedProduct === "atac") {
+
+      if (detectedProduct === "atac" && !truthy(state.letters_received)) {
         return `EFT / Havale ile ilerleyebiliriz 😊 Önce istediğiniz harfleri yazabilirsiniz.\n\n${EFT_INFO_TEXT}`;
       }
-      if (nextStage === "waiting_address") {
+
+      if (state.address_status !== "received") {
         return `EFT / Havale için ödeme bilgilerimiz şu şekildedir:\n${EFT_INFO_TEXT}\n\nAd soyad, telefon ve açık adres bilgilerinizi de paylaşabilirsiniz 😊`;
       }
-      if (nextStage === "order_completed") {
-        return `EFT / Havale bilgilerimiz şu şekildedir:\n${EFT_INFO_TEXT}\n\nSipariş için gerekli bilgiler tamamlandı efendim 😊`;
-      }
+
+      return `EFT / Havale bilgilerimiz şu şekildedir:\n${EFT_INFO_TEXT}\n\nSipariş için gerekli bilgiler tamamlandı efendim 😊`;
     }
   }
 
@@ -1054,13 +1152,15 @@ function buildGuidedReply(context, state) {
   }
 
   if (detectedIntent === "phone") {
+    if (state.address_status === "address_only") {
+      return "Telefon numaranızı da aldım efendim 😊 Şimdi açık adresinizi yazabilirsiniz. (İl, ilçe, mahalle, sokak)";
+    }
+
     if (state.address_status === "received") {
-      if (nextStage === "waiting_payment") {
+      if (!state.payment_method) {
         return "Telefon numaranızı da aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
       }
-      if (nextStage === "order_completed") {
-        return "Telefon numaranızı da aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı.";
-      }
+      return "Telefon numaranızı da aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı.";
     }
   }
 
