@@ -26,13 +26,9 @@ function unwrapManychatValue(value) {
   const str = String(value).trim();
   if (!str) return "";
 
-  // "{{cuf_123}}" / "{{last_input_text}}" / "{{...}}"
   if (/^\{\{\{?.+?\}\}\}?$/.test(str)) return "";
-  // "{cuf_123}" benzeri
   if (/^\{[^}]+\}$/.test(str)) return "";
-  // çıplak cuf placeholder
   if (/^cuf_\d+$/i.test(str)) return "";
-  // boş sayılacak stringler
   if (/^(undefined|null|none|nan)$/i.test(str)) return "";
 
   return str;
@@ -695,23 +691,7 @@ function collectFacts(context, currentState) {
   }
 
   if (detectedIntent === "photo" && detectedProduct === "lazer") {
-    if (
-      looksLikePhotoUrl(message) ||
-      hasAny(messageNorm, [
-        "fotograf gonderiyorum",
-        "foto gonderiyorum",
-        "fotografi gonderiyorum",
-        "fotografi atiyorum",
-        "foto atiyorum",
-        "fotoyu atiyorum",
-        "resmi atiyorum",
-        "resim gonderiyorum",
-        "fotograf atiyorum",
-        "fotografi gondericem",
-        "foto yolluyorum",
-        "resim yolluyorum",
-      ])
-    ) {
+    if (looksLikePhotoUrl(message)) {
       next.photo_received = "1";
     }
   }
@@ -838,22 +818,23 @@ function buildGuidedReply(context, state) {
         return "Fotoğrafınızı aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı.";
       }
     }
+
     return "Tabi efendim, fotoğrafı buradan gönderebilirsiniz 😊";
   }
 
   if (detectedIntent === "payment") {
     if (state.payment_method === "kapida_odeme") {
       if (nextStage === "waiting_photo" && detectedProduct === "lazer") {
-        return "Kapıda ödeme seçeneğimiz bulunmaktadır 😊 Siparişe devam edelim, fotoğrafı buradan gönderebilirsiniz.";
+        return "Tabi efendim 😊 Siparişe devam etmek için fotoğrafı buradan gönderebilirsiniz.";
       }
       if (nextStage === "waiting_letters" && detectedProduct === "atac") {
-        return "Kapıda ödeme seçeneğimiz bulunmaktadır 😊 Siparişe devam edelim, istediğiniz harfleri yazabilirsiniz.";
+        return "Tabi efendim 😊 Şimdi istediğiniz harfleri yazabilirsiniz.";
       }
       if (nextStage === "waiting_address") {
-        return "Kapıda ödeme seçeneğimiz bulunmaktadır. Siparişinizi tamamlamak için adres bilgilerinizi paylaşabilir misiniz? 😊";
+        return "Tabi efendim 😊 Siparişinizi tamamlamak için ad soyad, telefon ve açık adres bilgilerinizi paylaşabilir misiniz?";
       }
       if (nextStage === "order_completed") {
-        return "Kapıda ödeme seçiminiz alınmıştır efendim 😊 Sipariş için gerekli bilgiler tamamlandı.";
+        return "Kapıda ödeme tercihinizi not aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı.";
       }
     }
 
@@ -865,7 +846,7 @@ function buildGuidedReply(context, state) {
         return "EFT / Havale ile ilerleyebiliriz 😊 Önce istediğiniz harfleri yazabilirsiniz.\n\nIBAN: TR34 0015 7000 0000 0076 2524 67\nAlıcı: Servet Cihan Nakipoğlu";
       }
       if (nextStage === "waiting_address") {
-        return "EFT / Havale için ödeme bilgilerimiz şu şekildedir:\nIBAN: TR34 0015 7000 0000 0076 2524 67\nAlıcı: Servet Cihan Nakipoğlu\n\nÖdeme sonrası adres bilgilerinizi de paylaşabilirsiniz 😊";
+        return "EFT / Havale için ödeme bilgilerimiz şu şekildedir:\nIBAN: TR34 0015 7000 0000 0076 2524 67\nAlıcı: Servet Cihan Nakipoğlu\n\nAd soyad, telefon ve açık adres bilgilerinizi de paylaşabilirsiniz 😊";
       }
       if (nextStage === "order_completed") {
         return "EFT / Havale bilgilerimiz şu şekildedir:\nIBAN: TR34 0015 7000 0000 0076 2524 67\nAlıcı: Servet Cihan Nakipoğlu\n\nSipariş için gerekli bilgiler tamamlandı efendim 😊";
