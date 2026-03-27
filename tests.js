@@ -1,6 +1,6 @@
 console.log("🔥 TEST BAŞLADI");
 
-const processChat = require("./api/chat.js").processChat;
+import { processChat } from "./api/chat.js";
 
 function createState(overrides = {}) {
 return {
@@ -58,7 +58,7 @@ state: test.state
 
 } catch (e) {
   console.log(`💥 CRASH: ${test.id}`);
-  console.log(e.message);
+  console.log(e);
 }
 
 }
