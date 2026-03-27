@@ -118,7 +118,7 @@ function hasPhoneNumber(rawMessage = "") {
 function looksLikeAddress(messageNorm, rawMessage = "") {
   const raw = String(rawMessage || "").trim();
   if (!raw) return false;
-  if (raw.length < 14) return false;
+  if (raw.length < 10) return false;
 
   // Niyet cümlesi, gerçek adres değil
   if (
@@ -147,12 +147,29 @@ function looksLikeAddress(messageNorm, rawMessage = "") {
     "daire",
     "apt",
     "apartman",
+    "apart",
+    "ap",
     "kat",
     "site",
+    "sitesi",
     "blok",
     "ilce",
     "ilçe",
     "mahallesi",
+    "istanbul",
+    "ankara",
+    "izmir",
+    "bursa",
+    "kocaeli",
+    "antalya",
+    "adana",
+    "beykoz",
+    "uskudar",
+    "üsküdar",
+    "kadikoy",
+    "kadıköy",
+    "sisli",
+    "şişli",
   ];
 
   let hit = 0;
@@ -162,8 +179,25 @@ function looksLikeAddress(messageNorm, rawMessage = "") {
 
   const hasNumber = /\d/.test(raw);
 
+  // Çok güçlü adres sinyali
   if (hit >= 2) return true;
+
+  // Tek güçlü sinyal + sayı
   if (hit >= 1 && hasNumber) return true;
+
+  // site / apt / ap gibi yapı + şehir adı varsa adres say
+  const hasResidenceWord = hasAny(messageNorm, ["site", "sitesi", "apt", "apartman", "apart", "ap", "blok"]);
+  const hasCityWord = hasAny(messageNorm, [
+    "istanbul",
+    "ankara",
+    "izmir",
+    "bursa",
+    "kocaeli",
+    "antalya",
+    "adana",
+  ]);
+
+  if (hasResidenceWord && hasCityWord) return true;
 
   return false;
 }
