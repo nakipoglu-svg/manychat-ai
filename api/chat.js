@@ -614,15 +614,46 @@ function detectIntent(baseContext, extracted) {
     return conversationStage === "waiting_back_text" ? "back_photo_upload" : "photo";
   }
 
-  if (hasAny(messageNorm, KEYWORDS.intents.shippingPrice)) return "shipping_price";
+if (hasAny(messageNorm, KEYWORDS.intents.shippingPrice)) return "shipping_price";
   if (hasAny(messageNorm, KEYWORDS.intents.shipping)) return "shipping";
   if (hasAny(messageNorm, KEYWORDS.intents.trust)) return "trust";
   if (hasAny(messageNorm, KEYWORDS.intents.location)) return "location";
   if (hasAny(messageNorm, KEYWORDS.intents.payment)) return "payment";
-  if (hasAny(messageNorm, KEYWORDS.intents.price)) return "price";
   if (hasAny(messageNorm, KEYWORDS.intents.chain)) return "chain_question";
+  if (hasAny(messageNorm, KEYWORDS.intents.price)) return "price";
   if (hasAny(messageNorm, KEYWORDS.intents.photoQuestion)) return "photo_question";
-  if (hasAny(messageNorm, KEYWORDS.intents.orderStart)) return "order_start";
+
+  if (hasAny(messageNorm, KEYWORDS.intents.backTextDirect)) return "back_text";
+
+  if (conversationStage === "waiting_back_text") {
+    const blocked = hasAny(messageNorm, [
+      ...KEYWORDS.intents.smalltalk,
+      ...KEYWORDS.intents.cancel,
+      ...KEYWORDS.intents.payment,
+      ...KEYWORDS.intents.shipping,
+      ...KEYWORDS.intents.shippingPrice,
+      ...KEYWORDS.intents.trust,
+      ...KEYWORDS.intents.location,
+      ...KEYWORDS.intents.price,
+      ...KEYWORDS.intents.chain,
+      ...KEYWORDS.intents.photoQuestion,
+      ...KEYWORDS.intents.backTextInfo,
+      ...KEYWORDS.intents.backPhotoInfo,
+      ...KEYWORDS.intents.backPhotoPrice,
+      ...KEYWORDS.intents.backTextSkip,
+    ]);
+
+    const raw = String(message || "").trim();
+
+    if (
+      raw &&
+      !blocked &&
+      !looksLikePhotoUrl(message) &&
+      raw.length <= 80
+    ) {
+      return "back_text";
+    }
+  }
 
   if (looksLikeAddress(messageNorm, message)) return "address";
   if (extracted.phone) return "phone";
@@ -631,39 +662,7 @@ function detectIntent(baseContext, extracted) {
   if (detectedProduct === "atac" && extracted.letters) {
     return "letters";
   }
-
-  if (hasAny(messageNorm, KEYWORDS.intents.backTextDirect)) return "back_text";
-
-if (conversationStage === "waiting_back_text") {
-  const blocked = hasAny(messageNorm, [
-    ...KEYWORDS.intents.smalltalk,
-    ...KEYWORDS.intents.cancel,
-    ...KEYWORDS.intents.payment,
-    ...KEYWORDS.intents.shipping,
-    ...KEYWORDS.intents.shippingPrice,
-    ...KEYWORDS.intents.trust,
-    ...KEYWORDS.intents.location,
-    ...KEYWORDS.intents.price,
-    ...KEYWORDS.intents.chain,
-    ...KEYWORDS.intents.photoQuestion,
-    ...KEYWORDS.intents.backTextInfo,
-    ...KEYWORDS.intents.backPhotoInfo,
-    ...KEYWORDS.intents.backPhotoPrice,
-    ...KEYWORDS.intents.backTextSkip,
-  ]);
-
-  const raw = String(message || "").trim();
-
-  if (
-    raw &&
-    !blocked &&
-    !looksLikePhotoUrl(message) &&
-    raw.length <= 80
-  ) {
-    return "back_text";
-  }
-}
-
+  
   if (hasAny(messageNorm, KEYWORDS.intents.smalltalk)) return "smalltalk";
 
   return "general";
@@ -953,12 +952,22 @@ function buildDeterministicReply(context, state) {
   }
 
   if (detectedIntent === "chain_question" && detectedProduct === "lazer") {
-    if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "zincir kisalir mi", "zincir kısalır mı"])) {
+    if (hasAny(messageNorm, [
+      "zincir boyu",
+      "zincir uzunlugu",
+      "zincir uzunluğu",
+      "zincir ne kadar",
+      "uzunlugu ne kadar",
+      "uzunluğu ne kadar",
+      "zincir kac cm",
+      "zincir kaç cm",
+      "zincir kisalir mi",
+      "zincir kısalır mı"
+    ])) {
       return "Standart zincir 60 cm’dir efendim 😊";
     }
     return "Zincir modeliyle ilgili detay için ekibimize görsel üzerinden net bilgi verelim 😊";
   }
-
   if (detectedIntent === "photo" && detectedProduct === "lazer") {
     if (state.order_status === "completed" || nextStage === "order_completed") {
       return "Sipariş bilgileri tamamlandığı için fotoğraf değişikliği talebinizi ekibimize yönlendirelim efendim 😊";
