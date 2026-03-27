@@ -28,20 +28,20 @@ function unwrapManychatValue(value) {
   const str = String(value).trim();
   if (!str) return "";
 
-  // {{cuf_123}} / {{{cuf_123}}} / {{anything}} -> boş say
+  // {{cuf_123}} / {{{cuf_123}}} / {{anything}}
   if (/^\{\{\{?.+?\}\}\}?$/.test(str)) return "";
 
-  // {cuf_123} veya {anything} -> boş say
+  // {cuf_123} / {anything}
   if (/^\{[^}]+\}$/.test(str)) return "";
 
-  // dış kabuk soyulmuş halde cuf_123 kaldıysa yine boş say
+  // cuf_123
   if (/^cuf_\d+$/i.test(str)) return "";
 
-  // boş sayılacak diğer değerler
   if (/^(undefined|null|none|nan|false)$/i.test(str)) return "";
 
   return str;
 }
+
 function normalizeText(text) {
   return String(text || "")
     .toLowerCase()
@@ -51,7 +51,15 @@ function normalizeText(text) {
     .replace(/ö/g, "o")
     .replace(/ş/g, "s")
     .replace(/ü/g, "u")
+    .replace(/â/g, "a")
+    .replace(/î/g, "i")
+    .replace(/û/g, "u")
     .replace(/[^\w\s]/g, " ")
+    .replace(/\boddme\b/g, "odeme")
+    .replace(/\bodme\b/g, "odeme")
+    .replace(/\bodeeme\b/g, "odeme")
+    .replace(/\bfotograf\b/g, "fotograf")
+    .replace(/\bfotografi\b/g, "fotograf")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -65,13 +73,10 @@ function truthy(value) {
   return ["1", "true", "evet", "yes", "var", "alindi", "tamam"].includes(v);
 }
 
-function emptyLike(value) {
-  return !unwrapManychatValue(value);
-}
-
 function cleanReply(text) {
   const t = String(text || "").trim();
   if (!t) return FALLBACK_TEXT;
+
   return t
     .replace(/^["'\s]+|["'\s]+$/g, "")
     .replace(/\n{3,}/g, "\n\n")
@@ -81,11 +86,11 @@ function cleanReply(text) {
 function detectProduct(messageNorm, existingProduct) {
   const existing = normalizeText(existingProduct);
 
-  if (existing === "lazer" || existing === "resimli lazer kolye" || existing === "resimli") {
+  if (["lazer", "resimli", "resimli lazer kolye"].includes(existing)) {
     return "lazer";
   }
 
-  if (existing === "atac" || existing === "ataç" || existing === "harfli atac kolye") {
+  if (["atac", "ataç", "harfli atac kolye", "harfli ataq kolye"].includes(existing)) {
     return "atac";
   }
 
@@ -97,9 +102,10 @@ function detectProduct(messageNorm, existingProduct) {
       "fotolu",
       "lazer",
       "arka yazi",
-      "arka yazi yazilir mi",
       "arkasina yazi",
       "arkasina foto",
+      "resim kolye",
+      "foto kolye",
     ])
   ) {
     return "lazer";
@@ -115,6 +121,7 @@ function detectProduct(messageNorm, existingProduct) {
       "3 harf",
       "uc harf",
       "isim harf",
+      "harfli atac",
     ])
   ) {
     return "atac";
@@ -130,59 +137,80 @@ function detectIntent(messageNorm) {
     return "cancel_order";
   }
 
-  if (hasAny(messageNorm, ["fiyat", "ne kadar", "ucret", "ücret", "kaç tl", "kac tl"])) {
+  if (hasAny(messageNorm, ["fiyat", "ne kadar", "ucret", "kac tl", "kaç tl"])) {
     return "price";
   }
 
-  if (hasAny(messageNorm, ["kapida odeme", "kapıda ödeme", "eft", "havale", "odeme", "ödeme"])) {
+  if (
+    hasAny(messageNorm, [
+      "kapida odeme",
+      "kapida odeme olur mu",
+      "kapida odeme var mi",
+      "kapida oderim",
+      "kapida",
+      "odeme",
+      "eft",
+      "havale",
+      "oddme",
+    ])
+  ) {
     return "payment";
   }
 
-  if (hasAny(messageNorm, ["kargo", "ne zaman gelir", "teslimat", "kaç günde", "ne zaman gelir"])) {
+  if (
+    hasAny(messageNorm, [
+      "kargo",
+      "teslimat",
+      "ne zaman gelir",
+      "kac gunde",
+      "kaç günde",
+      "takip no",
+      "kargom nerede",
+    ])
+  ) {
     return "shipping";
   }
 
-  if (hasAny(messageNorm, ["guvenilir", "guven", "dolandirici", "güven", "orijinal", "saglam"])) {
+  if (hasAny(messageNorm, ["guvenilir", "guven", "dolandirici", "orijinal", "saglam"])) {
     return "trust";
   }
 
   if (
-  hasAny(messageNorm, [
-    "fotograf gonderiyorum",
-    "foto gonderiyorum",
-    "fotoyu atayim",
-    "resmi atayim",
-    "resim gondersem",
-    "vesikalik olur mu",
-    "vesikalik",
-    "fotograf uygun mu",
-    "foto uygun mu",
-    "bu foto olur mu",
-
-    "fotograf atsam",
-    "foto atsam",
-    "resim atsam",
-    "fotoğraf atsam",
-    "foto atabilir miyim",
-    "fotograf atabilir miyim",
-    "foto gondereyim mi",
-    "fotograf gondereyim mi",
-    "buradan atsam olur mu",
-    "fotograf atsam olur mu",
-    "foto atsam olur mu"
-  ])
-) {
-  return "photo";
-}
+    hasAny(messageNorm, [
+      "fotograf gonderiyorum",
+      "foto gonderiyorum",
+      "fotoyu atayim",
+      "resmi atayim",
+      "resim gondersem",
+      "vesikalik olur mu",
+      "vesikalik",
+      "fotograf uygun mu",
+      "foto uygun mu",
+      "bu foto olur mu",
+      "fotograf atsam",
+      "foto atsam",
+      "resim atsam",
+      "foto atabilir miyim",
+      "fotograf atabilir miyim",
+      "foto gondereyim mi",
+      "fotograf gondereyim mi",
+      "buradan atsam olur mu",
+      "fotograf atsam olur mu",
+      "foto atsam olur mu",
+    ])
+  ) {
+    return "photo";
+  }
 
   if (
     hasAny(messageNorm, [
-      "arkasina ne yazilir",
       "arkasina yazi",
       "arka yazi",
+      "arkasina tarih",
       "arkaya yazi",
-      "tarih yazilir mi",
-      "isim yazilir mi",
+      "arka tarafa yazi",
+      "yazi yaziliyor mu",
+      "arkasina bir sey yazilir mi",
     ])
   ) {
     return "back_text";
@@ -193,13 +221,10 @@ function detectIntent(messageNorm) {
       "zincir modeli",
       "zincir degisiyor mu",
       "zincir değişiyor mu",
-      "zincir degisir mi",
       "zincir kisalir mi",
       "zincir kısalır mı",
-      "zincir uzar mi",
       "zincir boyu",
-      "uzatma var mi",
-      "uzatma var mı",
+      "zincir uzunlugu",
     ])
   ) {
     return "chain_question";
@@ -213,6 +238,8 @@ function detectIntent(messageNorm) {
       "almak istiyorum",
       "istiyorum",
       "hazirlayalim",
+      "alacagim",
+      "alayim",
     ])
   ) {
     return "order_start";
@@ -229,6 +256,8 @@ function detectIntent(messageNorm) {
       "apartman",
       "daire",
       "telefon numaram",
+      "acik adres",
+      "açık adres",
     ])
   ) {
     return "address";
@@ -241,8 +270,8 @@ function detectIntent(messageNorm) {
       "slm",
       "iyi aksamlar",
       "iyi akşamlar",
-      "günaydın",
       "gunaydin",
+      "günaydın",
       "nasilsiniz",
     ])
   ) {
@@ -268,6 +297,7 @@ function detectIntent(messageNorm) {
 
 function shouldLockProduct(product, intent) {
   if (!product) return false;
+
   return [
     "price",
     "payment",
@@ -302,7 +332,9 @@ function buildContext(body) {
 
   const existingProduct = ilgilenilen_urun || user_product || "";
   const messageNorm = normalizeText(message);
-  const detectedProduct = detectProduct(messageNorm, existingProduct);
+
+  const explicitProduct = detectProduct(messageNorm, "");
+  const detectedProduct = explicitProduct || normalizeText(existingProduct) || "";
   const detectedIntent = detectIntent(messageNorm);
 
   return {
@@ -333,15 +365,16 @@ function buildContext(body) {
 
 function createHardRules(context) {
   const { detectedProduct, detectedIntent, fields, messageNorm } = context;
-
   const rules = [];
 
   if (detectedProduct === "lazer") {
     rules.push("User is already in LASER product context. Do NOT ask which product they want.");
+    rules.push("For laser necklace, do not mix in ATAC rules like letter count.");
   }
 
   if (detectedProduct === "atac") {
     rules.push("User is already in ATAC product context. Do NOT ask which product they want.");
+    rules.push("For ATAC necklace, do not mix in laser photo rules unless user explicitly switches product.");
   }
 
   if (shouldLockProduct(detectedProduct, detectedIntent) || truthy(fields.context_lock)) {
@@ -354,53 +387,42 @@ function createHardRules(context) {
     rules.push("If exact chain model/change is seller-dependent, answer briefly and naturally, without using fallback immediately.");
   }
 
-  if (detectedProduct === "lazer") {
-    rules.push("For laser necklace: do not mix in ATAC rules like letter count.");
-  }
-
-  if (detectedProduct === "atac") {
-    rules.push("For ATAC necklace: do not mix in laser photo rules unless user explicitly switches product.");
-  }
-
   if (hasAny(messageNorm, ["evet", "tamam", "olur", "amin"])) {
     rules.push("Interpret short confirmations in conversation context. Do NOT treat them as a fresh topic.");
   }
 
-  if (truthy(fields.siparis_alindi)) {
-    rules.push("If order is already taken, do not restart order flow.");
-  }
+  rules.push("Keep replies short, natural, warm, and professional.");
+  rules.push("Do not use long lists.");
+  rules.push("If the answer is known from context, answer directly.");
+  rules.push("If product context exists, do not ask product again.");
+  rules.push(`If you truly do not know, reply exactly with: ${FALLBACK_TEXT}`);
 
   return rules.join("\n");
 }
 
 function getKnowledgePack(context) {
-  const baseFiles = [
-    "SYSTEM_MASTER.txt",
-    "CORE_SYSTEM.txt",
-    "ROUTING_RULES.txt",
-    "ORDER_FLOW.txt",
-    "PRICING.txt",
-    "PAYMENT.txt",
-    "SHIPPING.txt",
-    "IMAGE_RULES.txt",
-    "TRUST.txt",
-    "SMALLTALK.txt",
-    "EDGE_CASES.txt",
-    "FEW_SHOT_EXAMPLES.txt",
-  ];
+  const core = safeRead("core_system.txt");
+  const pricing = safeRead("pricing.txt");
+  const shipping = safeRead("shipping.txt");
+  const payment = safeRead("payment.txt");
+  const orderFlow = safeRead("order_flow.txt");
+  const trust = safeRead("trust.txt");
+  const smalltalk = safeRead("smalltalk.txt");
 
-  const productFiles = [];
-  if (context.detectedProduct === "lazer") productFiles.push("PRODUCT_LASER.txt");
-  if (context.detectedProduct === "atac") productFiles.push("PRODUCT_ATAC.txt");
+  const laser = context.detectedProduct === "lazer" ? safeRead("product_laser.txt") : "";
+  const atac = context.detectedProduct === "atac" ? safeRead("product_atac.txt") : "";
 
-  const selectedFiles = [...baseFiles, ...productFiles];
-
-  return selectedFiles
-    .map((file) => {
-      const content = safeRead(file);
-      if (!content) return "";
-      return `### ${file}\n${content}`;
-    })
+  return [
+    core,
+    laser,
+    atac,
+    pricing,
+    shipping,
+    payment,
+    orderFlow,
+    trust,
+    smalltalk,
+  ]
     .filter(Boolean)
     .join("\n\n");
 }
@@ -409,35 +431,20 @@ function buildMessages(context, knowledgePack) {
   const hardRules = createHardRules(context);
 
   const systemPrompt = `
-You are an Instagram DM sales assistant for Yudum Jewels.
+You are a sales assistant for Yudum Jewels.
 
-Your job:
-- reply shortly, warmly, professionally
-- keep product context
-- do not restart menu unnecessarily
-- do not hallucinate
-- if user is in a product context, continue from that context
-- answer the user's LAST message directly
-- never contradict knowledge files
-- if knowledge is insufficient, use this exact fallback: ${FALLBACK_TEXT}
-
-Critical behavior:
 ${hardRules}
 
-Return ONLY the final customer-facing reply text.
-Do not output JSON.
-Do not explain your reasoning.
-
-Knowledge:
+KNOWLEDGE:
 ${knowledgePack}
-`.trim();
+  `.trim();
 
   const userPrompt = `
-Customer last message:
-${context.message || ""}
+Customer message:
+${context.message}
 
-Resolved context:
-- detected_product: ${context.detectedProduct || "unknown"}
+Context:
+- detected_product: ${context.detectedProduct || ""}
 - detected_intent: ${context.detectedIntent || "unknown"}
 - current_product_field: ${context.fields.ilgilenilen_urun || context.fields.user_product || ""}
 - conversation_stage: ${context.fields.conversation_stage || ""}
@@ -457,7 +464,7 @@ Important:
 - If product context exists, do not ask product again.
 - If chain question is seller-dependent, respond naturally and briefly.
 - Do not go to main menu unless user truly asks to choose product.
-`.trim();
+  `.trim();
 
   return [
     { role: "system", content: systemPrompt },
@@ -517,19 +524,18 @@ function buildStateUpdate(context, replyText) {
   let context_lock = existing.context_lock || "";
 
   if (product !== "lazer") {
-  photo_received = "";
-  back_text_status = "";
-}
-  
+    photo_received = "";
+    back_text_status = "";
+  }
+
   if (product) context_lock = "1";
 
   if (intent === "photo") {
-  conversation_stage = "photo_step";
-
-  if (product === "lazer") {
-    order_status = order_status || "started";
+    conversation_stage = "photo_step";
+    if (product === "lazer") {
+      order_status = order_status || "started";
+    }
   }
-}
 
   if (intent === "back_text") {
     back_text_status = "talking";
@@ -538,6 +544,9 @@ function buildStateUpdate(context, replyText) {
 
   if (intent === "payment") {
     conversation_stage = "payment_step";
+    if (product) {
+      order_status = order_status || "started";
+    }
   }
 
   if (intent === "address") {
@@ -547,14 +556,14 @@ function buildStateUpdate(context, replyText) {
   }
 
   if (intent === "order_start") {
-  order_status = "started";
-  conversation_stage = "order_started";
+    order_status = "started";
+    conversation_stage = "order_started";
 
-  if (product === "lazer") {
-    photo_received = "";
-    back_text_status = "";
+    if (product === "lazer") {
+      photo_received = "";
+      back_text_status = "";
+    }
   }
-}
 
   if (intent === "cancel_order") {
     cancel_reason = context.message || "cancel_requested";
@@ -595,12 +604,22 @@ function buildStateUpdate(context, replyText) {
 function quickLocalReply(context) {
   const { detectedIntent, detectedProduct, messageNorm } = context;
 
+  if (detectedIntent === "photo" && detectedProduct === "lazer") {
+    return "Tabi efendim, fotoğrafı buradan gönderebilirsiniz 😊";
+  }
+
+  if (detectedIntent === "payment" && detectedProduct === "lazer") {
+    if (hasAny(messageNorm, ["kapida", "odeme", "eft", "havale"])) {
+      return "Evet efendim, kapıda ödeme seçeneğimiz mevcut. Kapıda ödeme fiyatımız 649 TL'dir 😊";
+    }
+  }
+
   if (detectedIntent === "chain_question" && detectedProduct === "lazer") {
-    if (hasAny(messageNorm, ["zincir modeli", "zincir degisiyor mu", "zincir değişiyor mu"])) {
+    if (hasAny(messageNorm, ["zincir modeli", "zincir degisiyor mu"])) {
       return "Zincir modeliyle ilgili detay için ekibimize görsel üzerinden net bilgi verelim 😊";
     }
-    if (hasAny(messageNorm, ["zincir kisalir mi", "zincir kısalır mı", "zincir boyu"])) {
-      return "Standart zincir 60 cm’dir 😊 İsterseniz mevcut seçenek bilgisini de paylaşabilirim.";
+    if (hasAny(messageNorm, ["zincir kisalir mi", "zincir boyu", "zincir uzunlugu"])) {
+      return "Standart zincir 60 cm’dir 😊";
     }
   }
 
@@ -622,17 +641,20 @@ export default async function handler(req, res) {
   try {
     const body = req.body || {};
     const context = buildContext(body);
-console.log("RAW BODY:", JSON.stringify(body, null, 2));
-console.log("CLEAN FIELDS:", JSON.stringify(context.fields, null, 2));
-console.log("DETECTED:", {
-  product: context.detectedProduct,
-  intent: context.detectedIntent
-});
+
+    console.log("RAW BODY:", JSON.stringify(body, null, 2));
+    console.log("CLEAN FIELDS:", JSON.stringify(context.fields, null, 2));
+    console.log("DETECTED:", {
+      product: context.detectedProduct,
+      intent: context.detectedIntent,
+    });
+
     if (!context.message) {
+      const emptyState = buildStateUpdate(context, FALLBACK_TEXT);
+
       return res.status(200).json({
         success: true,
-        ai_reply: FALLBACK_TEXT,
-        ...buildStateUpdate(context, FALLBACK_TEXT),
+        ...emptyState,
       });
     }
 
@@ -650,7 +672,9 @@ console.log("DETECTED:", {
     }
 
     const stateUpdate = buildStateUpdate(context, finalReply);
-console.log("STATE UPDATE:", JSON.stringify(stateUpdate, null, 2));
+
+    console.log("STATE UPDATE:", JSON.stringify(stateUpdate, null, 2));
+
     return res.status(200).json({
       success: true,
       ...stateUpdate,
