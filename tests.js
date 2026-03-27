@@ -1,6 +1,6 @@
 console.log("TEST BASLADI 🔥");
 
-import { processChat } from "./chat.js";
+import { processChat } from "./api/chat.js";
 
 const tests = [
   {
