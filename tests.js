@@ -1013,6 +1013,7 @@ async function runTests() {
     if (id.startsWith("V")) return "VAR";
     if (id.startsWith("S")) return "STATE";
     if (id.startsWith("MC")) return "MC";
+    if (id.startsWith("MS")) return "MODEL";
     return "CORE";
   }
 
