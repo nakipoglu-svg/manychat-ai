@@ -1004,7 +1004,7 @@ async function runTests() {
     input: body("mercury retrograde sırasında bitcoin ne olur"),
     expect: { success: true },
     expectReplyIncludes: "ekibimize iletiyorum",
-  },
+  };
   function getCat(id) {
     if (id.startsWith("T")) return "CORE";
     if (id.startsWith("R")) return "REG";
