@@ -1,7 +1,10 @@
-console.log("🔥 TEST BAŞLADI");
-
 import { processChat } from "./api/chat.js";
 
+(async () => {
+
+console.log("🔥 TEST BAŞLADI");
+
+// yardımcı state
 function createState(overrides = {}) {
 return {
 ilgilenilen_urun: "",
@@ -16,186 +19,101 @@ order_status: "",
 
 const tests = [
 
-// 🔹 ÜRÜN SEÇİMİ
-{
-id: "T1",
-name: "Lazer seçimi",
-input: { message: "resimli lazer kolye" },
+{ id: "T1", name: "Lazer seçimi",
+input: "resimli lazer kolye",
 state: createState(),
-expect: {
-ilgilenilen_urun: "lazer",
-conversation_stage: "waiting_photo",
-},
+expect: { ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo" }
 },
 
-{
-id: "T2",
-name: "Ataç seçimi",
-input: { message: "ataç kolye" },
+{ id: "T2", name: "Ataç seçimi",
+input: "ataç kolye",
 state: createState(),
-expect: {
-ilgilenilen_urun: "atac",
-conversation_stage: "waiting_letters",
-},
+expect: { ilgilenilen_urun: "atac", conversation_stage: "waiting_letters" }
 },
 
-// 🔹 FOTO → BACK FLOW
-{
-id: "T3",
-name: "Foto sonrası back text",
-input: { message: "fotoğraf attım" },
-state: createState({
-ilgilenilen_urun: "lazer",
-conversation_stage: "waiting_photo",
-}),
-expect: {
-conversation_stage: "waiting_back_option",
-},
+{ id: "T3", name: "Foto sonrası back",
+input: "foto attım",
+state: createState({ ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo" }),
+expect: { conversation_stage: "waiting_back_option" }
 },
 
-{
-id: "T4",
-name: "Back text seçimi",
-input: { message: "yazı yazdırmak istiyorum" },
-state: createState({
-ilgilenilen_urun: "lazer",
-conversation_stage: "waiting_back_option",
-}),
-expect: {
-conversation_stage: "waiting_back_text",
-},
+{ id: "T4", name: "Back text",
+input: "yazı yazdırmak istiyorum",
+state: createState({ ilgilenilen_urun: "lazer", conversation_stage: "waiting_back_option" }),
+expect: { conversation_stage: "waiting_back_text" }
 },
 
-{
-id: "T5",
-name: "Back photo seçimi",
-input: { message: "arkasına fotoğraf istiyorum" },
-state: createState({
-ilgilenilen_urun: "lazer",
-conversation_stage: "waiting_back_option",
-}),
-expect: {
-conversation_stage: "waiting_back_photo",
-},
+{ id: "T5", name: "Back photo",
+input: "arkasına fotoğraf istiyorum",
+state: createState({ ilgilenilen_urun: "lazer", conversation_stage: "waiting_back_option" }),
+expect: { conversation_stage: "waiting_back_photo" }
 },
 
-// 🔹 BACK TEXT SKIP
-{
-id: "T6",
-name: "Back text istemiyorum",
-input: { message: "istemiyorum" },
-state: createState({
-ilgilenilen_urun: "lazer",
-conversation_stage: "waiting_back_option",
-}),
-expect: {
-conversation_stage: "waiting_payment",
-},
+{ id: "T6", name: "Back skip",
+input: "istemiyorum",
+state: createState({ ilgilenilen_urun: "lazer", conversation_stage: "waiting_back_option" }),
+expect: { conversation_stage: "waiting_payment" }
 },
 
-// 🔹 PAYMENT FLOW
-{
-id: "T7",
-name: "EFT seçimi",
-input: { message: "eft" },
-state: createState({
-conversation_stage: "waiting_payment",
-}),
-expect: {
-payment_method: "eft",
-conversation_stage: "waiting_address",
-},
+{ id: "T7", name: "EFT seçimi",
+input: "eft",
+state: createState({ conversation_stage: "waiting_payment" }),
+expect: { payment_method: "eft", conversation_stage: "waiting_address" }
 },
 
-{
-id: "T8",
-name: "Kapıda ödeme",
-input: { message: "kapıda ödeme" },
-state: createState({
-conversation_stage: "waiting_payment",
-}),
-expect: {
-payment_method: "cod",
-conversation_stage: "waiting_address",
-},
+{ id: "T8", name: "Kapıda ödeme",
+input: "kapıda ödeme",
+state: createState({ conversation_stage: "waiting_payment" }),
+expect: { payment_method: "cod", conversation_stage: "waiting_address" }
 },
 
-// 🔹 ADRES + TELEFON
-{
-id: "T9",
-name: "Adres girildi",
-input: { message: "istanbul kadıköy moda sokak no 5" },
-state: createState({
-conversation_stage: "waiting_address",
-}),
-expect: {
-address_status: "alindi",
-conversation_stage: "waiting_phone",
-},
+{ id: "T9", name: "Adres",
+input: "istanbul kadıköy moda sokak no 5",
+state: createState({ conversation_stage: "waiting_address" }),
+expect: { address_status: "alindi", conversation_stage: "waiting_phone" }
 },
 
-{
-id: "T10",
-name: "Telefon girildi",
-input: { message: "05554443322" },
-state: createState({
-conversation_stage: "waiting_phone",
-}),
-expect: {
-phone_received: "1",
-conversation_stage: "order_completed",
-},
+{ id: "T10", name: "Telefon",
+input: "05554443322",
+state: createState({ conversation_stage: "waiting_phone" }),
+expect: { phone_received: "1", conversation_stage: "order_completed" }
 },
 
-// 🔹 KRİTİK BUG TESTLERİ
-{
-id: "T11",
-name: "Foto sorusu payment’a atlamasın",
-input: { message: "olur mu bu fotoğraf" },
-state: createState({
-ilgilenilen_urun: "lazer",
-conversation_stage: "waiting_photo",
-}),
-expect: {
-conversation_stage: "waiting_photo",
-},
+{ id: "T11", name: "Foto sorusu sapmasın",
+input: "olur mu bu fotoğraf",
+state: createState({ ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo" }),
+expect: { conversation_stage: "waiting_photo" }
 },
 
-{
-id: "T12",
-name: "Kargo sorusu payment bozmasın",
-input: { message: "kargo ücreti ne kadar" },
-state: createState({
-conversation_stage: "waiting_payment",
-}),
-expect: {
-conversation_stage: "waiting_payment",
-},
+{ id: "T12", name: "Kargo sorusu bozmasın",
+input: "kargo ücreti ne kadar",
+state: createState({ conversation_stage: "waiting_payment" }),
+expect: { conversation_stage: "waiting_payment" }
 },
 
-{
-id: "T13",
-name: "Arka foto sorusu doğru stage",
-input: { message: "arkasına fotoğraf olur mu" },
-state: createState({
-ilgilenilen_urun: "lazer",
-conversation_stage: "waiting_back_option",
-}),
-expect: {
-conversation_stage: "waiting_back_photo",
-},
+{ id: "T13", name: "Arka foto doğru yakala",
+input: "arkasına fotoğraf olur mu",
+state: createState({ ilgilenilen_urun: "lazer", conversation_stage: "waiting_back_option" }),
+expect: { conversation_stage: "waiting_back_photo" }
 },
 
 ];
 
-// 🚀 RUNNER
 let passed = 0;
 
 for (const test of tests) {
-const result = await processChat({
-message: test.input.message,
-state: test.state,
+
+let result;
+
+try {
+result = await processChat({
+message: test.input,
+state: test.state
 });
+} catch (e) {
+console.log("💥 CRASH: ${test.id}", e.message);
+continue;
+}
 
 let ok = true;
 
@@ -215,3 +133,5 @@ passed++;
 }
 
 console.log("\n🎯 SONUÇ: ${passed}/${tests.length}");
+
+})();
