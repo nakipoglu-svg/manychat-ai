@@ -147,21 +147,33 @@ function detectIntent(messageNorm) {
   }
 
   if (
-    hasAny(messageNorm, [
-      "fotograf gonderiyorum",
-      "foto gonderiyorum",
-      "fotoyu atayim",
-      "resmi atayim",
-      "resim gondersem",
-      "vesikalik olur mu",
-      "vesikalik",
-      "fotograf uygun mu",
-      "foto uygun mu",
-      "bu foto olur mu",
-    ])
-  ) {
-    return "photo";
-  }
+  hasAny(messageNorm, [
+    "fotograf gonderiyorum",
+    "foto gonderiyorum",
+    "fotoyu atayim",
+    "resmi atayim",
+    "resim gondersem",
+    "vesikalik olur mu",
+    "vesikalik",
+    "fotograf uygun mu",
+    "foto uygun mu",
+    "bu foto olur mu",
+
+    "fotograf atsam",
+    "foto atsam",
+    "resim atsam",
+    "fotoğraf atsam",
+    "foto atabilir miyim",
+    "fotograf atabilir miyim",
+    "foto gondereyim mi",
+    "fotograf gondereyim mi",
+    "buradan atsam olur mu",
+    "fotograf atsam olur mu",
+    "foto atsam olur mu"
+  ])
+) {
+  return "photo";
+}
 
   if (
     hasAny(messageNorm, [
@@ -512,8 +524,12 @@ function buildStateUpdate(context, replyText) {
   if (product) context_lock = "1";
 
   if (intent === "photo") {
-    conversation_stage = "photo_step";
+  conversation_stage = "photo_step";
+
+  if (product === "lazer") {
+    order_status = order_status || "started";
   }
+}
 
   if (intent === "back_text") {
     back_text_status = "talking";
