@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test": "node api/tests.js"
+    "test": "node tests.js"
   }
 }
