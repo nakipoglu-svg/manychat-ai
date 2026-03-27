@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 
 const fileCache = {};
+
 const FALLBACK_TEXT = "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊";
 const MAIN_MENU_TEXT =
   "Merhaba efendim 😊\nHangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye";
@@ -26,7 +27,7 @@ function readKnowledgeFile(filename) {
 function safeRead(filename) {
   try {
     return readKnowledgeFile(filename);
-  } catch (error) {
+  } catch {
     return "";
   }
 }
@@ -119,6 +120,7 @@ function looksLikeAddress(messageNorm, rawMessage = "") {
   if (!raw) return false;
   if (raw.length < 14) return false;
 
+  // Niyet cümlesi, gerçek adres değil
   if (
     hasAny(messageNorm, [
       "adres veriyorum",
@@ -244,6 +246,7 @@ function detectIntent(messageNorm, rawMessage = "", detectedProduct = "", stage 
 
   if (!messageNorm && !raw) return "unknown";
 
+  // waiting_back_text aşamasında arka yüz için görsel gelirse bunu back_text say
   if (stage === "waiting_back_text" && looksLikePhotoUrl(raw) && detectedProduct === "lazer") {
     return "back_text";
   }
@@ -624,6 +627,7 @@ function createHardRules(context) {
     rules.push("User is already in ATAC product context. Do NOT ask which product they want.");
     rules.push("For ATAC necklace, do not mix in laser photo rules unless user explicitly switches product.");
     rules.push("If user newly selects ATAC product, answer directly with price, then ask for letters.");
+    rules.push("In ATAC flow, always collect letters before payment and address.");
   }
 
   if (shouldLockProduct(detectedProduct, detectedIntent) || truthy(fields.context_lock)) {
@@ -737,7 +741,9 @@ Important:
 - Do not go to main menu unless user truly asks to choose product.
 - If some order info is already collected, continue from the next missing step.
 - For laser product selection, direct price + ask for photo.
+- For atac product selection, direct price + ask for letters.
 - After laser photo, ask for back text before payment.
+- ATAC order must always collect letters before payment.
   `.trim();
 
   return [
@@ -818,12 +824,15 @@ function collectFacts(context, currentState) {
   if (detectedProduct) {
     next.context_lock = "1";
     next.order_status = next.order_status || "started";
+    next.product = detectedProduct;
   }
 
+  // Ödeme erken gelirse not al ama stage'i bozma
   if (detectedIntent === "payment") {
     next.payment_method = parsePaymentMethod(messageNorm, next.payment_method);
   }
 
+  // Adres geldiyse
   if (detectedIntent === "address") {
     if (hasPhoneNumber(message) || next.phone_received === "1") {
       next.phone_received = "1";
@@ -833,6 +842,7 @@ function collectFacts(context, currentState) {
     }
   }
 
+  // Telefon geldiyse
   if (detectedIntent === "phone") {
     next.phone_received = "1";
     if (next.address_status === "address_only") {
@@ -840,17 +850,20 @@ function collectFacts(context, currentState) {
     }
   }
 
+  // Lazer foto
   if (detectedIntent === "photo" && detectedProduct === "lazer") {
     if (looksLikePhotoUrl(message)) {
       next.photo_received = "1";
     }
   }
 
+  // Ataç harf
   if (detectedIntent === "letters" && detectedProduct === "atac") {
     next.letters_received = "1";
     next.order_status = next.order_status || "started";
   }
 
+  // Arka yüz yazı/foto
   if (detectedIntent === "back_text") {
     next.back_text_status = "received";
   }
@@ -965,6 +978,8 @@ function shouldShowMainMenu(context, state) {
 }
 
 function isFreshProductSelection(context, state) {
+  const stage = context.fields.conversation_stage || "";
+
   return (
     !!context.detectedProduct &&
     !context.previousProduct &&
@@ -973,7 +988,7 @@ function isFreshProductSelection(context, state) {
     !state.payment_method &&
     !state.address_status &&
     !state.back_text_status &&
-    !context.fields.conversation_stage
+    (!stage || stage === "waiting_product")
   );
 }
 
@@ -1011,10 +1026,19 @@ function buildGuidedReply(context, state) {
 
   if (detectedIntent === "letters" && detectedProduct === "atac") {
     if (nextStage === "waiting_payment") {
-      return "Harika efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
+      if (state.payment_method === "eft_havale") {
+        return `Harflerinizi aldım efendim 😊 EFT / Havale ile ilerleyebiliriz.\n\n${EFT_INFO_TEXT}\n\nŞimdi ad soyad, telefon ve açık adres bilgilerinizi paylaşabilir misiniz?`;
+      }
+      if (state.payment_method === "kapida_odeme") {
+        return "Harflerinizi aldım efendim 😊 Kapıda ödeme ile ilerleyebiliriz. Şimdi ad soyad, telefon ve açık adres bilgilerinizi paylaşabilir misiniz?";
+      }
+      return "Harflerinizi aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
     }
     if (nextStage === "waiting_address") {
-      return "Harika efendim 😊 Şimdi ad soyad, telefon ve açık adres bilgilerinizi tek mesajda paylaşabilir misiniz?";
+      if (state.payment_method === "eft_havale") {
+        return `Harflerinizi aldım efendim 😊 EFT / Havale bilgilerimiz şu şekildedir:\n${EFT_INFO_TEXT}\n\nAd soyad, telefon ve açık adres bilgilerinizi paylaşabilir misiniz?`;
+      }
+      return "Harflerinizi aldım efendim 😊 Şimdi ad soyad, telefon ve açık adres bilgilerinizi tek mesajda paylaşabilir misiniz?";
     }
     if (nextStage === "order_completed") {
       return "Harika efendim 😊 Sipariş için gerekli bilgiler tamamlandı. Ekibimiz işlemi hazırlayacaktır.";
@@ -1042,6 +1066,12 @@ function buildGuidedReply(context, state) {
 
   if (detectedIntent === "back_text" && detectedProduct === "lazer") {
     if (nextStage === "waiting_payment") {
+      if (state.payment_method === "eft_havale") {
+        return `Not aldım efendim 😊 EFT / Havale ile ilerleyebiliriz.\n\n${EFT_INFO_TEXT}\n\nŞimdi ad soyad, telefon ve açık adres bilgilerinizi paylaşabilir misiniz?`;
+      }
+      if (state.payment_method === "kapida_odeme") {
+        return "Not aldım efendim 😊 Kapıda ödeme ile ilerleyebiliriz. Şimdi ad soyad, telefon ve açık adres bilgilerinizi paylaşabilir misiniz?";
+      }
       return "Not aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
     }
     if (nextStage === "waiting_address") {
@@ -1051,6 +1081,12 @@ function buildGuidedReply(context, state) {
 
   if (detectedIntent === "back_text_skip" && detectedProduct === "lazer") {
     if (nextStage === "waiting_payment") {
+      if (state.payment_method === "eft_havale") {
+        return `Tabi efendim 😊 EFT / Havale ile ilerleyebiliriz.\n\n${EFT_INFO_TEXT}\n\nŞimdi ad soyad, telefon ve açık adres bilgilerinizi paylaşabilir misiniz?`;
+      }
+      if (state.payment_method === "kapida_odeme") {
+        return "Tabi efendim 😊 Kapıda ödeme ile ilerleyebiliriz. Şimdi ad soyad, telefon ve açık adres bilgilerinizi paylaşabilir misiniz?";
+      }
       return "Tabi efendim 😊 O halde ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
     }
   }
@@ -1088,8 +1124,10 @@ function buildGuidedReply(context, state) {
         }
       }
 
-      if (detectedProduct === "atac" && !truthy(state.letters_received)) {
-        return "Tabi efendim 😊 Önce istediğiniz harfleri yazabilirsiniz.";
+      if (detectedProduct === "atac") {
+        if (!truthy(state.letters_received)) {
+          return "Tabi efendim 😊 Önce istediğiniz harfleri yazabilirsiniz.";
+        }
       }
 
       if (state.address_status !== "received") {
@@ -1113,8 +1151,10 @@ function buildGuidedReply(context, state) {
         }
       }
 
-      if (detectedProduct === "atac" && !truthy(state.letters_received)) {
-        return `EFT / Havale ile ilerleyebiliriz 😊 Önce istediğiniz harfleri yazabilirsiniz.\n\n${EFT_INFO_TEXT}`;
+      if (detectedProduct === "atac") {
+        if (!truthy(state.letters_received)) {
+          return `EFT / Havale ile ilerleyebiliriz 😊 Önce istediğiniz harfleri yazabilirsiniz.\n\n${EFT_INFO_TEXT}`;
+        }
       }
 
       if (state.address_status !== "received") {
@@ -1137,17 +1177,24 @@ function buildGuidedReply(context, state) {
     if (nextStage === "waiting_photo" && detectedProduct === "lazer") {
       return "Adres bilginizi not aldım efendim 😊 Şimdi fotoğrafı buradan gönderebilirsiniz.";
     }
+
     if (nextStage === "waiting_back_text" && detectedProduct === "lazer") {
       return "Adres bilginizi not aldım efendim 😊 Şimdi arka yüzüne yazı isteyip istemediğinizi yazabilirsiniz. İstemiyorsanız 'yok' yazabilirsiniz.";
     }
+
     if (nextStage === "waiting_letters" && detectedProduct === "atac") {
       return "Adres bilginizi not aldım efendim 😊 Şimdi istediğiniz harfleri yazabilirsiniz.";
     }
+
     if (nextStage === "waiting_payment") {
       return "Adres bilginizi not aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
     }
+
     if (nextStage === "order_completed") {
-      return "Adres bilginizi not aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı.";
+      if (state.payment_method === "eft_havale") {
+        return `Siparişinizi EFT / Havale olarak aldım efendim 😊\n${EFT_INFO_TEXT}`;
+      }
+      return "Siparişinizi aldım efendim 😊 En kısa sürede işlem başlatılacaktır.";
     }
   }
 
@@ -1160,7 +1207,12 @@ function buildGuidedReply(context, state) {
       if (!state.payment_method) {
         return "Telefon numaranızı da aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
       }
-      return "Telefon numaranızı da aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı.";
+
+      if (state.payment_method === "eft_havale") {
+        return `Telefon numaranızı da aldım efendim 😊 Siparişiniz EFT / Havale olarak hazır. Şimdi açık adresinizi yazabilirsiniz veya eksik bilgi varsa iletebilirsiniz.\n\n${EFT_INFO_TEXT}`;
+      }
+
+      return "Telefon numaranızı da aldım efendim 😊 Şimdi açık adresinizi yazabilirsiniz. (İl, ilçe, mahalle, sokak)";
     }
   }
 
