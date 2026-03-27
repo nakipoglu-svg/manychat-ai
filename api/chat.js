@@ -22,7 +22,7 @@ function safeRead(filename) {
   }
 }
 
-ffunction unwrapManychatValue(value) {
+function unwrapManychatValue(value) {
   if (value === null || value === undefined) return "";
 
   const str = String(value).trim();
