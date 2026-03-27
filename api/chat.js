@@ -32,25 +32,31 @@ const CRITICAL_KNOWLEDGE_FILES = [
 ];
 
 const TURKEY_CITIES = [
-  "adana","adiyaman","afyonkarahisar","agri","aksaray","amasya","ankara","antalya","ardahan","artvin","aydin",
-  "balikesir","bartin","batman","bayburt","bilecik","bingol","bitlis","bolu","burdur","bursa",
-  "canakkale","cankiri","corum",
-  "denizli","diyarbakir","duzce",
-  "edirne","elazig","erzincan","erzurum","eskisehir",
-  "gaziantep","giresun","gumushane",
-  "hakkari","hatay",
-  "igdir","isparta","istanbul","izmir",
-  "kahramanmaras","karabuk","karaman","kars","kastamonu","kayseri","kilis","kirikkale","kirklareli","kirsehir","kocaeli","konya","kutahya",
-  "malatya","manisa","mardin","mersin","mugla","mus",
-  "nevsehir","nigde",
-  "ordu","osmaniye",
+  "adana", "adiyaman", "afyonkarahisar", "agri", "aksaray", "amasya", "ankara", "antalya", "ardahan", "artvin", "aydin",
+  "balikesir", "bartin", "batman", "bayburt", "bilecik", "bingol", "bitlis", "bolu", "burdur", "bursa",
+  "canakkale", "cankiri", "corum",
+  "denizli", "diyarbakir", "duzce",
+  "edirne", "elazig", "erzincan", "erzurum", "eskisehir",
+  "gaziantep", "giresun", "gumushane",
+  "hakkari", "hatay",
+  "igdir", "isparta", "istanbul", "izmir",
+  "kahramanmaras", "karabuk", "karaman", "kars", "kastamonu", "kayseri", "kilis", "kirikkale", "kirklareli", "kirsehir", "kocaeli", "konya", "kutahya",
+  "malatya", "manisa", "mardin", "mersin", "mugla", "mus",
+  "nevsehir", "nigde",
+  "ordu", "osmaniye",
   "rize",
-  "sakarya","samsun","siirt","sinop","sivas","sanliurfa","sirnak",
-  "tekirdag","tokat","trabzon","tunceli",
+  "sakarya", "samsun", "siirt", "sinop", "sivas", "sanliurfa", "sirnak",
+  "tekirdag", "tokat", "trabzon", "tunceli",
   "usak",
   "van",
-  "yalova","yozgat",
+  "yalova", "yozgat",
   "zonguldak"
+];
+
+const DISTRICT_KEYWORDS = [
+  "kadikoy", "kadıköy", "beykoz", "uskudar", "üsküdar", "besiktas", "beşiktaş",
+  "sisli", "şişli", "fatih", "moda", "kavacik", "kavacık", "eminonu", "eminönü",
+  "nusaybin", "kavacık", "beyazit", "beyazıt"
 ];
 
 const KEYWORDS = {
@@ -326,17 +332,17 @@ function extractPhone(rawMessage = "") {
   if (digits.length < 10) return "";
   if (/^(90)?5\d{9}$/.test(digits)) return digits.slice(-10);
   if (/^0?5\d{9}$/.test(digits)) return digits.slice(-10);
-  return digits.length >= 10 ? digits : "";
+  return "";
 }
 
 function looksLikeAddress(messageNorm, rawMessage = "") {
   const raw = String(rawMessage || "").trim();
-  if (!raw || raw.length < 10) return false;
+  if (!raw || raw.length < 8) return false;
 
   const addressKeywords = [
     "mahalle", "mah", "sokak", "sk", "cadde", "cd", "bulvar", "no", "daire", "apt",
     "apartman", "apart", "ap", "kat", "site", "sitesi", "blok", "ilce", "ilçe",
-    "mahallesi", "ic kapi", "iç kapı", ...TURKEY_CITIES
+    "mahallesi", "ic kapi", "iç kapı", ...DISTRICT_KEYWORDS, ...TURKEY_CITIES
   ];
 
   let hit = 0;
@@ -345,8 +351,15 @@ function looksLikeAddress(messageNorm, rawMessage = "") {
   }
 
   const hasNumber = /\d/.test(raw);
+
   if (hit >= 2) return true;
   if (hit >= 1 && hasNumber) return true;
+
+  const cityCount = TURKEY_CITIES.filter((c) => messageNorm.includes(c)).length;
+  const districtCount = DISTRICT_KEYWORDS.filter((d) => messageNorm.includes(d)).length;
+
+  if (cityCount >= 1 && districtCount >= 1) return true;
+
   return false;
 }
 
@@ -460,9 +473,9 @@ function extractEntities(baseContext) {
       /^[a-zA-ZçğıöşüÇĞİÖŞÜ\s&]+$/.test(raw) &&
       parts.length <= 3 &&
       !hasAny(norm, [
-        "atac","ataç","harfli","kolye","istiyorum","ilgileniyorum",
-        "almak istiyorum","kac tane","kaç tane","hangi harf","hangi harfler",
-        "harf mi","fiyat","ne kadar","olur mu"
+        "atac", "ataç", "harfli", "kolye", "istiyorum", "ilgileniyorum",
+        "almak istiyorum", "kac tane", "kaç tane", "hangi harf", "hangi harfler",
+        "harf mi", "fiyat", "ne kadar", "olur mu"
       ]);
 
     if (looksLikeLetters) letters = raw;
@@ -669,7 +682,6 @@ function applyFacts(context, currentState) {
   if (detectedIntent === "back_text") state.back_text_status = "received";
   if (detectedIntent === "back_text_skip") state.back_text_status = "skipped";
   if (detectedIntent === "back_photo_upload") state.back_text_status = "received";
-
   if (extracted.phone) state.phone_received = "1";
 
   if (extracted.hasAddress && extracted.phone) {
@@ -736,10 +748,6 @@ function shouldShowMainMenu(context, state) {
     "unknown",
     "price",
     "payment",
-    "shipping",
-    "shipping_price",
-    "trust",
-    "location",
     "order_start",
     "address",
   ].includes(context.detectedIntent);
@@ -1178,4 +1186,4 @@ export default async function handler(req, res) {
       error: String(error.message || error),
     });
   }
-} 
+}
