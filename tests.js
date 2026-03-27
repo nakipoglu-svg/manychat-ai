@@ -975,20 +975,20 @@ const tests = [
     expect: { photo_received: "1", conversation_stage: "waiting_back_text" },
     expectReplyNotIncludes: "ekibimize iletiyorum",
   },
+{
+  id: "MS19",
+  name: "[MODEL] No-key safety: belirsiz mesajda crash olmadan menü veya güvenli cevap dönmeli",
+  input: body("uzaylı kolye yapıyor musunuz"),
+  expect: { success: true },
+  expectReplyIncludes: "hangi model",
+},
   {
-    id: "MS19",
-    name: "[MODEL] No-key safety: belirsiz mesajda crash olmadan fallback dönmeli",
-    input: body("uzaylı kolye yapıyor musunuz"),
-    expect: { success: true },
-    expectReplyIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS20",
-    name: "[MODEL] No-key safety: çok alakasız mesajda crash olmadan fallback dönmeli",
-    input: body("mercury retrograde sırasında bitcoin ne olur"),
-    expect: { success: true },
-    expectReplyIncludes: "ekibimize iletiyorum",
-  },
+  id: "MS20",
+  name: "[MODEL] No-key safety: çok alakasız mesajda crash olmadan menü veya güvenli cevap dönmeli",
+  input: body("mercury retrograde sırasında bitcoin ne olur"),
+  expect: { success: true },
+  expectReplyIncludes: "hangi model",
+},
 ];
 
 // ─── RUNNER ───────────────────────────────────────────────────────────────
