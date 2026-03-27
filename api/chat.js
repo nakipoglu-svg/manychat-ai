@@ -28,15 +28,9 @@ function unwrapManychatValue(value) {
   const str = String(value).trim();
   if (!str) return "";
 
-  // {{cuf_123}} / {{{cuf_123}}} / {{anything}}
   if (/^\{\{\{?.+?\}\}\}?$/.test(str)) return "";
-
-  // {cuf_123} / {anything}
   if (/^\{[^}]+\}$/.test(str)) return "";
-
-  // cuf_123
   if (/^cuf_\d+$/i.test(str)) return "";
-
   if (/^(undefined|null|none|nan|false)$/i.test(str)) return "";
 
   return str;
@@ -58,8 +52,6 @@ function normalizeText(text) {
     .replace(/\boddme\b/g, "odeme")
     .replace(/\bodme\b/g, "odeme")
     .replace(/\bodeeme\b/g, "odeme")
-    .replace(/\bfotograf\b/g, "fotograf")
-    .replace(/\bfotografi\b/g, "fotograf")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -130,10 +122,22 @@ function detectProduct(messageNorm, existingProduct) {
   return "";
 }
 
-function detectIntent(messageNorm) {
+function looksLikeLetterInput(rawMessage, detectedProduct) {
+  if (detectedProduct !== "atac") return false;
+
+  const raw = String(rawMessage || "").trim();
+  if (!raw) return false;
+  if (raw.length > 20) return false;
+  if (/[?!.:,]/.test(raw)) return false;
+  if (!/^[a-zA-ZçğıöşüÇĞİÖŞÜ\s&]+$/.test(raw)) return false;
+
+  return true;
+}
+
+function detectIntent(messageNorm, rawMessage = "", detectedProduct = "") {
   if (!messageNorm) return "unknown";
 
-  if (hasAny(messageNorm, ["iptal", "vazgectim", "vazgectim", "istemiyorum", "siparisi iptal"])) {
+  if (hasAny(messageNorm, ["iptal", "vazgectim", "istemiyorum", "siparisi iptal"])) {
     return "cancel_order";
   }
 
@@ -292,6 +296,10 @@ function detectIntent(messageNorm) {
     return "location";
   }
 
+  if (looksLikeLetterInput(rawMessage, detectedProduct)) {
+    return "letters";
+  }
+
   return "general";
 }
 
@@ -308,6 +316,7 @@ function shouldLockProduct(product, intent) {
     "chain_question",
     "order_start",
     "address",
+    "letters",
     "general",
   ].includes(intent);
 }
@@ -335,7 +344,7 @@ function buildContext(body) {
 
   const explicitProduct = detectProduct(messageNorm, "");
   const detectedProduct = explicitProduct || normalizeText(existingProduct) || "";
-  const detectedIntent = detectIntent(messageNorm);
+  const detectedIntent = detectIntent(messageNorm, message, detectedProduct);
 
   return {
     raw: body,
@@ -387,6 +396,11 @@ function createHardRules(context) {
     rules.push("If exact chain model/change is seller-dependent, answer briefly and naturally, without using fallback immediately.");
   }
 
+  if (detectedIntent === "letters") {
+    rules.push("If the customer sent short text like ABC, Ali, ZK in ATAC context, treat it as letter input.");
+    rules.push("After receiving letters for ATAC, ask payment method next.");
+  }
+
   if (hasAny(messageNorm, ["evet", "tamam", "olur", "amin"])) {
     rules.push("Interpret short confirmations in conversation context. Do NOT treat them as a fresh topic.");
   }
@@ -395,6 +409,7 @@ function createHardRules(context) {
   rules.push("Do not use long lists.");
   rules.push("If the answer is known from context, answer directly.");
   rules.push("If product context exists, do not ask product again.");
+  rules.push("Never invent extra models, collections, or options that are not in knowledge.");
   rules.push(`If you truly do not know, reply exactly with: ${FALLBACK_TEXT}`);
 
   return rules.join("\n");
@@ -412,17 +427,7 @@ function getKnowledgePack(context) {
   const laser = context.detectedProduct === "lazer" ? safeRead("product_laser.txt") : "";
   const atac = context.detectedProduct === "atac" ? safeRead("product_atac.txt") : "";
 
-  return [
-    core,
-    laser,
-    atac,
-    pricing,
-    shipping,
-    payment,
-    orderFlow,
-    trust,
-    smalltalk,
-  ]
+  return [core, laser, atac, pricing, shipping, payment, orderFlow, trust, smalltalk]
     .filter(Boolean)
     .join("\n\n");
 }
@@ -462,6 +467,7 @@ Context:
 
 Important:
 - If product context exists, do not ask product again.
+- If ATAC and user sent short letters like ABC, treat it as letter input.
 - If chain question is seller-dependent, respond naturally and briefly.
 - Do not go to main menu unless user truly asks to choose product.
   `.trim();
@@ -549,27 +555,31 @@ function buildStateUpdate(context, replyText) {
     }
   }
 
+  if (intent === "letters") {
+    conversation_stage = "payment_step";
+    order_status = order_status || "started";
+  }
+
   if (intent === "address") {
     address_status = "talking";
     conversation_stage = "address_step";
     order_status = order_status || "address_pending";
   }
 
- if (intent === "order_start") {
-  order_status = "started";
-
-  if (product === "lazer") {
+  if (intent === "order_start") {
+    order_status = "started";
     conversation_stage = "order_started";
-    photo_received = "";
-    back_text_status = "";
-  }
 
-  if (product === "atac") {
-    conversation_stage = "order_started";
-    photo_received = "";
-    back_text_status = "";
+    if (product === "lazer") {
+      photo_received = "";
+      back_text_status = "";
+    }
+
+    if (product === "atac") {
+      photo_received = "";
+      back_text_status = "";
+    }
   }
-}
 
   if (intent === "cancel_order") {
     cancel_reason = context.message || "cancel_requested";
@@ -610,14 +620,18 @@ function buildStateUpdate(context, replyText) {
 function quickLocalReply(context) {
   const { detectedIntent, detectedProduct, messageNorm } = context;
 
-if (detectedIntent === "order_start" && detectedProduct === "lazer") {
-  return "Tabi efendim, fotoğrafı buradan gönderebilirsiniz 😊";
-}
+  if (detectedIntent === "order_start" && detectedProduct === "lazer") {
+    return "Tabi efendim, fotoğrafı buradan gönderebilirsiniz 😊";
+  }
 
-if (detectedIntent === "order_start" && detectedProduct === "atac") {
-  return "Tabi efendim 😊 İstediğiniz harfleri yazabilirsiniz. Standart olarak 3 harf dahildir.";
-}
-  
+  if (detectedIntent === "order_start" && detectedProduct === "atac") {
+    return "Tabi efendim 😊 İstediğiniz harfleri yazabilirsiniz. Standart olarak 3 harf dahildir.";
+  }
+
+  if (detectedIntent === "letters" && detectedProduct === "atac") {
+    return "Harika efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT/Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
+  }
+
   if (detectedIntent === "photo" && detectedProduct === "lazer") {
     return "Tabi efendim, fotoğrafı buradan gönderebilirsiniz 😊";
   }
