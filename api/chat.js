@@ -1178,5 +1178,5 @@ export default async function handler(req, res) {
       error: String(error.message || error),
     });
   }
-}
+} 
 export { processChat };
