@@ -169,6 +169,9 @@ function looksLikeAddress(messageNorm, rawMessage = "") {
     "kocaeli",
     "antalya",
     "adana",
+    "mardin",
+    "batman",
+    "bilecik",
     "beykoz",
     "uskudar",
     "üsküdar",
@@ -176,8 +179,7 @@ function looksLikeAddress(messageNorm, rawMessage = "") {
     "kadıköy",
     "sisli",
     "şişli",
-    "batman",
-    "bilecik",
+    "nusaybin",
   ];
 
   let hit = 0;
@@ -198,6 +200,8 @@ function looksLikeAddress(messageNorm, rawMessage = "") {
     "apart",
     "ap",
     "blok",
+    "ic kapi",
+    "iç kapı",
   ]);
 
   const hasCityWord = hasAny(messageNorm, [
@@ -208,8 +212,10 @@ function looksLikeAddress(messageNorm, rawMessage = "") {
     "kocaeli",
     "antalya",
     "adana",
+    "mardin",
     "batman",
     "bilecik",
+    "nusaybin",
   ]);
 
   if (hasResidenceWord && hasCityWord) return true;
@@ -255,6 +261,10 @@ function looksLikeNameInput(rawMessage = "", messageNorm = "") {
       "kocaeli",
       "antalya",
       "adana",
+      "mardin",
+      "batman",
+      "bilecik",
+      "nusaybin",
       "beykoz",
       "uskudar",
       "üsküdar",
@@ -262,8 +272,6 @@ function looksLikeNameInput(rawMessage = "", messageNorm = "") {
       "kadıköy",
       "sisli",
       "şişli",
-      "batman",
-      "bilecik",
       "kac tane",
       "kaç tane",
       "harf mi",
@@ -408,6 +416,8 @@ function detectIntent(messageNorm, rawMessage = "", detectedProduct = "", stage 
     hasAny(messageNorm, [
       "olur mu bu fotograf",
       "olur mu bu foto",
+      "sizce bu fotograf olur mu",
+      "sizce bu foto olur mu",
       "bu fotograf olur mu",
       "bu foto olur mu",
       "fotograf uygun mu",
@@ -421,6 +431,8 @@ function detectIntent(messageNorm, rawMessage = "", detectedProduct = "", stage 
   if (
     stage === "waiting_back_text" &&
     hasAny(messageNorm, [
+      "arka tarafina da mi yazabiliyoruz",
+      "arka tarafina da yazabiliyor muyuz",
       "arkasina yazi oluyor mu",
       "arkasina yazi olur mu",
       "arka yuzune yazi oluyor mu",
@@ -456,22 +468,22 @@ function detectIntent(messageNorm, rawMessage = "", detectedProduct = "", stage 
 
   if (
     hasAny(messageNorm, [
-      "arkasina fotograf fiyat",
-      "arkasina foto fiyat",
+      "arka tarafina fotograf koymak istesek ne kadar olacak ucret",
+      "arka tarafina fotograf koymak istesek ne kadar olacak",
       "arkasina fotograf ne kadar",
       "arkasina foto ne kadar",
+      "arkasina fotograf fiyat",
+      "arkasina foto fiyat",
       "arkasina fotograf yapsak ne olur fiyat",
       "arkasina foto yapsak ne olur fiyat",
       "arka yuze fotograf fiyat",
       "arka yüze fotograf fiyat",
       "arka yuze foto fiyat",
       "arka yüze foto fiyat",
-      "arka yuze foto ne kadar",
-      "arka yüze foto ne kadar",
-      "arkasina fotograf ek ucret",
-      "arkasina foto ek ucret",
       "arkaya fotograf fiyat",
       "arkaya foto fiyat",
+      "ek ucret",
+      "ek ücret",
     ])
   ) {
     return "back_photo_price";
@@ -517,6 +529,9 @@ function detectIntent(messageNorm, rawMessage = "", detectedProduct = "", stage 
       "kararma",
       "kaplama",
       "paslanma",
+      "kargo",
+      "ucret",
+      "ücret",
     ])
   ) {
     return "back_text";
@@ -544,7 +559,24 @@ function detectIntent(messageNorm, rawMessage = "", detectedProduct = "", stage 
     return "photo_question";
   }
 
-  if (hasAny(messageNorm, ["fiyat", "ne kadar", "ucret", "kac tl", "kaç tl"])) {
+  if (
+    hasAny(messageNorm, [
+      "kargo ucreti ne kadar",
+      "kargo ücreti ne kadar",
+      "kargo ucreti oduyor muyuz",
+      "kargo ücreti ödüyor muyuz",
+      "kargo fiyati var mi",
+      "kargo fiyatı var mı",
+      "kargo fiyatı var mi",
+      "kargo bedeli",
+      "kargo ucreti",
+      "kargo ücreti",
+    ])
+  ) {
+    return "shipping_price";
+  }
+
+  if (hasAny(messageNorm, ["fiyat", "ne kadar", "ucret", "ücret", "kac tl", "kaç tl"])) {
     return "price";
   }
 
@@ -556,8 +588,9 @@ function detectIntent(messageNorm, rawMessage = "", detectedProduct = "", stage 
       "kapida oderim",
       "kapida odeme olsun",
       "kapida olsun",
-      "kapida",
+      "kapida ödeme",
       "odeme",
+      "ödeme",
       "eft",
       "havale",
       "oddme",
@@ -731,6 +764,7 @@ function shouldLockProduct(product, intent) {
     "price",
     "payment",
     "shipping",
+    "shipping_price",
     "trust",
     "photo",
     "photo_question",
@@ -1044,7 +1078,7 @@ async function callModel(messages) {
 }
 
 function parsePaymentMethod(messageNorm, existing = "") {
-  if (hasAny(messageNorm, ["kapida odeme", "kapida", "odeme olsun"])) {
+  if (hasAny(messageNorm, ["kapida odeme", "kapida", "odeme olsun", "ödeme olsun"])) {
     return "kapida_odeme";
   }
 
@@ -1126,7 +1160,8 @@ function collectFacts(context, currentState) {
     detectedIntent === "photo_suitability_question" ||
     detectedIntent === "back_text_info" ||
     detectedIntent === "back_photo_info" ||
-    detectedIntent === "back_photo_price"
+    detectedIntent === "back_photo_price" ||
+    detectedIntent === "shipping_price"
   ) {
     // sadece soru, state ilerlemesin
   }
@@ -1222,6 +1257,7 @@ function isMenuIntent(intent) {
     "price",
     "payment",
     "shipping",
+    "shipping_price",
     "trust",
     "location",
     "order_start",
@@ -1268,11 +1304,19 @@ function buildGuidedReply(context, state) {
   }
 
   if (detectedIntent === "back_text_info" && detectedProduct === "lazer") {
-    return "Evet efendim 😊 Arka yüzüne yazı ekleyebiliyoruz. İsterseniz yazıyı buradan iletebilirsiniz, isterseniz arka yüze fotoğraf da yapabiliyoruz.";
+    return "Evet efendim 😊 Arka yüzüne yazı ekleyebiliyoruz. İsterseniz yazıyı buradan iletebilirsiniz. Arka yüze fotoğraf da yapılabiliyor.";
   }
 
   if (detectedIntent === "back_photo_info" && detectedProduct === "lazer") {
     return "Tabi efendim 😊 Ön yüze bir fotoğraf, arka yüze bir fotoğraf yapabiliyoruz. Ek ücret de alınmıyor. İsterseniz arka yüz için fotoğrafı da gönderebilirsiniz.";
+  }
+
+  if (detectedIntent === "back_photo_price" && detectedProduct === "lazer") {
+    return "Arka yüze fotoğraf da ekleyebiliriz efendim 😊 Ek ücret alınmıyor.";
+  }
+
+  if (detectedIntent === "shipping_price") {
+    return "Kargo ücreti fiyata dahildir efendim 😊 Ekstra bir ücret ödemezsiniz.";
   }
 
   if (isFreshProductSelection(context, state) && detectedProduct === "lazer") {
@@ -1330,10 +1374,6 @@ function buildGuidedReply(context, state) {
     if (hasAny(messageNorm, ["kararma", "solar", "solma", "paslan"])) {
       return "Kararma, solma veya paslanma yapmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.\n\nArka yüz için yazı ya da fotoğraf isterseniz onu da yapabiliyoruz.";
     }
-  }
-
-  if (detectedIntent === "back_photo_price" && detectedProduct === "lazer") {
-    return "Arka yüze fotoğraf da ekleyebiliriz efendim 😊 Ek ücret alınmıyor. İsterseniz arka yüz için fotoğrafı da gönderebilirsiniz.";
   }
 
   if (detectedIntent === "photo" && detectedProduct === "lazer") {
@@ -1446,6 +1486,10 @@ function buildGuidedReply(context, state) {
       return "Ödeme tercihinizi not aldım efendim 😊 Önce istediğiniz harfleri yazabilirsiniz.";
     }
 
+    if (detectedProduct === "lazer" && nextStage === "waiting_back_text") {
+      return "Ödeme aşamasına geçmeden önce arka yüz için yazı isteyip istemediğinizi iletebilir misiniz? İstemiyorsanız 'yok' yazabilirsiniz 😊";
+    }
+
     if (state.address_status !== "received") {
       if (state.payment_method === "eft_havale") {
         return `EFT / Havale için ödeme bilgilerimiz şu şekildedir 😊\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`;
@@ -1463,6 +1507,16 @@ function buildGuidedReply(context, state) {
     return "Kapıda ödeme ile ilerleyebiliriz efendim 😊 Sipariş için gerekli bilgiler tamamlandı.";
   }
 
+  if (detectedIntent === "shipping_price") {
+    return "Kargo ücreti fiyata dahildir efendim 😊";
+  }
+
+  if (detectedIntent === "shipping") {
+    if (hasAny(messageNorm, ["kargo", "ucreti", "ücreti"])) {
+      return "Kargo ücreti fiyata dahildir efendim 😊";
+    }
+  }
+
   if (detectedIntent === "address") {
     if (!detectedProduct && nextStage === "waiting_product") {
       return "Adres bilginizi not aldım efendim 😊\nÖnce hangi model ile ilgilendiğinizi yazabilir misiniz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye";
@@ -1477,7 +1531,7 @@ function buildGuidedReply(context, state) {
     }
 
     if (nextStage === "waiting_back_text" && detectedProduct === "lazer") {
-      return "Adres bilginizi not aldım efendim 😊 Arka yüz için yazı ya da fotoğraf isteğinizi iletebilirsiniz. İstemiyorsanız 'yok' yazabilirsiniz.";
+      return "Adres bilginizi not aldım efendim 😊 Arka yüz için yazı isteğinizi iletebilirsiniz. İstemiyorsanız 'yok' yazabilirsiniz.";
     }
 
     if (nextStage === "waiting_letters" && detectedProduct === "atac") {
