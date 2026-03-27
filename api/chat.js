@@ -350,11 +350,22 @@ function looksLikePhotoUrl(rawMessage = "") {
 
 function extractPhone(rawMessage = "") {
   const raw = String(rawMessage || "");
-  const match = raw.match(/(?:\+?90[\s\-()]*)?(0?5\d[\s\-()]?\d{3}[\s\-()]?\d{2}[\s\-()]?\d{2})/);
-  if (!match) return "";
-  const digits = match[0].replace(/\D/g, "");
-  if (/^(90)?5\d{9}$/.test(digits)) return digits.slice(-10);
-  if (/^0?5\d{9}$/.test(digits)) return digits.slice(-10);
+  const matches = raw.match(/(?:\+?90[\s\-()]*)?(?:0?5\d[\s\-()]?\d{3}[\s\-()]?\d{2}[\s\-()]?\d{2})/g);
+
+  if (!matches || !matches.length) return "";
+
+  for (const match of matches) {
+    const digits = match.replace(/\D/g, "");
+
+    if (/^(90)?5\d{9}$/.test(digits)) {
+      return digits.slice(-10);
+    }
+
+    if (/^0?5\d{9}$/.test(digits)) {
+      return digits.slice(-10);
+    }
+  }
+
   return "";
 }
 
