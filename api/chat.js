@@ -350,21 +350,31 @@ function looksLikePhotoUrl(rawMessage = "") {
 
 function extractPhone(rawMessage = "") {
   const raw = String(rawMessage || "");
-  const matches = raw.match(/(?:\+?90[\s\-()]*)?(?:0?5\d[\s\-()]?\d{3}[\s\-()]?\d{2}[\s\-()]?\d{2})/g);
 
-  if (!matches || !matches.length) return "";
+  // Önce Türk telefonuna benzeyen tüm adayları topla
+  const candidates = raw.match(/(\+?\d[\d\s().-]{8,}\d)/g) || [];
 
-  for (const match of matches) {
-    const digits = match.replace(/\D/g, "");
+  for (const candidate of candidates) {
+    const digits = candidate.replace(/\D/g, "");
 
-    if (/^(90)?5\d{9}$/.test(digits)) {
+    // +90 5XXXXXXXXX
+    if (/^905\d{9}$/.test(digits)) {
       return digits.slice(-10);
     }
 
-    if (/^0?5\d{9}$/.test(digits)) {
+    // 05XXXXXXXXX
+    if (/^05\d{9}$/.test(digits)) {
       return digits.slice(-10);
+    }
+
+    // 5XXXXXXXXX
+    if (/^5\d{9}$/.test(digits)) {
+      return digits;
     }
   }
+
+  return "";
+}
 
   return "";
 }
