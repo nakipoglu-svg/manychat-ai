@@ -1,3 +1,5 @@
+console.log("TEST BASLADI 🔥");
+
 import { processChat } from "./chat.js";
 
 const tests = [
@@ -377,3 +379,4 @@ async function run() {
 }
 
 run();
+console.log("TEST BITTI ✅");
