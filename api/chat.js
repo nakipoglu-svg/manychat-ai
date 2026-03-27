@@ -351,11 +351,11 @@ function looksLikePhotoUrl(rawMessage = "") {
 function extractPhone(rawMessage = "") {
   const raw = String(rawMessage || "");
 
-  // Önce Türk telefonuna benzeyen tüm adayları topla
-  const candidates = raw.match(/(\+?\d[\d\s().-]{8,}\d)/g) || [];
+  // Sadece 5 ile başlayan mobil hatları hedefle
+  const matches = raw.match(/(?:\+?90[\s().-]*)?(?:0?5\d(?:[\s().-]*\d){8})/g) || [];
 
-  for (const candidate of candidates) {
-    const digits = candidate.replace(/\D/g, "");
+  for (const match of matches) {
+    const digits = match.replace(/\D/g, "");
 
     // +90 5XXXXXXXXX
     if (/^905\d{9}$/.test(digits)) {
