@@ -151,6 +151,7 @@ function detectIntent(messageNorm, rawMessage = "", detectedProduct = "") {
       "kapida odeme olur mu",
       "kapida odeme var mi",
       "kapida oderim",
+      "kapida odeme olsun",
       "kapida",
       "odeme",
       "eft",
@@ -340,16 +341,18 @@ function buildContext(body) {
   const context_lock = unwrapManychatValue(body.context_lock);
 
   const existingProduct = ilgilenilen_urun || user_product || "";
+  const previousProduct = normalizeText(existingProduct) || "";
   const messageNorm = normalizeText(message);
 
   const explicitProduct = detectProduct(messageNorm, "");
-  const detectedProduct = explicitProduct || normalizeText(existingProduct) || "";
+  const detectedProduct = explicitProduct || previousProduct || "";
   const detectedIntent = detectIntent(messageNorm, message, detectedProduct);
 
   return {
     raw: body,
     message,
     messageNorm,
+    previousProduct,
     fields: {
       ilgilenilen_urun,
       user_product,
@@ -416,18 +419,38 @@ function createHardRules(context) {
 }
 
 function getKnowledgePack(context) {
-  const core = safeRead("core_system.txt");
-  const pricing = safeRead("pricing.txt");
-  const shipping = safeRead("shipping.txt");
-  const payment = safeRead("payment.txt");
-  const orderFlow = safeRead("order_flow.txt");
-  const trust = safeRead("trust.txt");
-  const smalltalk = safeRead("smalltalk.txt");
+  const core = safeRead("CORE_SYSTEM.txt");
+  const pricing = safeRead("PRICING.txt");
+  const shipping = safeRead("SHIPPING.txt");
+  const payment = safeRead("PAYMENT.txt");
+  const orderFlow = safeRead("ORDER_FLOW.txt");
+  const trust = safeRead("TRUST.txt");
+  const smalltalk = safeRead("SMALLTALK.txt");
+  const routingRules = safeRead("ROUTING_RULES.txt");
+  const edgeCases = safeRead("EDGE_CASES.txt");
+  const imageRules = safeRead("IMAGE_RULES.txt");
+  const fewShot = safeRead("FEW_SHOT_EXAMPLES.txt");
+  const systemMaster = safeRead("SYSTEM_MASTER.txt");
 
-  const laser = context.detectedProduct === "lazer" ? safeRead("product_laser.txt") : "";
-  const atac = context.detectedProduct === "atac" ? safeRead("product_atac.txt") : "";
+  const laser = context.detectedProduct === "lazer" ? safeRead("PRODUCT_LASER.txt") : "";
+  const atac = context.detectedProduct === "atac" ? safeRead("PRODUCT_ATAC.txt") : "";
 
-  return [core, laser, atac, pricing, shipping, payment, orderFlow, trust, smalltalk]
+  return [
+    systemMaster,
+    core,
+    routingRules,
+    edgeCases,
+    fewShot,
+    imageRules,
+    laser,
+    atac,
+    pricing,
+    shipping,
+    payment,
+    orderFlow,
+    trust,
+    smalltalk,
+  ]
     .filter(Boolean)
     .join("\n\n");
 }
@@ -451,6 +474,7 @@ ${context.message}
 Context:
 - detected_product: ${context.detectedProduct || ""}
 - detected_intent: ${context.detectedIntent || "unknown"}
+- previous_product: ${context.previousProduct || ""}
 - current_product_field: ${context.fields.ilgilenilen_urun || context.fields.user_product || ""}
 - conversation_stage: ${context.fields.conversation_stage || ""}
 - photo_received: ${context.fields.photo_received || ""}
@@ -517,6 +541,8 @@ function buildStateUpdate(context, replyText) {
   const existing = context.fields;
   const product = context.detectedProduct || existing.ilgilenilen_urun || existing.user_product || "";
   const intent = context.detectedIntent;
+  const previousProduct = context.previousProduct || "";
+  const productChanged = previousProduct && product && previousProduct !== product;
 
   let conversation_stage = existing.conversation_stage || "";
   let photo_received = existing.photo_received || "";
@@ -528,6 +554,17 @@ function buildStateUpdate(context, replyText) {
   let support_mode = existing.support_mode || "";
   let cancel_reason = existing.cancel_reason || "";
   let context_lock = existing.context_lock || "";
+
+  if (productChanged) {
+    conversation_stage = "";
+    photo_received = "";
+    payment_method = "";
+    order_status = "started";
+    back_text_status = "";
+    address_status = "";
+    support_mode = "";
+    cancel_reason = "";
+  }
 
   if (product !== "lazer") {
     photo_received = "";
@@ -550,8 +587,14 @@ function buildStateUpdate(context, replyText) {
 
   if (intent === "payment") {
     conversation_stage = "payment_step";
-    if (product) {
-      order_status = order_status || "started";
+    order_status = order_status || "started";
+
+    if (hasAny(context.messageNorm, ["kapida", "odeme"])) {
+      payment_method = "kapida_odeme";
+    }
+
+    if (hasAny(context.messageNorm, ["eft", "havale"])) {
+      payment_method = "eft_havale";
     }
   }
 
@@ -636,9 +679,13 @@ function quickLocalReply(context) {
     return "Tabi efendim, fotoğrafı buradan gönderebilirsiniz 😊";
   }
 
-  if (detectedIntent === "payment" && detectedProduct === "lazer") {
-    if (hasAny(messageNorm, ["kapida", "odeme", "eft", "havale"])) {
-      return "Evet efendim, kapıda ödeme seçeneğimiz mevcut. Kapıda ödeme fiyatımız 649 TL'dir 😊";
+  if (detectedIntent === "payment") {
+    if (hasAny(messageNorm, ["kapida", "odeme"])) {
+      return "Kapıda ödeme seçeneğimiz bulunmaktadır. Siparişinizi tamamlamak için adres bilgilerinizi paylaşabilir misiniz? 😊";
+    }
+
+    if (hasAny(messageNorm, ["eft", "havale"])) {
+      return "EFT / Havale için ödeme bilgilerimiz şu şekildedir:\nIBAN: TR34 0015 7000 0000 0076 2524 67\nAlıcı: Servet Cihan Nakipoğlu";
     }
   }
 
@@ -675,6 +722,7 @@ export default async function handler(req, res) {
     console.log("DETECTED:", {
       product: context.detectedProduct,
       intent: context.detectedIntent,
+      previousProduct: context.previousProduct,
     });
 
     if (!context.message) {
