@@ -2,12 +2,10 @@ import fs from "fs";
 import path from "path";
 
 const fileCache = {};
-
 const FALLBACK_TEXT = "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊";
 
 function readKnowledgeFile(filename) {
   if (fileCache[filename]) return fileCache[filename];
-
   const filePath = path.join(process.cwd(), "knowledge", filename);
   const content = fs.readFileSync(filePath, "utf8");
   fileCache[filename] = content;
@@ -28,10 +26,14 @@ function unwrapManychatValue(value) {
   const str = String(value).trim();
   if (!str) return "";
 
+  // "{{cuf_123}}" / "{{last_input_text}}" / "{{...}}"
   if (/^\{\{\{?.+?\}\}\}?$/.test(str)) return "";
+  // "{cuf_123}" benzeri
   if (/^\{[^}]+\}$/.test(str)) return "";
+  // çıplak cuf placeholder
   if (/^cuf_\d+$/i.test(str)) return "";
-  if (/^(undefined|null|none|nan|false)$/i.test(str)) return "";
+  // boş sayılacak stringler
+  if (/^(undefined|null|none|nan)$/i.test(str)) return "";
 
   return str;
 }
@@ -48,10 +50,13 @@ function normalizeText(text) {
     .replace(/â/g, "a")
     .replace(/î/g, "i")
     .replace(/û/g, "u")
-    .replace(/[^\w\s]/g, " ")
+    .replace(/[^\w\s:/?.=&-]/g, " ")
     .replace(/\boddme\b/g, "odeme")
     .replace(/\bodme\b/g, "odeme")
     .replace(/\bodeeme\b/g, "odeme")
+    .replace(/\bfotogragi\b/g, "fotografi")
+    .replace(/\bfotograg\b/g, "fotograf")
+    .replace(/\bfotografi\b/g, "fotografi")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -62,7 +67,7 @@ function hasAny(text, keywords) {
 
 function truthy(value) {
   const v = normalizeText(unwrapManychatValue(value));
-  return ["1", "true", "evet", "yes", "var", "alindi", "tamam"].includes(v);
+  return ["1", "true", "evet", "yes", "var", "alindi", "tamam", "received", "done"].includes(v);
 }
 
 function cleanReply(text) {
@@ -75,16 +80,78 @@ function cleanReply(text) {
     .trim();
 }
 
+function looksLikePhotoUrl(rawMessage = "") {
+  const raw = String(rawMessage || "").trim().toLowerCase();
+  if (!raw) return false;
+
+  const isUrl = raw.startsWith("http://") || raw.startsWith("https://");
+  if (!isUrl) return false;
+
+  return (
+    raw.includes("lookaside.fbsbx.com") ||
+    raw.includes("ig_messaging_cdn") ||
+    raw.includes("cdninstagram") ||
+    raw.includes("cdn.instagram") ||
+    raw.includes(".jpg") ||
+    raw.includes(".jpeg") ||
+    raw.includes(".png") ||
+    raw.includes(".webp")
+  );
+}
+
+function looksLikeAddress(messageNorm, rawMessage = "") {
+  const raw = String(rawMessage || "").trim();
+  if (!raw) return false;
+  if (raw.length < 12) return false;
+
+  if (
+    hasAny(messageNorm, [
+      "adres",
+      "acik adres",
+      "açık adres",
+      "mahalle",
+      "mah",
+      "sokak",
+      "sk",
+      "no",
+      "daire",
+      "apt",
+      "apartman",
+      "ilce",
+      "ilçe",
+      "kat",
+      "site",
+      "bulvar",
+      "cadde",
+      "cd",
+      "telefon",
+      "tel",
+      "ad soyad",
+    ])
+  ) {
+    return true;
+  }
+
+  if (
+    /\d/.test(raw) &&
+    hasAny(messageNorm, ["mah", "sok", "cad", "no", "daire", "kat", "apt", "sk", "site"])
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function normalizeProduct(value) {
+  const v = normalizeText(value);
+  if (["lazer", "resimli", "resimli lazer kolye"].includes(v)) return "lazer";
+  if (["atac", "ataç", "harfli atac kolye", "harfli ataq kolye"].includes(v)) return "atac";
+  return "";
+}
+
 function detectProduct(messageNorm, existingProduct) {
-  const existing = normalizeText(existingProduct);
-
-  if (["lazer", "resimli", "resimli lazer kolye"].includes(existing)) {
-    return "lazer";
-  }
-
-  if (["atac", "ataç", "harfli atac kolye", "harfli ataq kolye"].includes(existing)) {
-    return "atac";
-  }
+  const existing = normalizeProduct(existingProduct);
+  if (existing) return existing;
 
   if (
     hasAny(messageNorm, [
@@ -128,52 +195,20 @@ function looksLikeLetterInput(rawMessage, detectedProduct) {
   const raw = String(rawMessage || "").trim();
   if (!raw) return false;
   if (raw.length > 24) return false;
-  if (/[?!.:,]/.test(raw)) return false;
+  if (/[?!.:,/]/.test(raw)) return false;
   if (!/^[a-zA-ZçğıöşüÇĞİÖŞÜ\s&]+$/.test(raw)) return false;
 
   return true;
 }
 
-function looksLikeAddress(messageNorm, rawMessage = "") {
-  const raw = String(rawMessage || "").trim();
-  if (!raw) return false;
-  if (raw.length < 12) return false;
-
-  if (
-    hasAny(messageNorm, [
-      "adres",
-      "acik adres",
-      "açık adres",
-      "mahalle",
-      "mah",
-      "sokak",
-      "sk",
-      "no",
-      "daire",
-      "apt",
-      "apartman",
-      "ilce",
-      "ilçe",
-      "kat",
-      "site",
-      "bulvar",
-      "cadde",
-      "cd",
-    ])
-  ) {
-    return true;
-  }
-
-  // Daha serbest adres yakalama
-  if (/\d/.test(raw) && hasAny(messageNorm, ["mah", "sok", "cad", "no", "daire", "kat", "apt"])) {
-    return true;
-  }
-
-  return false;
-}
-
 function detectIntent(messageNorm, rawMessage = "", detectedProduct = "") {
-  if (!messageNorm) return "unknown";
+  const raw = String(rawMessage || "").trim();
+
+  if (!messageNorm && !raw) return "unknown";
+
+  if (looksLikePhotoUrl(raw) && detectedProduct === "lazer") {
+    return "photo";
+  }
 
   if (hasAny(messageNorm, ["iptal", "vazgectim", "istemiyorum", "siparisi iptal"])) {
     return "cancel_order";
@@ -222,9 +257,16 @@ function detectIntent(messageNorm, rawMessage = "", detectedProduct = "") {
     hasAny(messageNorm, [
       "fotograf gonderiyorum",
       "foto gonderiyorum",
-      "fotoyu atayim",
-      "resmi atayim",
-      "resim gondersem",
+      "fotografi gonderiyorum",
+      "fotografi atiyorum",
+      "foto atiyorum",
+      "fotoyu atiyorum",
+      "resmi atiyorum",
+      "resim gonderiyorum",
+      "fotograf atiyorum",
+      "fotografi gondericem",
+      "foto yolluyorum",
+      "resim yolluyorum",
       "vesikalik olur mu",
       "vesikalik",
       "fotograf uygun mu",
@@ -288,7 +330,7 @@ function detectIntent(messageNorm, rawMessage = "", detectedProduct = "") {
     return "order_start";
   }
 
-  if (looksLikeAddress(messageNorm, rawMessage)) {
+  if (looksLikeAddress(messageNorm, raw)) {
     return "address";
   }
 
@@ -321,7 +363,7 @@ function detectIntent(messageNorm, rawMessage = "", detectedProduct = "") {
     return "location";
   }
 
-  if (looksLikeLetterInput(rawMessage, detectedProduct)) {
+  if (looksLikeLetterInput(raw, detectedProduct)) {
     return "letters";
   }
 
@@ -348,26 +390,67 @@ function shouldLockProduct(product, intent) {
   ].includes(intent);
 }
 
+function normalizeStage(value) {
+  const v = normalizeText(value);
+  if (!v) return "";
+  if (["waiting_photo", "waiting payment", "waiting_payment", "waiting address", "waiting_address", "waiting_letters", "order_completed", "human_support"].includes(v)) {
+    return v.replace(/\s+/g, "_");
+  }
+  return "";
+}
+
+function normalizeAddressStatus(value) {
+  const v = normalizeText(value);
+  if (!v) return "";
+  if (["received", "alindi", "done", "tamam"].includes(v)) return "received";
+  return "";
+}
+
+function normalizeBackTextStatus(value) {
+  const v = normalizeText(value);
+  if (!v) return "";
+  if (["received", "alindi", "done", "tamam"].includes(v)) return "received";
+  if (["skipped", "atlandi", "istemiyor", "yok"].includes(v)) return "skipped";
+  return "";
+}
+
+function normalizePayment(value) {
+  const v = normalizeText(value);
+  if (!v) return "";
+  if (v.includes("kapida")) return "kapida_odeme";
+  if (v.includes("eft") || v.includes("havale")) return "eft_havale";
+  return "";
+}
+
+function normalizeOrderStatus(value) {
+  const v = normalizeText(value);
+  if (!v) return "";
+  if (["started", "collecting", "address_pending"].includes(v)) return "started";
+  if (["completed", "done", "tamam"].includes(v)) return "completed";
+  if (["cancel_requested"].includes(v)) return "cancel_requested";
+  return "";
+}
+
 function buildContext(body) {
   const message = unwrapManychatValue(body.message || body.last_input_text || "");
   const ilgilenilen_urun = unwrapManychatValue(body.ilgilenilen_urun);
   const user_product = unwrapManychatValue(body.user_product);
-  const conversation_stage = unwrapManychatValue(body.conversation_stage);
+  const conversation_stage = normalizeStage(unwrapManychatValue(body.conversation_stage));
   const photo_received = unwrapManychatValue(body.photo_received);
-  const payment_method = unwrapManychatValue(body.payment_method);
+  const payment_method = normalizePayment(unwrapManychatValue(body.payment_method));
   const menu_gosterildi = unwrapManychatValue(body.menu_gosterildi);
   const ai_reply = unwrapManychatValue(body.ai_reply);
   const last_intent = unwrapManychatValue(body.last_intent);
-  const order_status = unwrapManychatValue(body.order_status);
-  const back_text_status = unwrapManychatValue(body.back_text_status);
-  const address_status = unwrapManychatValue(body.address_status);
+  const order_status = normalizeOrderStatus(unwrapManychatValue(body.order_status));
+  const back_text_status = normalizeBackTextStatus(unwrapManychatValue(body.back_text_status));
+  const address_status = normalizeAddressStatus(unwrapManychatValue(body.address_status));
   const support_mode = unwrapManychatValue(body.support_mode);
   const siparis_alindi = unwrapManychatValue(body.siparis_alindi);
   const cancel_reason = unwrapManychatValue(body.cancel_reason);
   const context_lock = unwrapManychatValue(body.context_lock);
 
   const existingProduct = ilgilenilen_urun || user_product || "";
-  const previousProduct = normalizeText(existingProduct) || "";
+  const previousProduct = normalizeProduct(existingProduct) || "";
   const messageNorm = normalizeText(message);
 
   const explicitProduct = detectProduct(messageNorm, "");
@@ -578,7 +661,7 @@ function parsePaymentMethod(messageNorm, existing = "") {
 }
 
 function resetForProductSwitch(existing, newProduct) {
-  const next = {
+  return {
     conversation_stage: "",
     photo_received: "",
     payment_method: "",
@@ -590,9 +673,8 @@ function resetForProductSwitch(existing, newProduct) {
     cancel_reason: "",
     context_lock: newProduct ? "1" : existing.context_lock || "",
     siparis_alindi: "",
+    letters_received: "",
   };
-
-  return next;
 }
 
 function collectFacts(context, currentState) {
@@ -613,13 +695,21 @@ function collectFacts(context, currentState) {
   }
 
   if (detectedIntent === "photo" && detectedProduct === "lazer") {
-    // text olarak "foto atayım mı" gibi soru da burada gelir; dosya attachment yoksa tam received yapmıyoruz
     if (
+      looksLikePhotoUrl(message) ||
       hasAny(messageNorm, [
         "fotograf gonderiyorum",
         "foto gonderiyorum",
+        "fotografi gonderiyorum",
+        "fotografi atiyorum",
+        "foto atiyorum",
         "fotoyu atiyorum",
-        "resmi gonderiyorum",
+        "resmi atiyorum",
+        "resim gonderiyorum",
+        "fotograf atiyorum",
+        "fotografi gondericem",
+        "foto yolluyorum",
+        "resim yolluyorum",
       ])
     ) {
       next.photo_received = "1";
@@ -627,8 +717,8 @@ function collectFacts(context, currentState) {
   }
 
   if (detectedIntent === "letters" && detectedProduct === "atac") {
+    next.letters_received = "1";
     next.order_status = next.order_status || "started";
-    next.letters_received = "1"; // internal only
   }
 
   if (detectedIntent === "back_text") {
@@ -653,7 +743,7 @@ function deriveInternalState(context) {
   let state = {
     product,
     conversation_stage: existing.conversation_stage || "",
-    photo_received: existing.photo_received || "",
+    photo_received: truthy(existing.photo_received) ? "1" : "",
     payment_method: existing.payment_method || "",
     menu_gosterildi: existing.menu_gosterildi || "",
     order_status: existing.order_status || "",
@@ -662,8 +752,8 @@ function deriveInternalState(context) {
     support_mode: existing.support_mode || "",
     cancel_reason: existing.cancel_reason || "",
     context_lock: existing.context_lock || "",
-    siparis_alindi: existing.siparis_alindi || "",
-    letters_received: "", // internal
+    siparis_alindi: truthy(existing.siparis_alindi) ? "1" : "",
+    letters_received: truthy(existing.letters_received) ? "1" : "",
   };
 
   if (productChanged) {
