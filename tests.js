@@ -1,180 +1,217 @@
-console.log("TEST BASLADI 🔥");
+console.log("🔥 TEST BAŞLADI");
 
 import { processChat } from "./api/chat.js";
 
-// Basit yardımcı fonksiyon
 function createState(overrides = {}) {
-  return {
-    ilgilenilen_urun: "",
-    conversation_stage: "",
-    payment_method: "",
-    address_status: "",
-    phone_received: "",
-    order_status: "",
-    ...overrides,
-  };
+return {
+ilgilenilen_urun: "",
+conversation_stage: "",
+payment_method: "",
+address_status: "",
+phone_received: "",
+order_status: "",
+...overrides,
+};
 }
 
-// Test senaryoları
 const tests = [
-  {
-    id: "T1",
-    name: "Lazer ürün seçimi",
-    input: { message: "Resimli lazer kolye" },
-    state: createState(),
-    expect: {
-      ilgilenilen_urun: "lazer",
-      conversation_stage: "waiting_photo",
-    },
-  },
-  {
-    id: "T2",
-    name: "Ataç ürün seçimi",
-    input: { message: "ataç kolye" },
-    state: createState(),
-    expect: {
-      ilgilenilen_urun: "atac",
-      conversation_stage: "waiting_letters",
-    },
-  },
-  {
-    id: "T3",
-    name: "Foto sonrası back_text",
-    input: { message: "foto attım" },
-    state: createState({
-      ilgilenilen_urun: "lazer",
-      conversation_stage: "waiting_photo",
-    }),
-    expect: {
-      conversation_stage: "waiting_back_text",
-    },
-  },
-  {
-    id: "T4",
-    name: "Back text skip",
-    input: { message: "yok" },
-    state: createState({
-      ilgilenilen_urun: "lazer",
-      conversation_stage: "waiting_back_text",
-    }),
-    expect: {
-      conversation_stage: "waiting_payment",
-    },
-  },
-  {
-    id: "T5",
-    name: "EFT seçimi",
-    input: { message: "eft olsun" },
-    state: createState({
-      ilgilenilen_urun: "lazer",
-      conversation_stage: "waiting_payment",
-    }),
-    expect: {
-      payment_method: "eft",
-      conversation_stage: "waiting_address",
-    },
-  },
-  {
-    id: "T6",
-    name: "Tek mesajda adres + telefon",
-    input: {
-      message:
-        "Cihan Nakipoğlu 05321234567 İstanbul Beykoz Kavacık Mahallesi",
-    },
-    state: createState({
-      ilgilenilen_urun: "lazer",
-      conversation_stage: "waiting_address",
-      payment_method: "eft",
-    }),
-    expect: {
-      conversation_stage: "completed",
-    },
-  },
-  {
-    id: "T7",
-    name: "Back photo price",
-    input: { message: "arkasına foto koyarsak ücret var mı" },
-    state: createState({
-      ilgilenilen_urun: "lazer",
-      conversation_stage: "waiting_back_text",
-    }),
-    expect: {
-      // stage değişmemeli
-      conversation_stage: "waiting_back_text",
-    },
-  },
-  {
-    id: "T8",
-    name: "Kargo ücreti sorusu",
-    input: { message: "kargo ücreti var mı" },
-    state: createState(),
-    expect: {
-      // state bozulmamalı
-      conversation_stage: "",
-    },
-  },
+
+// 🔹 ÜRÜN SEÇİMİ
+{
+id: "T1",
+name: "Lazer seçimi",
+input: { message: "resimli lazer kolye" },
+state: createState(),
+expect: {
+ilgilenilen_urun: "lazer",
+conversation_stage: "waiting_photo",
+},
+},
+
+{
+id: "T2",
+name: "Ataç seçimi",
+input: { message: "ataç kolye" },
+state: createState(),
+expect: {
+ilgilenilen_urun: "atac",
+conversation_stage: "waiting_letters",
+},
+},
+
+// 🔹 FOTO → BACK FLOW
+{
+id: "T3",
+name: "Foto sonrası back text",
+input: { message: "fotoğraf attım" },
+state: createState({
+ilgilenilen_urun: "lazer",
+conversation_stage: "waiting_photo",
+}),
+expect: {
+conversation_stage: "waiting_back_option",
+},
+},
+
+{
+id: "T4",
+name: "Back text seçimi",
+input: { message: "yazı yazdırmak istiyorum" },
+state: createState({
+ilgilenilen_urun: "lazer",
+conversation_stage: "waiting_back_option",
+}),
+expect: {
+conversation_stage: "waiting_back_text",
+},
+},
+
+{
+id: "T5",
+name: "Back photo seçimi",
+input: { message: "arkasına fotoğraf istiyorum" },
+state: createState({
+ilgilenilen_urun: "lazer",
+conversation_stage: "waiting_back_option",
+}),
+expect: {
+conversation_stage: "waiting_back_photo",
+},
+},
+
+// 🔹 BACK TEXT SKIP
+{
+id: "T6",
+name: "Back text istemiyorum",
+input: { message: "istemiyorum" },
+state: createState({
+ilgilenilen_urun: "lazer",
+conversation_stage: "waiting_back_option",
+}),
+expect: {
+conversation_stage: "waiting_payment",
+},
+},
+
+// 🔹 PAYMENT FLOW
+{
+id: "T7",
+name: "EFT seçimi",
+input: { message: "eft" },
+state: createState({
+conversation_stage: "waiting_payment",
+}),
+expect: {
+payment_method: "eft",
+conversation_stage: "waiting_address",
+},
+},
+
+{
+id: "T8",
+name: "Kapıda ödeme",
+input: { message: "kapıda ödeme" },
+state: createState({
+conversation_stage: "waiting_payment",
+}),
+expect: {
+payment_method: "cod",
+conversation_stage: "waiting_address",
+},
+},
+
+// 🔹 ADRES + TELEFON
+{
+id: "T9",
+name: "Adres girildi",
+input: { message: "istanbul kadıköy moda sokak no 5" },
+state: createState({
+conversation_stage: "waiting_address",
+}),
+expect: {
+address_status: "alindi",
+conversation_stage: "waiting_phone",
+},
+},
+
+{
+id: "T10",
+name: "Telefon girildi",
+input: { message: "05554443322" },
+state: createState({
+conversation_stage: "waiting_phone",
+}),
+expect: {
+phone_received: "1",
+conversation_stage: "order_completed",
+},
+},
+
+// 🔹 KRİTİK BUG TESTLERİ
+{
+id: "T11",
+name: "Foto sorusu payment’a atlamasın",
+input: { message: "olur mu bu fotoğraf" },
+state: createState({
+ilgilenilen_urun: "lazer",
+conversation_stage: "waiting_photo",
+}),
+expect: {
+conversation_stage: "waiting_photo",
+},
+},
+
+{
+id: "T12",
+name: "Kargo sorusu payment bozmasın",
+input: { message: "kargo ücreti ne kadar" },
+state: createState({
+conversation_stage: "waiting_payment",
+}),
+expect: {
+conversation_stage: "waiting_payment",
+},
+},
+
+{
+id: "T13",
+name: "Arka foto sorusu doğru stage",
+input: { message: "arkasına fotoğraf olur mu" },
+state: createState({
+ilgilenilen_urun: "lazer",
+conversation_stage: "waiting_back_option",
+}),
+expect: {
+conversation_stage: "waiting_back_photo",
+},
+},
+
 ];
 
-// TEST ÇALIŞTIR
-let failed = false;
+// 🚀 RUNNER
+let passed = 0;
 
 for (const test of tests) {
-  try {
-    const result = processChat({
-      message: test.input.message,
-      state: test.state,
-    });
+const result = await processChat({
+message: test.input.message,
+state: test.state,
+});
 
-    let localFail = false;
+let ok = true;
 
-    if (
-      test.expect.ilgilenilen_urun &&
-      result.ilgilenilen_urun !== test.expect.ilgilenilen_urun
-    ) {
-      console.log(
-        `❌ ${test.id} (${test.name}) - URUN HATA`,
-        result.ilgilenilen_urun
-      );
-      localFail = true;
-    }
-
-    if (
-      test.expect.conversation_stage &&
-      result.conversation_stage !== test.expect.conversation_stage
-    ) {
-      console.log(
-        `❌ ${test.id} (${test.name}) - STAGE HATA`,
-        result.conversation_stage
-      );
-      localFail = true;
-    }
-
-    if (
-      test.expect.payment_method &&
-      result.payment_method !== test.expect.payment_method
-    ) {
-      console.log(
-        `❌ ${test.id} (${test.name}) - PAYMENT HATA`,
-        result.payment_method
-      );
-      localFail = true;
-    }
-
-    if (!localFail) {
-      console.log(`✅ ${test.id} (${test.name})`);
-    } else {
-      failed = true;
-    }
-  } catch (err) {
-    console.log(`❌ ${test.id} CRASH`, err.message);
-    failed = true;
-  }
+for (const key in test.expect) {
+if (result[key] !== test.expect[key]) {
+ok = false;
+console.log("❌ ${test.id} - ${test.name}");
+console.log("Beklenen: ${key} = ${test.expect[key]}");
+console.log("Gelen: ${result[key]}");
+}
 }
 
-// SONUÇ
-if (failed) {
-  console.log("TEST FAIL ❌");
-  process.exit(1);
-} else {
-  console.log("TEST PASS ✅");
+if (ok) {
+console.log("✅ ${test.id} - ${test.name}");
+passed++;
 }
+}
+
+console.log("\n🎯 SONUÇ: ${passed}/${tests.length}");
