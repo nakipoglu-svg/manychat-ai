@@ -22,22 +22,26 @@ function safeRead(filename) {
   }
 }
 
-function unwrapManychatValue(value) {
+ffunction unwrapManychatValue(value) {
   if (value === null || value === undefined) return "";
 
-  let str = String(value).trim();
+  const str = String(value).trim();
+  if (!str) return "";
 
-  str = str.replace(/^\{\{\{?/, "").replace(/\}\}\}?$/, "").trim();
+  // {{cuf_123}} / {{{cuf_123}}} / {{anything}} -> boş say
+  if (/^\{\{\{?.+?\}\}\}?$/.test(str)) return "";
 
+  // {cuf_123} veya {anything} -> boş say
   if (/^\{[^}]+\}$/.test(str)) return "";
-  if (/^undefined$/i.test(str)) return "";
-  if (/^null$/i.test(str)) return "";
-  if (/^none$/i.test(str)) return "";
-  if (/^nan$/i.test(str)) return "";
 
-  return str.trim();
+  // dış kabuk soyulmuş halde cuf_123 kaldıysa yine boş say
+  if (/^cuf_\d+$/i.test(str)) return "";
+
+  // boş sayılacak diğer değerler
+  if (/^(undefined|null|none|nan|false)$/i.test(str)) return "";
+
+  return str;
 }
-
 function normalizeText(text) {
   return String(text || "")
     .toLowerCase()
@@ -500,6 +504,11 @@ function buildStateUpdate(context, replyText) {
   let cancel_reason = existing.cancel_reason || "";
   let context_lock = existing.context_lock || "";
 
+  if (product !== "lazer") {
+  photo_received = "";
+  back_text_status = "";
+}
+  
   if (product) context_lock = "1";
 
   if (intent === "photo") {
@@ -522,9 +531,14 @@ function buildStateUpdate(context, replyText) {
   }
 
   if (intent === "order_start") {
-    order_status = "started";
-    conversation_stage = "order_started";
+  order_status = "started";
+  conversation_stage = "order_started";
+
+  if (product === "lazer") {
+    photo_received = "";
+    back_text_status = "";
   }
+}
 
   if (intent === "cancel_order") {
     cancel_reason = context.message || "cancel_requested";
@@ -592,7 +606,12 @@ export default async function handler(req, res) {
   try {
     const body = req.body || {};
     const context = buildContext(body);
-
+console.log("RAW BODY:", JSON.stringify(body, null, 2));
+console.log("CLEAN FIELDS:", JSON.stringify(context.fields, null, 2));
+console.log("DETECTED:", {
+  product: context.detectedProduct,
+  intent: context.detectedIntent
+});
     if (!context.message) {
       return res.status(200).json({
         success: true,
@@ -615,7 +634,7 @@ export default async function handler(req, res) {
     }
 
     const stateUpdate = buildStateUpdate(context, finalReply);
-
+console.log("STATE UPDATE:", JSON.stringify(stateUpdate, null, 2));
     return res.status(200).json({
       success: true,
       ...stateUpdate,
