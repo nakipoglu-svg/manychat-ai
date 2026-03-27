@@ -1,9 +1,6 @@
 console.log("🔥 TEST BAŞLADI");
 
-async function run() {
-
-const module = await import("./api/chat.js");
-const processChat = module.processChat;
+const processChat = require("./api/chat.js").processChat;
 
 function createState(overrides = {}) {
 return {
@@ -16,6 +13,8 @@ order_status: "",
 ...overrides,
 };
 }
+
+async function run() {
 
 const tests = [
 {
@@ -59,7 +58,7 @@ state: test.state
 
 } catch (e) {
   console.log(`💥 CRASH: ${test.id}`);
-  console.log(e);
+  console.log(e.message);
 }
 
 }
