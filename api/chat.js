@@ -555,15 +555,21 @@ function buildStateUpdate(context, replyText) {
     order_status = order_status || "address_pending";
   }
 
-  if (intent === "order_start") {
-    order_status = "started";
-    conversation_stage = "order_started";
+ if (intent === "order_start") {
+  order_status = "started";
 
-    if (product === "lazer") {
-      photo_received = "";
-      back_text_status = "";
-    }
+  if (product === "lazer") {
+    conversation_stage = "order_started";
+    photo_received = "";
+    back_text_status = "";
   }
+
+  if (product === "atac") {
+    conversation_stage = "order_started";
+    photo_received = "";
+    back_text_status = "";
+  }
+}
 
   if (intent === "cancel_order") {
     cancel_reason = context.message || "cancel_requested";
@@ -604,6 +610,14 @@ function buildStateUpdate(context, replyText) {
 function quickLocalReply(context) {
   const { detectedIntent, detectedProduct, messageNorm } = context;
 
+if (detectedIntent === "order_start" && detectedProduct === "lazer") {
+  return "Tabi efendim, fotoğrafı buradan gönderebilirsiniz 😊";
+}
+
+if (detectedIntent === "order_start" && detectedProduct === "atac") {
+  return "Tabi efendim 😊 İstediğiniz harfleri yazabilirsiniz. Standart olarak 3 harf dahildir.";
+}
+  
   if (detectedIntent === "photo" && detectedProduct === "lazer") {
     return "Tabi efendim, fotoğrafı buradan gönderebilirsiniz 😊";
   }
