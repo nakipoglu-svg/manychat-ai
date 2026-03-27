@@ -376,9 +376,6 @@ function extractPhone(rawMessage = "") {
   return "";
 }
 
-  return "";
-}
-
 function looksLikeAddress(messageNorm, rawMessage = "") {
   const raw = String(rawMessage || "").trim();
   if (!raw || raw.length < 8) return false;
