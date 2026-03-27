@@ -863,7 +863,149 @@ async function runTests() {
     STATE: [0, 0],
     MC: [0, 0],
   };
+// ════════════════════════════════════════════════════════════════════════
+  // GRUP 7: MODEL SAFETY TESTS
+  // Amaç: modele düşmemesi gereken deterministic yolları kilitlemek
+  // ════════════════════════════════════════════════════════════════════════
 
+  {
+    id: "MS01",
+    name: "[MODEL] Fixed info: konum sorusu deterministic cevaplanmalı",
+    input: body("neredesiniz"),
+    expectReplyIncludes: "eminonu",
+    expectReplyNotIncludes: "ekibimize iletiyorum",
+  },
+  {
+    id: "MS02",
+    name: "[MODEL] Fixed info: kargo süresi deterministic cevaplanmalı",
+    input: body("kargo ne zaman gelir"),
+    expectReplyIncludes: "is gunu",
+    expectReplyNotIncludes: "ekibimize iletiyorum",
+  },
+  {
+    id: "MS03",
+    name: "[MODEL] Fixed info: kargo ücreti deterministic cevaplanmalı",
+    input: body("kargo ücreti var mı"),
+    expectReplyIncludes: "dahil",
+    expectReplyNotIncludes: "ekibimize iletiyorum",
+  },
+  {
+    id: "MS04",
+    name: "[MODEL] Fixed info: güven sorusu deterministic cevaplanmalı",
+    input: body("güvenilir misiniz"),
+    expectReplyIncludes: "guven",
+    expectReplyNotIncludes: "ekibimize iletiyorum",
+  },
+  {
+    id: "MS05",
+    name: "[MODEL] Fixed info: kararır mı sorusu deterministic cevaplanmalı",
+    input: body("kararır mı"),
+    expectReplyNotIncludes: "ekibimize iletiyorum",
+  },
+  {
+    id: "MS06",
+    name: "[MODEL] Fixed info: kaplama atar mı deterministic cevaplanmalı",
+    input: body("kaplaması atar mı"),
+    expectReplyNotIncludes: "ekibimize iletiyorum",
+  },
+  {
+    id: "MS07",
+    name: "[MODEL] Fixed info: zincir uzunluğu deterministic cevaplanmalı",
+    input: body("zincir uzunluğu ne kadar", lazer({ conversation_stage: "waiting_photo" })),
+    expectReplyIncludes: "60",
+    expectReplyNotIncludes: "ekibimize iletiyorum",
+  },
+  {
+    id: "MS08",
+    name: "[MODEL] Fixed info: arkasına yazı olur mu deterministic cevaplanmalı",
+    input: body("arkasına yazı olur mu", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
+    expectReplyNotIncludes: "ekibimize iletiyorum",
+  },
+  {
+    id: "MS09",
+    name: "[MODEL] Fixed info: arkasına foto olur mu deterministic cevaplanmalı",
+    input: body("arkasına foto olur mu", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
+    expectReplyNotIncludes: "ekibimize iletiyorum",
+  },
+  {
+    id: "MS10",
+    name: "[MODEL] Fixed info: arka foto fiyat farkı deterministic cevaplanmalı",
+    input: body("arkasına foto koyarsam fiyat ne olur", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
+    expectReplyIncludes: "ek ucret",
+    expectReplyNotIncludes: "ekibimize iletiyorum",
+  },
+
+  {
+    id: "MS11",
+    name: "[MODEL] Active flow: waiting_payment'ta 'eft' fallbacke düşmemeli",
+    input: body("eft", lazerWaitingPayment()),
+    expect: { payment_method: "eft_havale", conversation_stage: "waiting_address" },
+    expectReplyNotIncludes: "ekibimize iletiyorum",
+  },
+  {
+    id: "MS12",
+    name: "[MODEL] Active flow: waiting_payment'ta 'kapıda ödeme' fallbacke düşmemeli",
+    input: body("kapıda ödeme", lazerWaitingPayment()),
+    expect: { payment_method: "kapida_odeme", conversation_stage: "waiting_address" },
+    expectReplyNotIncludes: "ekibimize iletiyorum",
+  },
+  {
+    id: "MS13",
+    name: "[MODEL] Active flow: waiting_back_text'te 'yok' fallbacke düşmemeli",
+    input: body("yok", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
+    expect: { back_text_status: "skipped", conversation_stage: "waiting_payment" },
+    expectReplyNotIncludes: "ekibimize iletiyorum",
+  },
+  {
+    id: "MS14",
+    name: "[MODEL] Active flow: waiting_back_text'te serbest arka yazı fallbacke düşmemeli",
+    input: body("canım ailem", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
+    expect: { back_text_status: "received", conversation_stage: "waiting_payment" },
+    expectReplyNotIncludes: "ekibimize iletiyorum",
+  },
+  {
+    id: "MS15",
+    name: "[MODEL] Active flow: waiting_letters'ta harf girdisi fallbacke düşmemeli",
+    input: body("ABC", atac({ conversation_stage: "waiting_letters" })),
+    expect: { letters_received: "1", conversation_stage: "waiting_payment" },
+    expectReplyNotIncludes: "ekibimize iletiyorum",
+  },
+  {
+    id: "MS16",
+    name: "[MODEL] Active flow: waiting_address'ta telefon girdisi fallbacke düşmemeli",
+    input: body("05551234567", lazerWaitingAddress({ address_status: "address_only" })),
+    expect: { phone_received: "1", address_status: "received" },
+    expectReplyNotIncludes: "ekibimize iletiyorum",
+  },
+  {
+    id: "MS17",
+    name: "[MODEL] Active flow: waiting_address'ta adres girdisi fallbacke düşmemeli",
+    input: body("Kadıköy Moda Mah No:3", lazerWaitingAddress()),
+    expect: { address_status: "address_only" },
+    expectReplyNotIncludes: "ekibimize iletiyorum",
+  },
+  {
+    id: "MS18",
+    name: "[MODEL] Active flow: waiting_photo'ta gerçek foto URL fallbacke düşmemeli",
+    input: body("https://lookaside.fbsbx.com/photo123.jpg", lazer({ conversation_stage: "waiting_photo" })),
+    expect: { photo_received: "1", conversation_stage: "waiting_back_text" },
+    expectReplyNotIncludes: "ekibimize iletiyorum",
+  },
+
+  {
+    id: "MS19",
+    name: "[MODEL] No-key safety: belirsiz mesajda crash olmadan fallback dönmeli",
+    input: body("uzaylı kolye yapıyor musunuz"),
+    expect: { success: true },
+    expectReplyIncludes: "ekibimize iletiyorum",
+  },
+  {
+    id: "MS20",
+    name: "[MODEL] No-key safety: çok alakasız mesajda crash olmadan fallback dönmeli",
+    input: body("mercury retrograde sırasında bitcoin ne olur"),
+    expect: { success: true },
+    expectReplyIncludes: "ekibimize iletiyorum",
+  },
   function getCat(id) {
     if (id.startsWith("T")) return "CORE";
     if (id.startsWith("R")) return "REG";
