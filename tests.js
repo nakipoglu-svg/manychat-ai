@@ -1,8 +1,10 @@
 console.log("🔥 TEST BAŞLADI");
 
-const { processChat } = await import("./api/chat.js");
+async function run() {
 
-// yardımcı state
+const module = await import("./api/chat.js");
+const processChat = module.processChat;
+
 function createState(overrides = {}) {
 return {
 ilgilenilen_urun: "",
@@ -27,7 +29,7 @@ id: "T2",
 input: "ataç kolye",
 state: createState(),
 expect: { ilgilenilen_urun: "atac" }
-},
+}
 ];
 
 let passed = 0;
@@ -39,25 +41,30 @@ message: test.input,
 state: test.state
 });
 
-let ok = true;
+  let ok = true;
 
-for (const key in test.expect) {
-  if (result[key] !== test.expect[key]) {
-    ok = false;
-    console.log(`❌ ${test.id}`);
-    console.log("Beklenen:", test.expect[key]);
-    console.log("Gelen:", result[key]);
+  for (const key in test.expect) {
+    if (result[key] !== test.expect[key]) {
+      ok = false;
+      console.log(`❌ ${test.id}`);
+      console.log("Beklenen:", test.expect[key]);
+      console.log("Gelen:", result[key]);
+    }
   }
-}
 
-if (ok) {
-  console.log(`✅ ${test.id}`);
-  passed++;
-}
+  if (ok) {
+    console.log(`✅ ${test.id}`);
+    passed++;
+  }
 
 } catch (e) {
-console.log("💥 CRASH: ${test.id}", e.message);
+  console.log(`💥 CRASH: ${test.id}`);
+  console.log(e);
 }
+
 }
 
 console.log("🎯 SONUÇ: ${passed}/${tests.length}");
+}
+
+run();
