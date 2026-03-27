@@ -110,8 +110,10 @@ function looksLikePhotoUrl(rawMessage = "") {
 function hasPhoneNumber(rawMessage = "") {
   const raw = String(rawMessage || "").trim();
   if (!raw) return false;
+
   const digits = raw.replace(/\D/g, "");
   if (digits.length < 10) return false;
+
   return /(\+?90|0)?5\d{9}/.test(digits) || digits.length >= 10;
 }
 
@@ -120,7 +122,6 @@ function looksLikeAddress(messageNorm, rawMessage = "") {
   if (!raw) return false;
   if (raw.length < 10) return false;
 
-  // Niyet cümlesi, gerçek adres değil
   if (
     hasAny(messageNorm, [
       "adres veriyorum",
@@ -130,6 +131,8 @@ function looksLikeAddress(messageNorm, rawMessage = "") {
       "adres yaziyorum",
       "adres atayim",
       "adres atiyorum",
+      "adresi atiyorum",
+      "adresi atayim",
     ])
   ) {
     return false;
@@ -179,14 +182,19 @@ function looksLikeAddress(messageNorm, rawMessage = "") {
 
   const hasNumber = /\d/.test(raw);
 
-  // Çok güçlü adres sinyali
   if (hit >= 2) return true;
-
-  // Tek güçlü sinyal + sayı
   if (hit >= 1 && hasNumber) return true;
 
-  // site / apt / ap gibi yapı + şehir adı varsa adres say
-  const hasResidenceWord = hasAny(messageNorm, ["site", "sitesi", "apt", "apartman", "apart", "ap", "blok"]);
+  const hasResidenceWord = hasAny(messageNorm, [
+    "site",
+    "sitesi",
+    "apt",
+    "apartman",
+    "apart",
+    "ap",
+    "blok",
+  ]);
+
   const hasCityWord = hasAny(messageNorm, [
     "istanbul",
     "ankara",
@@ -274,7 +282,6 @@ function looksLikeLetterInput(rawMessage, detectedProduct) {
   if (/[?!.:,/]/.test(raw)) return false;
   if (!/^[a-zA-ZçğıöşüÇĞİÖŞÜ\s&]+$/.test(raw)) return false;
 
-  // Ürün seçimi / genel kelimeler harf inputu sayılmasın
   if (
     hasAny(norm, [
       "atac",
@@ -294,8 +301,6 @@ function looksLikeLetterInput(rawMessage, detectedProduct) {
   }
 
   const parts = norm.split(/\s+/).filter(Boolean);
-
-  // 1-3 kısa parça olabilir ama çok genel ürün kelimesi olmayacak
   if (parts.length > 3) return false;
 
   return true;
@@ -306,7 +311,6 @@ function detectIntent(messageNorm, rawMessage = "", detectedProduct = "", stage 
 
   if (!messageNorm && !raw) return "unknown";
 
-  // waiting_back_text aşamasında arka yüz için görsel gelirse bunu back_text say
   if (stage === "waiting_back_text" && looksLikePhotoUrl(raw) && detectedProduct === "lazer") {
     return "back_text";
   }
@@ -529,20 +533,20 @@ function detectIntent(messageNorm, rawMessage = "", detectedProduct = "", stage 
   }
 
   if (
-  detectedProduct === "atac" &&
-  !hasAny(messageNorm, [
-    "atac",
-    "ataç",
-    "harfli",
-    "kolye",
-    "istiyorum",
-    "ilgileniyorum",
-    "almak istiyorum",
-  ]) &&
-  looksLikeLetterInput(raw, detectedProduct)
-) {
-  return "letters";
-}
+    detectedProduct === "atac" &&
+    !hasAny(messageNorm, [
+      "atac",
+      "ataç",
+      "harfli",
+      "kolye",
+      "istiyorum",
+      "ilgileniyorum",
+      "almak istiyorum",
+    ]) &&
+    looksLikeLetterInput(raw, detectedProduct)
+  ) {
+    return "letters";
+  }
 
   return "general";
 }
@@ -573,6 +577,7 @@ function shouldLockProduct(product, intent) {
 function normalizeStage(value) {
   const v = normalizeText(value);
   if (!v) return "";
+
   if (
     [
       "waiting_photo",
@@ -589,6 +594,7 @@ function normalizeStage(value) {
   ) {
     return v.replace(/\s+/g, "_");
   }
+
   return "";
 }
 
@@ -899,12 +905,10 @@ function collectFacts(context, currentState) {
     next.product = detectedProduct;
   }
 
-  // Ödeme erken gelirse not al ama stage'i bozma
   if (detectedIntent === "payment") {
     next.payment_method = parsePaymentMethod(messageNorm, next.payment_method);
   }
 
-  // Adres geldiyse
   if (detectedIntent === "address") {
     if (hasPhoneNumber(message) || next.phone_received === "1") {
       next.phone_received = "1";
@@ -914,7 +918,6 @@ function collectFacts(context, currentState) {
     }
   }
 
-  // Telefon geldiyse
   if (detectedIntent === "phone") {
     next.phone_received = "1";
     if (next.address_status === "address_only") {
@@ -922,20 +925,17 @@ function collectFacts(context, currentState) {
     }
   }
 
-  // Lazer foto
   if (detectedIntent === "photo" && detectedProduct === "lazer") {
     if (looksLikePhotoUrl(message)) {
       next.photo_received = "1";
     }
   }
 
-  // Ataç harf
   if (detectedIntent === "letters" && detectedProduct === "atac") {
     next.letters_received = "1";
     next.order_status = next.order_status || "started";
   }
 
-  // Arka yüz yazı/foto
   if (detectedIntent === "back_text") {
     next.back_text_status = "received";
   }
@@ -1106,12 +1106,14 @@ function buildGuidedReply(context, state) {
       }
       return "Harflerinizi aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
     }
+
     if (nextStage === "waiting_address") {
       if (state.payment_method === "eft_havale") {
         return `Harflerinizi aldım efendim 😊 EFT / Havale bilgilerimiz şu şekildedir:\n${EFT_INFO_TEXT}\n\nAd soyad, telefon ve açık adres bilgilerinizi paylaşabilir misiniz?`;
       }
       return "Harflerinizi aldım efendim 😊 Şimdi ad soyad, telefon ve açık adres bilgilerinizi tek mesajda paylaşabilir misiniz?";
     }
+
     if (nextStage === "order_completed") {
       return "Harika efendim 😊 Sipariş için gerekli bilgiler tamamlandı. Ekibimiz işlemi hazırlayacaktır.";
     }
@@ -1146,95 +1148,74 @@ function buildGuidedReply(context, state) {
       }
       return "Not aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
     }
+
     if (nextStage === "waiting_address") {
       return "Not aldım efendim 😊 Şimdi ad soyad, telefon ve açık adres bilgilerinizi tek mesajda paylaşabilir misiniz?";
+    }
+
+    if (nextStage === "order_completed") {
+      return "Not aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı.";
     }
   }
 
   if (detectedIntent === "back_text_skip" && detectedProduct === "lazer") {
     if (nextStage === "waiting_payment") {
       if (state.payment_method === "eft_havale") {
-        return `Tabi efendim 😊 EFT / Havale ile ilerleyebiliriz.\n\n${EFT_INFO_TEXT}\n\nŞimdi ad soyad, telefon ve açık adres bilgilerinizi paylaşabilir misiniz?`;
+        return `Tamam efendim 😊 Arka yüz boş kalacak. EFT / Havale ile ilerleyebiliriz.\n\n${EFT_INFO_TEXT}\n\nŞimdi ad soyad, telefon ve açık adres bilgilerinizi paylaşabilir misiniz?`;
       }
       if (state.payment_method === "kapida_odeme") {
-        return "Tabi efendim 😊 Kapıda ödeme ile ilerleyebiliriz. Şimdi ad soyad, telefon ve açık adres bilgilerinizi paylaşabilir misiniz?";
+        return "Tamam efendim 😊 Arka yüz boş kalacak. Kapıda ödeme ile ilerleyebiliriz. Şimdi ad soyad, telefon ve açık adres bilgilerinizi paylaşabilir misiniz?";
       }
-      return "Tabi efendim 😊 O halde ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
+      return "Tamam efendim 😊 Arka yüz boş kalacak. Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
+    }
+
+    if (nextStage === "waiting_address") {
+      return "Tamam efendim 😊 Arka yüz boş kalacak. Şimdi ad soyad, telefon ve açık adres bilgilerinizi tek mesajda paylaşabilir misiniz?";
     }
   }
 
-  if (detectedIntent === "price" && detectedProduct === "lazer") {
-    if (
-      hasAny(messageNorm, [
-        "arkasina yazi",
-        "arka yazi",
-        "arkaya yazi",
-        "arkasina fotograf",
-        "arkasina foto",
-        "arka yuze foto",
-        "arka yüze foto",
-        "arka yuze fotograf",
-        "arka yüze fotograf",
-      ])
-    ) {
-      return "Arka yüze yazı veya fotoğraf eklemede ekstra ücret almıyoruz efendim 😊";
+  if (detectedIntent === "price") {
+    if (detectedProduct === "lazer") {
+      if (nextStage === "waiting_photo") return LASER_PRICE_TEXT;
+      return "Resimli lazer kolye fiyatımız EFT / Havale ile 599,90 TL, kapıda ödeme ile 649,90 TL’dir efendim 😊";
+    }
+
+    if (detectedProduct === "atac") {
+      if (nextStage === "waiting_letters") return ATAC_PRICE_TEXT;
+      return "Harfli ataç kolye fiyatımız EFT / Havale ile 499,90 TL, kapıda ödeme ile 549,90 TL’dir efendim 😊";
     }
   }
 
   if (detectedIntent === "payment") {
-    if (state.payment_method === "kapida_odeme") {
-      if (!detectedProduct) {
-        return MAIN_MENU_TEXT;
-      }
+    if (!detectedProduct && nextStage === "waiting_product") {
+      return "Ödeme yöntemimiz EFT / Havale veya kapıda ödeme şeklindedir efendim 😊 Önce hangi model ile ilgilendiğinizi yazabilir misiniz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye";
+    }
 
-      if (detectedProduct === "lazer") {
-        if (!truthy(state.photo_received)) {
-          return "Tabi efendim 😊 Önce fotoğrafı buradan gönderebilirsiniz.";
-        }
-        if (!state.back_text_status) {
-          return "Tabi efendim 😊 Arka yüze yazı veya fotoğraf isteğinizi de netleştirelim. İsterseniz yazıyı yazın, istemezseniz 'yok' yazabilirsiniz.";
-        }
+    if (detectedProduct === "atac" && !truthy(state.letters_received)) {
+      if (state.payment_method === "eft_havale") {
+        return `EFT / Havale ile ilerleyebiliriz 😊 Önce istediğiniz harfleri yazabilirsiniz.\n\n${EFT_INFO_TEXT}`;
       }
-
-      if (detectedProduct === "atac") {
-        if (!truthy(state.letters_received)) {
-          return "Tabi efendim 😊 Önce istediğiniz harfleri yazabilirsiniz.";
-        }
+      if (state.payment_method === "kapida_odeme") {
+        return "Kapıda ödeme ile ilerleyebiliriz efendim 😊 Önce istediğiniz harfleri yazabilirsiniz.";
       }
+      return "Ödeme tercihinizi not aldım efendim 😊 Önce istediğiniz harfleri yazabilirsiniz.";
+    }
 
-      if (state.address_status !== "received") {
-        return "Tabi efendim 😊 Siparişinizi tamamlamak için ad soyad, telefon ve açık adres bilgilerinizi tek mesajda paylaşabilir misiniz?";
+    if (state.address_status !== "received") {
+      if (state.payment_method === "eft_havale") {
+        return `EFT / Havale için ödeme bilgilerimiz şu şekildedir:\n${EFT_INFO_TEXT}\n\nAd soyad, telefon ve açık adres bilgilerinizi de paylaşabilirsiniz 😊`;
       }
-
-      return "Kapıda ödeme tercihinizi not aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı.";
+      if (state.payment_method === "kapida_odeme") {
+        return "Kapıda ödeme ile ilerleyebiliriz efendim 😊 Ad soyad, telefon ve açık adres bilgilerinizi de paylaşabilirsiniz.";
+      }
+      return "Ödeme tercihinizi iletebilirsiniz efendim 😊 EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
     }
 
     if (state.payment_method === "eft_havale") {
-      if (!detectedProduct) {
-        return MAIN_MENU_TEXT;
-      }
-
-      if (detectedProduct === "lazer") {
-        if (!truthy(state.photo_received)) {
-          return `EFT / Havale ile ilerleyebiliriz 😊 Önce fotoğrafı buradan gönderebilirsiniz.\n\n${EFT_INFO_TEXT}`;
-        }
-        if (!state.back_text_status) {
-          return `EFT / Havale ile ilerleyebiliriz 😊 Arka yüze yazı veya fotoğraf isteğinizi de netleştirelim. İsterseniz yazıyı yazın, istemezseniz 'yok' yazabilirsiniz.\n\n${EFT_INFO_TEXT}`;
-        }
-      }
-
-      if (detectedProduct === "atac") {
-        if (!truthy(state.letters_received)) {
-          return `EFT / Havale ile ilerleyebiliriz 😊 Önce istediğiniz harfleri yazabilirsiniz.\n\n${EFT_INFO_TEXT}`;
-        }
-      }
-
-      if (state.address_status !== "received") {
-        return `EFT / Havale için ödeme bilgilerimiz şu şekildedir:\n${EFT_INFO_TEXT}\n\nAd soyad, telefon ve açık adres bilgilerinizi de paylaşabilirsiniz 😊`;
-      }
-
       return `EFT / Havale bilgilerimiz şu şekildedir:\n${EFT_INFO_TEXT}\n\nSipariş için gerekli bilgiler tamamlandı efendim 😊`;
     }
+
+    return "Kapıda ödeme ile ilerleyebiliriz efendim 😊 Sipariş için gerekli bilgiler tamamlandı.";
   }
 
   if (detectedIntent === "address") {
@@ -1271,28 +1252,30 @@ function buildGuidedReply(context, state) {
   }
 
   if (detectedIntent === "phone") {
-    if (state.address_status === "address_only") {
-      return "Telefon numaranızı da aldım efendim 😊 Şimdi açık adresinizi yazabilirsiniz. (İl, ilçe, mahalle, sokak)";
-    }
-
-    if (state.address_status === "received") {
-      if (!state.payment_method) {
-        return "Telefon numaranızı da aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
-      }
-
+    if (nextStage === "order_completed") {
       if (state.payment_method === "eft_havale") {
-        return `Telefon numaranızı da aldım efendim 😊 Siparişiniz EFT / Havale olarak hazır. Şimdi açık adresinizi yazabilirsiniz veya eksik bilgi varsa iletebilirsiniz.\n\n${EFT_INFO_TEXT}`;
+        return `Telefon numaranızı da aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı.\n\n${EFT_INFO_TEXT}`;
       }
-
-      return "Telefon numaranızı da aldım efendim 😊 Şimdi açık adresinizi yazabilirsiniz. (İl, ilçe, mahalle, sokak)";
+      return "Telefon numaranızı da aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı. Ekibimiz işlemi hazırlayacaktır.";
     }
+
+    if (!state.payment_method) {
+      return "Telefon numaranızı da aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
+    }
+
+    if (state.payment_method === "eft_havale") {
+      return `Telefon numaranızı da aldım efendim 😊 Şimdi açık adresinizi yazabilirsiniz. (İl, ilçe, mahalle, sokak)\n\n${EFT_INFO_TEXT}`;
+    }
+
+    return "Telefon numaranızı da aldım efendim 😊 Şimdi açık adresinizi yazabilirsiniz. (İl, ilçe, mahalle, sokak)";
   }
 
   if (detectedIntent === "chain_question" && detectedProduct === "lazer") {
-    if (hasAny(messageNorm, ["zincir modeli", "zincir degisiyor mu"])) {
+    if (hasAny(messageNorm, ["zincir modeli", "zincir degisiyor mu", "zincir değişiyor mu"])) {
       return "Zincir modeliyle ilgili detay için ekibimize görsel üzerinden net bilgi verelim 😊";
     }
-    if (hasAny(messageNorm, ["zincir kisalir mi", "zincir boyu", "zincir uzunlugu"])) {
+
+    if (hasAny(messageNorm, ["zincir kisalir mi", "zincir kısalır mı", "zincir boyu", "zincir uzunlugu"])) {
       if (nextStage === "waiting_photo") {
         return "Standart zincir 60 cm’dir 😊 Siparişe devam etmek için fotoğrafı buradan gönderebilirsiniz.";
       }
@@ -1304,12 +1287,15 @@ function buildGuidedReply(context, state) {
     if (!detectedProduct && nextStage === "waiting_product") {
       return "Eminönü İstanbul’dayız 😊\nHangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye";
     }
+
     if (nextStage === "waiting_photo" && detectedProduct === "lazer") {
       return "Eminönü İstanbul’dayız 😊 Siparişe devam etmek için fotoğrafı buradan gönderebilirsiniz.";
     }
+
     if (nextStage === "waiting_letters" && detectedProduct === "atac") {
       return "Eminönü İstanbul’dayız 😊 Siparişe devam etmek için istediğiniz harfleri yazabilirsiniz.";
     }
+
     return "Eminönü İstanbul’dayız 😊";
   }
 
@@ -1321,7 +1307,8 @@ function buildStateUpdate(context, replyText) {
   const derived = deriveInternalState(context);
   const nextStage = getNextStage(derived);
   const menuShownNow =
-    cleanReply(replyText) === MAIN_MENU_TEXT || cleanReply(replyText).includes("Hangi model ile ilgileniyorsunuz?");
+    cleanReply(replyText) === MAIN_MENU_TEXT ||
+    cleanReply(replyText).includes("Hangi model ile ilgileniyorsunuz?");
 
   let support_mode = derived.support_mode || "";
   if (!replyText || replyText === FALLBACK_TEXT) {
