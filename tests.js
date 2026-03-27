@@ -867,7 +867,7 @@ async function runTests() {
   // GRUP 7: MODEL SAFETY TESTS
   // Amaç: modele düşmemesi gereken deterministic yolları kilitlemek
   // ════════════════════════════════════════════════════════════════════════
-
+},
   {
     id: "MS01",
     name: "[MODEL] Fixed info: konum sorusu deterministic cevaplanmalı",
