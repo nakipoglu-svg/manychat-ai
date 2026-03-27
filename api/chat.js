@@ -56,7 +56,7 @@ const TURKEY_CITIES = [
 const DISTRICT_KEYWORDS = [
   "kadikoy", "kadıköy", "beykoz", "uskudar", "üsküdar", "besiktas", "beşiktaş",
   "sisli", "şişli", "fatih", "moda", "kavacik", "kavacık", "eminonu", "eminönü",
-  "nusaybin", "kavacık", "beyazit", "beyazıt"
+  "nusaybin", "beyazit", "beyazıt", "kizilay", "kızılay", "cankaya", "çankaya"
 ];
 
 const KEYWORDS = {
@@ -69,6 +69,8 @@ const KEYWORDS = {
       "lazer",
       "resim kolye",
       "foto kolye",
+      "fotografli kolye",
+      "fotoğraflı kolye"
     ],
     atac: [
       "atac",
@@ -97,6 +99,8 @@ const KEYWORDS = {
       "kargo dahil mi",
       "kargo ücretli mi",
       "kargo ucretli mi",
+      "kargo ucreti var mi",
+      "kargo ücreti var mı",
     ],
     shipping: [
       "kargo",
@@ -136,13 +140,15 @@ const KEYWORDS = {
       "kapıda ödeme olsun",
       "kapida olsun",
       "kapıda olsun",
+      "kapida",
+      "kapıda",
       "eft",
       "havale",
       "odeme",
       "ödeme",
     ],
     price: ["fiyat", "ne kadar", "ucret", "ücret", "kac tl", "kaç tl"],
-    chain: ["zincir modeli", "zincir degisiyor mu", "zincir değişiyor mu", "zincir kisalir mi", "zincir kısalır mı", "zincir boyu", "zincir uzunlugu"],
+    chain: ["zincir modeli", "zincir degisiyor mu", "zincir değişiyor mu", "zincir kisalir mi", "zincir kısalır mı", "zincir boyu", "zincir uzunlugu", "zincir uzunluğu"],
     orderStart: ["siparis vermek istiyorum", "sipariş vermek istiyorum", "siparis verecegim", "sipariş vereceğim", "almak istiyorum", "hazirlayalim", "hazırlayalım", "istiyorum", "ilgileniyorum"],
     photoQuestion: [
       "bu foto olur mu",
@@ -159,6 +165,10 @@ const KEYWORDS = {
       "foto atsam olur mu",
       "fotograf atsam olur mu",
       "gondersem olur mu",
+      "fotoğraf atsam olur mu",
+      "fotoğrafı nasıl göndereceğiz",
+      "resim nasıl gönderiyorum",
+      "fotografi atsam olur mu",
     ],
     backPhotoPrice: [
       "arkasina fotograf ne kadar",
@@ -169,6 +179,10 @@ const KEYWORDS = {
       "arka tarafa foto koymak istesek ne kadar olacak",
       "ek ucret",
       "ek ücret",
+      "arkasina foto koyarsam fiyat ne olur",
+      "arkasına foto koyarsam fiyat ne olur",
+      "arkasina fotograf koyarsam fiyat ne olur",
+      "arkasına fotoğraf koyarsam fiyat ne olur",
     ],
     backTextInfo: [
       "arka tarafina da mi yazabiliyoruz",
@@ -202,6 +216,8 @@ const KEYWORDS = {
       "arka yüzüne foto olur mu",
       "arka tarafina fotograf koymak istesek",
       "arka tarafina foto koymak istesek",
+      "kolyenin iki yuzune de resim yapabilir misiniz",
+      "kolyenin iki yüzüne de resim yapabilir misiniz",
     ],
     backTextSkip: [
       "yok",
@@ -232,6 +248,11 @@ const KEYWORDS = {
     ],
   },
 };
+
+const LETTER_STOPWORDS = [
+  "devam", "tamam", "evet", "olur", "merhaba", "selam", "slm", "fiyat", "ucret", "ücret",
+  "kapida", "kapıda", "eft", "havale", "odeme", "ödeme", "hayir", "hayır", "gonder", "gönder"
+];
 
 function readKnowledgeFile(filename) {
   if (fileCache[filename]) return fileCache[filename];
@@ -294,7 +315,7 @@ function normalizeText(text) {
     .replace(/â/g, "a")
     .replace(/î/g, "i")
     .replace(/û/g, "u")
-    .replace(/[^\w\s:/?.=&+-]/g, " ")
+    .replace(/[^\w\s:/?.=&+\-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -328,8 +349,10 @@ function looksLikePhotoUrl(rawMessage = "") {
 }
 
 function extractPhone(rawMessage = "") {
-  const digits = String(rawMessage || "").replace(/\D/g, "");
-  if (digits.length < 10) return "";
+  const raw = String(rawMessage || "");
+  const match = raw.match(/(?:\+?90[\s\-()]*)?(0?5\d[\s\-()]?\d{3}[\s\-()]?\d{2}[\s\-()]?\d{2})/);
+  if (!match) return "";
+  const digits = match[0].replace(/\D/g, "");
   if (/^(90)?5\d{9}$/.test(digits)) return digits.slice(-10);
   if (/^0?5\d{9}$/.test(digits)) return digits.slice(-10);
   return "";
@@ -434,6 +457,23 @@ function normalizeStage(value) {
   return allowed.includes(v.replace(/\s+/g, "_")) ? v.replace(/\s+/g, "_") : "";
 }
 
+function isExplicitProductSwitch(messageNorm) {
+  return hasAny(messageNorm, [
+    "yok ben",
+    "onun yerine",
+    "degistirelim",
+    "degistirmek istiyorum",
+    "değiştirelim",
+    "değiştirmek istiyorum",
+    "ben atac alayim",
+    "ben ataç alayım",
+    "ben resimli istiyorum",
+    "ben lazer istiyorum",
+    "ataç alayım",
+    "atac alayim",
+  ]);
+}
+
 function detectProduct(messageNorm, existingProduct = "") {
   const existing = normalizeProduct(existingProduct);
   if (existing) return existing;
@@ -472,6 +512,7 @@ function extractEntities(baseContext) {
       !/[?!.:,/]/.test(raw) &&
       /^[a-zA-ZçğıöşüÇĞİÖŞÜ\s&]+$/.test(raw) &&
       parts.length <= 3 &&
+      !LETTER_STOPWORDS.includes(norm) &&
       !hasAny(norm, [
         "atac", "ataç", "harfli", "kolye", "istiyorum", "ilgileniyorum",
         "almak istiyorum", "kac tane", "kaç tane", "hangi harf", "hangi harfler",
@@ -554,6 +595,30 @@ function detectIntent(baseContext, extracted) {
   }
 
   if (hasAny(messageNorm, KEYWORDS.intents.backTextDirect)) return "back_text";
+
+  if (
+    conversationStage === "waiting_back_text" &&
+    messageNorm &&
+    !looksLikePhotoUrl(message) &&
+    !hasAny(messageNorm, [
+      ...KEYWORDS.intents.smalltalk,
+      ...KEYWORDS.intents.cancel,
+      ...KEYWORDS.intents.payment,
+      ...KEYWORDS.intents.shipping,
+      ...KEYWORDS.intents.shippingPrice,
+      ...KEYWORDS.intents.trust,
+      ...KEYWORDS.intents.location,
+      ...KEYWORDS.intents.price,
+      ...KEYWORDS.intents.chain,
+      ...KEYWORDS.intents.photoQuestion,
+      ...KEYWORDS.intents.backTextInfo,
+      ...KEYWORDS.intents.backPhotoInfo,
+      ...KEYWORDS.intents.backPhotoPrice,
+    ])
+  ) {
+    return "back_text";
+  }
+
   if (hasAny(messageNorm, KEYWORDS.intents.smalltalk)) return "smalltalk";
 
   return "general";
@@ -583,7 +648,21 @@ function buildContext(body) {
   const previousProduct = normalizeProduct(existingProduct) || "";
   const messageNorm = normalizeText(message);
   const explicitProduct = detectProduct(messageNorm, "");
-  const detectedProduct = explicitProduct || previousProduct || "";
+  let detectedProduct = explicitProduct || previousProduct || "";
+
+  if (previousProduct && explicitProduct && previousProduct !== explicitProduct) {
+    const isInfoQuestionAboutOtherProduct =
+      hasAny(messageNorm, KEYWORDS.intents.price) ||
+      hasAny(messageNorm, KEYWORDS.intents.shippingPrice) ||
+      hasAny(messageNorm, KEYWORDS.intents.shipping) ||
+      hasAny(messageNorm, KEYWORDS.intents.trust);
+
+    if (!isExplicitProductSwitch(messageNorm) && isInfoQuestionAboutOtherProduct) {
+      detectedProduct = previousProduct;
+    } else {
+      detectedProduct = explicitProduct;
+    }
+  }
 
   const baseContext = {
     raw: body,
