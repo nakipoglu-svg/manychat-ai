@@ -1627,6 +1627,13 @@ function buildDeterministicReply(context, state) {
   const { detectedProduct } = context;
   const nextStage = getNextStage(state);
 
+  if (context.detectedIntent === "price" && !state.product) {
+    return makeReply(
+      "Hemen yardımcı olayım efendim 😊\nHangi ürün için fiyat istersiniz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye",
+      REPLY_CLASS.MENU
+    );
+  }
+
   if (shouldShowMainMenu(context, state)) {
     return makeReply(MAIN_MENU_TEXT, REPLY_CLASS.MENU);
   }
