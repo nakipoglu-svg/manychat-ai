@@ -1006,8 +1006,7 @@ function getActiveProduct(context, state) {
 }
 
 function handlePhotoQuestionIntent(context, state) {
-  const activeProduct = getActiveProduct(context, state);
-  const raw = normalizeText(context.message || "");
+  const raw = normalizeText(context.rawMessage || context.message || "");
 
   const isPhotoQuestion =
     context.detectedIntent === "photo_question" ||
@@ -1036,7 +1035,14 @@ function handlePhotoQuestionIntent(context, state) {
 
   if (!isPhotoQuestion) return emptyReply();
 
-  if (activeProduct === "atac") {
+  const stateProduct =
+    state?.product ||
+    context?.fields?.ilgilenilen_urun ||
+    context?.fields?.user_product ||
+    context?.previousProduct ||
+    "";
+
+  if (stateProduct === "atac") {
     return makeReply(
       "Ataç kolyede fotoğraf gerekmiyor efendim 😊 İsterseniz harfleri yazabilirsiniz.",
       REPLY_CLASS.FIXED_INFO,
@@ -1044,7 +1050,23 @@ function handlePhotoQuestionIntent(context, state) {
     );
   }
 
-  if (activeProduct === "lazer") {
+  if (stateProduct === "lazer") {
+    return makeReply(
+      "Buradan direkt gönderebilirsiniz efendim 😊 Siz gönderin, biz hemen kontrol edelim.",
+      REPLY_CLASS.FIXED_INFO,
+      SUPPORT_MODE_REASON.NONE
+    );
+  }
+
+  if (context.detectedProduct === "atac") {
+    return makeReply(
+      "Ataç kolyede fotoğraf gerekmiyor efendim 😊 İsterseniz harfleri yazabilirsiniz.",
+      REPLY_CLASS.FIXED_INFO,
+      SUPPORT_MODE_REASON.NONE
+    );
+  }
+
+  if (context.detectedProduct === "lazer") {
     return makeReply(
       "Buradan direkt gönderebilirsiniz efendim 😊 Siz gönderin, biz hemen kontrol edelim.",
       REPLY_CLASS.FIXED_INFO,
@@ -1057,7 +1079,7 @@ function handlePhotoQuestionIntent(context, state) {
 
 function handleBackSideInfoIntent(context, state) {
   const activeProduct = getActiveProduct(context, state);
-  const raw = normalizeText(context.message || "");
+  const raw = normalizeText(context.rawMessage || context.message || "");
 
   const isBackTextQuestion =
     context.detectedIntent === "back_text_info" ||
