@@ -22,7 +22,10 @@ jobs:
           GOOGLE_LOG_SECRET: ${{ secrets.GOOGLE_LOG_SECRET }}
         run: node scripts/buildRegressionCandidates.js
 
-      - name: Replay test dosyasını oluştur
+      - name: Candidate üret
+        run: node scripts/buildRegressionCandidates.js
+
+      - name: Replay test oluştur
         run: node scripts/buildReplayTests.js
 
       - name: Oluşan dosyayı artifact olarak yükle
