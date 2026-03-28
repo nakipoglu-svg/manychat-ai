@@ -713,18 +713,26 @@ function buildContext(body) {
   let detectedProduct = explicitProduct || previousProduct || "";
 
   if (previousProduct && explicitProduct && previousProduct !== explicitProduct) {
-    const isInfoQuestionAboutOtherProduct =
+  const shouldKeepPreviousProduct =
+    !isExplicitProductSwitch(messageNorm) &&
+    (
       hasAny(messageNorm, KEYWORDS.intents.price) ||
       hasAny(messageNorm, KEYWORDS.intents.shippingPrice) ||
       hasAny(messageNorm, KEYWORDS.intents.shipping) ||
-      hasAny(messageNorm, KEYWORDS.intents.trust);
+      hasAny(messageNorm, KEYWORDS.intents.trust) ||
+      hasAny(messageNorm, KEYWORDS.intents.photoQuestion) ||
+      hasAny(messageNorm, KEYWORDS.intents.backTextInfo) ||
+      hasAny(messageNorm, KEYWORDS.intents.backPhotoInfo) ||
+      hasAny(messageNorm, KEYWORDS.intents.backPhotoPrice) ||
+      hasAny(messageNorm, KEYWORDS.intents.chain)
+    );
 
-    if (!isExplicitProductSwitch(messageNorm) && isInfoQuestionAboutOtherProduct) {
-      detectedProduct = previousProduct;
-    } else {
-      detectedProduct = explicitProduct;
-    }
+  if (shouldKeepPreviousProduct) {
+    detectedProduct = previousProduct;
+  } else {
+    detectedProduct = explicitProduct;
   }
+}
 
   const baseContext = {
     raw: body,
@@ -1006,7 +1014,7 @@ function getActiveProduct(context, state) {
 }
 
 function handlePhotoQuestionIntent(context, state) {
-  const raw = normalizeText(context.rawMessage || context.message || "");
+  const raw = normalizeText(context.message || "");
 
   const isPhotoQuestion =
     context.detectedIntent === "photo_question" ||
@@ -1079,7 +1087,7 @@ function handlePhotoQuestionIntent(context, state) {
 
 function handleBackSideInfoIntent(context, state) {
   const activeProduct = getActiveProduct(context, state);
-  const raw = normalizeText(context.rawMessage || context.message || "");
+  const raw = normalizeText(context.message || "");
 
   const isBackTextQuestion =
     context.detectedIntent === "back_text_info" ||
