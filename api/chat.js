@@ -1646,6 +1646,8 @@ console.log("📊 TOKEN RAPORU");
 console.log("Prompt:", usage.prompt_tokens || 0);
 console.log("Completion:", usage.completion_tokens || 0);
 console.log("Total:", usage.total_tokens || 0);
+console.log("Cache Hit:", usage.prompt_cache_hit_tokens || 0);
+console.log("Cache Miss:", usage.prompt_cache_miss_tokens || 0);
 
 return data?.choices?.[0]?.message?.content || "";
   } finally {
