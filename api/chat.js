@@ -994,9 +994,11 @@ function handleChainIntent(context) {
 }
 function getActiveProduct(context, state) {
   return (
+    state?.product ||
+    context?.previousProduct ||
+    context?.fields?.ilgilenilen_urun ||
+    context?.fields?.user_product ||
     context?.detectedProduct ||
-    state?.ilgilenilen_urun ||
-    state?.user_product ||
     ""
   );
 }
@@ -1375,14 +1377,14 @@ function buildDeterministicReply(context, state) {
     return makeReply(MAIN_MENU_TEXT, REPLY_CLASS.MENU);
   }
 
-  const fixedInfoReply = firstReply(
-    handleLocationIntent(context),
-    handleShippingIntent(context),
-    handleTrustIntent(context),
-    handlePhotoQuestionIntent(context, state),
-    handleBackSideInfoIntent(context, state),
-    handleChainIntent(context)
-  );
+const fixedInfoReply = firstReply(
+  handleLocationIntent(context),
+  handleShippingIntent(context),
+  handleTrustIntent(context),
+  handleBackSideInfoIntent(context, state),
+  handlePhotoQuestionIntent(context, state),
+  handleChainIntent(context)
+);
 
   if (fixedInfoReply.text) {
     return fixedInfoReply;
