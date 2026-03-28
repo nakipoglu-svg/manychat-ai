@@ -512,6 +512,24 @@ function normalizeProduct(value) {
   return "";
 }
 
+function getEntryProduct(body = {}) {
+  const candidates = [
+    body.entry_product,
+    body.ad_product,
+    body.flow_product,
+    body.trigger_product,
+    body.product_context,
+    body.source_product,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeProduct(unwrapManychatValue(candidate));
+    if (normalized) return normalized;
+  }
+
+  return "";
+}
+
 function normalizePayment(value) {
   const v = normalizeText(value);
   if (!v) return "";
@@ -774,11 +792,21 @@ function buildContext(body) {
   const letters_received = unwrapManychatValue(body.letters_received);
   const phone_received = unwrapManychatValue(body.phone_received);
 
-  const existingProduct = ilgilenilen_urun || user_product || "";
+ const existingProduct = ilgilenilen_urun || user_product || "";
   const previousProduct = normalizeProduct(existingProduct) || "";
+  const entryProduct = getEntryProduct(body);
   const messageNorm = normalizeText(message);
   const explicitProduct = detectProduct(messageNorm, "");
-  let detectedProduct = explicitProduct || previousProduct || "";
+
+  let detectedProduct = previousProduct || entryProduct || explicitProduct || "";
+
+  if (!previousProduct && entryProduct) {
+    detectedProduct = entryProduct;
+  }
+
+  if (!previousProduct && !entryProduct && explicitProduct) {
+    detectedProduct = explicitProduct;
+  }
 
   if (previousProduct && explicitProduct && previousProduct !== explicitProduct) {
     const shouldKeepPreviousProduct =
@@ -792,10 +820,16 @@ function buildContext(body) {
         hasAny(messageNorm, KEYWORDS.intents.backTextInfo) ||
         hasAny(messageNorm, KEYWORDS.intents.backPhotoInfo) ||
         hasAny(messageNorm, KEYWORDS.intents.backPhotoPrice) ||
-        hasAny(messageNorm, KEYWORDS.intents.chain)
+        hasAny(messageNorm, KEYWORDS.intents.chain) ||
+        hasAny(messageNorm, KEYWORDS.intents.payment)
       );
 
     detectedProduct = shouldKeepPreviousProduct ? previousProduct : explicitProduct;
+  }
+
+  if (!previousProduct && entryProduct && explicitProduct && entryProduct !== explicitProduct) {
+    const explicitSwitch = isExplicitProductSwitch(messageNorm);
+    detectedProduct = explicitSwitch ? explicitProduct : entryProduct;
   }
 
   const baseContext = {
@@ -807,6 +841,7 @@ function buildContext(body) {
     fields: {
       ilgilenilen_urun,
       user_product,
+      entry_product: entryProduct,
       conversation_stage,
       photo_received,
       payment_method,
@@ -985,6 +1020,7 @@ function getActiveProduct(context, state) {
     state?.product ||
     context?.fields?.ilgilenilen_urun ||
     context?.fields?.user_product ||
+    context?.fields?.entry_product ||
     context?.previousProduct ||
     context?.detectedProduct ||
     ""
