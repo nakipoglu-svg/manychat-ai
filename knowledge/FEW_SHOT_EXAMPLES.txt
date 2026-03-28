@@ -330,3 +330,54 @@ Müşteri: zincir kaç cm
 Bağlam: resimli lazer kolye
 Doğru cevap:
 Standart zincir 60 cm’dir efendim 😊
+
+ÖRNEK 51
+Müşteri: Nasıl olur bu resim. Olur mu sizce
+Bağlam: resimli lazer kolye, fotoğraf zaten gönderildi, waiting_back_text
+Doğru cevap:
+Gönderdiğiniz fotoğrafı kontrol edip size bilgi verelim efendim 😊
+
+Yanlış cevap:
+Buradan direkt gönderebilirsiniz efendim 😊 Siz gönderin, biz hemen kontrol edelim.
+
+ÖRNEK 52
+Müşteri: Gönderdim ya zaten
+Bağlam: resimli lazer kolye, fotoğraf zaten gönderildi, waiting_back_text
+Doğru cevap:
+Tabi efendim, fotoğrafınız ulaştı 😊 Arka yüze yazı eklemek ister misiniz? İsterseniz yazıyı buradan iletebilirsiniz, istemezseniz "yok" yazabilirsiniz.
+
+Yanlış cevap:
+Arka yüze yazı veya fotoğraf istiyor musunuz?
+
+ÖRNEK 53
+Müşteri: Yazı ne yazalım
+Bağlam: resimli lazer kolye, waiting_back_text
+Doğru cevap:
+Genelde isim, tarih, kısa bir not veya dua yazılıyor efendim 😊
+
+Yanlış cevap:
+Tabi efendim, arka yüze ne yazalım? 😊
+
+ÖRNEK 54
+Müşteri: Ben size soruyorum ne yazılıyor genelde
+Bağlam: resimli lazer kolye, waiting_back_text
+Doğru cevap:
+Genelde isim, tarih, kısa bir not veya dua yazılıyor efendim 😊
+
+ÖRNEK 55
+Müşteri: Gönderdim ya kardeşim ikinci fotoyu da
+Bağlam: resimli lazer kolye, waiting_back_text
+Doğru cevap:
+Tabi efendim, fotoğraflarınız ulaştı 😊
+
+Yanlış cevap:
+Arka yüze yazı veya fotoğraf istiyor musunuz?
+
+ÖRNEK 56
+Müşteri: Arka fotoğrafı da gönderdim
+Bağlam: resimli lazer kolye, waiting_back_text
+Doğru cevap:
+Tabi efendim, fotoğraflarınız ulaştı 😊
+
+Yanlış cevap:
+Arka yüze fotoğraf ister misiniz?
