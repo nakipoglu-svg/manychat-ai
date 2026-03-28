@@ -1160,6 +1160,14 @@ function handleBackSideInfoIntent(context, state) {
       "arkaya yazı",
       "yazi olur mu",
       "yazı olur mu",
+      "arka yuze yazi",
+      "arka yüze yazı",
+      "arkasina bir sey yaziliyor mu",
+      "arkasına bir şey yazılıyor mu",
+      "arka tarafa bir sey yaziliyor mu",
+      "arka tarafa bir şey yazılıyor mu",
+      "arka yuzune bir sey yaziliyor mu",
+      "arka yüzüne bir şey yazılıyor mu",
     ]);
 
   const isBackPhotoQuestion =
@@ -1168,18 +1176,70 @@ function handleBackSideInfoIntent(context, state) {
       "arkasina foto",
       "arkasına foto",
       "arka tarafa foto",
+      "arka tarafa fotograf",
+      "arka tarafa fotoğraf",
       "arka yuzune foto",
       "arka yüzüne foto",
-      "arkaya foto",
-      "iki yuzune de foto",
-      "iki yüzüne de foto",
-      "iki tarafina foto",
-      "çift taraf foto",
-      "cift taraf foto",
-      "arka yuz ozellik",
-      "arka yüz özellik",
       "arka yuzune fotograf",
       "arka yüzüne fotoğraf",
+      "arkaya foto",
+      "arkaya fotograf",
+      "arkaya fotoğraf",
+      "iki yuzune de foto",
+      "iki yüzüne de foto",
+      "iki yuzune de fotograf",
+      "iki yüzüne de fotoğraf",
+      "iki tarafina foto",
+      "iki tarafina fotograf",
+      "iki tarafına foto",
+      "iki tarafına fotoğraf",
+      "cift taraf foto",
+      "çift taraf foto",
+      "cift taraf fotograf",
+      "çift taraf fotoğraf",
+      "arkali onlu foto",
+      "arkalı önlü foto",
+      "arkali onlu fotograf",
+      "arkalı önlü fotoğraf",
+      "arka tarafa da foto",
+      "arka tarafa da fotograf",
+      "arkaya da foto",
+      "arkaya da fotograf",
+      "arkaya da fotoğraf",
+      "arka yuze de foto",
+      "arka yüze de foto",
+      "arka yuzune de fotograf",
+      "arka yüzüne de fotoğraf",
+      "arka tarafa resim",
+      "arka yuzune resim",
+      "arka yüzüne resim",
+    ]);
+
+  const isBackSideFeatureQuestion =
+    hasAny(raw, [
+      "arka yuz ozellik",
+      "arka yüz özellik",
+      "arka yuzunde ne oluyor",
+      "arka yüzünde ne oluyor",
+      "arka tarafta ne oluyor",
+      "arka tarafinda ne oluyor",
+      "arka tarafında ne oluyor",
+      "arka yuze ne yapiliyor",
+      "arka yüze ne yapılıyor",
+      "arka kisma ne yapiliyor",
+      "arka kısma ne yapılıyor",
+      "arka tarafa ne yapiliyor",
+      "arka tarafa ne yapılıyor",
+      "arka tarafi nasil oluyor",
+      "arka tarafı nasıl oluyor",
+      "arka yuz nasil oluyor",
+      "arka yüz nasıl oluyor",
+      "arka tarafi bos mu",
+      "arka tarafı boş mu",
+      "arkasi bos mu",
+      "arkası boş mu",
+      "arka kisim",
+      "arka kısım",
     ]);
 
   const isBackPhotoPriceQuestion =
@@ -1188,15 +1248,25 @@ function handleBackSideInfoIntent(context, state) {
       "arka foto olursa fiyat",
       "arkasina foto koyarsam fiyat",
       "arkasına foto koyarsam fiyat",
+      "arkasina fotograf koyarsam fiyat",
+      "arkasına fotoğraf koyarsam fiyat",
       "arka yuz fiyat",
       "arka yüz fiyat",
       "ek ucret",
       "ek ücret",
       "fiyat farki",
       "fiyat farkı",
+      "arka tarafa foto fiyat",
+      "arka tarafa fotoğraf fiyat",
+      "arkaya foto fiyat",
     ]);
 
-  if (!isBackTextQuestion && !isBackPhotoQuestion && !isBackPhotoPriceQuestion) {
+  if (
+    !isBackTextQuestion &&
+    !isBackPhotoQuestion &&
+    !isBackSideFeatureQuestion &&
+    !isBackPhotoPriceQuestion
+  ) {
     return emptyReply();
   }
 
@@ -1208,7 +1278,9 @@ function handleBackSideInfoIntent(context, state) {
     );
   }
 
-  if (activeProduct !== "lazer") return emptyReply();
+  if (activeProduct !== "lazer") {
+    return emptyReply();
+  }
 
   if (isBackPhotoPriceQuestion) {
     return makeReply(
@@ -1218,17 +1290,17 @@ function handleBackSideInfoIntent(context, state) {
     );
   }
 
-  if (isBackTextQuestion) {
+  if (isBackPhotoQuestion) {
     return makeReply(
-      "Evet efendim 😊 Resimli lazer kolyede arka yüzüne yazı ekleyebiliyoruz.",
+      "Evet efendim 😊 Ön yüze bir fotoğraf, arka yüze de ikinci bir fotoğraf ekleyebiliyoruz. Ek ücret de olmuyor.",
       REPLY_CLASS.FIXED_INFO,
       SUPPORT_MODE_REASON.NONE
     );
   }
 
-  if (isBackPhotoQuestion) {
+  if (isBackTextQuestion || isBackSideFeatureQuestion) {
     return makeReply(
-      "Evet efendim 😊 Ön yüze bir fotoğraf, arka yüze de ikinci bir fotoğraf ekleyebiliyoruz. Ek ücret de olmuyor.",
+      "Evet efendim 😊 Resimli lazer kolyede arka yüzüne yazı veya istenirse ikinci bir fotoğraf eklenebiliyor.",
       REPLY_CLASS.FIXED_INFO,
       SUPPORT_MODE_REASON.NONE
     );
