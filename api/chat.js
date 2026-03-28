@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { logConversationRow } from "../lib/sheetsLogger.js";
 
 const fileCache = {};
 
@@ -1828,10 +1829,18 @@ export async function processChat(body = {}, options = {}) {
 
   const stateUpdate = buildStateUpdate(context, replyPayload, state);
 
-  return {
+const finalResult = {
     success: true,
     ...stateUpdate,
   };
+
+  await logConversationRow({
+    body,
+    result: finalResult,
+    options,
+  });
+
+  return finalResult;
 }
 
 export default async function handler(req, res) {
