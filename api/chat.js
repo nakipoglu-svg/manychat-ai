@@ -1002,8 +1002,34 @@ function getActiveProduct(context, state) {
 }
 function handlePhotoQuestionIntent(context, state) {
   const activeProduct = getActiveProduct(context, state);
+  const raw = normalizeText(context.rawMessage || context.message || "");
 
-  if (context.detectedIntent !== "photo_question") {
+  const isPhotoQuestion =
+    context.detectedIntent === "photo_question" ||
+    hasAny(raw, [
+      "fotograf",
+      "fotoğraf",
+      "resim",
+      "fotograf atsam",
+      "fotoğraf atsam",
+      "resim atsam",
+      "fotografi nasil",
+      "fotoğrafı nasıl",
+      "foto nasil",
+      "foto nasıl",
+      "resim nasil",
+      "resim nasıl",
+      "nasil gonderecegim",
+      "nasıl göndereceğim",
+      "nasil gonderiyorum",
+      "nasıl gönderiyorum",
+      "buradan mi atayim",
+      "buradan mı atayım",
+      "buradan gondereyim",
+      "buradan göndereyim",
+    ]);
+
+  if (!isPhotoQuestion) {
     return emptyReply();
   }
 
@@ -1028,15 +1054,55 @@ function handlePhotoQuestionIntent(context, state) {
 
 function handleBackSideInfoIntent(context, state) {
   const activeProduct = getActiveProduct(context, state);
+  const raw = normalizeText(context.rawMessage || context.message || "");
 
-  const backSideIntents = [
-    "back_text_question",
-    "back_photo_question",
-    "back_photo_price",
-    "double_side_photo",
-  ];
+  const isBackTextQuestion =
+    context.detectedIntent === "back_text_question" ||
+    hasAny(raw, [
+      "arkasina yazi",
+      "arkasına yazı",
+      "arka tarafa yazi",
+      "arka tarafa yazı",
+      "arka yuzune yazi",
+      "arka yüzüne yazı",
+      "arkaya yazi",
+      "arkaya yazı",
+      "yazi olur mu",
+      "yazı olur mu",
+    ]);
 
-  if (!backSideIntents.includes(context.detectedIntent)) {
+  const isBackPhotoQuestion =
+    context.detectedIntent === "back_photo_question" ||
+    context.detectedIntent === "double_side_photo" ||
+    hasAny(raw, [
+      "arkasina foto",
+      "arkasına foto",
+      "arka tarafa foto",
+      "arka yuzune foto",
+      "arka yüzüne foto",
+      "arkaya foto",
+      "iki yuzune de foto",
+      "iki yüzüne de foto",
+      "iki tarafina foto",
+      "çift taraf foto",
+      "cift taraf foto",
+    ]);
+
+  const isBackPhotoPriceQuestion =
+    context.detectedIntent === "back_photo_price" ||
+    hasAny(raw, [
+      "arka foto olursa fiyat",
+      "arkasina foto koyarsam fiyat",
+      "arkasına foto koyarsam fiyat",
+      "arka yuz fiyat",
+      "arka yüz fiyat",
+      "ek ucret",
+      "ek ücret",
+      "fiyat farki",
+      "fiyat farkı",
+    ]);
+
+  if (!isBackTextQuestion && !isBackPhotoQuestion && !isBackPhotoPriceQuestion) {
     return emptyReply();
   }
 
@@ -1052,21 +1118,17 @@ function handleBackSideInfoIntent(context, state) {
     return emptyReply();
   }
 
-  if (
-    context.detectedIntent === "back_text_question" ||
-    context.detectedIntent === "back_photo_question" ||
-    context.detectedIntent === "double_side_photo"
-  ) {
+  if (isBackPhotoPriceQuestion) {
     return makeReply(
-      "Evet efendim 😊 Resimli lazer kolyede arka yüzüne de ekleme yapılabiliyor.",
+      "Ek ücret olmuyor efendim 😊",
       REPLY_CLASS.FIXED_INFO,
       SUPPORT_MODE_REASON.NONE
     );
   }
 
-  if (context.detectedIntent === "back_photo_price") {
+  if (isBackTextQuestion || isBackPhotoQuestion) {
     return makeReply(
-      "Ek ücret olmuyor efendim 😊",
+      "Evet efendim 😊 Resimli lazer kolyede arka yüzüne de ekleme yapılabiliyor.",
       REPLY_CLASS.FIXED_INFO,
       SUPPORT_MODE_REASON.NONE
     );
@@ -1317,9 +1379,9 @@ function buildDeterministicReply(context, state) {
     handleLocationIntent(context),
     handleShippingIntent(context),
     handleTrustIntent(context),
-    handleChainIntent(context),
     handlePhotoQuestionIntent(context, state),
-    handleBackSideInfoIntent(context, state)
+    handleBackSideInfoIntent(context, state),
+    handleChainIntent(context)
   );
 
   if (fixedInfoReply.text) {
