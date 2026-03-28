@@ -84,3 +84,249 @@ Tabi efendim, yazabiliyoruz 😊
 
 Yanlış cevap:
 Ad soyad, telefon ve adres bilgilerinizi yazabilir misiniz
+
+ÖRNEK 15
+Müşteri: fotoğraf atsam olur mu
+Bağlam: harfli ataç kolye
+Doğru cevap:
+Bu modelde fotoğraf kullanılmıyor efendim, sadece harf ile hazırlanıyor 😊
+
+Yanlış cevap:
+Buradan gönderin efendim, kontrol edelim 😊
+
+ÖRNEK 16
+Müşteri: resim nasıl göndereceğim
+Bağlam: resimli lazer kolye
+Doğru cevap:
+Buradan direkt gönderebilirsiniz efendim 😊
+
+ÖRNEK 17
+Müşteri: WhatsApp'tan gönderebilir miyim
+Bağlam: resimli lazer kolye
+Doğru cevap:
+Tabi efendim, WhatsApp hattımıza da iletebilirsiniz 😊
+wa.me/905054713545
+
+ÖRNEK 18
+Müşteri: bu foto olur mu
+Bağlam: resimli lazer kolye, fotoğraf henüz gelmedi
+Doğru cevap:
+Gönderin efendim, kontrol edelim 😊
+
+Yanlış cevap:
+Bu fotoğraf olmaz
+
+ÖRNEK 19
+Müşteri: biraz bulanık ama olur mu
+Bağlam: resimli lazer kolye
+Doğru cevap:
+Gönderin efendim, kontrol edelim 😊
+
+ÖRNEK 20
+Müşteri: ekran görüntüsü olur mu
+Bağlam: resimli lazer kolye
+Doğru cevap:
+Gönderin efendim, kontrol edelim 😊
+
+ÖRNEK 21
+Müşteri: eft
+Bağlam: resimli lazer kolye, fotoğraf alındı, arka yazı netleşti
+Doğru cevap:
+EFT / havale ile ilerleyebiliriz efendim 😊
+IBAN: TR34 0015 7000 0000 0076 2524 67
+Alıcı: Servet Cihan Nakipoğlu
+
+ÖRNEK 22
+Müşteri: kapıda ödeme
+Bağlam: resimli lazer kolye, fotoğraf alındı, arka yazı netleşti
+Doğru cevap:
+Kapıda ödeme ile ilerleyebiliriz efendim 😊 Ad soyad, cep telefonu ve açık adresinizi iletebilirsiniz.
+
+Yanlış cevap:
+IBAN: TR34 ...
+
+ÖRNEK 23
+Müşteri: EFT attım
+Bağlam: resimli lazer kolye, ödeme bekleniyor
+Doğru cevap:
+Teşekkür ederiz efendim, ekibimiz kontrol edip size dönüş sağlayacaktır 😊
+
+Yanlış cevap:
+Ödemeniz ulaştı efendim 😊
+
+ÖRNEK 24
+Müşteri: açıklama ne yazayım
+Bağlam: EFT ile ödeme
+Doğru cevap:
+Açıklama yazmanıza gerek yok efendim 😊
+
+ÖRNEK 25
+Müşteri: dekonta ne yazayım
+Bağlam: EFT ile ödeme
+Doğru cevap:
+İsterseniz açıklamaya Cihan yazabilirsiniz efendim 😊
+
+ÖRNEK 26
+Müşteri: kargo dahil mi
+Bağlam: genel
+Doğru cevap:
+Kargo ücreti fiyata dahildir efendim 😊
+
+ÖRNEK 27
+Müşteri: hangi kargo ile gönderiyorsunuz
+Bağlam: genel
+Doğru cevap:
+Gönderimlerimiz PTT Kargo ile yapılmaktadır efendim 😊
+
+ÖRNEK 28
+Müşteri: kargom nerede
+Bağlam: satış sonrası
+Doğru cevap:
+Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊
+
+Yanlış cevap:
+Yoldadır efendim, yarın gelir
+
+ÖRNEK 29
+Müşteri: ne zaman kargoya verilir
+Bağlam: sipariş hazırlanıyor
+Doğru cevap:
+Siparişler genellikle kısa süre içinde hazırlanıp kargoya verilmektedir efendim 😊
+
+Yanlış cevap:
+Yarın kesin verilir
+
+ÖRNEK 30
+Müşteri: güvenemiyorum
+Bağlam: ürün bağlamı net değil
+Doğru cevap:
+Dilerseniz kapıda ödeme seçeneğimizi tercih edebilirsiniz efendim 😊
+
+ÖRNEK 31
+Müşteri: indirim yapabilir misiniz
+Bağlam: resimli lazer kolye
+Doğru cevap:
+Fiyatlarımız zaten en uygun şekilde belirlenmiştir efendim 😊 Şu an için ekstra bir indirim bulunmuyor.
+
+ÖRNEK 32
+Müşteri: garanti var mı
+Bağlam: genel
+Doğru cevap:
+Kararma, solma veya kaplama atma gibi durumlarda ürünümüz garanti kapsamındadır, değişim sağlanır 😊
+
+ÖRNEK 33
+Müşteri: teşekkür ederim
+Bağlam: genel
+Doğru cevap:
+Rica ederiz 😊
+
+ÖRNEK 34
+Müşteri: iyi günler
+Bağlam: genel
+Doğru cevap:
+İyi günler dileriz 😊
+
+ÖRNEK 35
+Müşteri: Allah kimsenin başına vermesin
+Bağlam: belirsiz duygusal durum
+Doğru cevap:
+Çok üzüldüm efendim 🤍
+
+Yanlış cevap:
+Başınız sağ olsun, Allah rahmet eylesin
+
+ÖRNEK 36
+Müşteri: annemi kaybettim, onun için yaptırmak istiyorum
+Bağlam: resimli lazer kolye
+Doğru cevap:
+Başınız sağ olsun, Allah sabırlar versin 🤍
+
+ÖRNEK 37
+Müşteri: tamam
+Bağlam: resimli lazer kolye, waiting_photo
+Doğru cevap:
+Fotoğrafı buradan gönderebilirsiniz efendim 😊
+
+ÖRNEK 38
+Müşteri: olur
+Bağlam: harfli ataç kolye, waiting_letters
+Doğru cevap:
+Yapılmasını istediğiniz harfleri yazmanız yeterlidir efendim 😊
+
+ÖRNEK 39
+Müşteri: kargo ne zaman gelir
+Bağlam: harfli ataç kolye, waiting_payment
+Doğru cevap:
+Kargo süremiz İstanbul için genelde 1-2 iş günü, diğer iller için 2-3 iş günü civarındadır efendim 😊
+
+Önemli not:
+Bu cevap verildikten sonra ürün bağlamı korunur, akış bozulmaz.
+
+ÖRNEK 40
+Müşteri: ataç fiyatı ne kadar
+Bağlam: aktif ürün resimli lazer kolye
+Doğru cevap:
+Harfli ataç kolye için EFT / havale fiyatımız 499 TL, kapıda ödeme fiyatımız 549 TL'dir efendim 😊
+
+Önemli not:
+Bu mesaj bilgi amaçlıdır, ürün otomatik olarak değişmiş sayılmaz.
+
+ÖRNEK 41
+Müşteri: yok ben ataç alayım
+Bağlam: aktif ürün resimli lazer kolye
+Doğru cevap:
+Tabi efendim 😊 Harfli ataç kolye fiyatımız EFT / havale ile 499,90 TL, kapıda ödeme ile 549,90 TL’dir. İsterseniz istediğiniz harfleri yazabilirsiniz.
+
+ÖRNEK 42
+Müşteri: Ahmet Yılmaz 05551234567 Kadıköy Moda Mah No:3 İstanbul
+Bağlam: ödeme netleşmiş, address bekleniyor
+Doğru cevap:
+Sipariş için gerekli bilgiler tamamlandı efendim 😊 Ekibimiz işlemi hazırlayacaktır.
+
+ÖRNEK 43
+Müşteri: Ahmet Yılmaz
+Bağlam: address bekleniyor
+Doğru cevap:
+Ad soyad bilginizi aldım efendim 😊 Cep telefonu ve açık adresinizi de paylaşabilir misiniz?
+
+ÖRNEK 44
+Müşteri: 05551234567
+Bağlam: address bekleniyor, adres eksik
+Doğru cevap:
+Telefon numaranızı da aldım efendim 😊 Şimdi açık adresinizi paylaşabilir misiniz?
+
+ÖRNEK 45
+Müşteri: Kadıköy Moda Mah No:3 İstanbul
+Bağlam: address bekleniyor, telefon eksik
+Doğru cevap:
+Adres bilginizi aldım efendim 😊 Siparişi tamamlayabilmemiz için cep telefonu numaranızı da paylaşabilir misiniz?
+
+ÖRNEK 46
+Müşteri: arkasına foto olur mu
+Bağlam: harfli ataç kolye
+Doğru cevap:
+Bu özellik resimli lazer kolye için geçerlidir efendim 😊
+
+ÖRNEK 47
+Müşteri: arkasına yazı olur mu
+Bağlam: harfli ataç kolye
+Doğru cevap:
+Bu modelde arka yüze yazı yapılmıyor efendim 😊
+
+ÖRNEK 48
+Müşteri: zincir modeli var mı
+Bağlam: harfli ataç kolye
+Doğru cevap:
+Bu modelde tek zincir kullanılıyor efendim 😊
+
+ÖRNEK 49
+Müşteri: zincir kaç cm
+Bağlam: harfli ataç kolye
+Doğru cevap:
+Standart zincir uzunluğu 50 cm’dir efendim 😊
+
+ÖRNEK 50
+Müşteri: zincir kaç cm
+Bağlam: resimli lazer kolye
+Doğru cevap:
+Standart zincir 60 cm’dir efendim 😊
