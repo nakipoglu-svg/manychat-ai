@@ -1,1510 +1,1785 @@
-// tests.js — Birleşik master test dosyası
-// Kullanım: node tests.js
+import fs from "fs";
+import path from "path";
+import { logConversationRow } from "../lib/sheetsLogger.js";
 
-import { processChat } from "./api/chat.js";
+// ─── CACHE & CONSTANTS ──────────────────────────────────────
+const fileCache = {};
 
-console.log("🔥 TEST BAŞLADI");
+const FALLBACK_TEXT = "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊";
 
-// ─── HELPER FACTORY ────────────────────────────────────────────────────────
-function body(message, state = {}) {
+const MAIN_MENU_TEXT =
+  "Merhaba efendim 😊\nHangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye";
+
+const LASER_PRICE_TEXT =
+  "Resimli lazer kolye fiyatımız EFT / Havale ile 599,90 TL, kapıda ödeme ile 649,90 TL'dir efendim 😊 Siparişe devam etmek isterseniz fotoğrafı buradan gönderebilirsiniz.";
+
+const ATAC_PRICE_TEXT =
+  "Harfli ataç kolye fiyatımız EFT / Havale ile 499,90 TL, kapıda ödeme ile 549,90 TL'dir efendim 😊 Siparişe devam etmek isterseniz istediğiniz harfleri yazabilirsiniz.";
+
+const EFT_INFO_TEXT =
+  "IBAN: TR34 0015 7000 0000 0076 2524 67\nAlıcı: Servet Cihan Nakipoğlu";
+
+const ORDER_DETAILS_TEXT =
+  "📌 Sipariş için lütfen şu 3 bilgiyi mümkünse tek mesajda paylaşın:\n\n👤 Ad soyad\n📱 Cep telefonu\n📍 Açık adres";
+
+const SHIPPING_TIME_FALLBACK_TEXT =
+  "Kargo süremiz İstanbul için genelde 1-2 iş günü, diğer iller için 2-3 iş günü civarındadır efendim 😊";
+
+const CRITICAL_KNOWLEDGE_FILES = [
+  "CORE_SYSTEM.txt",
+  "PAYMENT.txt",
+  "PRICING.txt",
+  "SHIPPING.txt",
+  "ORDER_FLOW.txt",
+];
+
+const REPLY_CLASS = {
+  FIXED_INFO: "fixed_info",
+  FLOW_PROGRESS: "flow_progress",
+  SELLER_REQUIRED: "seller_required",
+  OPERATIONAL_REQUIRED: "operational_required",
+  FALLBACK: "fallback",
+  MENU: "menu",
+  PRODUCT_ENTRY: "product_entry",
+  ORDER_COMPLETE: "order_complete",
+};
+
+const SUPPORT_MODE_REASON = {
+  SELLER_REQUIRED: "seller_required",
+  OPERATIONAL_REQUIRED: "operational_required",
+  TRUE_FALLBACK: "true_fallback",
+  MANUAL_CANCEL: "manual_cancel",
+  NONE: "",
+};
+
+// ─── TURKEY CITIES & DISTRICT KEYWORDS ──────────────────────
+const TURKEY_CITIES = [
+  "adana", "adiyaman", "afyonkarahisar", "agri", "aksaray", "amasya", "ankara", "antalya", "ardahan", "artvin", "aydin",
+  "balikesir", "bartin", "batman", "bayburt", "bilecik", "bingol", "bitlis", "bolu", "burdur", "bursa",
+  "canakkale", "cankiri", "corum",
+  "denizli", "diyarbakir", "duzce",
+  "edirne", "elazig", "erzincan", "erzurum", "eskisehir",
+  "gaziantep", "giresun", "gumushane",
+  "hakkari", "hatay",
+  "igdir", "isparta", "istanbul", "izmir",
+  "kahramanmaras", "karabuk", "karaman", "kars", "kastamonu", "kayseri", "kilis", "kirikkale", "kirklareli", "kirsehir", "kocaeli", "konya", "kutahya",
+  "malatya", "manisa", "mardin", "mersin", "mugla", "mus",
+  "nevsehir", "nigde",
+  "ordu", "osmaniye",
+  "rize",
+  "sakarya", "samsun", "siirt", "sinop", "sivas", "sanliurfa", "sirnak",
+  "tekirdag", "tokat", "trabzon", "tunceli",
+  "usak",
+  "van",
+  "yalova", "yozgat",
+  "zonguldak",
+];
+
+const DISTRICT_KEYWORDS = [
+  "kadikoy", "kadıköy", "beykoz", "uskudar", "üsküdar", "besiktas", "beşiktaş",
+  "sisli", "şişli", "fatih", "moda", "kavacik", "kavacık", "eminonu", "eminönü",
+  "nusaybin", "beyazit", "beyazıt", "kizilay", "kızılay", "cankaya", "çankaya",
+  "beylikduzu", "beylikdüzü", "bagcilar", "bağcılar", "arnavutkoy", "arnavutköy",
+  "esenyurt", "avcilar", "avcılar", "bahcelievler", "bahçelievler", "bakirköy", "bakırköy",
+  "maltepe", "kartal", "pendik", "tuzla", "sultanbeyli", "umraniye", "ümraniye",
+  "atasehir", "ataşehir", "sancaktepe", "cekmekoy", "çekmeköy", "sultangazi",
+  "gaziosmanpasa", "gaziosmanpaşa", "eyup", "eyüp", "sariyer", "sarıyer",
+  "kemerburgaz", "buyukcekmece", "büyükçekmece", "kucukcekmece", "küçükçekmece",
+  "basaksehir", "başakşehir", "zeytinburnu", "gungoren", "güngören",
+];
+
+// ─── KEYWORDS ───────────────────────────────────────────────
+const KEYWORDS = {
+  product: {
+    lazer: [
+      "resimli", "fotografli", "foto", "fotolu", "lazer",
+      "resim kolye", "foto kolye", "fotografli kolye", "fotoğraflı kolye",
+      "resimli kolye", "resimli lazer", "resimli madalyon", "resimli olan",
+    ],
+    atac: [
+      "atac", "ataç", "harfli", "harf kolye", "harfli kolye",
+      "3 harf", "uc harf", "isim harf", "harfli atac",
+    ],
+  },
+  intents: {
+    cancel: ["siparisi iptal", "siparişi iptal", "iptal", "vazgectim", "vazgeçtim"],
+
+    // ──── SMALLTALK: genişletildi ────
+    smalltalk: [
+      "merhaba", "selam", "slm", "mrb", "merhabalar",
+      "iyi aksamlar", "iyi akşamlar", "iyi gunler", "iyi günler",
+      "gunaydin", "günaydın", "iyi geceler",
+      "nasilsiniz", "nasılsınız",
+      "tesekkur", "teşekkür", "tesekkurler", "teşekkürler", "tsk", "tşk",
+      "sagolun", "sağolun", "saol", "sağol",
+      "allah razi olsun", "allah razı olsun",
+      "kolay gelsin",
+      "emeginize saglik", "emeğinize sağlık", "ellerinize saglik", "ellerinize sağlık",
+      "cok begendik", "çok beğendik", "cok begendim", "çok beğendim",
+      "cok guzel", "çok güzel", "cok guzel olmus", "çok güzel olmuş",
+      "super", "süper", "harika",
+      "liked a message", "reacted",
+    ],
+
+    // ──── LOCATION ────
+    location: ["yeriniz nerede", "neredesiniz", "konum", "magaza", "mağaza", "eminonu", "eminönü"],
+
+    // ──── SHIPPING PRICE: genişletildi ────
+    shippingPrice: [
+      "kargo ucreti ne kadar", "kargo ücreti ne kadar",
+      "kargo fiyati var mi", "kargo fiyatı var mı",
+      "kargo dahil mi", "kargo ücretli mi", "kargo ucretli mi",
+      "kargo ucreti var mi", "kargo ücreti var mı",
+      "kargo birlikte mi", "kargo ile birlikte mi",
+      "kargo ucreti dahil mi", "kargo ücreti dahil mi",
+      "kargo fiyata dahil", "kargo dahil",
+      "kargo ucretsiz mi", "kargo ücretsiz mi",
+    ],
+
+    // ──── SHIPPING ────
+    shipping: [
+      "kargo", "teslimat", "ne zaman gelir", "kac gunde", "kaç günde",
+      "takip no", "kargom nerede", "ne zaman kargolarsiniz",
+      "ne zaman kargoya verilir", "kac gune gelir", "kaç güne gelir",
+    ],
+
+    // ──── TRUST: genişletildi (çelik/malzeme soruları dahil) ────
+    trust: [
+      "guvenilir", "guven", "dolandirici", "orijinal", "saglam",
+      "kararma", "kararir mi", "kararma yapar mi", "kararma olur mu",
+      "kararır mı", "kararma yapar mı", "kararma olur mu",
+      "kararma yaparmi", "kararma yapiyormu", "kararma yapıyor mu",
+      "kararma oluyormu", "kararma oluyor mu",
+      "solar", "solma", "paslan",
+      "kaplama", "kaplamasi atar", "kaplaması atar",
+      "garanti",
+      // malzeme soruları da güven kategorisi
+      "celik mi", "çelik mi", "celikmi", "çelikmi",
+      "urun celik mi", "ürün çelik mi",
+      "paslanmaz mi", "paslanmaz mı",
+      "malzeme ne", "malzemesi ne",
+      "ne malzeme", "hangi malzeme",
+    ],
+
+    // ──── PAYMENT ────
+    payment: [
+      "kapida odeme", "kapıda ödeme",
+      "kapida odeme olur mu", "kapıda ödeme olur mu",
+      "kapida odeme var mi", "kapıda ödeme var mı",
+      "kapida oderim", "kapıda öderim",
+      "kapida odeme olsun", "kapıda ödeme olsun",
+      "kapida olsun", "kapıda olsun",
+      "kapida", "kapıda",
+      "eft", "havale",
+      "odeme", "ödeme",
+      "iban", "dekont", "aciklama", "açıklama",
+    ],
+
+    // ──── PRICE ────
+    price: ["fiyat", "ne kadar", "ucret", "ücret", "kac tl", "kaç tl", "fıyat"],
+
+    // ──── CHAIN ────
+    chain: [
+      "zincir modeli", "zincir degisiyor mu", "zincir değişiyor mu",
+      "zincir kisalir mi", "zincir kısalır mı",
+      "zincir boyu", "zincir uzunlugu", "zincir uzunluğu",
+      "zincir ne kadar", "uzunlugu ne kadar", "uzunluğu ne kadar",
+      "zincir kac cm", "zincir kaç cm",
+    ],
+
+    // ──── ORDER START ────
+    orderStart: [
+      "siparis vermek istiyorum", "sipariş vermek istiyorum",
+      "siparis verecegim", "sipariş vereceğim",
+      "almak istiyorum", "hazirlayalim", "hazırlayalım",
+      "yaptirmak istiyorum", "yaptırmak istiyorum",
+    ],
+
+    // ──── PHOTO QUESTION ────
+    photoQuestion: [
+      "bu foto olur mu", "fotograf uygun mu", "foto uygun mu",
+      "nasil olsun foto", "nasil foto",
+      "hangi fotoyu atayim", "buradan mi atayim",
+      "whatsapptan mi", "nasil aticam", "nasil atacam",
+      "fotoyu nasil atayim", "foto atsam olur mu",
+      "fotograf atsam olur mu", "gondersem olur mu",
+      "fotoğraf atsam olur mu",
+      "fotoğrafı nasıl göndereceğim", "fotografi nasil gonderecegim",
+      "fotoğrafı nasıl gönderebilirim", "fotografi nasil gonderebilirim",
+      "resim nasıl gönderiyorum", "resim nasil gonderiyorum",
+      "resim nasil gonderirim", "resmi nasil gonderiyorum",
+      "resmi nasil gonderirim", "fotografi atsam olur mu",
+      "nasil gonderecegim", "nasıl göndereceğim",
+      "buradan gondereyim", "buradan göndereyim",
+      "buradan mi gonderecegim", "buradan mı göndereceğim",
+    ],
+
+    // ──── BACK PHOTO PRICE ────
+    backPhotoPrice: [
+      "arkasina fotograf ne kadar", "arkasına fotograf ne kadar",
+      "arkasina foto ne kadar", "arkasına foto ne kadar",
+      "arka tarafa fotograf koymak istesek ne kadar olacak",
+      "ek ucret", "ek ücret",
+      "arkasina foto koyarsam fiyat ne olur", "arkasına foto koyarsam fiyat ne olur",
+      "arka foto olursa fiyat", "arka foto fiyat",
+      "arka yuz fiyat", "arka yüz fiyat",
+    ],
+
+    // ──── BACK TEXT INFO ────
+    backTextInfo: [
+      "arka tarafina da mi yazabiliyoruz",
+      "arka tarafina da yazabiliyor muyuz",
+      "arkasina yazi oluyor mu", "arkasına yazı oluyor mu",
+      "arkasina yazi olur mu", "arkasına yazı olur mu",
+      "arka yuzune yazi oluyor mu", "arka yüzüne yazı oluyor mu",
+      "arkaya yazi yaziliyor mu", "arkaya yazı yazılıyor mu",
+      "arka tarafa yazi oluyor mu", "arka tarafa yazi olur mu",
+      "dua yazilir mi", "dua yazılır mı",
+      "isim yazilir mi", "isim yazılır mı",
+    ],
+
+    // ──── BACK PHOTO INFO ────
+    backPhotoInfo: [
+      "arkali onlu fotograf olur mu", "arkalı önlü fotoğraf olur mu",
+      "arkali onlu foto olur mu", "arkalı önlü foto olur mu",
+      "on yuze bir fotograf arka yuze bir fotograf",
+      "arkasina fotograf olur mu", "arkasına fotoğraf olur mu",
+      "arkasina foto olur mu", "arkasına foto olur mu",
+      "arka yuzune fotograf olur mu", "arka yüzüne fotoğraf olur mu",
+      "arka yuzune fotograf koyabiliyor", "arka yüzüne fotoğraf koyabiliyor",
+      "kolyenin iki yuzune de resim yapabilir misiniz",
+      "iki yuzune de foto olur mu", "iki yüzüne de foto olur mu",
+      "arka tarafa foto olur mu", "arka tarafa fotograf olur mu",
+      "arka tarafa foto", "arka tarafa fotograf",
+    ],
+
+    // ──── BACK TEXT SKIP ────
+    backTextSkip: [
+      "yok", "istemiyorum", "gerek yok",
+      "bos kalsin", "boş kalsın", "bos olsun", "boş olsun",
+      "arka bos kalsin", "arka boş kalsın",
+      "yazi olmasin", "yazı olmasın", "arka yazi yok", "arka yazı yok",
+    ],
+
+    // ──── BACK TEXT DIRECT ────
+    backTextDirect: [
+      "arkasina yazi", "arkasına yazı", "arka yazi", "arka yazı",
+      "arkasina tarih", "arkasına tarih", "arkaya yazi", "arkaya yazı",
+      "arka tarafa yazi", "arka tarafa yazı",
+    ],
+
+    // ──── POST-SALE (YENİ) ────
+    postSale: [
+      "siparis ettigim urun gelmedi", "sipariş ettiğim ürün gelmedi",
+      "urun gelmedi", "ürün gelmedi",
+      "siparis ne oldu", "sipariş ne oldu",
+      "kargom gelmedi", "ulasmadi", "ulaşmadı",
+      "kolyem hazir mi", "kolyem hazır mı",
+      "ne zaman hazir", "ne zaman hazır",
+      "siparisim ne durumda", "siparişim ne durumda",
+      "kargoya verildi mi", "kargoya verildi mi",
+      "yola cikti mi", "yola çıktı mı",
+    ],
+
+    // ──── NEW ORDER (YENİ) ────
+    newOrder: [
+      "daha siparis", "daha sipariş",
+      "bir tane daha", "iki tane daha", "2 tane daha", "3 tane daha",
+      "tekrar siparis", "tekrar sipariş",
+      "yeni siparis", "yeni sipariş",
+      "bir siparis daha", "bir sipariş daha",
+    ],
+
+    // ──── EXAMPLE REQUEST (YENİ) ────
+    exampleRequest: [
+      "ornek atabilir misiniz", "örnek atabilir misiniz",
+      "ornek gorebilir miyim", "örnek görebilir miyim",
+      "ornek atar misiniz", "örnek atar mısınız",
+      "ornek gonderir misiniz", "örnek gönderir misiniz",
+      "ornek foto", "örnek foto",
+    ],
+
+    // ──── DETAIL REQUEST (YENİ — 1605 kez gelmiş!) ────
+    detailRequest: ["detay", "detaylar"],
+
+    // ──── MATERIAL QUESTION — çelik mi vs ────
+    materialQuestion: [
+      "celik mi", "çelik mi", "celikmi", "çelikmi",
+      "urun celik mi", "ürün çelik mi",
+      "paslanmaz mi", "paslanmaz mı",
+      "malzeme ne", "malzemesi ne",
+    ],
+  },
+};
+
+const LETTER_STOPWORDS = [
+  "devam", "tamam", "evet", "olur", "merhaba", "selam", "slm", "fiyat", "ucret", "ücret",
+  "kapida", "kapıda", "eft", "havale", "odeme", "ödeme", "hayir", "hayır", "gonder", "gönder",
+  "yok", "istemiyorum", "gerek", "bos", "boş", "tmm", "tamamdir", "tamamdır", "peki", "ok",
+  "detay", "bilgi", "super", "süper", "harika", "amin", "insallah", "inşallah",
+  "masallah", "maşallah", "eyvallah",
+];
+
+// ──── Mesajlar intent olarak yanlış yorumlanmaması gereken ifadeler ────
+const NOT_A_NAME_PHRASES = [
+  "resimli", "fotografli", "fotolu", "lazer", "kolye", "atac", "ataç", "harfli",
+  "celik mi", "çelik mi", "celikmi", "çelikmi", "paslanmaz",
+  "madalyon", "nazar", "boncuk", "boncuklu",
+  "begendim", "beğendim", "begendik", "beğendik", "guzel", "güzel",
+  "saglik", "sağlık", "elinize", "ellerinize", "emeginize", "emeğinize",
+  "siparis", "sipariş", "kargo", "teslimat",
+  "hazir mi", "hazır mı", "hazir", "hazır",
+  "goreyim", "görebilir", "gorebilir",
+  "istiyorum", "ilgileniyorum", "alayim", "alayım",
+  "detay", "bilgi", "fiyat", "ucret", "ücret",
+  "olur mu", "olurmu", "var mi", "var mı",
+  "yapilir mi", "yapılır mı", "yapar mi", "yapar mı",
+  "bekliyorum", "gonderdim", "gönderdim", "gonderirim", "gönderirim",
+  "yaziyorum", "yazıyorum",
+  "yaptirmak", "yaptırmak",
+  "gelmedi", "ulasmadi", "ulaşmadı",
+  "tekrar", "daha",
+  "indirim", "kampanya",
+  "kapida", "kapıda",
+  "durun", "dur",
+  "boncuklu", "madalyon", "resimli",
+];
+
+// ─── UTILITY FUNCTIONS ──────────────────────────────────────
+
+function readKnowledgeFile(filename) {
+  if (fileCache[filename]) return fileCache[filename];
+  const filePath = path.join(process.cwd(), "knowledge", filename);
+  const content = fs.readFileSync(filePath, "utf8");
+  fileCache[filename] = content;
+  return content;
+}
+
+function safeRead(filename) {
+  try {
+    const content = readKnowledgeFile(filename);
+    if (!content || !String(content).trim()) {
+      console.warn(`Knowledge file empty: ${filename}`);
+    }
+    return content;
+  } catch (error) {
+    console.warn(`Knowledge file missing/unreadable: ${filename} - ${error.message}`);
+    return "";
+  }
+}
+
+function buildKnowledgeMap(context) {
   return {
-    message,
-    ilgilenilen_urun: state.ilgilenilen_urun || "",
-    user_product: state.user_product || state.ilgilenilen_urun || "",
-    conversation_stage: state.conversation_stage || "",
-    payment_method: state.payment_method || "",
-    address_status: state.address_status || "",
-    phone_received: state.phone_received || "",
-    order_status: state.order_status || "",
-    photo_received: state.photo_received || "",
-    back_text_status: state.back_text_status || "",
-    menu_gosterildi: state.menu_gosterildi || "",
-    context_lock: state.context_lock || "",
-    letters_received: state.letters_received || "",
-    support_mode: state.support_mode || "",
-    siparis_alindi: state.siparis_alindi || "",
-    cancel_reason: state.cancel_reason || "",
+    "CORE_SYSTEM.txt": safeRead("CORE_SYSTEM.txt"),
+    "PAYMENT.txt": safeRead("PAYMENT.txt"),
+    "PRICING.txt": safeRead("PRICING.txt"),
+    "SHIPPING.txt": safeRead("SHIPPING.txt"),
+    "ORDER_FLOW.txt": safeRead("ORDER_FLOW.txt"),
+    "TRUST.txt": safeRead("TRUST.txt"),
+    "SMALLTALK.txt": safeRead("SMALLTALK.txt"),
+    "ROUTING_RULES.txt": safeRead("ROUTING_RULES.txt"),
+    "EDGE_CASES.txt": safeRead("EDGE_CASES.txt"),
+    "IMAGE_RULES.txt": safeRead("IMAGE_RULES.txt"),
+    "FEW_SHOT_EXAMPLES.txt": safeRead("FEW_SHOT_EXAMPLES.txt"),
+    "SYSTEM_MASTER.txt": safeRead("SYSTEM_MASTER.txt"),
+    "PRODUCT_LASER.txt": context.detectedProduct === "lazer" ? safeRead("PRODUCT_LASER.txt") : "",
+    "PRODUCT_ATAC.txt": context.detectedProduct === "atac" ? safeRead("PRODUCT_ATAC.txt") : "",
   };
 }
 
-// ─── STATE SHORTCUTS ───────────────────────────────────────────────────────
-function lazer(overrides = {}) {
-  return {
-    ilgilenilen_urun: "lazer",
-    user_product: "lazer",
-    context_lock: "1",
-    order_status: "started",
-    ...overrides,
-  };
-}
-
-function atac(overrides = {}) {
-  return {
-    ilgilenilen_urun: "atac",
-    user_product: "atac",
-    context_lock: "1",
-    order_status: "started",
-    ...overrides,
-  };
-}
-
-function lazerWaitingPayment(overrides = {}) {
-  return lazer({
-    photo_received: "1",
-    back_text_status: "skipped",
-    conversation_stage: "waiting_payment",
-    ...overrides,
+function getMissingCriticalKnowledgeFiles(knowledgeMap) {
+  return CRITICAL_KNOWLEDGE_FILES.filter((file) => {
+    const content = knowledgeMap[file];
+    return !content || !String(content).trim();
   });
 }
 
-function lazerWaitingAddress(overrides = {}) {
-  return lazer({
-    photo_received: "1",
-    back_text_status: "skipped",
-    payment_method: "eft_havale",
-    conversation_stage: "waiting_address",
-    ...overrides,
-  });
+function buildKnowledgePackFromMap(knowledgeMap) {
+  return [
+    knowledgeMap["SYSTEM_MASTER.txt"],
+    knowledgeMap["CORE_SYSTEM.txt"],
+    knowledgeMap["ROUTING_RULES.txt"],
+    knowledgeMap["EDGE_CASES.txt"],
+    knowledgeMap["FEW_SHOT_EXAMPLES.txt"],
+    knowledgeMap["IMAGE_RULES.txt"],
+    knowledgeMap["PRODUCT_LASER.txt"],
+    knowledgeMap["PRODUCT_ATAC.txt"],
+    knowledgeMap["PRICING.txt"],
+    knowledgeMap["SHIPPING.txt"],
+    knowledgeMap["PAYMENT.txt"],
+    knowledgeMap["ORDER_FLOW.txt"],
+    knowledgeMap["TRUST.txt"],
+    knowledgeMap["SMALLTALK.txt"],
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }
 
-function atacWaitingPayment(overrides = {}) {
-  return atac({
-    letters_received: "1",
-    conversation_stage: "waiting_payment",
-    ...overrides,
-  });
+function hasAny(text, keywords) {
+  return keywords.some((k) => text.includes(k));
 }
 
-function atacWaitingAddress(overrides = {}) {
-  return atac({
-    letters_received: "1",
-    payment_method: "eft_havale",
-    conversation_stage: "waiting_address",
-    ...overrides,
-  });
+function unwrapManychatValue(value) {
+  if (value === null || value === undefined) return "";
+  const str = String(value).trim();
+  if (!str) return "";
+  if (/^\{\{\{?.+?\}\}\}?$/.test(str)) return "";
+  if (/^\{[^}]+\}$/.test(str)) return "";
+  if (/^cuf_\d+$/i.test(str)) return "";
+  if (/^(undefined|null|none|nan)$/i.test(str)) return "";
+  return str;
 }
 
-// ─── TEXT NORMALIZER FOR ASSERTIONS ───────────────────────────────────────
-function normalizeForTest(text = "") {
-  return String(text)
+function normalizeText(text) {
+  return String(text || "")
     .toLowerCase()
-    .replace(/i̇/g, "i")
     .replace(/ç/g, "c")
     .replace(/ğ/g, "g")
     .replace(/ı/g, "i")
     .replace(/ö/g, "o")
     .replace(/ş/g, "s")
     .replace(/ü/g, "u")
-    .replace(/[^\w\s]/g, " ")
+    .replace(/â/g, "a")
+    .replace(/î/g, "i")
+    .replace(/û/g, "u")
+    .replace(/[^\w\s:/?.=&+\-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-// ─── TEST LİSTESİ ──────────────────────────────────────────────────────────
-const tests = [
-  // ════════════════════════════════════════════════════════════════════════
-  // GRUP 1: CORE FLOW TESTS
-  // ════════════════════════════════════════════════════════════════════════
-
-  {
-    id: "T01",
-    name: "[CORE] Lazer ürün seçimi → waiting_photo",
-    input: body("resimli lazer kolye"),
-    expect: { ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo" },
-  },
-  {
-    id: "T02",
-    name: "[CORE] Lazer seçimi fiyat yanıtı vermeli (599)",
-    input: body("lazer istiyorum"),
-    expect: { ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo" },
-    expectReplyIncludes: "599",
-  },
-  {
-    id: "T03",
-    name: "[CORE] Lazer: Facebook CDN foto URL → photo_received=1",
-    input: body(
-      "https://lookaside.fbsbx.com/photo123.jpg",
-      lazer({ conversation_stage: "waiting_photo" })
-    ),
-    expect: { photo_received: "1", conversation_stage: "waiting_back_text" },
-  },
-  {
-    id: "T04",
-    name: "[CORE] Lazer: 'yok' → back_text_status=skipped",
-    input: body("yok", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expect: { back_text_status: "skipped", conversation_stage: "waiting_payment" },
-  },
-  {
-    id: "T05",
-    name: "[CORE] Lazer: 'istemiyorum' → back_text_status=skipped (iptal değil)",
-    input: body("istemiyorum", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expect: { back_text_status: "skipped", conversation_stage: "waiting_payment" },
-  },
-  {
-    id: "T06",
-    name: "[CORE] Lazer: EFT seçimi → waiting_address",
-    input: body("eft", lazerWaitingPayment()),
-    expect: { payment_method: "eft_havale", conversation_stage: "waiting_address" },
-  },
-  {
-    id: "T07",
-    name: "[CORE] Lazer: kapıda ödeme seçimi → waiting_address",
-    input: body("kapıda ödeme", lazerWaitingPayment()),
-    expect: { payment_method: "kapida_odeme", conversation_stage: "waiting_address" },
-  },
-  {
-    id: "T08",
-    name: "[CORE] Lazer: tek mesajda isim+telefon+adres → order_completed",
-    input: body(
-      "Ali Yılmaz 05551234567 İstanbul Kadıköy Moda Mah No:5",
-      lazerWaitingAddress()
-    ),
-    expect: {
-      address_status: "received",
-      phone_received: "1",
-      conversation_stage: "order_completed",
-      order_status: "completed",
-    },
-  },
-  {
-    id: "T09",
-    name: "[CORE] Lazer: order_completed sonrası adres korunmalı",
-    input: body(
-      "tamam",
-      lazer({
-        photo_received: "1",
-        back_text_status: "skipped",
-        payment_method: "eft_havale",
-        address_status: "received",
-        phone_received: "1",
-        conversation_stage: "order_completed",
-        order_status: "completed",
-      })
-    ),
-    expect: { address_status: "received", conversation_stage: "order_completed" },
-  },
-  {
-    id: "T10",
-    name: "[CORE] Ataç ürün seçimi → waiting_letters",
-    input: body("ataç kolye"),
-    expect: { ilgilenilen_urun: "atac", conversation_stage: "waiting_letters" },
-  },
-  {
-    id: "T11",
-    name: "[CORE] Ataç: harfler alınıyor → waiting_payment",
-    input: body("ABC", atac({ conversation_stage: "waiting_letters" })),
-    expect: { letters_received: "1", conversation_stage: "waiting_payment" },
-  },
-  {
-    id: "T12",
-    name: "[CORE] Ataç: EFT seçimi → waiting_address",
-    input: body("eft", atacWaitingPayment()),
-    expect: { payment_method: "eft_havale", conversation_stage: "waiting_address" },
-  },
-  {
-    id: "T13",
-    name: "[CORE] Ataç: kapıda ödeme → waiting_address",
-    input: body("kapıda ödeme", atacWaitingPayment()),
-    expect: { payment_method: "kapida_odeme", conversation_stage: "waiting_address" },
-  },
-  {
-    id: "T14",
-    name: "[CORE] Ataç: adres + telefon → order_completed",
-    input: body(
-      "Ayşe Kaya 05321234567 Ankara Çankaya Kızılay Cad No:10",
-      atacWaitingAddress()
-    ),
-    expect: {
-      address_status: "received",
-      phone_received: "1",
-      conversation_stage: "order_completed",
-      order_status: "completed",
-    },
-  },
-  {
-    id: "T15",
-    name: "[CORE] Konum sorusu → İstanbul/Eminönü cevabı",
-    input: body("neredesiniz"),
-    expectReplyIncludes: "eminonu",
-  },
-  {
-    id: "T16",
-    name: "[CORE] Kargo süresi sorusu → iş günü cevabı",
-    input: body("kargo ne zaman gelir"),
-    expectReplyIncludes: "is gunu",
-  },
-  {
-    id: "T17",
-    name: "[CORE] Güven sorusu → güven cevabı",
-    input: body("güvenilir misiniz"),
-    expectReplyIncludes: "guven",
-  },
-  {
-    id: "T18",
-    name: "[CORE] Merhaba → menü veya sıcak karşılama",
-    input: body("merhaba"),
-    expectReplyIncludes: "merhaba",
-  },
-  {
-    id: "T19",
-    name: "[CORE] İptal → cancel_requested + human_support",
-    input: body("iptal etmek istiyorum", lazerWaitingPayment()),
-    expect: { order_status: "cancel_requested", conversation_stage: "human_support" },
-  },
-  {
-    id: "T20",
-    name: "[CORE] Kargo ücreti sorusu → ücretsiz cevabı",
-    input: body("kargo ücreti var mı"),
-    expectReplyIncludes: "dahil",
-  },
-
-  // ════════════════════════════════════════════════════════════════════════
-  // GRUP 2: REGRESSION TESTS
-  // ════════════════════════════════════════════════════════════════════════
-
-  {
-    id: "R01",
-    name: "[REG-A1] Ürün bağlamı varken 'merhaba' gelince menüye dönmemeli",
-    input: body("merhaba", lazer({ conversation_stage: "waiting_photo" })),
-    expectReplyNotIncludes: "hangi model ile ilgileniyorsunuz",
-  },
-  {
-    id: "R02",
-    name: "[REG-A1] Ürün bağlamında ilgilenilen_urun korunmalı",
-    input: body("tamam", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { ilgilenilen_urun: "lazer" },
-  },
-  {
-    id: "R03",
-    name: "[REG-A2] menu_gosterildi=evet varken ürün bağlamı menüyü engeller",
-    input: body("devam", lazer({ menu_gosterildi: "evet", conversation_stage: "waiting_photo" })),
-    expectReplyNotIncludes: "hangi model ile ilgileniyorsunuz",
-  },
-  {
-    id: "R04",
-    name: "[REG-A3] 'Evet' kısa mesajı waiting_photo'da ürünü unutmamalı",
-    input: body("evet", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { ilgilenilen_urun: "lazer" },
-  },
-  {
-    id: "R05",
-    name: "[REG-A3] 'Tamam' kısa mesajı waiting_letters'da ürünü unutmamalı",
-    input: body("tamam", atac({ conversation_stage: "waiting_letters" })),
-    expect: { ilgilenilen_urun: "atac" },
-  },
-  {
-    id: "R06",
-    name: "[REG-A5] context_lock=1 varken ürün bağlamı korunmalı",
-    input: body("ne renk?", lazer({ context_lock: "1", conversation_stage: "waiting_photo" })),
-    expect: { ilgilenilen_urun: "lazer", context_lock: "1" },
-  },
-  {
-    id: "R07",
-    name: "[REG-B1] 'Resimli' → lazer ürün seçimi",
-    input: body("resimli"),
-    expect: { ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo" },
-  },
-  {
-    id: "R08",
-    name: "[REG-B1] 'Ataç' tek kelime → ataç ürün seçimi",
-    input: body("ataç"),
-    expect: { ilgilenilen_urun: "atac", conversation_stage: "waiting_letters" },
-  },
-  {
-    id: "R09",
-    name: "[REG-B2] 'Ataç kolye' ürün seçimi - letters_received boş kalmalı",
-    input: body("ataç kolye"),
-    expect: { ilgilenilen_urun: "atac", letters_received: "" },
-  },
-  {
-    id: "R10",
-    name: "[REG-B5] Ürün değişiminde photo_received sıfırlanmalı",
-    input: body(
-      "ataç kolye istiyorum",
-      lazer({ photo_received: "1", back_text_status: "skipped", conversation_stage: "waiting_payment" })
-    ),
-    expect: { photo_received: "" },
-  },
-  {
-    id: "R11",
-    name: "[REG-B5] Ürün değişiminde back_text_status sıfırlanmalı",
-    input: body("ataç kolye istiyorum", lazer({ photo_received: "1", back_text_status: "skipped" })),
-    expect: { back_text_status: "" },
-  },
-  {
-    id: "R12",
-    name: "[REG-B6] Lazer akışındayken ataç fiyatı sorulunca lazer ürünü bozulmamalı",
-    input: body("ataç fiyatı ne kadar", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { ilgilenilen_urun: "lazer" },
-  },
-  {
-    id: "R13",
-    name: "[REG-B4] Aktif lazer varken ataç seçilince ürün değişmeli",
-    input: body("yok ben ataç alayım", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { ilgilenilen_urun: "atac" },
-  },
-  {
-    id: "R14",
-    name: "[REG-C2] 'Fotoğrafı gönderiyorum' niyet cümlesi → photo_received set olmamalı",
-    input: body("fotoğrafı gönderiyorum", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { photo_received: "" },
-  },
-  {
-    id: "R15",
-    name: "[REG-C2] 'Birazdan fotoğraf atacağım' → photo_received set olmamalı",
-    input: body("birazdan fotoğraf atacağım", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { photo_received: "" },
-  },
-  {
-    id: "R16",
-    name: "[REG-C3] Instagram CDN URL → photo_received=1",
-    input: body("https://cdninstagram.com/photo123.jpg", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { photo_received: "1" },
-  },
-  {
-    id: "R17",
-    name: "[REG-C3] .jpeg uzantılı URL → photo_received=1",
-    input: body("https://example.com/foto.jpeg", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { photo_received: "1" },
-  },
-  {
-    id: "R18",
-    name: "[REG-C4] photo_received=1 sonrası 'fotoğrafı gönderin' yazmamalı",
-    input: body("devam", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expectReplyNotIncludes: "fotografi gonderin",
-  },
-  {
-    id: "R19",
-    name: "[REG-C5] 'Bu foto olur mu?' waiting_back_text'te stage ilerletmemeli",
-    input: body("bu foto olur mu", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expect: { photo_received: "1", conversation_stage: "waiting_back_text" },
-  },
-  {
-    id: "R20",
-    name: "[REG-C6] 'Arkasına yazı oluyor mu?' back_text_status set etmemeli",
-    input: body("arkasına yazı oluyor mu", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expect: { back_text_status: "" },
-  },
-  {
-    id: "R21",
-    name: "[REG-C7] waiting_back_text'te gelen foto URL → back_text_status=received",
-    input: body("https://lookaside.fbsbx.com/backphoto.jpg", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expect: { back_text_status: "received" },
-  },
-  {
-    id: "R22",
-    name: "[REG-C8] Arka foto fiyat sorusu → ek ücret yok cevabı",
-    input: body("arkasına foto koyarsam fiyat ne olur", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expectReplyIncludes: "ek ucret",
-  },
-  {
-    id: "R23",
-    name: "[REG-C9] Arka yazı alındıktan sonra waiting_payment gelmeli",
-    input: body("sevgilime", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expect: { back_text_status: "received", conversation_stage: "waiting_payment" },
-  },
-  {
-    id: "R24",
-    name: "[REG-D1] Ataç seçiminde photo_received set edilmemeli",
-    input: body("ataç kolye istiyorum"),
-    expect: { ilgilenilen_urun: "atac", photo_received: "" },
-  },
-  {
-    id: "R25",
-    name: "[REG-D2] Ataç: letters_received='' iken stage waiting_letters olmalı",
-    input: body("devam", atac({ conversation_stage: "waiting_letters" })),
-    expect: { conversation_stage: "waiting_letters" },
-  },
-  {
-    id: "R26",
-    name: "[REG-D3] Ataç: letters yokken 'eft' yazılsa stage waiting_letters kalmalı",
-    input: body("eft", atac({ conversation_stage: "waiting_letters" })),
-    expect: { conversation_stage: "waiting_letters" },
-  },
-  {
-    id: "R27",
-    name: "[REG-D3] Ataç: letters yokken 'kapıda ödeme' stage atlatmamalı",
-    input: body("kapıda ödeme olsun", atac({ conversation_stage: "waiting_letters" })),
-    expect: { conversation_stage: "waiting_letters" },
-  },
-  {
-    id: "R28",
-    name: "[REG-D4] Ataç: 'AYS' kısa harf girişi → letters_received=1",
-    input: body("AYS", atac({ conversation_stage: "waiting_letters" })),
-    expect: { letters_received: "1" },
-  },
-  {
-    id: "R29",
-    name: "[REG-D5] Harfler sonrası waiting_payment gelmeli",
-    input: body("EKB", atac({ conversation_stage: "waiting_letters" })),
-    expect: { letters_received: "1", conversation_stage: "waiting_payment" },
-  },
-  {
-    id: "R30",
-    name: "[REG-D6] letters_received=1 varken stage waiting_letters olmamalı",
-    input: body("devam", atacWaitingPayment()),
-    expect: { conversation_stage: "waiting_payment" },
-  },
-  {
-    id: "R31",
-    name: "[REG-E1] Tek 'havale' mesajı → eft_havale",
-    input: body("havale", lazerWaitingPayment()),
-    expect: { payment_method: "eft_havale" },
-  },
-  {
-    id: "R32",
-    name: "[REG-E1] Tek 'kapida' mesajı → kapida_odeme",
-    input: body("kapida", lazerWaitingPayment()),
-    expect: { payment_method: "kapida_odeme" },
-  },
-  {
-    id: "R33",
-    name: "[REG-E3] 'Kapıda ödeme olsun' → payment_method set edilmeli",
-    input: body("kapıda ödeme olsun", lazerWaitingPayment()),
-    expect: { payment_method: "kapida_odeme" },
-  },
-  {
-    id: "R34",
-    name: "[REG-F1] 'Adres veriyorum' niyet cümlesi → address_status boş kalmalı",
-    input: body("adres veriyorum", lazerWaitingAddress({ address_status: "" })),
-    expect: { address_status: "" },
-  },
-  {
-    id: "R35",
-    name: "[REG-F3] 'İstanbul içi kaç günde?' → address_status set edilmemeli",
-    input: body("istanbul içi kaç günde gelir"),
-    expect: { address_status: "" },
-  },
-  {
-    id: "R36",
-    name: "[REG-F4] Sadece adres gelince address_only (received değil)",
-    input: body("İstanbul Kadıköy Moda Mah Bahariye Cad No:5", lazerWaitingAddress()),
-    expect: { address_status: "address_only" },
-  },
-  {
-    id: "R37",
-    name: "[REG-F4] address_only varken order_completed olmamalı",
-    input: body("İstanbul Kadıköy Moda Mah Bahariye Cad No:5", lazerWaitingAddress()),
-    expect: { conversation_stage: "waiting_address" },
-  },
-  {
-    id: "R38",
-    name: "[REG-F7] İsim+telefon+adres tek mesajda → tam işlenmeli",
-    input: body("Ahmet Yılmaz 05551234567 Ankara Çankaya Kızılay Mah No:3", lazerWaitingAddress()),
-    expect: { address_status: "received", phone_received: "1", conversation_stage: "order_completed" },
-  },
-  {
-    id: "R39",
-    name: "[REG-F8] address_only varken telefon gelince received olmalı",
-    input: body("05551234567", lazerWaitingAddress({ address_status: "address_only" })),
-    expect: { address_status: "received", phone_received: "1" },
-  },
-  {
-    id: "R40",
-    name: "[REG-G5] order_completed'ta siparis_alindi=1 ve order_status=completed senkron",
-    input: body("Ali 05551234567 İstanbul Kadıköy Moda Mah No:5", lazerWaitingAddress()),
-    expect: { conversation_stage: "order_completed", order_status: "completed", siparis_alindi: "1" },
-  },
-  {
-    id: "R41",
-    name: "[REG-G6] İptal gelince siparis_alindi temizlenmeli",
-    input: body("iptal", lazer({ order_status: "completed", siparis_alindi: "1", conversation_stage: "order_completed" })),
-    expect: { siparis_alindi: "", order_status: "cancel_requested" },
-  },
-  {
-    id: "R42",
-    name: "[REG-H1] Güven sorusu aktif lazer akışında ürünü bozmamalı",
-    input: body("güvenilir misiniz", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { ilgilenilen_urun: "lazer" },
-    expectReplyNotIncludes: "hangi model ile ilgileniyorsunuz",
-  },
-  {
-    id: "R43",
-    name: "[REG-H1] Kargo sorusu waiting_payment'ta stage bozmamali",
-    input: body("kargo ne kadar sürer", lazerWaitingPayment()),
-    expect: { conversation_stage: "waiting_payment" },
-    expectReplyIncludes: "is gunu",
-  },
-  {
-    id: "R44",
-    name: "[REG-H2] 'Kargo ücreti var mı?' → ana menü açılmamalı",
-    input: body("kargo ücreti var mı", lazerWaitingPayment()),
-    expectReplyNotIncludes: "hangi model ile ilgileniyorsunuz",
-  },
-  {
-    id: "R45",
-    name: "[REG-J2] 'Kargom nerede?' → ekip yönlendirmesi gelmeli",
-    input: body("kargom nerede"),
-    expectReplyIncludes: "ekibimiz",
-  },
-
-  // ════════════════════════════════════════════════════════════════════════
-  // GRUP 3: PARSING TESTS
-  // ════════════════════════════════════════════════════════════════════════
-
-  {
-    id: "P01",
-    name: "[PARSE] +90 formatı telefon → phone_received=1",
-    input: body("+905551234567", lazerWaitingAddress()),
-    expect: { phone_received: "1" },
-  },
-  {
-    id: "P02",
-    name: "[PARSE] 05XX formatı telefon → phone_received=1",
-    input: body("05551234567", lazerWaitingAddress()),
-    expect: { phone_received: "1" },
-  },
-  {
-    id: "P03",
-    name: "[PARSE] 8 haneli numara → phone_received set edilmemeli",
-    input: body("12345678", lazerWaitingAddress()),
-    expect: { phone_received: "" },
-  },
-  {
-    id: "P04",
-    name: "[PARSE] Mahalle+sokak+no kombinasyonu adres sayılmalı",
-    input: body("Moda Mah Bahariye Cad No:5 Kadıköy", lazerWaitingAddress()),
-    expect: { address_status: "address_only" },
-  },
-  {
-    id: "P05",
-    name: "[PARSE] Site+apartman+şehir kombinasyonu adres sayılmalı",
-    input: body("Bahçeşehir Sitesi Lale Apt Kat:3 İstanbul", lazerWaitingAddress()),
-    expect: { address_status: "address_only" },
-  },
-  {
-    id: "P06",
-    name: "[PARSE] Adres+telefon birlikte → received",
-    input: body("Kadıköy Moda Mah No:3 05551234567", lazerWaitingAddress()),
-    expect: { address_status: "received", phone_received: "1" },
-  },
-  {
-    id: "P07",
-    name: "[PARSE] lookaside.fbsbx.com URL → photo tanınmalı",
-    input: body("https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=123", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { photo_received: "1" },
-  },
-  {
-    id: "P08",
-    name: "[PARSE] HTTP olmayan metin → photo sayılmamalı",
-    input: body("example.com/foto.jpg", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { photo_received: "" },
-  },
-  {
-    id: "P09",
-    name: "[PARSE] Ataç: fiyat sorusu letters_received set etmemeli",
-    input: body("fiyat ne kadar", atac({ conversation_stage: "waiting_letters" })),
-    expect: { letters_received: "" },
-  },
-  {
-    id: "P10",
-    name: "[PARSE] 'Havale yapacağım' → eft_havale",
-    input: body("havale yapacağım", lazerWaitingPayment()),
-    expect: { payment_method: "eft_havale" },
-  },
-
-  // ════════════════════════════════════════════════════════════════════════
-  // GRUP 4: VARIATION TESTS
-  // ════════════════════════════════════════════════════════════════════════
-
-  {
-    id: "V01",
-    name: "[VAR] 'Foto kolye' → lazer",
-    input: body("foto kolye"),
-    expect: { ilgilenilen_urun: "lazer" },
-  },
-  {
-    id: "V02",
-    name: "[VAR] 'Fotoğraflı kolye' → lazer",
-    input: body("fotoğraflı kolye"),
-    expect: { ilgilenilen_urun: "lazer" },
-  },
-  {
-    id: "V03",
-    name: "[VAR] 'Fotolu kolye' → lazer",
-    input: body("fotolu kolye"),
-    expect: { ilgilenilen_urun: "lazer" },
-  },
-  {
-    id: "V04",
-    name: "[VAR] 'Isim harf kolye' → ataç",
-    input: body("isim harf kolye"),
-    expect: { ilgilenilen_urun: "atac" },
-  },
-  {
-    id: "V05",
-    name: "[VAR] '3 harf kolye' → ataç",
-    input: body("3 harf kolye"),
-    expect: { ilgilenilen_urun: "atac" },
-  },
-  {
-    id: "V06",
-    name: "[VAR] 'Vazgeçtim' → cancel_requested",
-    input: body("vazgeçtim", lazerWaitingPayment()),
-    expect: { order_status: "cancel_requested" },
-  },
-  {
-    id: "V07",
-    name: "[VAR] 'Siparişi iptal' → cancel_requested",
-    input: body("siparişi iptal", lazerWaitingPayment()),
-    expect: { order_status: "cancel_requested" },
-  },
-  {
-    id: "V08",
-    name: "[VAR] 'Gerek yok' → back_text_status=skipped",
-    input: body("gerek yok", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expect: { back_text_status: "skipped" },
-  },
-  {
-    id: "V09",
-    name: "[VAR] 'Boş kalsın' → back_text_status=skipped",
-    input: body("boş kalsın", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expect: { back_text_status: "skipped" },
-  },
-  {
-    id: "V10",
-    name: "[VAR] 'Arka boş kalsın' → back_text_status=skipped",
-    input: body("arka boş kalsın", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expect: { back_text_status: "skipped" },
-  },
-  {
-    id: "V11",
-    name: "[VAR] 'Yazı olmasın' → back_text_status=skipped",
-    input: body("yazı olmasın", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expect: { back_text_status: "skipped" },
-  },
-  {
-    id: "V12",
-    name: "[VAR] 'Kaç günde gelir' → kargo cevabı",
-    input: body("kaç günde gelir"),
-    expectReplyIncludes: "is gunu",
-  },
-  {
-    id: "V13",
-    name: "[VAR] 'Teslimat süresi' → kargo cevabı",
-    input: body("teslimat süresi ne kadar"),
-    expectReplyIncludes: "is gunu",
-  },
-  {
-    id: "V14",
-    name: "[VAR] 'Yeriniz nerede' → İstanbul cevabı",
-    input: body("yeriniz nerede"),
-    expectReplyIncludes: "istanbul",
-  },
-  {
-    id: "V15",
-    name: "[VAR] 'Dolandırıcı mısınız' → güven cevabı",
-    input: body("dolandırıcı mısınız"),
-    expectReplyIncludes: "guven",
-  },
-  {
-    id: "V16",
-    name: "[VAR] 'Kapıda öderim' → kapida_odeme",
-    input: body("kapıda öderim", lazerWaitingPayment()),
-    expect: { payment_method: "kapida_odeme" },
-  },
-  {
-    id: "V17",
-    name: "[VAR] 'Kapıda olsun' → kapida_odeme",
-    input: body("kapıda olsun", lazerWaitingPayment()),
-    expect: { payment_method: "kapida_odeme" },
-  },
-  {
-    id: "V18",
-    name: "[VAR] 'EFT ile ödeyeceğim' → eft_havale",
-    input: body("eft ile ödeyeceğim", lazerWaitingPayment()),
-    expect: { payment_method: "eft_havale" },
-  },
-
-  // ════════════════════════════════════════════════════════════════════════
-  // GRUP 5: STATE TRANSITION TESTS
-  // ════════════════════════════════════════════════════════════════════════
-
-  {
-    id: "S01",
-    name: "[STATE] Lazer: ürün belli, foto yok → waiting_photo",
-    input: body("devam", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { conversation_stage: "waiting_photo" },
-  },
-  {
-    id: "S02",
-    name: "[STATE] Lazer: foto var, back_text yokken stage waiting_back_text ile başlayabilmeli",
-    input: body("", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expect: { conversation_stage: "waiting_back_text" },
-  },
-  {
-    id: "S03",
-    name: "[STATE] Ataç: ürün belli, harfler yok → waiting_letters",
-    input: body("devam", atac({ conversation_stage: "waiting_letters" })),
-    expect: { conversation_stage: "waiting_letters" },
-  },
-  {
-    id: "S04",
-    name: "[STATE] Lazer seçilince order_status=started",
-    input: body("resimli lazer kolye"),
-    expect: { order_status: "started" },
-  },
-  {
-    id: "S05",
-    name: "[STATE] Ataç'ta photo_received her zaman boş",
-    input: body("AYS", atac({ conversation_stage: "waiting_letters" })),
-    expect: { photo_received: "" },
-  },
-  {
-    id: "S06",
-    name: "[STATE] Ataç'ta back_text_status her zaman boş",
-    input: body("AYS", atac({ conversation_stage: "waiting_letters" })),
-    expect: { back_text_status: "" },
-  },
-  {
-    id: "S07",
-    name: "[STATE] Lazer'de letters_received her zaman boş",
-    input: body("https://lookaside.fbsbx.com/foto.jpg", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { letters_received: "" },
-  },
-  {
-    id: "S08",
-    name: "[STATE] address_received varken 'tamam' gelince order_completed korunmalı",
-    input: body(
-      "tamam",
-      lazer({
-        photo_received: "1",
-        back_text_status: "skipped",
-        payment_method: "eft_havale",
-        address_status: "received",
-        phone_received: "1",
-        conversation_stage: "order_completed",
-        order_status: "completed",
-      })
-    ),
-    expect: { address_status: "received", conversation_stage: "order_completed" },
-  },
-  {
-    id: "S09",
-    name: "[STATE] Lazerden ataca geçince yeni stage waiting_letters olmalı",
-    input: body(
-      "harfli ataç kolye istiyorum",
-      lazer({ photo_received: "1", back_text_status: "skipped", conversation_stage: "waiting_payment" })
-    ),
-    expect: { ilgilenilen_urun: "atac", conversation_stage: "waiting_letters" },
-  },
-
-  // ════════════════════════════════════════════════════════════════════════
-  // GRUP 6: MANYCHAT CONTRACT TESTS
-  // ════════════════════════════════════════════════════════════════════════
-
-  {
-    id: "MC01",
-    name: "[MC] {{cuf_12345}} formatı boş sayılmalı",
-    input: body("ataç kolye", { ilgilenilen_urun: "{{cuf_12345}}" }),
-    expect: { ilgilenilen_urun: "atac" },
-  },
-  {
-    id: "MC02",
-    name: "[MC] {cuf_999} formatı boş sayılmalı",
-    input: body("lazer istiyorum", { ilgilenilen_urun: "{cuf_999}" }),
-    expect: { ilgilenilen_urun: "lazer" },
-  },
-  {
-    id: "MC03",
-    name: "[MC] cuf_123 prefix'li stage gerçek stage sayılmamalı",
-    input: body("merhaba", { conversation_stage: "cuf_456" }),
-    expect: { success: true },
-    expectReplyIncludes: "hangi model",
-  },
-  {
-    id: "MC04",
-    name: "[MC] 'undefined' string değeri boş sayılmalı",
-    input: body("merhaba", { ilgilenilen_urun: "undefined" }),
-    expect: { ilgilenilen_urun: "" },
-  },
-  {
-    id: "MC05",
-    name: "[MC] 'null' string değeri boş sayılmalı",
-    input: body("merhaba", { ilgilenilen_urun: "null" }),
-    expect: { ilgilenilen_urun: "" },
-  },
-  {
-    id: "MC06",
-    name: "[MC] Boş mesaj gelince sistem çökmemeli (success:true)",
-    input: body(""),
-    expect: { success: true },
-  },
-  {
-    id: "MC07",
-    name: "[MC] Sadece boşluk mesaj gelince sistem çökmemeli",
-    input: body("   "),
-    expect: { success: true },
-  },
-  {
-    id: "MC08",
-    name: "[MC] Geçersiz stage string'i ignore edilmeli",
-    input: body("ataç kolye", { conversation_stage: "some_invalid_stage_xyz" }),
-    expect: { ilgilenilen_urun: "atac" },
-  },
-  {
-    id: "MC09",
-    name: "[MC] Yanıt her zaman success:true döndürmeli",
-    input: body("neredesiniz"),
-    expect: { success: true },
-  },
-
-  // ════════════════════════════════════════════════════════════════════════
-  // GRUP 7: MODEL SAFETY TESTS
-  // ════════════════════════════════════════════════════════════════════════
-
-  {
-    id: "MS01",
-    name: "[MODEL] Fixed info: konum sorusu deterministic cevaplanmalı",
-    input: body("neredesiniz"),
-    expectReplyIncludes: "emin",
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS02",
-    name: "[MODEL] Fixed info: kargo süresi deterministic cevaplanmalı",
-    input: body("kargo ne zaman gelir"),
-    expectReplyIncludes: "is gunu",
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS03",
-    name: "[MODEL] Fixed info: kargo ücreti deterministic cevaplanmalı",
-    input: body("kargo ücreti var mı"),
-    expectReplyIncludes: "dahil",
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS04",
-    name: "[MODEL] Fixed info: güven sorusu deterministic cevaplanmalı",
-    input: body("güvenilir misiniz"),
-    expectReplyIncludes: "guven",
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS05",
-    name: "[MODEL] Fixed info: kararır mı sorusu deterministic cevaplanmalı",
-    input: body("kararır mı"),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS06",
-    name: "[MODEL] Fixed info: kaplama atar mı deterministic cevaplanmalı",
-    input: body("kaplaması atar mı"),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS07",
-    name: "[MODEL] Fixed info: zincir uzunluğu deterministic cevaplanmalı",
-    input: body("zincir uzunluğu ne kadar", lazer({ conversation_stage: "waiting_photo" })),
-    expectReplyIncludes: "60",
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS08",
-    name: "[MODEL] Fixed info: arkasına yazı olur mu deterministic cevaplanmalı",
-    input: body("arkasına yazı olur mu", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS09",
-    name: "[MODEL] Fixed info: arkasına foto olur mu deterministic cevaplanmalı",
-    input: body("arkasına foto olur mu", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS10",
-    name: "[MODEL] Fixed info: arka foto fiyat farkı deterministic cevaplanmalı",
-    input: body("arkasına foto koyarsam fiyat ne olur", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expectReplyIncludes: "ek ucret",
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS11",
-    name: "[MODEL] Active flow: waiting_payment'ta 'eft' fallbacke düşmemeli",
-    input: body("eft", lazerWaitingPayment()),
-    expect: { payment_method: "eft_havale", conversation_stage: "waiting_address" },
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS12",
-    name: "[MODEL] Active flow: waiting_payment'ta 'kapıda ödeme' fallbacke düşmemeli",
-    input: body("kapıda ödeme", lazerWaitingPayment()),
-    expect: { payment_method: "kapida_odeme", conversation_stage: "waiting_address" },
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS13",
-    name: "[MODEL] Active flow: waiting_back_text'te 'yok' fallbacke düşmemeli",
-    input: body("yok", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expect: { back_text_status: "skipped", conversation_stage: "waiting_payment" },
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS14",
-    name: "[MODEL] Active flow: waiting_back_text'te serbest arka yazı fallbacke düşmemeli",
-    input: body("canım ailem", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expect: { back_text_status: "received", conversation_stage: "waiting_payment" },
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS15",
-    name: "[MODEL] Active flow: waiting_letters'ta harf girdisi fallbacke düşmemeli",
-    input: body("ABC", atac({ conversation_stage: "waiting_letters" })),
-    expect: { letters_received: "1", conversation_stage: "waiting_payment" },
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS16",
-    name: "[MODEL] Active flow: waiting_address'ta telefon girdisi fallbacke düşmemeli",
-    input: body("05551234567", lazerWaitingAddress({ address_status: "address_only" })),
-    expect: { phone_received: "1", address_status: "received" },
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS17",
-    name: "[MODEL] Active flow: waiting_address'ta adres girdisi fallbacke düşmemeli",
-    input: body("Kadıköy Moda Mah No:3", lazerWaitingAddress()),
-    expect: { address_status: "address_only" },
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS18",
-    name: "[MODEL] Active flow: waiting_photo'ta gerçek foto URL fallbacke düşmemeli",
-    input: body("https://lookaside.fbsbx.com/photo123.jpg", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { photo_received: "1", conversation_stage: "waiting_back_text" },
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-{
-  id: "MS19",
-  name: "[MODEL] No-key safety: belirsiz mesajda crash olmadan menü veya güvenli cevap dönmeli",
-  input: body("uzaylı kolye yapıyor musunuz"),
-  expect: { success: true },
-  expectReplyIncludes: "hangi model",
-},
-  {
-  id: "MS20",
-  name: "[MODEL] No-key safety: çok alakasız mesajda crash olmadan menü veya güvenli cevap dönmeli",
-  input: body("mercury retrograde sırasında bitcoin ne olur"),
-  expect: { success: true },
-  expectReplyIncludes: "hangi model",
-},
-  {
-    id: "MS21",
-    name: "[MODEL] Side question: waiting_photo + konum sorusu stage bozmamali",
-    input: body("neredesiniz", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { conversation_stage: "waiting_photo", ilgilenilen_urun: "lazer" },
-    expectReplyIncludes: "istanbul",
-  },
-  {
-    id: "MS22",
-    name: "[MODEL] Side question: waiting_photo + güven sorusu stage bozmamali",
-    input: body("güvenilir misiniz", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { conversation_stage: "waiting_photo", ilgilenilen_urun: "lazer" },
-    expectReplyIncludes: "guven",
-  },
-  {
-    id: "MS23",
-    name: "[MODEL] Side question: waiting_photo + kargo süresi stage bozmamali",
-    input: body("kaç günde gelir", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { conversation_stage: "waiting_photo", ilgilenilen_urun: "lazer" },
-    expectReplyIncludes: "is gunu",
-  },
-  {
-    id: "MS24",
-    name: "[MODEL] Side question: waiting_photo + kargo ücreti stage bozmamali",
-    input: body("kargo ücreti var mı", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { conversation_stage: "waiting_photo", ilgilenilen_urun: "lazer" },
-    expectReplyIncludes: "dahil",
-  },
-  {
-    id: "MS25",
-    name: "[MODEL] Side question: waiting_payment + konum sorusu stage bozmamali",
-    input: body("yeriniz nerede", lazerWaitingPayment()),
-    expect: { conversation_stage: "waiting_payment", ilgilenilen_urun: "lazer" },
-    expectReplyIncludes: "istanbul",
-  },
-  {
-    id: "MS26",
-    name: "[MODEL] Side question: waiting_payment + güven sorusu stage bozmamali",
-    input: body("dolandırıcı mısınız", lazerWaitingPayment()),
-    expect: { conversation_stage: "waiting_payment", ilgilenilen_urun: "lazer" },
-    expectReplyIncludes: "guven",
-  },
-  {
-    id: "MS27",
-    name: "[MODEL] Side question: waiting_payment + kargo süresi stage bozmamali",
-    input: body("kargo ne zaman gelir", lazerWaitingPayment()),
-    expect: { conversation_stage: "waiting_payment", ilgilenilen_urun: "lazer" },
-    expectReplyIncludes: "is gunu",
-  },
-  {
-    id: "MS28",
-    name: "[MODEL] Side question: waiting_payment + kargo ücreti stage bozmamali",
-    input: body("kargo ücretli mi", lazerWaitingPayment()),
-    expect: { conversation_stage: "waiting_payment", ilgilenilen_urun: "lazer" },
-    expectReplyIncludes: "dahil",
-  },
-  {
-    id: "MS29",
-    name: "[MODEL] Side question: waiting_address + konum sorusu stage bozmamali",
-    input: body("konumunuz nerede", lazerWaitingAddress()),
-    expect: { conversation_stage: "waiting_address", ilgilenilen_urun: "lazer" },
-    expectReplyIncludes: "istanbul",
-  },
-  {
-    id: "MS30",
-    name: "[MODEL] Side question: waiting_address + güven sorusu stage bozmamali",
-    input: body("güvenilir mi", lazerWaitingAddress()),
-    expect: { conversation_stage: "waiting_address", ilgilenilen_urun: "lazer" },
-    expectReplyIncludes: "guven",
-  },
-
-  {
-    id: "MS31",
-    name: "[MODEL] Ataç waiting_letters + konum sorusu stage bozmamali",
-    input: body("neredesiniz", atac({ conversation_stage: "waiting_letters" })),
-    expect: { conversation_stage: "waiting_letters", ilgilenilen_urun: "atac" },
-    expectReplyIncludes: "istanbul",
-  },
-  {
-    id: "MS32",
-    name: "[MODEL] Ataç waiting_letters + güven sorusu stage bozmamali",
-    input: body("güvenilir misiniz", atac({ conversation_stage: "waiting_letters" })),
-    expect: { conversation_stage: "waiting_letters", ilgilenilen_urun: "atac" },
-    expectReplyIncludes: "guven",
-  },
-  {
-    id: "MS33",
-    name: "[MODEL] Ataç waiting_letters + kargo sorusu stage bozmamali",
-    input: body("kargo ne zaman gelir", atac({ conversation_stage: "waiting_letters" })),
-    expect: { conversation_stage: "waiting_letters", ilgilenilen_urun: "atac" },
-    expectReplyIncludes: "is gunu",
-  },
-  {
-    id: "MS34",
-    name: "[MODEL] Ataç waiting_payment + konum sorusu stage bozmamali",
-    input: body("yeriniz nerede", atacWaitingPayment()),
-    expect: { conversation_stage: "waiting_payment", ilgilenilen_urun: "atac" },
-    expectReplyIncludes: "istanbul",
-  },
-  {
-    id: "MS35",
-    name: "[MODEL] Ataç waiting_payment + güven sorusu stage bozmamali",
-    input: body("dolandırıcı mısınız", atacWaitingPayment()),
-    expect: { conversation_stage: "waiting_payment", ilgilenilen_urun: "atac" },
-    expectReplyIncludes: "guven",
-  },
-  {
-    id: "MS36",
-    name: "[MODEL] Ataç waiting_payment + kargo sorusu stage bozmamali",
-    input: body("kaç günde gelir", atacWaitingPayment()),
-    expect: { conversation_stage: "waiting_payment", ilgilenilen_urun: "atac" },
-    expectReplyIncludes: "is gunu",
-  },
-  {
-    id: "MS37",
-    name: "[MODEL] Ataç waiting_address + konum sorusu stage bozmamali",
-    input: body("neredesiniz", atacWaitingAddress()),
-    expect: { conversation_stage: "waiting_address", ilgilenilen_urun: "atac" },
-    expectReplyIncludes: "istanbul",
-  },
-  {
-    id: "MS38",
-    name: "[MODEL] Ataç waiting_address + güven sorusu stage bozmamali",
-    input: body("güvenilir misiniz", atacWaitingAddress()),
-    expect: { conversation_stage: "waiting_address", ilgilenilen_urun: "atac" },
-    expectReplyIncludes: "guven",
-  },
-  {
-    id: "MS39",
-    name: "[MODEL] Ataç waiting_address + kargo sorusu stage bozmamali",
-    input: body("teslimat süresi", atacWaitingAddress()),
-    expect: { conversation_stage: "waiting_address", ilgilenilen_urun: "atac" },
-    expectReplyIncludes: "is gunu",
-  },
-  {
-    id: "MS40",
-    name: "[MODEL] Ataç waiting_letters + fiyat sorusu letters stage bozmamali",
-    input: body("fiyat ne kadar", atac({ conversation_stage: "waiting_letters" })),
-    expect: { conversation_stage: "waiting_letters", ilgilenilen_urun: "atac" },
-  },
-
-  {
-    id: "MS41",
-    name: "[MODEL] Product switch: lazer waiting_photo -> atac seçimi waiting_letters olmali",
-    input: body("ataç kolye istiyorum", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { ilgilenilen_urun: "atac", conversation_stage: "waiting_letters", photo_received: "" },
-  },
-  {
-    id: "MS42",
-    name: "[MODEL] Product switch: lazer waiting_back_text -> atac seçimi waiting_letters olmali",
-    input: body("harfli ataç kolye istiyorum", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expect: { ilgilenilen_urun: "atac", conversation_stage: "waiting_letters", back_text_status: "" },
-  },
-  {
-    id: "MS43",
-    name: "[MODEL] Product switch: lazer waiting_payment -> atac seçimi payment temizlenmeli",
-    input: body("yok ben ataç alayım", lazerWaitingPayment()),
-    expect: { ilgilenilen_urun: "atac", conversation_stage: "waiting_letters", payment_method: "" },
-  },
-  {
-    id: "MS44",
-    name: "[MODEL] Product switch: lazer waiting_address -> atac seçimi address temizlenmeli",
-    input: body("ataç alayım", lazerWaitingAddress({ address_status: "address_only" })),
-    expect: { ilgilenilen_urun: "atac", conversation_stage: "waiting_letters", address_status: "" },
-  },
-  {
-    id: "MS45",
-    name: "[MODEL] Product switch: atac waiting_letters -> lazer seçimi waiting_photo olmali",
-    input: body("resimli lazer kolye istiyorum", atac({ conversation_stage: "waiting_letters" })),
-    expect: { ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo", letters_received: "" },
-  },
-  {
-    id: "MS46",
-    name: "[MODEL] Product switch: atac waiting_payment -> lazer seçimi payment temizlenmeli",
-    input: body("yok ben resimli istiyorum", atacWaitingPayment()),
-    expect: { ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo", payment_method: "" },
-  },
-  {
-    id: "MS47",
-    name: "[MODEL] Product switch: atac waiting_address -> lazer seçimi address temizlenmeli",
-    input: body("resimli istiyorum", atacWaitingAddress({ address_status: "address_only" })),
-    expect: { ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo", address_status: "" },
-  },
-  {
-    id: "MS48",
-    name: "[MODEL] Cross product info: aktif lazerde atac fiyat sorusu switch sayılmamalı",
-    input: body("ataç kolye fiyatı ne kadar", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo" },
-  },
-  {
-    id: "MS49",
-    name: "[MODEL] Cross product info: aktif atacda lazer fiyat sorusu switch sayılmamalı",
-    input: body("resimli kolye fiyatı ne kadar", atac({ conversation_stage: "waiting_letters" })),
-    expect: { ilgilenilen_urun: "atac", conversation_stage: "waiting_letters" },
-  },
-  {
-    id: "MS50",
-    name: "[MODEL] Explicit switch: 'ben fikrimi degistirdim resimli olsun' lazera çevirmeli",
-    input: body("ben fikrimi değiştirdim resimli olsun", atacWaitingPayment()),
-    expect: { ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo", letters_received: "" },
-  },
-
-  {
-    id: "MS51",
-    name: "[MODEL] Payment variation: 'kapida odeme var mi' deterministic olmali",
-    input: body("kapida odeme var mi"),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS52",
-    name: "[MODEL] Payment variation: 'kapida olsun' waiting_paymentta kapida_odeme olmali",
-    input: body("kapida olsun", lazerWaitingPayment()),
-    expect: { payment_method: "kapida_odeme", conversation_stage: "waiting_address" },
-  },
-  {
-    id: "MS53",
-    name: "[MODEL] Payment variation: 'havale olsun' waiting_paymentta eft_havale olmali",
-    input: body("havale olsun", lazerWaitingPayment()),
-    expect: { payment_method: "eft_havale", conversation_stage: "waiting_address" },
-  },
-  {
-    id: "MS54",
-    name: "[MODEL] Payment variation: 'eft ile odeyecegim' deterministic olmali",
-    input: body("eft ile odeyecegim", lazerWaitingPayment()),
-    expect: { payment_method: "eft_havale", conversation_stage: "waiting_address" },
-  },
-  {
-    id: "MS55",
-    name: "[MODEL] Photo variation: 'fotograf atsam olur mu' fallbacke dusmemeli",
-    input: body("fotograf atsam olur mu", lazer({ conversation_stage: "waiting_photo" })),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS56",
-    name: "[MODEL] Photo variation: 'resim nasil gonderiyorum' fallbacke dusmemeli",
-    input: body("resim nasıl gönderiyorum", lazer({ conversation_stage: "waiting_photo" })),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS57",
-    name: "[MODEL] Back text variation: 'arka tarafa yazi olur mu' fallbacke dusmemeli",
-    input: body("arka tarafa yazı olur mu", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS58",
-    name: "[MODEL] Back photo variation: 'iki yuzune de foto olur mu' fallbacke dusmemeli",
-    input: body("iki yüzüne de foto olur mu", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS59",
-    name: "[MODEL] Shipping variation: 'teslimat ne zaman olur' deterministic olmali",
-    input: body("teslimat ne zaman olur"),
-    expectReplyIncludes: "is gunu",
-  },
-  {
-    id: "MS60",
-    name: "[MODEL] Location variation: 'konum atar misiniz' deterministic olmali",
-    input: body("konum atar mısınız"),
-    expectReplyIncludes: "istanbul",
-  },
-
-  {
-    id: "MS61",
-    name: "[MODEL] Parsing extra: 0555 123 45 67 phone algilanmali",
-    input: body("0555 123 45 67", lazerWaitingAddress()),
-    expect: { phone_received: "1" },
-  },
-  {
-    id: "MS62",
-    name: "[MODEL] Parsing extra: +90 555 123 45 67 phone algilanmali",
-    input: body("+90 555 123 45 67", lazerWaitingAddress()),
-    expect: { phone_received: "1" },
-  },
-  {
-    id: "MS63",
-    name: "[MODEL] Parsing extra: site blok daire adres algilanmali",
-    input: body("Gül Sitesi A Blok Daire 3 Kadıköy İstanbul", lazerWaitingAddress()),
-    expect: { address_status: "address_only" },
-  },
-  {
-    id: "MS64",
-    name: "[MODEL] Parsing extra: apartman kat no adres algilanmali",
-    input: body("Lale Apartmanı Kat 2 No 5 Çankaya Ankara", lazerWaitingAddress()),
-    expect: { address_status: "address_only" },
-  },
-  {
-    id: "MS65",
-    name: "[MODEL] Parsing negative: sadece sehir adres sayilmamali",
-    input: body("İstanbul", lazerWaitingAddress()),
-    expect: { address_status: "" },
-  },
-  {
-    id: "MS66",
-    name: "[MODEL] Parsing negative: sadece ilce adres sayilmamali",
-    input: body("Kadıköy", lazerWaitingAddress()),
-    expect: { address_status: "" },
-  },
-  {
-    id: "MS67",
-    name: "[MODEL] Parsing merge: once isim sonra telefon waiting_addressi bozmasin",
-    input: body("Ali Yılmaz", lazerWaitingAddress()),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-  },
-  {
-    id: "MS68",
-    name: "[MODEL] Cancellation: waiting_photo'da iptal supporta gitmeli",
-    input: body("iptal", lazer({ conversation_stage: "waiting_photo" })),
-    expect: { order_status: "cancel_requested", conversation_stage: "human_support" },
-  },
-  {
-    id: "MS69",
-    name: "[MODEL] Cancellation: waiting_letters'ta iptal supporta gitmeli",
-    input: body("vazgeçtim", atac({ conversation_stage: "waiting_letters" })),
-    expect: { order_status: "cancel_requested", conversation_stage: "human_support" },
-  },
-  {
-    id: "MS70",
-    name: "[MODEL] Completion integrity: address_only varken completed olmamali",
-    input: body("Kadıköy Moda Mah No:3", atacWaitingAddress()),
-    expect: { conversation_stage: "waiting_address", order_status: "started" },
-  },
-
-{
-    id: "B01",
-    name: "[BACKLOG] Ataçta foto sorusu fallback olmamalı",
-    input: body("fotoğrafı nasıl göndereceğim", atac({ conversation_stage: "waiting_letters" })),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-    expectReplyIncludes: "fotoğraf gerekmiyor",
-  },
-  {
-    id: "B02",
-    name: "[BACKLOG] Ataçta arka yazı sorusu lazer yönlendirme almalı",
-    input: body("arkasına yazı olur mu", atac()),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-    expectReplyIncludes: "lazer",
-  },
-  {
-    id: "B03",
-    name: "[BACKLOG] Ataçta arka foto sorusu lazer yönlendirme almalı",
-    input: body("arkasına foto olur mu", atac()),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-    expectReplyIncludes: "lazer",
-  },
-  {
-    id: "B04",
-    name: "[BACKLOG] Ataçta arka foto fiyat sorusu fallback olmamalı",
-    input: body("arka foto olursa fiyat ne olur", atac()),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-    expectReplyIncludes: "lazer",
-  },
-  {
-    id: "B05",
-    name: "[BACKLOG] Ataçta resim gönderme sorusu fallback olmamalı",
-    input: body("resim nasıl gönderiyorum", atac({ conversation_stage: "waiting_letters" })),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-    expectReplyIncludes: "fotoğraf gerekmiyor",
-  },
-  {
-    id: "B06",
-    name: "[BACKLOG] Ataçta iki yüz foto sorusu fallback olmamalı",
-    input: body("iki yüzüne de foto olur mu", atac()),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-    expectReplyIncludes: "lazer",
-  },
-  {
-    id: "B07",
-    name: "[BACKLOG] Ataçta arka tarafa foto sorusu fallback olmamalı",
-    input: body("arka tarafa foto olur mu", atac()),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-    expectReplyIncludes: "lazer",
-  },
-  {
-    id: "B08",
-    name: "[BACKLOG] Ataçta arka tarafa yazı sorusu fallback olmamalı",
-    input: body("arka tarafa yazı olur mu", atac()),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-    expectReplyIncludes: "lazer",
-  },
-  {
-    id: "B09",
-    name: "[BACKLOG] Ataçta fotoğraf atsam olur mu sorusu fallback olmamalı",
-    input: body("fotoğraf atsam olur mu", atac({ conversation_stage: "waiting_letters" })),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-    expectReplyIncludes: "fotoğraf gerekmiyor",
-  },
-  {
-    id: "B10",
-    name: "[BACKLOG] Ataçta arka yüz özellik sorusu fallback olmamalı",
-    input: body("arka yüzüne fotoğraf koyabiliyor muyuz", atac()),
-    expectReplyNotIncludes: "ekibimize iletiyorum",
-    expectReplyIncludes: "lazer",
-  },
-];
-
-// ─── RUNNER ───────────────────────────────────────────────────────────────
-async function runTests() {
-  let passed = 0;
-  const failed = [];
-
-  const categories = {
-    CORE: [0, 0],
-    REG: [0, 0],
-    PARSE: [0, 0],
-    VAR: [0, 0],
-    STATE: [0, 0],
-    MC: [0, 0],
-    MODEL: [0, 0],
-    BACKLOG: [0, 0],
-  };
-
-  function getCat(id) {
-  if (id.startsWith("T")) return "CORE";
-  if (id.startsWith("R")) return "REG";
-  if (id.startsWith("P")) return "PARSE";
-  if (id.startsWith("V")) return "VAR";
-  if (id.startsWith("S")) return "STATE";
-  if (id.startsWith("MC")) return "MC";
-  if (id.startsWith("B")) return "BACKLOG";
-  return "CORE";
+function truthy(value) {
+  const v = normalizeText(unwrapManychatValue(value));
+  return ["1", "true", "evet", "yes", "var", "alindi", "tamam", "received", "done"].includes(v);
 }
 
-  for (const test of tests) {
-    const cat = getCat(test.id);
-    categories[cat][1]++;
+function cleanReply(text) {
+  const t = String(text || "").trim();
+  if (!t) return FALLBACK_TEXT;
+  return t.replace(/^["'\s]+|["'\s]+$/g, "").replace(/\n{3,}/g, "\n\n").trim();
+}
 
-    try {
-      const res = await processChat(test.input, { skipKnowledgeCheck: true });
-      let ok = true;
+function makeReply(text, replyClass = REPLY_CLASS.FLOW_PROGRESS, supportModeReason = SUPPORT_MODE_REASON.NONE) {
+  return { text, reply_class: replyClass, support_mode_reason: supportModeReason };
+}
 
-      if (test.expect) {
-        for (const key of Object.keys(test.expect)) {
-          if (res[key] !== test.expect[key]) {
-            ok = false;
-          }
-        }
-      }
+function emptyReply() {
+  return { text: "", reply_class: "", support_mode_reason: SUPPORT_MODE_REASON.NONE };
+}
 
-      if (test.expectReplyIncludes) {
-        const reply = normalizeForTest(res.ai_reply || "");
-        const expected = normalizeForTest(test.expectReplyIncludes);
-        if (!reply.includes(expected)) ok = false;
-      }
+// ─── ENTITY DETECTION (YENİDEN YAZILDI) ─────────────────────
 
-      if (test.expectReplyNotIncludes) {
-        const reply = normalizeForTest(res.ai_reply || "");
-        const forbidden = normalizeForTest(test.expectReplyNotIncludes);
-        if (reply.includes(forbidden)) ok = false;
-      }
+function looksLikePhotoUrl(rawMessage = "") {
+  const raw = String(rawMessage || "").trim().toLowerCase();
+  if (!raw) return false;
+  const isUrl = raw.startsWith("http://") || raw.startsWith("https://");
+  if (!isUrl) return false;
+  return (
+    raw.includes("lookaside.fbsbx.com") ||
+    raw.includes("ig_messaging_cdn") ||
+    raw.includes("cdninstagram") ||
+    raw.includes("cdn.instagram") ||
+    raw.includes(".jpg") ||
+    raw.includes(".jpeg") ||
+    raw.includes(".png") ||
+    raw.includes(".webp")
+  );
+}
 
-      if (ok) {
-        console.log(`✅ ${test.id} - ${test.name}`);
-        passed++;
-        categories[cat][0]++;
-      } else {
-        console.log(`❌ ${test.id} - ${test.name}`);
+function extractPhone(rawMessage = "") {
+  const raw = String(rawMessage || "");
+  const matches = raw.match(/(?:\+?90[\s().-]*)?(?:0?5\d(?:[\s().-]*\d){8})/g) || [];
+  for (const match of matches) {
+    const digits = match.replace(/\D/g, "");
+    if (/^905\d{9}$/.test(digits)) return digits.slice(-10);
+    if (/^05\d{9}$/.test(digits)) return digits.slice(-10);
+    if (/^5\d{9}$/.test(digits)) return digits;
+  }
+  return "";
+}
 
-        if (test.expect) {
-          for (const key of Object.keys(test.expect)) {
-            if (res[key] !== test.expect[key]) {
-              console.log(`   [${key}] beklenen="${test.expect[key]}" gelen="${res[key]}"`);
-            }
-          }
-        }
+/**
+ * *** YENİDEN YAZILDI ***
+ * Adres tespiti artık stage-aware. waiting_address dışında çok daha katı.
+ */
+function looksLikeAddress(messageNorm, rawMessage = "", conversationStage = "") {
+  const raw = String(rawMessage || "").trim();
+  if (!raw || raw.length < 10) return false;
 
-        if (test.expectReplyIncludes) {
-          console.log(`   Reply içinde aranan: "${test.expectReplyIncludes}"`);
-          console.log(`   Gelen: "${res.ai_reply}"`);
-        }
+  // Soru cümlelerini adres olarak algılama
+  if (/[?]/.test(raw)) return false;
+  if (/\b(mi|mı|mu|mü|miyim|mıyım|musun|müsün)\b/i.test(raw)) return false;
 
-        if (test.expectReplyNotIncludes) {
-          console.log(`   Reply içinde OLMAMASI gereken: "${test.expectReplyNotIncludes}"`);
-          console.log(`   Gelen: "${res.ai_reply}"`);
-        }
+  const addressKeywords = [
+    "mahalle", "mah", "sokak", "sk", "cadde", "cd", "bulvar", "no", "daire", "apt",
+    "apartman", "apart", "ap", "kat", "site", "sitesi", "blok", "ilce", "ilçe",
+    "mahallesi", "ic kapi", "iç kapı",
+  ];
 
-        failed.push(test.id);
-      }
-    } catch (err) {
-      console.log(`💥 ${test.id} - ${test.name}`);
-      console.log(err?.message || err);
-      failed.push(test.id);
+  let hit = 0;
+  for (const k of addressKeywords) {
+    if (messageNorm.includes(k)) hit++;
+  }
+
+  const hasNumber = /\d/.test(raw);
+  const hasCityMatch = TURKEY_CITIES.filter((c) => messageNorm.includes(c)).length;
+  const hasDistrictMatch = DISTRICT_KEYWORDS.filter((d) => messageNorm.includes(d)).length;
+
+  // waiting_address stage'inde daha toleranslı
+  if (conversationStage === "waiting_address") {
+    if (hit >= 2) return true;
+    if (hit >= 1 && hasNumber) return true;
+    if (hasCityMatch >= 1 && hasDistrictMatch >= 1) return true;
+    if (hasCityMatch >= 1 && hit >= 1) return true;
+    // Uzun mesaj + şehir + numara
+    if (raw.length >= 20 && hasCityMatch >= 1 && hasNumber) return true;
+  } else {
+    // Diğer stage'lerde çok daha katı
+    if (hit >= 3) return true;
+    if (hit >= 2 && hasNumber && hasCityMatch >= 1) return true;
+    // En az 2 adres keyword + bir şehir lazım
+    if (hit >= 2 && hasCityMatch >= 1) return true;
+  }
+
+  return false;
+}
+
+/**
+ * *** YENİDEN YAZILDI ***
+ * İsim tespiti artık çok daha katı. Yalnızca gerçek isimler eşleşecek.
+ */
+function looksLikeNameInput(rawMessage = "", messageNorm = "", conversationStage = "") {
+  // İsim tespiti SADECE waiting_address stage'inde aktif
+  if (conversationStage !== "waiting_address") return false;
+
+  const raw = String(rawMessage || "").trim();
+  if (!raw) return false;
+  if (raw.length < 4 || raw.length > 40) return false;
+  if (/\d/.test(raw)) return false;
+  if (/[?!.:/]/.test(raw)) return false;
+
+  const parts = raw.split(/\s+/).filter(Boolean);
+  if (parts.length < 2 || parts.length > 4) return false;
+  if (!/^[a-zA-ZçğıöşüÇĞİÖŞÜ\s]+$/.test(raw)) return false;
+
+  // NOT_A_NAME_PHRASES kontrolü — herhangi biri varsa isim değil
+  const norm = normalizeText(raw);
+  for (const phrase of NOT_A_NAME_PHRASES) {
+    if (norm.includes(phrase)) return false;
+  }
+
+  // Bilinen intent keyword'lerini kontrol et
+  for (const intentKey of Object.keys(KEYWORDS.intents)) {
+    if (hasAny(norm, KEYWORDS.intents[intentKey])) return false;
+  }
+
+  // Ürün keyword'lerini kontrol et
+  if (hasAny(norm, KEYWORDS.product.lazer) || hasAny(norm, KEYWORDS.product.atac)) return false;
+
+  // Adres gibi görünüyorsa isim değil
+  if (looksLikeAddress(norm, raw, conversationStage)) return false;
+
+  return true;
+}
+
+function normalizeProduct(value) {
+  const v = normalizeText(value);
+  if (["lazer", "resimli", "resimli lazer kolye"].includes(v)) return "lazer";
+  if (["atac", "ataç", "harfli atac kolye", "harfli ataç kolye"].includes(v)) return "atac";
+  return "";
+}
+
+function getEntryProduct(body = {}) {
+  const candidates = [
+    body.entry_product, body.ad_product, body.flow_product,
+    body.trigger_product, body.product_context, body.source_product,
+  ];
+  for (const candidate of candidates) {
+    const normalized = normalizeProduct(unwrapManychatValue(candidate));
+    if (normalized) return normalized;
+  }
+  return "";
+}
+
+function normalizePayment(value) {
+  const v = normalizeText(value);
+  if (!v) return "";
+  if (v.includes("kapida")) return "kapida_odeme";
+  if (v.includes("eft") || v.includes("havale")) return "eft_havale";
+  return "";
+}
+
+function normalizeOrderStatus(value) {
+  const v = normalizeText(value);
+  if (!v) return "";
+  if (["started", "collecting", "address_pending"].includes(v)) return "started";
+  if (["completed", "done", "tamam"].includes(v)) return "completed";
+  if (["cancel_requested"].includes(v)) return "cancel_requested";
+  return "";
+}
+
+function normalizeAddressStatus(value) {
+  const v = normalizeText(value);
+  if (!v) return "";
+  if (["received", "alindi", "done", "tamam"].includes(v)) return "received";
+  if (["address_only", "eksik", "partial"].includes(v)) return "address_only";
+  return "";
+}
+
+function normalizeBackTextStatus(value) {
+  const v = normalizeText(value);
+  if (!v) return "";
+  if (["received", "alindi", "done", "tamam"].includes(v)) return "received";
+  if (["skipped", "atlandi", "istemiyor", "yok"].includes(v)) return "skipped";
+  return "";
+}
+
+function normalizeStage(value) {
+  const v = normalizeText(value);
+  if (!v) return "";
+  const allowed = [
+    "waiting_photo", "waiting_payment", "waiting_address",
+    "waiting_letters", "waiting_product", "waiting_back_text",
+    "order_completed", "human_support",
+  ];
+  const normalized = v.replace(/\s+/g, "_");
+  return allowed.includes(normalized) ? normalized : "";
+}
+
+function isExplicitProductSwitch(messageNorm) {
+  return hasAny(messageNorm, [
+    "yok ben", "onun yerine", "degistirelim", "degistirmek istiyorum",
+    "değiştirelim", "değiştirmek istiyorum",
+    "ben atac alayim", "ben ataç alayım", "ben resimli istiyorum",
+    "ben lazer istiyorum", "ataç alayım", "atac alayim",
+    "fikrimi degistirdim", "fikrimi değiştirdim",
+  ]);
+}
+
+function detectProduct(messageNorm, existingProduct = "") {
+  const existing = normalizeProduct(existingProduct);
+  if (existing) return existing;
+  if (hasAny(messageNorm, KEYWORDS.product.lazer)) return "lazer";
+  if (hasAny(messageNorm, KEYWORDS.product.atac)) return "atac";
+  return "";
+}
+
+function parsePaymentMethod(messageNorm, existing = "") {
+  if (hasAny(messageNorm, ["kapida odeme", "kapıda ödeme", "kapida", "kapıda", "odeme olsun", "ödeme olsun"])) {
+    return "kapida_odeme";
+  }
+  if (hasAny(messageNorm, ["eft", "havale"])) {
+    return "eft_havale";
+  }
+  return existing || "";
+}
+
+// ─── EXTRACT ENTITIES (stage-aware) ─────────────────────────
+
+function extractEntities(baseContext) {
+  const { message, messageNorm, detectedProduct, conversationStage } = baseContext;
+
+  const phone = extractPhone(message);
+  const hasAddress = looksLikeAddress(messageNorm, message, conversationStage);
+  const hasName = looksLikeNameInput(message, messageNorm, conversationStage);
+  const payment = parsePaymentMethod(messageNorm, "");
+  const photoLink = looksLikePhotoUrl(message);
+
+  let letters = "";
+  if (detectedProduct === "atac" && ["", "waiting_letters", "waiting_product"].includes(conversationStage)) {
+    const raw = String(message || "").trim();
+    const norm = normalizeText(raw);
+    const parts = norm.split(/\s+/).filter(Boolean);
+    const looksLikeLetters =
+      raw && raw.length <= 24 &&
+      !/[?!.:,/]/.test(raw) &&
+      /^[a-zA-ZçğıöşüÇĞİÖŞÜ\s&]+$/.test(raw) &&
+      parts.length <= 3 &&
+      !LETTER_STOPWORDS.includes(norm) &&
+      !hasAny(norm, [
+        "atac", "ataç", "harfli", "kolye", "istiyorum", "ilgileniyorum",
+        "almak istiyorum", "kac tane", "kaç tane", "hangi harf", "hangi harfler",
+        "harf mi", "fiyat", "ne kadar", "olur mu", "celik", "çelik",
+        "kararma", "paslanmaz", "malzeme",
+      ]);
+    if (looksLikeLetters) letters = raw;
+  }
+
+  return { phone, hasAddress, hasName, payment, photoLink, letters };
+}
+
+// ─── INTENT DETECTION (TAMAMEN YENİDEN YAZILDI) ─────────────
+/**
+ * 3 katmanlı intent algılama:
+ * 1. Kesin keyword intent'ler (en yüksek öncelik)
+ * 2. Flow-aware intent'ler (stage'e göre)
+ * 3. Entity-based intent'ler (en düşük öncelik, sadece ilgili stage'de)
+ */
+function detectIntent(baseContext, extracted) {
+  const { messageNorm, message, detectedProduct, conversationStage } = baseContext;
+  const raw = String(message || "").trim();
+
+  // ═══ KATMAN 0: Boş/çok kısa mesajlar ═══
+  if (!raw || raw.length <= 1) return "general";
+
+  // Emoji-only veya reaction mesajları
+  if (/^(liked a message|reacted)/.test(messageNorm)) return "smalltalk";
+
+  // ═══ KATMAN 1: KEYİN KEYWORD INTENT'LER ═══
+
+  // İptal — her zaman en yüksek öncelik
+  if (hasAny(messageNorm, KEYWORDS.intents.cancel)) return "cancel_order";
+
+  // Post-sale (sipariş sonrası şikayet/soru)
+  if (hasAny(messageNorm, KEYWORDS.intents.postSale)) return "post_sale";
+
+  // Yeni sipariş talebi
+  if (hasAny(messageNorm, KEYWORDS.intents.newOrder)) return "new_order";
+
+  // ──── Back text stage-specific intents ────
+  if (conversationStage === "waiting_back_text") {
+    if (hasAny(messageNorm, [
+      "olur mu bu fotograf", "olur mu bu foto", "sizce bu fotograf olur mu",
+      "bu fotograf olur mu", "bu foto olur mu", "fotograf uygun mu", "foto uygun mu",
+      "uygun mudur",
+    ])) return "photo_suitability_question";
+
+    if (hasAny(messageNorm, [
+      "gonderdim ya zaten", "gönderdim ya zaten",
+      "ikinci fotoyu da gonderdim", "ikinci fotoyu da gönderdim",
+      "arka fotografi da gonderdim", "arka fotoyu da gonderdim",
+    ])) return "back_photo_already_sent";
+
+    if (hasAny(messageNorm, [
+      "genelde ne yaziliyor", "genelde ne yazılıyor",
+      "ne yaziliyor genelde", "ne yazılıyor genelde",
+      "yazi ne yazalim", "yazı ne yazalım",
+      "arkaya ne yaziliyor", "arkaya ne yazılıyor",
+    ])) return "back_text_examples";
+
+    if (hasAny(messageNorm, KEYWORDS.intents.backTextSkip)) return "back_text_skip";
+    if (hasAny(messageNorm, KEYWORDS.intents.backTextInfo)) return "back_text_info";
+    if (hasAny(messageNorm, KEYWORDS.intents.backPhotoInfo)) return "back_photo_info";
+  }
+
+  // ──── Kesin keyword intents ────
+  if (hasAny(messageNorm, KEYWORDS.intents.backPhotoPrice)) return "back_photo_price";
+
+  // Fotoğraf URL geldi
+  if (looksLikePhotoUrl(message) && detectedProduct === "lazer") {
+    return conversationStage === "waiting_back_text" ? "back_photo_upload" : "photo";
+  }
+
+  // Kargo ücreti soruları (shipping_price, shipping'den ÖNCE kontrol edilmeli)
+  if (hasAny(messageNorm, KEYWORDS.intents.shippingPrice)) return "shipping_price";
+
+  // Kargo
+  if (hasAny(messageNorm, KEYWORDS.intents.shipping)) return "shipping";
+
+  // Malzeme soruları (çelik mi vs) — trust'tan önce kontrol
+  if (hasAny(messageNorm, KEYWORDS.intents.materialQuestion)) return "material_question";
+
+  // Güven
+  if (hasAny(messageNorm, KEYWORDS.intents.trust)) return "trust";
+
+  // Lokasyon
+  if (hasAny(messageNorm, KEYWORDS.intents.location)) return "location";
+
+  // Ödeme
+  if (hasAny(messageNorm, KEYWORDS.intents.payment)) return "payment";
+
+  // Zincir
+  if (hasAny(messageNorm, KEYWORDS.intents.chain)) return "chain_question";
+
+  // Fiyat — ama "kargo" + fiyat kelimesi birlikte geliyorsa → shipping_price
+  if (hasAny(messageNorm, KEYWORDS.intents.price)) {
+    if (messageNorm.includes("kargo")) return "shipping_price";
+    return "price";
+  }
+
+  // Fotoğraf sorusu
+  if (hasAny(messageNorm, KEYWORDS.intents.photoQuestion)) return "photo_question";
+
+  // Arka yazı/foto sorusu (stage dışında) — INFO soruları DIRECT'ten önce kontrol edilmeli
+  if (hasAny(messageNorm, KEYWORDS.intents.backTextInfo)) return "back_text_info";
+  if (hasAny(messageNorm, KEYWORDS.intents.backPhotoInfo)) return "back_photo_info";
+  if (hasAny(messageNorm, KEYWORDS.intents.backTextDirect)) return "back_text";
+
+  // Örnek isteği
+  if (hasAny(messageNorm, KEYWORDS.intents.exampleRequest)) return "example_request";
+
+  // Detay isteği
+  if (hasAny(messageNorm, KEYWORDS.intents.detailRequest)) return "detail_request";
+
+  // Sipariş başlatma
+  if (hasAny(messageNorm, KEYWORDS.intents.orderStart)) return "order_start";
+
+  // ═══ KATMAN 2: FLOW-AWARE INTENT'LER ═══
+
+  // waiting_back_text stage'inde: kısa mesajlar arka yazı olarak yorumlanır
+  if (conversationStage === "waiting_back_text") {
+    const blocked = hasAny(messageNorm, [
+      ...KEYWORDS.intents.smalltalk,
+      ...KEYWORDS.intents.cancel,
+      ...KEYWORDS.intents.payment,
+      ...KEYWORDS.intents.shipping,
+      ...KEYWORDS.intents.shippingPrice,
+      ...KEYWORDS.intents.trust,
+      ...KEYWORDS.intents.location,
+      ...KEYWORDS.intents.price,
+      ...KEYWORDS.intents.chain,
+      ...KEYWORDS.intents.photoQuestion,
+      ...KEYWORDS.intents.materialQuestion,
+    ]);
+
+    if (raw && !blocked && !looksLikePhotoUrl(message) && raw.length <= 80) {
+      return "back_text";
     }
   }
 
-  console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-  console.log("KATEGORİ BAZLI SONUÇ:");
+  // Fotoğraf URL (ürün bağlamı olmadan da)
+  if (looksLikePhotoUrl(message)) return "photo";
 
-  const catNames = {
-    CORE: "Core Flow",
-    REG: "Regression",
-    PARSE: "Parsing",
-    VAR: "Variation",
-    STATE: "State Machine",
-    MC: "ManyChat Contract",
-    MODEL: "Model Safety",
-    BACKLOG: "Backlog",
+  // Smalltalk (keyword intent'lerden SONRA kontrol)
+  if (hasAny(messageNorm, KEYWORDS.intents.smalltalk)) return "smalltalk";
+
+  // ═══ KATMAN 3: ENTITY-BASED INTENT'LER (en düşük öncelik) ═══
+
+  // Adres — sadece ilgili stage'lerde
+  if (extracted.hasAddress && ["waiting_address", ""].includes(conversationStage)) return "address";
+
+  // Telefon
+  if (extracted.phone && ["waiting_address", ""].includes(conversationStage)) return "phone";
+
+  // İsim — sadece waiting_address stage'inde
+  if (extracted.hasName && conversationStage === "waiting_address") return "name_only";
+
+  // Harfler — ataç ürünü
+  if (detectedProduct === "atac" && extracted.letters) return "letters";
+
+  return "general";
+}
+
+// ─── BUILD CONTEXT ──────────────────────────────────────────
+
+function buildContext(body) {
+  const message = unwrapManychatValue(body.message || body.last_input_text || body.last_user_message || "");
+  const ilgilenilen_urun = unwrapManychatValue(body.ilgilenilen_urun);
+  const user_product = unwrapManychatValue(body.user_product);
+  const conversation_stage = normalizeStage(unwrapManychatValue(body.conversation_stage));
+  const photo_received = unwrapManychatValue(body.photo_received);
+  const payment_method = normalizePayment(unwrapManychatValue(body.payment_method));
+  const menu_gosterildi = unwrapManychatValue(body.menu_gosterildi || body.menu_shown || body.menuShown);
+  const ai_reply = unwrapManychatValue(body.ai_reply);
+  const last_intent = unwrapManychatValue(body.last_intent);
+  const order_status = normalizeOrderStatus(unwrapManychatValue(body.order_status));
+  const back_text_status = normalizeBackTextStatus(unwrapManychatValue(body.back_text_status));
+  const address_status = normalizeAddressStatus(unwrapManychatValue(body.address_status));
+  const support_mode = unwrapManychatValue(body.support_mode);
+  const support_mode_reason = unwrapManychatValue(body.support_mode_reason);
+  const reply_class = unwrapManychatValue(body.reply_class);
+  const siparis_alindi = unwrapManychatValue(body.siparis_alindi);
+  const cancel_reason = unwrapManychatValue(body.cancel_reason);
+  const context_lock = unwrapManychatValue(body.context_lock);
+  const letters_received = unwrapManychatValue(body.letters_received);
+  const phone_received = unwrapManychatValue(body.phone_received);
+
+  const existingProduct = ilgilenilen_urun || user_product || "";
+  const previousProduct = normalizeProduct(existingProduct) || "";
+  const entryProduct = getEntryProduct(body);
+  const messageNorm = normalizeText(message);
+  const explicitProduct = detectProduct(messageNorm, "");
+
+  let detectedProduct = previousProduct || entryProduct || explicitProduct || "";
+
+  if (!previousProduct && entryProduct) detectedProduct = entryProduct;
+  if (!previousProduct && !entryProduct && explicitProduct) detectedProduct = explicitProduct;
+
+  if (previousProduct && explicitProduct && previousProduct !== explicitProduct) {
+    const shouldKeepPreviousProduct =
+      !isExplicitProductSwitch(messageNorm) &&
+      (
+        hasAny(messageNorm, KEYWORDS.intents.price) ||
+        hasAny(messageNorm, KEYWORDS.intents.shippingPrice) ||
+        hasAny(messageNorm, KEYWORDS.intents.shipping) ||
+        hasAny(messageNorm, KEYWORDS.intents.trust) ||
+        hasAny(messageNorm, KEYWORDS.intents.photoQuestion) ||
+        hasAny(messageNorm, KEYWORDS.intents.backTextInfo) ||
+        hasAny(messageNorm, KEYWORDS.intents.backPhotoInfo) ||
+        hasAny(messageNorm, KEYWORDS.intents.backPhotoPrice) ||
+        hasAny(messageNorm, KEYWORDS.intents.chain) ||
+        hasAny(messageNorm, KEYWORDS.intents.payment) ||
+        hasAny(messageNorm, KEYWORDS.intents.materialQuestion)
+      );
+    detectedProduct = shouldKeepPreviousProduct ? previousProduct : explicitProduct;
+  }
+
+  if (!previousProduct && entryProduct && explicitProduct && entryProduct !== explicitProduct) {
+    detectedProduct = isExplicitProductSwitch(messageNorm) ? explicitProduct : entryProduct;
+  }
+
+  const baseContext = {
+    raw: body,
+    message,
+    messageNorm,
+    previousProduct,
+    conversationStage: conversation_stage,
+    fields: {
+      ilgilenilen_urun, user_product, entry_product: entryProduct,
+      conversation_stage, photo_received, payment_method, menu_gosterildi,
+      ai_reply, last_intent, order_status, back_text_status, address_status,
+      support_mode, support_mode_reason, reply_class, siparis_alindi,
+      cancel_reason, context_lock, letters_received, phone_received,
+    },
+    detectedProduct,
   };
 
-  for (const [cat, [p, t]] of Object.entries(categories)) {
-    if (t > 0) {
-      const icon = p === t ? "✅" : "❌";
-      console.log(`  ${icon} ${catNames[cat].padEnd(22)} ${p}/${t}`);
+  const extracted = extractEntities(baseContext);
+  const detectedIntent = detectIntent(baseContext, extracted);
+
+  return { ...baseContext, extracted, detectedIntent };
+}
+
+// ─── STATE MANAGEMENT ───────────────────────────────────────
+
+function getInitialState(context) {
+  const f = context.fields;
+  return {
+    product: context.detectedProduct || f.ilgilenilen_urun || f.user_product || "",
+    conversation_stage: f.conversation_stage || "",
+    photo_received: truthy(f.photo_received) ? "1" : "",
+    payment_method: f.payment_method || "",
+    menu_gosterildi: f.menu_gosterildi || "",
+    order_status: f.order_status || "",
+    back_text_status: f.back_text_status || "",
+    address_status: f.address_status || "",
+    support_mode: f.support_mode || "",
+    support_mode_reason: f.support_mode_reason || "",
+    reply_class: f.reply_class || "",
+    cancel_reason: f.cancel_reason || "",
+    context_lock: f.context_lock || "",
+    siparis_alindi: truthy(f.siparis_alindi) ? "1" : "",
+    letters_received: truthy(f.letters_received) ? "1" : "",
+    phone_received: truthy(f.phone_received) ? "1" : "",
+  };
+}
+
+function resetForProductSwitch(existing, newProduct) {
+  return {
+    conversation_stage: "", photo_received: "", payment_method: "",
+    menu_gosterildi: existing.menu_gosterildi || "",
+    order_status: "started", back_text_status: "", address_status: "",
+    support_mode: "", support_mode_reason: "", reply_class: "",
+    cancel_reason: "", context_lock: newProduct ? "1" : existing.context_lock || "",
+    siparis_alindi: "", letters_received: "", phone_received: "",
+  };
+}
+
+function applyFacts(context, currentState) {
+  const state = { ...currentState };
+  const { detectedIntent, detectedProduct, extracted, previousProduct } = context;
+
+  if (previousProduct && detectedProduct && previousProduct !== detectedProduct) {
+    Object.assign(state, resetForProductSwitch(context.fields, detectedProduct));
+    state.product = detectedProduct;
+  }
+
+  if (detectedProduct) {
+    state.product = detectedProduct;
+    state.context_lock = "1";
+    state.order_status = state.order_status || "started";
+  }
+
+  if (extracted.payment) state.payment_method = extracted.payment;
+  if (extracted.photoLink && detectedIntent === "photo") state.photo_received = "1";
+  if (detectedIntent === "letters" && extracted.letters) state.letters_received = "1";
+  if (detectedIntent === "back_text") state.back_text_status = "received";
+  if (detectedIntent === "back_text_skip") state.back_text_status = "skipped";
+  if (detectedIntent === "back_photo_upload") state.back_text_status = "received";
+  if (extracted.phone) state.phone_received = "1";
+
+  if (extracted.hasAddress && extracted.phone) {
+    state.address_status = "received";
+  } else if (extracted.hasAddress) {
+    state.address_status = "address_only";
+  } else if (state.address_status === "address_only" && extracted.phone) {
+    state.address_status = "received";
+  }
+
+  if (detectedIntent === "cancel_order") {
+    state.cancel_reason = context.message || "cancel_requested";
+    state.support_mode = "1";
+    state.support_mode_reason = SUPPORT_MODE_REASON.MANUAL_CANCEL;
+    state.reply_class = REPLY_CLASS.FALLBACK;
+    state.order_status = "cancel_requested";
+    state.siparis_alindi = "";
+  }
+
+  if (state.product !== "lazer") {
+    state.photo_received = "";
+    state.back_text_status = "";
+  }
+  if (state.product !== "atac") {
+    state.letters_received = "";
+  }
+
+  return state;
+}
+
+function getNextStage(state) {
+  if (!state.product) {
+    if (state.menu_gosterildi === "evet") return "waiting_product";
+    return "";
+  }
+  if (state.order_status === "cancel_requested") return "human_support";
+
+  if (state.product === "lazer") {
+    if (!truthy(state.photo_received)) return "waiting_photo";
+    if (!state.back_text_status) return "waiting_back_text";
+    if (!state.payment_method) return "waiting_payment";
+    if (state.address_status !== "received") return "waiting_address";
+    return "order_completed";
+  }
+
+  if (state.product === "atac") {
+    if (!truthy(state.letters_received)) return "waiting_letters";
+    if (!state.payment_method) return "waiting_payment";
+    if (state.address_status !== "received") return "waiting_address";
+    return "order_completed";
+  }
+
+  return "";
+}
+
+// ─── REPLY HELPERS ──────────────────────────────────────────
+
+function shouldShowMainMenu(context, state) {
+  if (state.product) return false;
+  if (truthy(state.context_lock)) return false;
+  if (state.order_status === "cancel_requested") return false;
+  return ["smalltalk", "general", "unknown", "price", "payment", "order_start", "address", "detail_request"].includes(context.detectedIntent);
+}
+
+function isFreshProductSelection(context, state) {
+  const stage = context.fields.conversation_stage || "";
+  return (
+    !!context.detectedProduct && !context.previousProduct &&
+    !state.photo_received && !state.letters_received &&
+    !state.payment_method && !state.address_status && !state.back_text_status &&
+    (!stage || stage === "waiting_product")
+  );
+}
+
+function getActiveProduct(context, state) {
+  return (
+    state?.product || context?.fields?.ilgilenilen_urun || context?.fields?.user_product ||
+    context?.fields?.entry_product || context?.previousProduct || context?.detectedProduct || ""
+  );
+}
+
+function firstReply(...replies) {
+  for (const r of replies) {
+    if (r && r.text) return r;
+  }
+  return emptyReply();
+}
+
+// ─── INTENT HANDLERS ────────────────────────────────────────
+
+function handleLocationIntent(context) {
+  if (context.detectedIntent !== "location") return emptyReply();
+  return makeReply("Eminönü İstanbul'dayız 😊", REPLY_CLASS.FIXED_INFO);
+}
+
+function handleShippingIntent(context) {
+  const { detectedIntent, messageNorm } = context;
+
+  if (detectedIntent === "shipping_price") {
+    return makeReply("Kargo ücreti fiyata dahildir efendim 😊 Ekstra bir ücret ödemezsiniz.", REPLY_CLASS.FIXED_INFO);
+  }
+
+  if (detectedIntent === "shipping") {
+    if (hasAny(messageNorm, ["kargom nerede", "takip no"])) {
+      return makeReply(
+        "Kargo takip ve durum bilgisi için ekibimiz size destek olacaktır efendim 😊",
+        REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED
+      );
+    }
+    return makeReply(SHIPPING_TIME_FALLBACK_TEXT, REPLY_CLASS.FIXED_INFO);
+  }
+
+  return emptyReply();
+}
+
+function handleTrustIntent(context) {
+  const { detectedIntent, messageNorm } = context;
+  if (detectedIntent !== "trust") return emptyReply();
+
+  if (hasAny(messageNorm, ["kaplama", "kaplamasi atar", "kaplaması atar"])) {
+    return makeReply("Kaplama atmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.", REPLY_CLASS.FIXED_INFO);
+  }
+
+  if (hasAny(messageNorm, ["kararma", "kararir", "solar", "solma", "paslan"])) {
+    return makeReply("Kararma, solma veya paslanma yapmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.", REPLY_CLASS.FIXED_INFO);
+  }
+
+  if (messageNorm.includes("garanti")) {
+    return makeReply("Kararma, solma veya kaplama kaynaklı bir durumda destek sağlıyoruz efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+
+  return makeReply("Güvenle sipariş verebilirsiniz efendim 😊", REPLY_CLASS.FIXED_INFO);
+}
+
+/**
+ * YENİ: Malzeme sorusu handler'ı
+ */
+function handleMaterialQuestion(context) {
+  if (context.detectedIntent !== "material_question") return emptyReply();
+  return makeReply("Evet efendim, paslanmaz çelikten üretiliyor 😊 Kararma, solma veya paslanma yapmaz.", REPLY_CLASS.FIXED_INFO);
+}
+
+/**
+ * YENİ: Post-sale handler
+ */
+function handlePostSaleIntent(context) {
+  if (context.detectedIntent !== "post_sale") return emptyReply();
+  return makeReply(
+    "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊",
+    REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED
+  );
+}
+
+/**
+ * YENİ: Yeni sipariş talebi handler
+ */
+function handleNewOrderIntent(context, state) {
+  if (context.detectedIntent !== "new_order") return emptyReply();
+  // Satıcıya yönlendir — yeni sipariş akışı mevcut state'te karışıklık yaratır
+  return makeReply(
+    "Tabi efendim 😊 Yeni sipariş için ekibimiz size yardımcı olacaktır.",
+    REPLY_CLASS.SELLER_REQUIRED, SUPPORT_MODE_REASON.SELLER_REQUIRED
+  );
+}
+
+/**
+ * YENİ: Örnek isteği handler
+ */
+function handleExampleRequest(context) {
+  if (context.detectedIntent !== "example_request") return emptyReply();
+  return makeReply(
+    "Tabi efendim, hemen atalım size örnekleri 😊",
+    REPLY_CLASS.SELLER_REQUIRED, SUPPORT_MODE_REASON.SELLER_REQUIRED
+  );
+}
+
+/**
+ * YENİ: Detay isteği handler
+ */
+function handleDetailRequest(context, state) {
+  if (context.detectedIntent !== "detail_request") return emptyReply();
+  if (!state.product) {
+    return makeReply(MAIN_MENU_TEXT, REPLY_CLASS.MENU);
+  }
+  if (state.product === "lazer") {
+    return makeReply(LASER_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
+  }
+  if (state.product === "atac") {
+    return makeReply(ATAC_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
+  }
+  return emptyReply();
+}
+
+function handleChainIntent(context) {
+  const { detectedIntent, detectedProduct, messageNorm } = context;
+  if (detectedIntent !== "chain_question") return emptyReply();
+
+  if (detectedProduct === "lazer") {
+    if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "uzunlugu ne kadar", "uzunluğu ne kadar", "zincir kac cm", "zincir kaç cm", "zincir kisalir", "zincir kısalır"])) {
+      return makeReply("Standart zincir 60 cm'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
+    }
+    return makeReply(
+      "Zincir modeliyle ilgili detay için ekibimize görsel üzerinden net bilgi verelim 😊",
+      REPLY_CLASS.SELLER_REQUIRED, SUPPORT_MODE_REASON.SELLER_REQUIRED
+    );
+  }
+
+  if (detectedProduct === "atac") {
+    if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "uzunlugu ne kadar", "uzunluğu ne kadar", "zincir kac cm", "zincir kaç cm"])) {
+      return makeReply("Standart zincir 50 cm'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
+    }
+    return makeReply("Bu üründe tek zincir modeli kullanılıyor efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+
+  return makeReply(FALLBACK_TEXT, REPLY_CLASS.FALLBACK, SUPPORT_MODE_REASON.TRUE_FALLBACK);
+}
+
+function handlePhotoQuestionIntent(context, state) {
+  if (context.detectedIntent !== "photo_question") return emptyReply();
+  const activeProduct = getActiveProduct(context, state);
+
+  if (activeProduct === "atac") {
+    return makeReply("Ataç kolyede fotoğraf gerekmiyor efendim 😊 İsterseniz harfleri yazabilirsiniz.", REPLY_CLASS.FIXED_INFO);
+  }
+  if (activeProduct === "lazer") {
+    return makeReply("Buradan direkt gönderebilirsiniz efendim 😊 Siz gönderin, biz hemen kontrol edelim.", REPLY_CLASS.FIXED_INFO);
+  }
+  return emptyReply();
+}
+
+function handleBackSideInfoIntent(context, state) {
+  const activeProduct = getActiveProduct(context, state);
+  const { detectedIntent } = context;
+
+  if (!["back_text_info", "back_photo_info", "back_photo_price"].includes(detectedIntent)) return emptyReply();
+
+  if (activeProduct === "atac") {
+    return makeReply("Bu özellik resimli lazer kolye için geçerlidir efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+  if (activeProduct !== "lazer") return emptyReply();
+
+  if (detectedIntent === "back_photo_price") {
+    return makeReply("Ek ücret olmuyor efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+  if (detectedIntent === "back_photo_info") {
+    return makeReply("Evet efendim 😊 Ön yüze bir fotoğraf, arka yüze de ikinci bir fotoğraf ekleyebiliyoruz. Ek ücret de olmuyor.", REPLY_CLASS.FIXED_INFO);
+  }
+  if (detectedIntent === "back_text_info") {
+    return makeReply("Evet efendim 😊 Resimli lazer kolyede arka yüzüne yazı veya istenirse ikinci bir fotoğraf eklenebiliyor.", REPLY_CLASS.FIXED_INFO);
+  }
+  return emptyReply();
+}
+
+// ─── FLOW HANDLERS ──────────────────────────────────────────
+
+function handleLaserFlow(context, state, nextStage) {
+  const { detectedProduct, detectedIntent } = context;
+  if (detectedProduct !== "lazer") return emptyReply();
+
+  if (detectedIntent === "photo_suitability_question") {
+    return makeReply("Gönderdiğiniz fotoğrafı kontrol edip size bilgi verelim efendim 😊", REPLY_CLASS.FLOW_PROGRESS);
+  }
+  if (detectedIntent === "back_photo_already_sent") {
+    return makeReply("Tabi efendim, fotoğraflarınız ulaştı 😊", REPLY_CLASS.FLOW_PROGRESS);
+  }
+  if (detectedIntent === "back_text_examples") {
+    return makeReply("Genelde isim, tarih, kısa bir not veya dua yazılıyor efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+
+  if (detectedIntent === "photo") {
+    if (state.order_status === "completed" || nextStage === "order_completed") {
+      return makeReply(
+        "Sipariş bilgileri tamamlandığı için fotoğraf değişikliği talebinizi ekibimize yönlendirelim efendim 😊",
+        REPLY_CLASS.SELLER_REQUIRED, SUPPORT_MODE_REASON.SELLER_REQUIRED
+      );
+    }
+    return makeReply(
+      "Fotoğrafınızı aldım efendim 😊 Arka yüzüne yazı eklemek ister misiniz? İsterseniz yazıyı buradan iletebilirsiniz, istemezseniz 'yok' yazabilirsiniz.",
+      REPLY_CLASS.FLOW_PROGRESS
+    );
+  }
+
+  if (detectedIntent === "back_text_skip" && nextStage === "waiting_payment") {
+    if (state.payment_method === "eft_havale") {
+      return makeReply(`Tamam efendim 😊 Arka yüz boş kalacak.\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`, REPLY_CLASS.FLOW_PROGRESS);
+    }
+    if (state.payment_method === "kapida_odeme") {
+      return makeReply(`Tamam efendim 😊 Arka yüz boş kalacak.\n\n${ORDER_DETAILS_TEXT}`, REPLY_CLASS.FLOW_PROGRESS);
+    }
+    return makeReply("Tamam efendim 😊 Arka yüz boş kalacak. Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.", REPLY_CLASS.FLOW_PROGRESS);
+  }
+
+  if (detectedIntent === "back_text" && nextStage === "waiting_payment") {
+    if (state.payment_method === "eft_havale") {
+      return makeReply(`Not aldım efendim 😊 EFT / Havale ile ilerleyebiliriz.\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`, REPLY_CLASS.FLOW_PROGRESS);
+    }
+    if (state.payment_method === "kapida_odeme") {
+      return makeReply(`Not aldım efendim 😊 Kapıda ödeme ile ilerleyebiliriz.\n\n${ORDER_DETAILS_TEXT}`, REPLY_CLASS.FLOW_PROGRESS);
+    }
+    return makeReply("Not aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.", REPLY_CLASS.FLOW_PROGRESS);
+  }
+
+  return emptyReply();
+}
+
+function handleAtacFlow(context, state, nextStage) {
+  const { detectedProduct, detectedIntent } = context;
+  if (detectedProduct !== "atac") return emptyReply();
+
+  if (detectedIntent === "letters" && nextStage === "waiting_payment") {
+    if (state.payment_method === "eft_havale") {
+      return makeReply(`Harflerinizi aldım efendim 😊 EFT / Havale ile ilerleyebiliriz.\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`, REPLY_CLASS.FLOW_PROGRESS);
+    }
+    if (state.payment_method === "kapida_odeme") {
+      return makeReply(`Harflerinizi aldım efendim 😊 Kapıda ödeme ile ilerleyebiliriz.\n\n${ORDER_DETAILS_TEXT}`, REPLY_CLASS.FLOW_PROGRESS);
+    }
+    return makeReply("Harflerinizi aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.", REPLY_CLASS.FLOW_PROGRESS);
+  }
+
+  return emptyReply();
+}
+
+function handlePaymentFlow(context, state, nextStage) {
+  const { detectedIntent, detectedProduct, messageNorm } = context;
+  if (detectedIntent !== "payment") return emptyReply();
+
+  if (messageNorm.includes("dekont") || messageNorm.includes("aciklama") || messageNorm.includes("açıklama")) {
+    if (messageNorm.includes("dekont")) {
+      return makeReply("Tabi efendim, iletebilirsiniz 😊", REPLY_CLASS.FIXED_INFO);
+    }
+    return makeReply("Açıklama yazmanıza gerek yok efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+
+  if (hasAny(messageNorm, ["eft attim", "havale yaptim", "odeme yaptim", "ödeme yaptım"])) {
+    return makeReply(
+      "Teşekkür ederiz efendim, ekibimiz kontrol edip size dönüş sağlayacaktır 😊",
+      REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED
+    );
+  }
+
+  if (!detectedProduct && nextStage === "waiting_product") {
+    return makeReply(
+      "Ödeme yöntemimiz EFT / Havale veya kapıda ödeme şeklindedir efendim 😊 Önce hangi model ile ilgilendiğinizi yazabilir misiniz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye",
+      REPLY_CLASS.MENU
+    );
+  }
+
+  if (detectedProduct === "lazer" && nextStage === "waiting_back_text") {
+    return makeReply("Ödeme aşamasına geçmeden önce arka yüz için yazı isteyip istemediğinizi iletebilir misiniz? İstemiyorsanız 'yok' yazabilirsiniz 😊", REPLY_CLASS.FLOW_PROGRESS);
+  }
+
+  if (detectedProduct === "atac" && !truthy(state.letters_received)) {
+    if (state.payment_method === "eft_havale") {
+      return makeReply(`EFT / Havale ile ilerleyebiliriz 😊 Önce istediğiniz harfleri yazabilirsiniz.\n\n${EFT_INFO_TEXT}`, REPLY_CLASS.FLOW_PROGRESS);
+    }
+    if (state.payment_method === "kapida_odeme") {
+      return makeReply("Kapıda ödeme ile ilerleyebiliriz efendim 😊 Önce istediğiniz harfleri yazabilirsiniz.", REPLY_CLASS.FLOW_PROGRESS);
     }
   }
 
-  console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-  console.log(`\n🎯 SONUÇ: ${passed}/${tests.length} geçti`);
-
-  if (failed.length > 0) {
-    console.log(`❌ Başarısız: ${failed.join(", ")}`);
+  if (state.address_status !== "received") {
+    if (state.payment_method === "eft_havale") {
+      return makeReply(`EFT / Havale için ödeme bilgilerimiz şu şekildedir 😊\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`, REPLY_CLASS.FLOW_PROGRESS);
+    }
+    if (state.payment_method === "kapida_odeme") {
+      return makeReply(`Kapıda ödeme ile ilerleyebiliriz efendim 😊\n\n${ORDER_DETAILS_TEXT}`, REPLY_CLASS.FLOW_PROGRESS);
+    }
   }
 
-  if (passed !== tests.length) {
-    process.exit(1);
+  return emptyReply();
+}
+
+function handleAddressFlow(context, state, nextStage) {
+  const { detectedIntent } = context;
+
+  if (detectedIntent === "name_only") {
+    if (nextStage === "waiting_address") {
+      if (!truthy(state.phone_received)) {
+        return makeReply("Ad soyad bilginizi aldım efendim 😊\n\n📌 Şimdi kalan bilgileri paylaşabilir misiniz?\n\n📱 Cep telefonu\n📍 Açık adres", REPLY_CLASS.FLOW_PROGRESS);
+      }
+      return makeReply("Ad soyad bilginizi aldım efendim 😊\n\n📍 Şimdi açık adresinizi paylaşabilir misiniz?", REPLY_CLASS.FLOW_PROGRESS);
+    }
+  }
+
+  if (detectedIntent === "phone") {
+    if (nextStage === "order_completed") {
+      return makeReply("Telefon numaranızı da aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı. Ekibimiz işlemi hazırlayacaktır.", REPLY_CLASS.ORDER_COMPLETE);
+    }
+    if (!state.payment_method) {
+      return makeReply("Telefon numaranızı da aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.", REPLY_CLASS.FLOW_PROGRESS);
+    }
+    return makeReply("Telefon numaranızı da aldım efendim 😊\n\n📍 Şimdi açık adresinizi yazabilirsiniz. (İl, ilçe, mahalle, sokak)", REPLY_CLASS.FLOW_PROGRESS);
+  }
+
+  if (detectedIntent === "address") {
+    if (state.address_status === "address_only" && !truthy(state.phone_received)) {
+      return makeReply("Adres bilginizi aldım efendim 😊\n\n📌 Siparişi tamamlayabilmemiz için cep telefonu numaranızı da paylaşabilir misiniz? 📱", REPLY_CLASS.FLOW_PROGRESS);
+    }
+    if (nextStage === "order_completed") {
+      return makeReply("Adres bilginizi de aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı. Ekibimiz işlemi hazırlayacaktır.", REPLY_CLASS.ORDER_COMPLETE);
+    }
+  }
+
+  return emptyReply();
+}
+
+function handleOrderStart(context, state, nextStage) {
+  if (context.detectedIntent !== "order_start") return emptyReply();
+
+  if (!context.detectedProduct) {
+    return makeReply(MAIN_MENU_TEXT, REPLY_CLASS.MENU);
+  }
+  if (context.detectedProduct === "lazer") {
+    if (nextStage === "waiting_photo" || !truthy(state.photo_received)) {
+      return makeReply(LASER_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
+    }
+  }
+  if (context.detectedProduct === "atac") {
+    if (nextStage === "waiting_letters" || !truthy(state.letters_received)) {
+      return makeReply(ATAC_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
+    }
+  }
+  return emptyReply();
+}
+
+/**
+ * *** YENİDEN YAZILDI ***
+ * Sipariş tamamlandıktan sonra gelen yan sorulara cevap veriyor.
+ * Artık her şeye "sipariş tamamlandı" demek yerine, müşterinin sorusuna uygun cevap verilir.
+ */
+function handleCompletionFlow(context, state, nextStage) {
+  if (nextStage !== "order_completed") return emptyReply();
+
+  const { detectedIntent } = context;
+
+  // Sipariş tamamlandı ama müşteri hâlâ yan soru soruyorsa → cevap ver, "tamamlandı" deme
+  // Bu intent'ler zaten kendi handler'larında yakalanacak, buraya düşmemeli.
+  // Ama güvenlik için: eğer belirli intent'ler geldiyse completion mesajı BASMA.
+  const sideQuestionIntents = [
+    "price", "shipping", "shipping_price", "trust", "material_question",
+    "chain_question", "location", "payment", "photo_question",
+    "back_text_info", "back_photo_info", "back_photo_price",
+    "post_sale", "new_order", "example_request", "cancel_order",
+    "smalltalk",
+  ];
+
+  if (sideQuestionIntents.includes(detectedIntent)) {
+    // Bu intent'ler kendi handler'larında yakalanmalıydı.
+    // Eğer buraya düştülerse, completion mesajı basma, model'e gönder.
+    return emptyReply();
+  }
+
+  // Gerçekten sipariş bilgileri tamamlanan durumlar
+  return makeReply(
+    "Sipariş için gerekli bilgiler tamamlandı efendim 😊 Ekibimiz işlemi hazırlayacaktır.",
+    REPLY_CLASS.ORDER_COMPLETE
+  );
+}
+
+// ─── MAIN DETERMINISTIC REPLY BUILDER ───────────────────────
+
+function buildDeterministicReply(context, state) {
+  const { detectedProduct, detectedIntent } = context;
+  const nextStage = getNextStage(state);
+
+  // ──── Fiyat sorusu, ürün yok ────
+  if (detectedIntent === "price" && !state.product) {
+    return makeReply(
+      "Hemen yardımcı olayım efendim 😊\nHangi ürün için fiyat istersiniz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye",
+      REPLY_CLASS.MENU
+    );
+  }
+
+  // ──── Ana menü göster ────
+  if (shouldShowMainMenu(context, state)) {
+    return makeReply(MAIN_MENU_TEXT, REPLY_CLASS.MENU);
+  }
+
+  // ══════════════════════════════════════════════
+  // FIXED INFO HANDLER'LARI (her stage'de çalışır — order_completed dahil)
+  // ══════════════════════════════════════════════
+  const fixedInfoReply = firstReply(
+    handleLocationIntent(context),
+    handleShippingIntent(context),
+    handleMaterialQuestion(context),
+    handleTrustIntent(context),
+    handleBackSideInfoIntent(context, state),
+    handlePhotoQuestionIntent(context, state),
+    handleChainIntent(context),
+    handlePostSaleIntent(context),
+    handleNewOrderIntent(context, state),
+    handleExampleRequest(context),
+    handleDetailRequest(context, state),
+  );
+
+  if (fixedInfoReply.text) {
+    return fixedInfoReply;
+  }
+
+  // ══════════════════════════════════════════════
+  // FIYAT SORUSU — order_completed'da bile çalışmalı
+  // ══════════════════════════════════════════════
+  if (detectedIntent === "price" && state.product) {
+    if (state.product === "lazer") {
+      return makeReply("EFT / havale fiyatımız 599 TL, kapıda ödeme fiyatımız 649 TL'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
+    }
+    if (state.product === "atac") {
+      return makeReply("EFT / havale fiyatımız 499 TL, kapıda ödeme fiyatımız 549 TL'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
+    }
+  }
+
+  // ══════════════════════════════════════════════
+  // ÖDEME SORUSU — order_completed'da bile çalışmalı
+  // ══════════════════════════════════════════════
+  if (detectedIntent === "payment" && (nextStage === "order_completed" || state.order_status === "completed")) {
+    const { messageNorm } = context;
+    if (messageNorm.includes("iban")) {
+      return makeReply(`Tabi efendim 😊\n\n${EFT_INFO_TEXT}`, REPLY_CLASS.FIXED_INFO);
+    }
+    if (hasAny(messageNorm, ["eft attim", "havale yaptim", "odeme yaptim", "ödeme yaptım"])) {
+      return makeReply("Teşekkür ederiz efendim, ekibimiz kontrol edip size dönüş sağlayacaktır 😊", REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED);
+    }
+    return makeReply("Ödeme ile ilgili ekibimiz size yardımcı olacaktır efendim 😊", REPLY_CLASS.SELLER_REQUIRED, SUPPORT_MODE_REASON.SELLER_REQUIRED);
+  }
+
+  // ══════════════════════════════════════════════
+  // SMALLTALK — order_completed'da bile çalışmalı
+  // ══════════════════════════════════════════════
+  if (detectedIntent === "smalltalk") {
+    // Teşekkür mesajları
+    if (hasAny(context.messageNorm, ["tesekkur", "teşekkür", "sagolun", "sağolun", "saol", "tsk", "tşk"])) {
+      return makeReply("Rica ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
+    }
+    // Beğeni mesajları
+    if (hasAny(context.messageNorm, ["begendim", "beğendim", "begendik", "beğendik", "guzel", "güzel", "super", "süper", "harika", "saglik", "sağlık"])) {
+      return makeReply("Çok teşekkür ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
+    }
+    // Selam
+    if (hasAny(context.messageNorm, ["merhaba", "selam", "slm", "mrb", "merhabalar"])) {
+      return makeReply("Merhaba, hoş geldiniz 😊", REPLY_CLASS.FIXED_INFO);
+    }
+    return makeReply("Tabi efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+
+  // ══════════════════════════════════════════════
+  // ÜRETİLMİŞ ÜRÜN SEÇİMİ
+  // ══════════════════════════════════════════════
+  if (isFreshProductSelection(context, state) && detectedProduct === "lazer") {
+    return makeReply(LASER_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
+  }
+  if (isFreshProductSelection(context, state) && detectedProduct === "atac") {
+    return makeReply(ATAC_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
+  }
+
+  // ══════════════════════════════════════════════
+  // FLOW HANDLER'LARI
+  // ══════════════════════════════════════════════
+  const flowReply = firstReply(
+    handleLaserFlow(context, state, nextStage),
+    handleAtacFlow(context, state, nextStage),
+    handlePaymentFlow(context, state, nextStage),
+    handleAddressFlow(context, state, nextStage),
+    handleOrderStart(context, state, nextStage),
+    handleCompletionFlow(context, state, nextStage),
+  );
+
+  if (flowReply.text) {
+    return flowReply;
+  }
+
+  return emptyReply();
+}
+
+// ─── MODEL CALL ─────────────────────────────────────────────
+
+function buildMessages(context, knowledgePack) {
+  const systemPrompt = `
+You are a sales assistant for Yudum Jewels.
+
+Rules:
+- Keep replies short, natural, warm, and professional.
+- If product context exists, do not ask product again.
+- If customer already gave payment or address earlier, do not ask the same thing again.
+- If customer asks a side question during order flow, answer it briefly and then continue with the next missing step.
+- If you truly do not know, reply exactly with: ${FALLBACK_TEXT}
+
+KNOWLEDGE:
+${knowledgePack}
+  `.trim();
+
+  const userPrompt = `
+Customer message:
+${context.message}
+
+Context:
+- detected_product: ${context.detectedProduct || ""}
+- detected_intent: ${context.detectedIntent || "unknown"}
+- previous_product: ${context.previousProduct || ""}
+- conversation_stage: ${context.fields.conversation_stage || ""}
+- photo_received: ${context.fields.photo_received || ""}
+- payment_method: ${context.fields.payment_method || ""}
+- order_status: ${context.fields.order_status || ""}
+- back_text_status: ${context.fields.back_text_status || ""}
+- address_status: ${context.fields.address_status || ""}
+- letters_received: ${context.fields.letters_received || ""}
+- phone_received: ${context.fields.phone_received || ""}
+
+Important:
+- If product context exists, do not ask product again.
+- After laser photo, ask for back text preference before payment.
+- ATAC order must always collect letters before payment.
+  `.trim();
+
+  return [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: userPrompt },
+  ];
+}
+
+async function callModel(messages) {
+  const apiKey = process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY;
+  const model = process.env.DEEPSEEK_MODEL || process.env.OPENAI_MODEL || "deepseek-chat";
+  const baseUrl = process.env.DEEPSEEK_BASE_URL || process.env.OPENAI_BASE_URL || "https://api.deepseek.com/v1";
+
+  if (!apiKey) throw new Error("API key missing.");
+
+  const controller = new AbortController();
+  const timeoutMs = Number(process.env.MODEL_TIMEOUT_MS || 9000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      signal: controller.signal,
+      body: JSON.stringify({ model, temperature: 0.2, max_tokens: 220, messages }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Model API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data?.choices?.[0]?.message?.content || "";
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
-runTests();
+// ─── STATE UPDATE ───────────────────────────────────────────
+
+function buildStateUpdate(context, replyPayload, state) {
+  const nextStage = getNextStage(state);
+  const replyText = cleanReply(replyPayload.text || "");
+  const menuShownNow = replyText === MAIN_MENU_TEXT || replyText.includes("Hangi model ile ilgileniyorsunuz?");
+
+  let order_status = state.order_status || "";
+  let siparis_alindi = state.siparis_alindi || "";
+  let conversation_stage = nextStage || state.conversation_stage || context.fields.conversation_stage || "";
+  let menu_gosterildi = state.menu_gosterildi || context.fields.menu_gosterildi || "";
+  let support_mode = state.support_mode || "";
+  let support_mode_reason = state.support_mode_reason || "";
+  let reply_class = replyPayload.reply_class || state.reply_class || "";
+
+  if (!replyText || replyText === FALLBACK_TEXT) {
+    support_mode = "1";
+    support_mode_reason = replyPayload.support_mode_reason || SUPPORT_MODE_REASON.TRUE_FALLBACK;
+    reply_class = reply_class || REPLY_CLASS.FALLBACK;
+  }
+
+  if (replyPayload.support_mode_reason) {
+    support_mode_reason = replyPayload.support_mode_reason;
+    support_mode = "1";
+  }
+
+  if (menuShownNow) {
+    menu_gosterildi = "evet";
+    if (!state.product) conversation_stage = "waiting_product";
+  }
+
+  if (nextStage === "order_completed") {
+    order_status = "completed";
+    siparis_alindi = "1";
+    reply_class = reply_class || REPLY_CLASS.ORDER_COMPLETE;
+  } else if (!order_status && state.product) {
+    order_status = "started";
+  }
+
+  if (nextStage === "human_support" || order_status === "cancel_requested") {
+    conversation_stage = "human_support";
+    order_status = "cancel_requested";
+    support_mode = "1";
+    support_mode_reason = support_mode_reason || SUPPORT_MODE_REASON.MANUAL_CANCEL;
+    siparis_alindi = "";
+    reply_class = reply_class || REPLY_CLASS.FALLBACK;
+  }
+
+  return {
+    ai_reply: replyText,
+    ilgilenilen_urun: state.product,
+    user_product: state.product,
+    last_intent: context.detectedIntent,
+    conversation_stage,
+    photo_received: state.photo_received || "",
+    payment_method: state.payment_method || "",
+    menu_gosterildi,
+    order_status,
+    back_text_status: state.back_text_status || "",
+    address_status: state.address_status || "",
+    support_mode,
+    support_mode_reason,
+    reply_class,
+    siparis_alindi,
+    cancel_reason: state.cancel_reason || "",
+    context_lock: state.context_lock || "",
+    letters_received: state.letters_received || "",
+    phone_received: state.phone_received || "",
+  };
+}
+
+// ─── MAIN PROCESSOR ─────────────────────────────────────────
+
+export async function processChat(body = {}, options = {}) {
+  const context = buildContext(body);
+  const state = applyFacts(context, getInitialState(context));
+
+  let replyPayload = buildDeterministicReply(context, state);
+
+  if (!replyPayload?.text) {
+    const knowledgeMap = buildKnowledgeMap(context);
+    const missingCriticalFiles = getMissingCriticalKnowledgeFiles(knowledgeMap);
+
+    if (missingCriticalFiles.length > 0) {
+      console.error("Knowledge safety guard triggered. Missing:", missingCriticalFiles);
+      replyPayload = makeReply(FALLBACK_TEXT, REPLY_CLASS.FALLBACK, SUPPORT_MODE_REASON.TRUE_FALLBACK);
+    } else {
+      const knowledgePack = buildKnowledgePackFromMap(knowledgeMap);
+      const messages = buildMessages(context, knowledgePack);
+
+      try {
+        replyPayload = makeReply(
+          cleanReply(await callModel(messages)),
+          REPLY_CLASS.FALLBACK, SUPPORT_MODE_REASON.NONE
+        );
+      } catch (error) {
+        console.error("Model fallback error:", error.message);
+        replyPayload = makeReply(FALLBACK_TEXT, REPLY_CLASS.FALLBACK, SUPPORT_MODE_REASON.TRUE_FALLBACK);
+      }
+    }
+  }
+
+  const stateUpdate = buildStateUpdate(context, replyPayload, state);
+  const finalResult = { success: true, ...stateUpdate };
+
+  await logConversationRow({ body, result: finalResult, options });
+  return finalResult;
+}
+
+// ─── API HANDLER ────────────────────────────────────────────
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(200).json({ success: false, message: "Only POST supported." });
+  }
+
+  try {
+    const result = await processChat(req.body || {});
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("chat.js error:", error);
+    return res.status(200).json({
+      success: true,
+      ai_reply: FALLBACK_TEXT,
+      ilgilenilen_urun: "", user_product: "",
+      last_intent: "error", conversation_stage: "",
+      photo_received: "", payment_method: "",
+      menu_gosterildi: "", order_status: "",
+      back_text_status: "", address_status: "",
+      support_mode: "1", support_mode_reason: SUPPORT_MODE_REASON.TRUE_FALLBACK,
+      reply_class: REPLY_CLASS.FALLBACK,
+      siparis_alindi: "", cancel_reason: "",
+      context_lock: "", letters_received: "",
+      phone_received: "",
+      error: String(error.message || error),
+    });
+  }
+}
