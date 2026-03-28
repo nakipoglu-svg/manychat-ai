@@ -1312,6 +1312,108 @@ const tests = [
     input: body("Kadıköy Moda Mah No:3", atacWaitingAddress()),
     expect: { conversation_stage: "waiting_address", order_status: "started" },
   },
+
+// ==============================
+// 🔥 NEW REGRESSION TESTS
+// ==============================
+
+// B01 - Ataçta foto sorusu
+addTest("B01", "[BACKLOG] Ataçta foto sorusu fallback olmamalı", {
+  state: { ilgilenilen_urun: "atac", conversation_stage: "waiting_letters" },
+  message: "fotoğrafı nasıl göndereceğim",
+  expect: {
+    notIncludes: ["ekibimize iletiyorum"],
+    includes: ["fotoğraf gerekmiyor"]
+  }
+});
+
+// B02 - Ataçta arka yazı sorusu
+addTest("B02", "[BACKLOG] Ataçta arka yazı lazer yönlendirme", {
+  state: { ilgilenilen_urun: "atac" },
+  message: "arkasına yazı olur mu",
+  expect: {
+    notIncludes: ["ekibimize iletiyorum"],
+    includes: ["lazer"]
+  }
+});
+
+// B03 - Ataçta arka foto sorusu
+addTest("B03", "[BACKLOG] Ataçta arka foto lazer yönlendirme", {
+  state: { ilgilenilen_urun: "atac" },
+  message: "arkasına foto olur mu",
+  expect: {
+    notIncludes: ["ekibimize iletiyorum"],
+    includes: ["lazer"]
+  }
+});
+
+// B04 - Ataçta fiyat farkı sorusu (arka foto)
+addTest("B04", "[BACKLOG] Ataçta arka foto fiyatı fallback olmamalı", {
+  state: { ilgilenilen_urun: "atac" },
+  message: "arka foto olursa fiyat ne olur",
+  expect: {
+    notIncludes: ["ekibimize iletiyorum"],
+    includes: ["lazer"]
+  }
+});
+
+// B05 - Ataçta foto gönderme sorusu
+addTest("B05", "[BACKLOG] Ataçta foto gönderme sorusu açıklanmalı", {
+  state: { ilgilenilen_urun: "atac" },
+  message: "resim nasıl gönderiyorum",
+  expect: {
+    notIncludes: ["ekibimize iletiyorum"],
+    includes: ["fotoğraf gerekmiyor"]
+  }
+});
+
+// B06 - Lazer dışı ürün + zincir sorusu
+addTest("B06", "[BACKLOG] Ataçta zincir sorusu fallback olabilir ama crash olmamalı", {
+  state: { ilgilenilen_urun: "atac" },
+  message: "zincir modeli nedir",
+  expect: {
+    success: true
+  }
+});
+
+// B07 - Lazer bağlamında foto sorusu (pozitif kontrol)
+addTest("B07", "[BACKLOG] Lazerde foto sorusu doğru akış", {
+  state: { ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo" },
+  message: "fotoğrafı nasıl göndereceğim",
+  expect: {
+    notIncludes: ["ekibimize iletiyorum"]
+  }
+});
+
+// B08 - Ataçta irrelevant feature sorusu
+addTest("B08", "[BACKLOG] Ataçta irrelevant feature explain edilmeli", {
+  state: { ilgilenilen_urun: "atac" },
+  message: "iki yüzüne de foto olur mu",
+  expect: {
+    notIncludes: ["ekibimize iletiyorum"],
+    includes: ["lazer"]
+  }
+});
+
+// B09 - Ataçta mixed soru
+addTest("B09", "[BACKLOG] Ataçta karışık soru fallback olmamalı", {
+  state: { ilgilenilen_urun: "atac" },
+  message: "fotoğraf atıyorum sonra yazı ekleniyor mu",
+  expect: {
+    notIncludes: ["ekibimize iletiyorum"]
+  }
+});
+
+// B10 - Ataçta yanlış ürün feature
+addTest("B10", "[BACKLOG] Ataçta lazer feature sorusu explain edilmeli", {
+  state: { ilgilenilen_urun: "atac" },
+  message: "arka yüzüne fotoğraf koyabiliyor muyuz",
+  expect: {
+    notIncludes: ["ekibimize iletiyorum"],
+    includes: ["lazer"]
+  }
+});
+  
 ];
 
 // ─── RUNNER ───────────────────────────────────────────────────────────────
@@ -1330,15 +1432,15 @@ async function runTests() {
   };
 
   function getCat(id) {
-    if (id.startsWith("T")) return "CORE";
-    if (id.startsWith("R")) return "REG";
-    if (id.startsWith("P")) return "PARSE";
-    if (id.startsWith("V")) return "VAR";
-    if (id.startsWith("S")) return "STATE";
-    if (id.startsWith("MS")) return "MODEL";
-    if (id.startsWith("MC")) return "MC";
-    return "CORE";
-  }
+  if (id.startsWith("T")) return "CORE";
+  if (id.startsWith("R")) return "REG";
+  if (id.startsWith("P")) return "PARSE";
+  if (id.startsWith("V")) return "VAR";
+  if (id.startsWith("S")) return "STATE";
+  if (id.startsWith("MC")) return "MC";
+  if (id.startsWith("B")) return "BACKLOG";
+  return "CORE";
+}
 
   for (const test of tests) {
     const cat = getCat(test.id);
