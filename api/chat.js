@@ -189,7 +189,7 @@ const KEYWORDS = {
       "zincir kaç cm",
     ],
     orderStart: ["siparis vermek istiyorum", "sipariş vermek istiyorum", "siparis verecegim", "sipariş vereceğim", "almak istiyorum", "hazirlayalim", "hazırlayalım", "istiyorum", "ilgileniyorum"],
-photoQuestion: [
+    photoQuestion: [
       "bu foto olur mu",
       "fotograf uygun mu",
       "foto uygun mu",
@@ -337,6 +337,58 @@ function checkCriticalKnowledgeFiles() {
       console.warn(`CRITICAL knowledge missing: ${filename} - ${error.message}`);
     }
   }
+}
+
+function buildKnowledgeMap(context) {
+  return {
+    "CORE_SYSTEM.txt": safeRead("CORE_SYSTEM.txt"),
+    "PAYMENT.txt": safeRead("PAYMENT.txt"),
+    "PRICING.txt": safeRead("PRICING.txt"),
+    "SHIPPING.txt": safeRead("SHIPPING.txt"),
+    "ORDER_FLOW.txt": safeRead("ORDER_FLOW.txt"),
+    "TRUST.txt": safeRead("TRUST.txt"),
+    "SMALLTALK.txt": safeRead("SMALLTALK.txt"),
+    "ROUTING_RULES.txt": safeRead("ROUTING_RULES.txt"),
+    "EDGE_CASES.txt": safeRead("EDGE_CASES.txt"),
+    "IMAGE_RULES.txt": safeRead("IMAGE_RULES.txt"),
+    "FEW_SHOT_EXAMPLES.txt": safeRead("FEW_SHOT_EXAMPLES.txt"),
+    "SYSTEM_MASTER.txt": safeRead("SYSTEM_MASTER.txt"),
+    "PRODUCT_LASER.txt": context.detectedProduct === "lazer" ? safeRead("PRODUCT_LASER.txt") : "",
+    "PRODUCT_ATAC.txt": context.detectedProduct === "atac" ? safeRead("PRODUCT_ATAC.txt") : "",
+  };
+}
+
+function getMissingCriticalKnowledgeFiles(knowledgeMap) {
+  return CRITICAL_KNOWLEDGE_FILES.filter((file) => {
+    const content = knowledgeMap[file];
+    return !content || !String(content).trim();
+  });
+}
+
+function buildKnowledgePackFromMap(knowledgeMap) {
+  return [
+    knowledgeMap["SYSTEM_MASTER.txt"],
+    knowledgeMap["CORE_SYSTEM.txt"],
+    knowledgeMap["ROUTING_RULES.txt"],
+    knowledgeMap["EDGE_CASES.txt"],
+    knowledgeMap["FEW_SHOT_EXAMPLES.txt"],
+    knowledgeMap["IMAGE_RULES.txt"],
+    knowledgeMap["PRODUCT_LASER.txt"],
+    knowledgeMap["PRODUCT_ATAC.txt"],
+    knowledgeMap["PRICING.txt"],
+    knowledgeMap["SHIPPING.txt"],
+    knowledgeMap["PAYMENT.txt"],
+    knowledgeMap["ORDER_FLOW.txt"],
+    knowledgeMap["TRUST.txt"],
+    knowledgeMap["SMALLTALK.txt"],
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function getKnowledgePack(context) {
+  const knowledgeMap = buildKnowledgeMap(context);
+  return buildKnowledgePackFromMap(knowledgeMap);
 }
 
 function hasAny(text, keywords) {
@@ -719,26 +771,26 @@ function buildContext(body) {
   let detectedProduct = explicitProduct || previousProduct || "";
 
   if (previousProduct && explicitProduct && previousProduct !== explicitProduct) {
-  const shouldKeepPreviousProduct =
-    !isExplicitProductSwitch(messageNorm) &&
-    (
-      hasAny(messageNorm, KEYWORDS.intents.price) ||
-      hasAny(messageNorm, KEYWORDS.intents.shippingPrice) ||
-      hasAny(messageNorm, KEYWORDS.intents.shipping) ||
-      hasAny(messageNorm, KEYWORDS.intents.trust) ||
-      hasAny(messageNorm, KEYWORDS.intents.photoQuestion) ||
-      hasAny(messageNorm, KEYWORDS.intents.backTextInfo) ||
-      hasAny(messageNorm, KEYWORDS.intents.backPhotoInfo) ||
-      hasAny(messageNorm, KEYWORDS.intents.backPhotoPrice) ||
-      hasAny(messageNorm, KEYWORDS.intents.chain)
-    );
+    const shouldKeepPreviousProduct =
+      !isExplicitProductSwitch(messageNorm) &&
+      (
+        hasAny(messageNorm, KEYWORDS.intents.price) ||
+        hasAny(messageNorm, KEYWORDS.intents.shippingPrice) ||
+        hasAny(messageNorm, KEYWORDS.intents.shipping) ||
+        hasAny(messageNorm, KEYWORDS.intents.trust) ||
+        hasAny(messageNorm, KEYWORDS.intents.photoQuestion) ||
+        hasAny(messageNorm, KEYWORDS.intents.backTextInfo) ||
+        hasAny(messageNorm, KEYWORDS.intents.backPhotoInfo) ||
+        hasAny(messageNorm, KEYWORDS.intents.backPhotoPrice) ||
+        hasAny(messageNorm, KEYWORDS.intents.chain)
+      );
 
-  if (shouldKeepPreviousProduct) {
-    detectedProduct = previousProduct;
-  } else {
-    detectedProduct = explicitProduct;
+    if (shouldKeepPreviousProduct) {
+      detectedProduct = previousProduct;
+    } else {
+      detectedProduct = explicitProduct;
+    }
   }
-}
 
   const baseContext = {
     raw: body,
@@ -1056,7 +1108,6 @@ function handlePhotoQuestionIntent(context, state) {
     context?.previousProduct ||
     "";
 
-  // KRİTİK: aktif bağlam ataç ise her durumda ataç cevabı ver
   if (stateProduct === "atac") {
     return makeReply(
       "Ataç kolyede fotoğraf gerekmiyor efendim 😊 İsterseniz harfleri yazabilirsiniz.",
@@ -1091,6 +1142,7 @@ function handlePhotoQuestionIntent(context, state) {
 
   return emptyReply();
 }
+
 function handleBackSideInfoIntent(context, state) {
   const activeProduct = getActiveProduct(context, state);
   const raw = normalizeText(context.message || "");
@@ -1506,43 +1558,6 @@ Important:
   ];
 }
 
-function getKnowledgePack(context) {
-  const core = safeRead("CORE_SYSTEM.txt");
-  const pricing = safeRead("PRICING.txt");
-  const shipping = safeRead("SHIPPING.txt");
-  const payment = safeRead("PAYMENT.txt");
-  const orderFlow = safeRead("ORDER_FLOW.txt");
-  const trust = safeRead("TRUST.txt");
-  const smalltalk = safeRead("SMALLTALK.txt");
-  const routingRules = safeRead("ROUTING_RULES.txt");
-  const edgeCases = safeRead("EDGE_CASES.txt");
-  const imageRules = safeRead("IMAGE_RULES.txt");
-  const fewShot = safeRead("FEW_SHOT_EXAMPLES.txt");
-  const systemMaster = safeRead("SYSTEM_MASTER.txt");
-
-  const laser = context.detectedProduct === "lazer" ? safeRead("PRODUCT_LASER.txt") : "";
-  const atac = context.detectedProduct === "atac" ? safeRead("PRODUCT_ATAC.txt") : "";
-
-  return [
-    systemMaster,
-    core,
-    routingRules,
-    edgeCases,
-    fewShot,
-    imageRules,
-    laser,
-    atac,
-    pricing,
-    shipping,
-    payment,
-    orderFlow,
-    trust,
-    smalltalk,
-  ]
-    .filter(Boolean)
-    .join("\n\n");
-}
-
 async function callModel(messages) {
   const apiKey = process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY;
   const model = process.env.DEEPSEEK_MODEL || process.env.OPENAI_MODEL || "deepseek-chat";
@@ -1666,22 +1681,34 @@ export async function processChat(body = {}, options = {}) {
   let replyPayload = buildDeterministicReply(context, state);
 
   if (!replyPayload?.text) {
-    const knowledgePack = getKnowledgePack(context);
-    const messages = buildMessages(context, knowledgePack);
+    const knowledgeMap = buildKnowledgeMap(context);
+    const missingCriticalFiles = getMissingCriticalKnowledgeFiles(knowledgeMap);
 
-    try {
-      replyPayload = makeReply(
-        cleanReply(await callModel(messages)),
-        REPLY_CLASS.FALLBACK,
-        SUPPORT_MODE_REASON.NONE
-      );
-    } catch (error) {
-      console.error("Model fallback error:", error.message);
+    if (missingCriticalFiles.length > 0) {
+      console.error("Knowledge safety guard triggered. Missing critical files:", missingCriticalFiles);
       replyPayload = makeReply(
         FALLBACK_TEXT,
         REPLY_CLASS.FALLBACK,
         SUPPORT_MODE_REASON.TRUE_FALLBACK
       );
+    } else {
+      const knowledgePack = buildKnowledgePackFromMap(knowledgeMap);
+      const messages = buildMessages(context, knowledgePack);
+
+      try {
+        replyPayload = makeReply(
+          cleanReply(await callModel(messages)),
+          REPLY_CLASS.FALLBACK,
+          SUPPORT_MODE_REASON.NONE
+        );
+      } catch (error) {
+        console.error("Model fallback error:", error.message);
+        replyPayload = makeReply(
+          FALLBACK_TEXT,
+          REPLY_CLASS.FALLBACK,
+          SUPPORT_MODE_REASON.TRUE_FALLBACK
+        );
+      }
     }
   }
 
