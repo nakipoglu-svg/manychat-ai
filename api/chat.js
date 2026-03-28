@@ -1259,7 +1259,6 @@ function handleCompletionFlow(context, state, nextStage) {
 
   return emptyReply();
 }
-
 function firstReply(...replies) {
   for (const r of replies) {
     if (r && r.text) return r;
@@ -1308,36 +1307,6 @@ function buildDeterministicReply(context, state) {
   if (flowReply.text) {
     return flowReply;
   }
-
-  return emptyReply();
-}
-  const fixedInfoReply =
-    handleLocationIntent(context) ||
-    handleShippingIntent(context) ||
-    handleTrustIntent(context) ||
-    handleChainIntent(context) ||
-    handlePhotoQuestionIntent(context) ||
-    handleBackSideInfoIntent(context);
-
-  if (fixedInfoReply?.text) return fixedInfoReply;
-
-  if (isFreshProductSelection(context, state) && detectedProduct === "lazer") {
-    return makeReply(LASER_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
-  }
-
-  if (isFreshProductSelection(context, state) && detectedProduct === "atac") {
-    return makeReply(ATAC_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
-  }
-
-  const flowReply =
-    handleLaserFlow(context, state, nextStage) ||
-    handleAtacFlow(context, state, nextStage) ||
-    handlePaymentFlow(context, state, nextStage) ||
-    handleAddressFlow(context, state, nextStage) ||
-    handleOrderStart(context, state, nextStage) ||
-    handleCompletionFlow(context, state, nextStage);
-
-  if (flowReply?.text) return flowReply;
 
   return emptyReply();
 }
