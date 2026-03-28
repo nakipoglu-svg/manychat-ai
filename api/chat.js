@@ -1259,12 +1259,6 @@ function handleCompletionFlow(context, state, nextStage) {
 
   return emptyReply();
 }
-function firstReply(...replies) {
-  for (const r of replies) {
-    if (r && r.text) return r;
-  }
-  return emptyReply();
-}
 
 function firstReply(...replies) {
   for (const r of replies) {
