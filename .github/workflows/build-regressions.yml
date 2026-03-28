@@ -1,0 +1,29 @@
+name: Build Regression Candidates
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-regressions:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repo'yu çek
+        uses: actions/checkout@v4
+
+      - name: Node kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Scripti çalıştır
+        env:
+          GOOGLE_LOG_WEBHOOK_URL: ${{ secrets.GOOGLE_LOG_WEBHOOK_URL }}
+          GOOGLE_LOG_SECRET: ${{ secrets.GOOGLE_LOG_SECRET }}
+        run: node scripts/buildRegressionCandidates.js
+
+      - name: Oluşan dosyayı artifact olarak yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-regressions
+          path: scripts/generated/candidate_regressions.json
