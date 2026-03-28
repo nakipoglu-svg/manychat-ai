@@ -1639,7 +1639,15 @@ async function callModel(messages) {
     }
 
     const data = await response.json();
-    return data?.choices?.[0]?.message?.content || "";
+
+const usage = data?.usage || {};
+
+console.log("📊 TOKEN RAPORU");
+console.log("Prompt:", usage.prompt_tokens || 0);
+console.log("Completion:", usage.completion_tokens || 0);
+console.log("Total:", usage.total_tokens || 0);
+
+return data?.choices?.[0]?.message?.content || "";
   } finally {
     clearTimeout(timeout);
   }
