@@ -992,45 +992,84 @@ function handleChainIntent(context) {
     SUPPORT_MODE_REASON.SELLER_REQUIRED
   );
 }
+function getActiveProduct(context, state) {
+  return (
+    context?.detectedProduct ||
+    state?.ilgilenilen_urun ||
+    state?.user_product ||
+    ""
+  );
+}
+function handlePhotoQuestionIntent(context, state) {
+  const activeProduct = getActiveProduct(context, state);
 
-function handlePhotoQuestionIntent(context) {
-  const { detectedIntent, detectedProduct } = context;
-  if (detectedProduct !== "lazer") return emptyReply();
-
-  if (detectedIntent === "photo_question") {
-    return makeReply("Buradan direkt gönderebilirsiniz efendim 😊 Siz gönderin, biz hemen kontrol edelim.", REPLY_CLASS.FIXED_INFO);
+  if (context.detectedIntent !== "photo_question") {
+    return emptyReply();
   }
 
-  if (detectedIntent === "photo_suitability_question") {
+  if (activeProduct === "atac") {
     return makeReply(
-      "Olur efendim 😊 Uygunlukla ilgili bir sorun olursa ekibimiz size geri dönüş sağlayacaktır. Arka yüz için yazı ya da fotoğraf isterseniz onu da iletebilirsiniz.",
-      REPLY_CLASS.FIXED_INFO
+      "Ataç kolyede fotoğraf gerekmiyor efendim 😊 İsterseniz harfleri yazabilirsiniz.",
+      REPLY_CLASS.FIXED_INFO,
+      SUPPORT_MODE_REASON.NONE
+    );
+  }
+
+  if (activeProduct === "lazer") {
+    return makeReply(
+      "Buradan direkt gönderebilirsiniz efendim 😊 Siz gönderin, biz hemen kontrol edelim.",
+      REPLY_CLASS.FIXED_INFO,
+      SUPPORT_MODE_REASON.NONE
     );
   }
 
   return emptyReply();
 }
 
-function handleBackSideInfoIntent(context) {
-  const { detectedIntent, detectedProduct } = context;
-  if (detectedProduct !== "lazer") return emptyReply();
+function handleBackSideInfoIntent(context, state) {
+  const activeProduct = getActiveProduct(context, state);
 
-  if (detectedIntent === "back_text_info") {
+  const backSideIntents = [
+    "back_text_question",
+    "back_photo_question",
+    "back_photo_price",
+    "double_side_photo",
+  ];
+
+  if (!backSideIntents.includes(context.detectedIntent)) {
+    return emptyReply();
+  }
+
+  if (activeProduct === "atac") {
     return makeReply(
-      "Evet efendim 😊 Arka yüzüne yazı ekleyebiliyoruz. İsterseniz yazıyı buradan iletebilirsiniz. Arka yüze fotoğraf da yapılabiliyor.",
-      REPLY_CLASS.FIXED_INFO
+      "Bu özellik resimli lazer kolye için geçerlidir efendim 😊",
+      REPLY_CLASS.FIXED_INFO,
+      SUPPORT_MODE_REASON.NONE
     );
   }
 
-  if (detectedIntent === "back_photo_info") {
+  if (activeProduct !== "lazer") {
+    return emptyReply();
+  }
+
+  if (
+    context.detectedIntent === "back_text_question" ||
+    context.detectedIntent === "back_photo_question" ||
+    context.detectedIntent === "double_side_photo"
+  ) {
     return makeReply(
-      "Tabi efendim 😊 Ön yüze bir fotoğraf, arka yüze bir fotoğraf yapabiliyoruz. Ek ücret de alınmıyor. İsterseniz arka yüz için fotoğrafı da gönderebilirsiniz.",
-      REPLY_CLASS.FIXED_INFO
+      "Evet efendim 😊 Resimli lazer kolyede arka yüzüne de ekleme yapılabiliyor.",
+      REPLY_CLASS.FIXED_INFO,
+      SUPPORT_MODE_REASON.NONE
     );
   }
 
-  if (detectedIntent === "back_photo_price") {
-    return makeReply("Arka yüze fotoğraf da ekleyebiliriz efendim 😊 Ek ücret alınmıyor.", REPLY_CLASS.FIXED_INFO);
+  if (context.detectedIntent === "back_photo_price") {
+    return makeReply(
+      "Ek ücret olmuyor efendim 😊",
+      REPLY_CLASS.FIXED_INFO,
+      SUPPORT_MODE_REASON.NONE
+    );
   }
 
   return emptyReply();
@@ -1279,8 +1318,8 @@ function buildDeterministicReply(context, state) {
     handleShippingIntent(context),
     handleTrustIntent(context),
     handleChainIntent(context),
-    handlePhotoQuestionIntent(context),
-    handleBackSideInfoIntent(context)
+    handlePhotoQuestionIntent(context, state),
+    handleBackSideInfoIntent(context, state)
   );
 
   if (fixedInfoReply.text) {
