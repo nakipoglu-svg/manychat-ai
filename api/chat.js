@@ -1266,6 +1266,13 @@ function firstReply(...replies) {
   return emptyReply();
 }
 
+function firstReply(...replies) {
+  for (const r of replies) {
+    if (r && r.text) return r;
+  }
+  return emptyReply();
+}
+
 function buildDeterministicReply(context, state) {
   const { detectedProduct } = context;
   const nextStage = getNextStage(state);
@@ -1282,7 +1289,10 @@ function buildDeterministicReply(context, state) {
     handlePhotoQuestionIntent(context),
     handleBackSideInfoIntent(context)
   );
-  if (fixedInfoReply.text) return fixedInfoReply;
+
+  if (fixedInfoReply.text) {
+    return fixedInfoReply;
+  }
 
   if (isFreshProductSelection(context, state) && detectedProduct === "lazer") {
     return makeReply(LASER_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
@@ -1300,11 +1310,13 @@ function buildDeterministicReply(context, state) {
     handleOrderStart(context, state, nextStage),
     handleCompletionFlow(context, state, nextStage)
   );
-  if (flowReply.text) return flowReply;
+
+  if (flowReply.text) {
+    return flowReply;
+  }
 
   return emptyReply();
 }
-
   const fixedInfoReply =
     handleLocationIntent(context) ||
     handleShippingIntent(context) ||
