@@ -326,19 +326,6 @@ function safeRead(filename) {
   }
 }
 
-function checkCriticalKnowledgeFiles() {
-  for (const filename of CRITICAL_KNOWLEDGE_FILES) {
-    try {
-      const content = readKnowledgeFile(filename);
-      if (!content || !String(content).trim()) {
-        console.warn(`CRITICAL knowledge empty: ${filename}`);
-      }
-    } catch (error) {
-      console.warn(`CRITICAL knowledge missing: ${filename} - ${error.message}`);
-    }
-  }
-}
-
 function buildKnowledgeMap(context) {
   return {
     "CORE_SYSTEM.txt": safeRead("CORE_SYSTEM.txt"),
@@ -384,11 +371,6 @@ function buildKnowledgePackFromMap(knowledgeMap) {
   ]
     .filter(Boolean)
     .join("\n\n");
-}
-
-function getKnowledgePack(context) {
-  const knowledgeMap = buildKnowledgeMap(context);
-  return buildKnowledgePackFromMap(knowledgeMap);
 }
 
 function hasAny(text, keywords) {
@@ -974,6 +956,17 @@ function isFreshProductSelection(context, state) {
   );
 }
 
+function getActiveProduct(context, state) {
+  return (
+    state?.product ||
+    context?.fields?.ilgilenilen_urun ||
+    context?.fields?.user_product ||
+    context?.previousProduct ||
+    context?.detectedProduct ||
+    ""
+  );
+}
+
 function handleLocationIntent(context) {
   if (context.detectedIntent !== "location") return emptyReply();
   return makeReply("Eminönü İstanbul’dayız 😊", REPLY_CLASS.FIXED_INFO);
@@ -1059,20 +1052,9 @@ function handleChainIntent(context) {
   );
 }
 
-function getActiveProduct(context, state) {
-  const stateProduct =
-    state?.product ||
-    context?.fields?.ilgilenilen_urun ||
-    context?.fields?.user_product ||
-    "";
-
-  if (stateProduct) return stateProduct;
-  if (context?.previousProduct) return context.previousProduct;
-  return context?.detectedProduct || "";
-}
-
 function handlePhotoQuestionIntent(context, state) {
   const raw = normalizeText(context.message || "");
+  const activeProduct = getActiveProduct(context, state);
 
   const isPhotoQuestion =
     context.detectedIntent === "photo_question" ||
@@ -1101,14 +1083,7 @@ function handlePhotoQuestionIntent(context, state) {
 
   if (!isPhotoQuestion) return emptyReply();
 
-  const stateProduct =
-    state?.product ||
-    context?.fields?.ilgilenilen_urun ||
-    context?.fields?.user_product ||
-    context?.previousProduct ||
-    "";
-
-  if (stateProduct === "atac") {
+  if (activeProduct === "atac") {
     return makeReply(
       "Ataç kolyede fotoğraf gerekmiyor efendim 😊 İsterseniz harfleri yazabilirsiniz.",
       REPLY_CLASS.FIXED_INFO,
@@ -1116,23 +1091,7 @@ function handlePhotoQuestionIntent(context, state) {
     );
   }
 
-  if (stateProduct === "lazer") {
-    return makeReply(
-      "Buradan direkt gönderebilirsiniz efendim 😊 Siz gönderin, biz hemen kontrol edelim.",
-      REPLY_CLASS.FIXED_INFO,
-      SUPPORT_MODE_REASON.NONE
-    );
-  }
-
-  if (context.detectedProduct === "atac") {
-    return makeReply(
-      "Ataç kolyede fotoğraf gerekmiyor efendim 😊 İsterseniz harfleri yazabilirsiniz.",
-      REPLY_CLASS.FIXED_INFO,
-      SUPPORT_MODE_REASON.NONE
-    );
-  }
-
-  if (context.detectedProduct === "lazer") {
+  if (activeProduct === "lazer") {
     return makeReply(
       "Buradan direkt gönderebilirsiniz efendim 😊 Siz gönderin, biz hemen kontrol edelim.",
       REPLY_CLASS.FIXED_INFO,
@@ -1164,7 +1123,6 @@ function handleBackSideInfoIntent(context, state) {
 
   const isBackPhotoQuestion =
     context.detectedIntent === "back_photo_info" ||
-    context.detectedIntent === "double_side_photo" ||
     hasAny(raw, [
       "arkasina foto",
       "arkasına foto",
@@ -1671,10 +1629,6 @@ function buildStateUpdate(context, replyPayload, state) {
 }
 
 export async function processChat(body = {}, options = {}) {
-  if (!options.skipKnowledgeCheck) {
-    checkCriticalKnowledgeFiles();
-  }
-
   const context = buildContext(body);
   const state = applyFacts(context, getInitialState(context));
 
@@ -1686,6 +1640,7 @@ export async function processChat(body = {}, options = {}) {
 
     if (missingCriticalFiles.length > 0) {
       console.error("Knowledge safety guard triggered. Missing critical files:", missingCriticalFiles);
+
       replyPayload = makeReply(
         FALLBACK_TEXT,
         REPLY_CLASS.FALLBACK,
