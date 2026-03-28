@@ -993,14 +993,22 @@ function handleChainIntent(context) {
   );
 }
 function getActiveProduct(context, state) {
-  return (
-    state?.product ||
-    context?.previousProduct ||
+  const stateProduct =
+    state?.ilgilenilen_urun ||
+    state?.user_product ||
     context?.fields?.ilgilenilen_urun ||
     context?.fields?.user_product ||
-    context?.detectedProduct ||
-    ""
-  );
+    "";
+
+  if (stateProduct) {
+    return stateProduct;
+  }
+
+  if (context?.previousProduct) {
+    return context.previousProduct;
+  }
+
+  return context?.detectedProduct || "";
 }
 function handlePhotoQuestionIntent(context, state) {
   const activeProduct = getActiveProduct(context, state);
