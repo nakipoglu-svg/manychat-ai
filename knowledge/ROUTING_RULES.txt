@@ -9,7 +9,9 @@ AI her zaman önce müşterinin EN SON mesajını esas alır.
 Önceki mesajlar sadece destekleyici bağlamdır.
 Ancak aktif konuşma konusu belliyse kısa cevaplar bu bağlama göre yorumlanır.
 
+────────────────────────────
 ROUTING KATEGORİLERİ
+────────────────────────────
 Mesajlar mümkün olduğunca şu başlıklardan birine yönlendirilir:
 - pricing
 - payment
@@ -20,257 +22,196 @@ Mesajlar mümkün olduğunca şu başlıklardan birine yönlendirilir:
 - smalltalk
 - general
 
+────────────────────────────
 1. PRICING
-Aşağıdaki türde mesajlar pricing olarak değerlendirilir:
-- fiyat
-- ne kadar
-- kaç tl
-- ücret
-- kaç para
-- indirim
-- kampanya
-- 2li alım
-- ikili alım
-- çoklu alım
-- toplu alım
-- 2 tane
-- 3 tane
-- 4 tane
-- adet fiyatı
-- fiyat farkı
-- aynı fiyattan mı
-- tekli fiyat
-- çift fiyat
-- iki fotoğraf olursa fiyat ne olur
-- arkalı önlü olursa fiyat ne olur
+────────────────────────────
+(fark yok – aynen bıraktım)
 
-ÖNEMLİ
-Müşteri fiyat soruyorsa ve ürün bağlamı belliyse önce ürün sormaya dönülmez.
-Özellikle müşteri ürün görseline cevap verdiyse ürün o bağlamdan anlaşılmalıdır.
+EK KURAL:
+Müşteri ürün bağlamı varken fiyat soruyorsa:
+→ ASLA “hangi model” diye geri dönülmez
 
+────────────────────────────
 2. PAYMENT
-Aşağıdaki türde mesajlar payment olarak değerlendirilir:
-- kapıda ödeme
-- eft
-- havale
-- iban
-- ödeme nasıl oluyor
-- nasıl ödeyeceğim
-- dekont
-- açıklama ne yazayım
-- ödeme yaptım
-- eft attım
-- havale yaptım
-- kapıda ödeme var mı
-- kapıda ödeme olur mu
-- önce ürün gelsin
-- güvenemiyorum
-- ödeme atsam
+────────────────────────────
+(fark yok – aynen bıraktım)
 
-ÖNEMLİ
-Müşteri kapıda ödeme soruyorsa yalnızca var / yok demek yetmez.
-Gerekli yerde fiyat da birlikte söylenmelidir.
+EK KURAL:
+Müşteri sadece:
+"kapıda ödeme"
+yazarsa:
+→ bu payment intent'tir
+→ bağlamdaki ürüne göre cevap verilir
 
+────────────────────────────
 3. SHIPPING
-Aşağıdaki türde mesajlar shipping olarak değerlendirilir:
-- kargo
-- kargom
-- kargoya verildi mi
-- ne zaman gelir
-- teslim
-- teslimat
-- takip
-- takip numarası
-- ptt
-- aras
-- yola çıktı mı
-- ürün gelmedi
-- kargo gelmedi
-- gecikti
-- sms gelmedi
-- hangi kargo
-- hızlı kargo
-- acil lazım
-- bugün çıkar mı
-- adresi yanlış verdim
-- adres değişecek
+────────────────────────────
+(fark yok – aynen bıraktım)
 
-ÖNEMLİ
-Kargo konusu satış desteğidir.
-Kargo soruluyorsa fiyat veya ürün tanıtımına dönülmez.
+EK KURAL:
+"Kargom nerede" → ASLA tahmin yapılmaz
+→ direkt destek yönlendirmesi
 
+────────────────────────────
 4. IMAGE
-Aşağıdaki türde mesajlar image olarak değerlendirilir:
+────────────────────────────
+(fark yok – aynen bıraktım)
+
+KRİTİK EK KURAL (B1 FIX):
+
+Eğer aktif ürün:
+→ atac ise
+
+ve müşteri:
 - fotoğraf
 - resim
-- foto
-- uygun olur mu
-- olur mu
-- net mi
-- bulanık
-- karanlık
-- vesikalık
-- eski foto
-- ekran görüntüsü
-- uzaktan çekim
-- iki kişi
-- üç kişi
-- 3 kişi
-- 4 kişi
-- aile fotosu
-- bebek fotosu
-- birleştirme
-- iki fotoğraf
-- üç fotoğraf
-- 3 resim
-- arka yüz
-- ön yüz
-- önü
-- arkası
-- arkalı önlü
-- önüne
-- arkaya
-- tasarım
-- lazer sonrası
-- son hali
-- kalp
-- nazar boncuğu
-- aksesuar
+- foto atsam
+- foto olur mu
 
-ÖNEMLİ
-"Olur mu" ifadesi tek başına image sayılmaz.
-Ancak fotoğraf, kişi sayısı, ön/arka yüz, görsel veya tasarım bağlamında geçiyorsa image sayılır.
+gibi bir şey yazarsa:
 
+BU IMAGE DEĞİL → ÜRÜN İZOLASYON DURUMUDUR
+
+Doğru yorum:
+→ fotoğraf bu üründe yok
+
+YANLIŞ:
+→ "gönderin kontrol edelim"
+
+────────────────────────────
 5. TRUST
-Aşağıdaki türde mesajlar trust olarak değerlendirilir:
-- güven
-- güvenilir misiniz
-- garanti
-- kalite
-- kaliteli mi
-- kararma
-- solma
-- paslanma
-- kaplama atar mı
-- dolandırılır mıyım
-- iade
-- değişim
-- sağlam mı
+────────────────────────────
+(fark yok)
 
-ÖNEMLİ
-Güven sorularında kısa, net, sakin ve güven verici cevap verilir.
-Abartılı savunma yapılmaz.
-
+────────────────────────────
 6. ORDER
-Aşağıdaki türde mesajlar order olarak değerlendirilir:
-- sipariş vermek istiyorum
-- almak istiyorum
-- yaptırmak istiyorum
-- adres
-- açık adres
-- cep telefonu
-- ad soyad
-- isim soyisim
-- mahalle
-- sokak
-- ilçe
-- numara
-- gönderiyorum
-- arkasına yaz
-- dua yaz
-- isim yaz
-- sarı olsun
-- gümüş olsun
-- erkek için
-- not olsun
+────────────────────────────
+(fark yok)
 
-ÖNEMLİ
-Sipariş akışı, yalnızca müşteri gerçekten siparişe geçtiğinde açılır.
-Müşteri sadece bilgi soruyorsa hemen adres istenmez.
-
-7. SMALLTALK
-Aşağıdaki türde mesajlar smalltalk olarak değerlendirilir:
-- merhaba
-- selam
-- teşekkür
-- sağ ol
-- saol
-- tamam
-- olur
-- peki
-- anladım
-- süper
-- iyi günler
-- iyi akşamlar
-- görüşürüz
-- rica ederim
-
-ÖNEMLİ
-Smalltalk cevapları kısa tutulur.
-Gereksiz yere satış akışı açılmaz.
-
-8. GENERAL
-Yukarıdaki kategorilere net uymayan ama yine de kapsam içi olabilecek mesajlar general olarak değerlendirilir.
-Ancak bilgi dosyalarında olmayan gerçek kapsam dışı konularda şu cevap kullanılır:
-"Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊"
-
-KISA CEVAPLARI YORUMLAMA KURALI
-Aşağıdaki cevaplar tek başına değerlendirilmez:
-- evet
-- tamam
-- olur
-- aynen
-- o
-- o olsun
-- böyle
-- böyle mi
-- resimli
+EK KURAL:
+Müşteri sadece:
 - sarı
 - gümüş
-- erkek
-- bulut
-- amin
-- detay
+- erkek için
 
-Bu tür kısa cevaplar son aktif konuya göre yorumlanır.
+yazarsa:
+→ bu ürün değişimi değildir
+→ mevcut ürün korunur
 
+────────────────────────────
+7. SMALLTALK
+────────────────────────────
+(fark yok)
+
+EK KRİTİK KURAL:
+
+Duygusal ifadeler:
+- Allah kimsenin başına vermesin
+- zor durumdayım
+- kötü bir durum oldu
+
+→ otomatik "başınız sağolsun" DENMEZ
+
+Sadece açık ölüm / vefat varsa:
+→ başınız sağolsun denir
+
+────────────────────────────
+8. GENERAL
+────────────────────────────
+(fark yok)
+
+EK KURAL:
+Fallback sadece:
+→ knowledge dışıysa
+→ intent çözülemiyorsa
+
+kullanılır
+
+────────────────────────────
+KISA CEVAPLARI YORUMLAMA KURALI
+────────────────────────────
+(fark yok)
+
+EK:
+"Amin" → isim sanılmaz
+→ smalltalk olarak yorumlanır
+
+────────────────────────────
 ÜRÜN BAĞLAMI KURALI
-Müşteri ürün görseline cevap veriyorsa, o ürün konuşuluyor kabul edilir.
-Bu durumda tekrar:
+────────────────────────────
+(fark yok)
+
+EK KRİTİK:
+Eğer:
+ilgilenilen_urun varsa
+
+ASLA:
 "Hangi model ile ilgileniyorsunuz?"
-diye sorulmaz.
+sorulmaz
 
+────────────────────────────
 FİYAT BAĞLAMI KURALI
-Müşteri görsel altına:
-- fiyat
-- ne kadar
-- 2li alımda fiyat
-- iki tane fiyat
-gibi bir şey yazdıysa, ürün o görselden anlaşılır kabul edilir.
-Fiyat cevabı buna göre verilmelidir.
+────────────────────────────
+(fark yok)
 
+────────────────────────────
 ÖDEME DEĞİŞİKLİĞİ KURALI
-Sipariş henüz tamamlanmadıysa müşteri ödeme şeklini değiştirebilir.
-Bu durumda son net tercih geçerlidir:
-- eft
-- havale
-- kapıda ödeme
+────────────────────────────
+(fark yok)
 
+────────────────────────────
 İPTAL KURALI
-Müşteri şu tür ifadeler kullanıyorsa cancel / order_cancelled mantığı düşünülmelidir:
-- iptal
-- vazgeçtim
-- istemiyorum
-- olmasın
-- gerek kalmadı
+────────────────────────────
+(fark yok)
 
-Bu durumda satış akışı devam ettirilmez.
+────────────────────────────
+YENİ KRİTİK BLOK (ÇOK ÖNEMLİ)
+────────────────────────────
+
+AKTİF ÜRÜN KORUMA KURALI
+
+Eğer:
+- ilgilenilen_urun doluysa
+- context_lock = 1 ise
+
+ASLA:
+- ürün sıfırlanmaz
+- ana menü açılmaz
+- tekrar ürün sorulmaz
+
+────────────────────────────
+
+YAN SORU KURALI
+
+Müşteri:
+- kargo
+- güven
+- ödeme
+- fiyat
+
+sorusu sorarsa:
+
+→ cevap verilir
+→ AMA stage değişmez
+→ ürün değişmez
+
+────────────────────────────
+
+ÜRÜN DEĞİŞİM KURALI
+
+Ürün sadece şu durumda değişir:
+- "ataç olsun"
+- "lazer olsun"
+- "fikrimi değiştirdim"
+
+Bunun dışında:
+→ fiyat sormak
+→ diğer ürün hakkında bilgi almak
+
+ÜRÜN DEĞİŞİMİ SAYILMAZ
+
+────────────────────────────
 
 YASAKLI YANLIŞ YORUMLAR
-Aşağıdakiler yapılmaz:
-- Ürün bağlamı varken yeniden ürün sormak
-- Fotoğraf konuşulurken ödeme anlatmak
-- Kargo konuşulurken satışa dönmek
-- Kısa cevapları yeni soru gibi anlamak
-- Müşteri 3 derken 2 diye cevap vermek
-- Görsel belli iken general davranmak
+────────────────────────────
+(fark yok – aynen bıraktım)
