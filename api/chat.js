@@ -114,25 +114,25 @@ const KEYWORDS = {
       "ne zaman kargoya verilir",
     ],
     trust: [
-  "guvenilir",
-  "guven",
-  "dolandirici",
-  "orijinal",
-  "saglam",
-  "kararma",
-  "kararir mi",
-  "kararma yapar mi",
-  "kararma olur mu",
-  "kararır mı",
-  "kararma yapar mı",
-  "kararma olur mu",
-  "solar",
-  "solma",
-  "paslan",
-  "kaplama",
-  "kaplamasi atar",
-  "kaplaması atar",
-],
+      "guvenilir",
+      "guven",
+      "dolandirici",
+      "orijinal",
+      "saglam",
+      "kararma",
+      "kararir mi",
+      "kararma yapar mi",
+      "kararma olur mu",
+      "kararır mı",
+      "kararma yapar mı",
+      "kararma olur mu",
+      "solar",
+      "solma",
+      "paslan",
+      "kaplama",
+      "kaplamasi atar",
+      "kaplaması atar",
+    ],
     payment: [
       "kapida odeme",
       "kapıda ödeme",
@@ -155,45 +155,46 @@ const KEYWORDS = {
     ],
     price: ["fiyat", "ne kadar", "ucret", "ücret", "kac tl", "kaç tl"],
     chain: [
-  "zincir modeli",
-  "zincir degisiyor mu",
-  "zincir değişiyor mu",
-  "zincir kisalir mi",
-  "zincir kısalır mı",
-  "zincir boyu",
-  "zincir uzunlugu",
-  "zincir uzunluğu",
-  "zincir ne kadar",
-  "uzunlugu ne kadar",
-  "uzunluğu ne kadar",
-  "zincir kac cm",
-  "zincir kaç cm",
-],
+      "zincir modeli",
+      "zincir degisiyor mu",
+      "zincir değişiyor mu",
+      "zincir kisalir mi",
+      "zincir kısalır mı",
+      "zincir boyu",
+      "zincir uzunlugu",
+      "zincir uzunluğu",
+      "zincir ne kadar",
+      "uzunlugu ne kadar",
+      "uzunluğu ne kadar",
+      "zincir kac cm",
+      "zincir kaç cm",
+    ],
     orderStart: ["siparis vermek istiyorum", "sipariş vermek istiyorum", "siparis verecegim", "sipariş vereceğim", "almak istiyorum", "hazirlayalim", "hazırlayalım", "istiyorum", "ilgileniyorum"],
-photoQuestion: [
-  "bu foto olur mu",
-  "fotograf uygun mu",
-  "foto uygun mu",
-  "nasil olsun foto",
-  "nasil foto",
-  "hangi fotoyu atayim",
-  "buradan mi atayim",
-  "whatsapptan mi",
-  "nasil aticam",
-  "nasil atacam",
-  "fotoyu nasil atayim",
-  "foto atsam olur mu",
-  "fotograf atsam olur mu",
-  "gondersem olur mu",
-  "fotoğraf atsam olur mu",
-  "fotoğrafı nasıl göndereceğiz",
-  "resim nasıl gönderiyorum",
-  "resim nasil gonderiyorum",
-  "resim nasil gonderirim",
-  "resmi nasil gonderiyorum",
-  "resmi nasil gonderirim",
-  "fotografi atsam olur mu",
-],
+    photoQuestion: [
+      "bu foto olur mu",
+      "fotograf uygun mu",
+      "foto uygun mu",
+      "nasil olsun foto",
+      "nasil foto",
+      "hangi fotoyu atayim",
+      "buradan mi atayim",
+      "whatsapptan mi",
+      "nasil aticam",
+      "nasil atacam",
+      "fotoyu nasil atayim",
+      "foto atsam olur mu",
+      "fotograf atsam olur mu",
+      "gondersem olur mu",
+      "fotoğraf atsam olur mu",
+      "fotoğrafı nasıl göndereceğiz",
+      "resim nasıl gönderiyorum",
+      "resim nasil gonderiyorum",
+      "resim nasil gonderirim",
+      "resmi nasil gonderiyorum",
+      "resmi nasil gonderirim",
+      "fotografi atsam olur mu",
+      "resim nasil gonderiyorum",
+    ],
     backPhotoPrice: [
       "arkasina fotograf ne kadar",
       "arkasına fotograf ne kadar",
@@ -242,6 +243,8 @@ photoQuestion: [
       "arka tarafina foto koymak istesek",
       "kolyenin iki yuzune de resim yapabilir misiniz",
       "kolyenin iki yüzüne de resim yapabilir misiniz",
+      "iki yuzune de foto olur mu",
+      "iki yüzüne de foto olur mu",
     ],
     backTextSkip: [
       "yok",
@@ -374,24 +377,19 @@ function looksLikePhotoUrl(rawMessage = "") {
 
 function extractPhone(rawMessage = "") {
   const raw = String(rawMessage || "");
-
-  // Sadece 5 ile başlayan mobil hatları hedefle
   const matches = raw.match(/(?:\+?90[\s().-]*)?(?:0?5\d(?:[\s().-]*\d){8})/g) || [];
 
   for (const match of matches) {
     const digits = match.replace(/\D/g, "");
 
-    // +90 5XXXXXXXXX
     if (/^905\d{9}$/.test(digits)) {
       return digits.slice(-10);
     }
 
-    // 05XXXXXXXXX
     if (/^05\d{9}$/.test(digits)) {
       return digits.slice(-10);
     }
 
-    // 5XXXXXXXXX
     if (/^5\d{9}$/.test(digits)) {
       return digits;
     }
@@ -513,6 +511,8 @@ function isExplicitProductSwitch(messageNorm) {
     "ben lazer istiyorum",
     "ataç alayım",
     "atac alayim",
+    "fikrimi degistirdim",
+    "fikrimi değiştirdim",
   ]);
 }
 
@@ -618,7 +618,7 @@ function detectIntent(baseContext, extracted) {
     return conversationStage === "waiting_back_text" ? "back_photo_upload" : "photo";
   }
 
-if (hasAny(messageNorm, KEYWORDS.intents.shippingPrice)) return "shipping_price";
+  if (hasAny(messageNorm, KEYWORDS.intents.shippingPrice)) return "shipping_price";
   if (hasAny(messageNorm, KEYWORDS.intents.shipping)) return "shipping";
   if (hasAny(messageNorm, KEYWORDS.intents.trust)) return "trust";
   if (hasAny(messageNorm, KEYWORDS.intents.location)) return "location";
@@ -666,8 +666,9 @@ if (hasAny(messageNorm, KEYWORDS.intents.shippingPrice)) return "shipping_price"
   if (detectedProduct === "atac" && extracted.letters) {
     return "letters";
   }
-  
+
   if (hasAny(messageNorm, KEYWORDS.intents.smalltalk)) return "smalltalk";
+  if (hasAny(messageNorm, KEYWORDS.intents.orderStart)) return "order_start";
 
   return "general";
 }
@@ -894,25 +895,14 @@ function isFreshProductSelection(context, state) {
   );
 }
 
-function buildDeterministicReply(context, state) {
-  const { detectedIntent, detectedProduct, messageNorm } = context;
-  const nextStage = getNextStage(state);
+function handleLocationIntent(context) {
+  const { detectedIntent } = context;
+  if (detectedIntent !== "location") return "";
+  return "Eminönü İstanbul’dayız 😊";
+}
 
-  if (shouldShowMainMenu(context, state)) {
-    return MAIN_MENU_TEXT;
-  }
-
-  if (isFreshProductSelection(context, state) && detectedProduct === "lazer") {
-    return LASER_PRICE_TEXT;
-  }
-
-  if (isFreshProductSelection(context, state) && detectedProduct === "atac") {
-    return ATAC_PRICE_TEXT;
-  }
-
-  if (detectedIntent === "location") {
-    return "Eminönü İstanbul’dayız 😊";
-  }
+function handleShippingIntent(context) {
+  const { detectedIntent, messageNorm } = context;
 
   if (detectedIntent === "shipping_price") {
     return "Kargo ücreti fiyata dahildir efendim 😊 Ekstra bir ücret ödemezsiniz.";
@@ -925,38 +915,45 @@ function buildDeterministicReply(context, state) {
     return SHIPPING_TIME_FALLBACK_TEXT;
   }
 
-  if (detectedIntent === "trust") {
-    if (hasAny(messageNorm, ["kaplama", "kaplamasi atar", "kaplaması atar"])) {
-      return "Kaplama atmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.";
-    }
-    if (hasAny(messageNorm, ["kararma", "solar", "solma", "paslan"])) {
-      return "Kararma, solma veya paslanma yapmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.";
-    }
-    return "Güvenle sipariş verebilirsiniz efendim 😊";
+  return "";
+}
+
+function handleTrustIntent(context) {
+  const { detectedIntent, messageNorm } = context;
+  if (detectedIntent !== "trust") return "";
+
+  if (hasAny(messageNorm, ["kaplama", "kaplamasi atar", "kaplaması atar"])) {
+    return "Kaplama atmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.";
   }
 
-  if (detectedIntent === "photo_question" && detectedProduct === "lazer") {
-    return "Buradan direkt gönderebilirsiniz efendim 😊 Siz gönderin, biz hemen kontrol edelim.";
+  if (
+    hasAny(messageNorm, [
+      "kararma",
+      "kararir mi",
+      "kararma yapar mi",
+      "kararma olur mu",
+      "kararır mı",
+      "kararma yapar mı",
+      "kararma olur mu",
+      "solar",
+      "solma",
+      "paslan",
+    ])
+  ) {
+    return "Kararma, solma veya paslanma yapmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.";
   }
 
-  if (detectedIntent === "photo_suitability_question" && detectedProduct === "lazer") {
-    return "Olur efendim 😊 Uygunlukla ilgili bir sorun olursa ekibimiz size geri dönüş sağlayacaktır. Arka yüz için yazı ya da fotoğraf isterseniz onu da iletebilirsiniz.";
-  }
+  return "Güvenle sipariş verebilirsiniz efendim 😊";
+}
 
-  if (detectedIntent === "back_text_info" && detectedProduct === "lazer") {
-    return "Evet efendim 😊 Arka yüzüne yazı ekleyebiliyoruz. İsterseniz yazıyı buradan iletebilirsiniz. Arka yüze fotoğraf da yapılabiliyor.";
-  }
+function handleChainIntent(context) {
+  const { detectedIntent, detectedProduct, messageNorm } = context;
 
-  if (detectedIntent === "back_photo_info" && detectedProduct === "lazer") {
-    return "Tabi efendim 😊 Ön yüze bir fotoğraf, arka yüze bir fotoğraf yapabiliyoruz. Ek ücret de alınmıyor. İsterseniz arka yüz için fotoğrafı da gönderebilirsiniz.";
-  }
+  if (detectedIntent !== "chain_question") return "";
+  if (detectedProduct !== "lazer") return "";
 
-  if (detectedIntent === "back_photo_price" && detectedProduct === "lazer") {
-    return "Arka yüze fotoğraf da ekleyebiliriz efendim 😊 Ek ücret alınmıyor.";
-  }
-
-  if (detectedIntent === "chain_question" && detectedProduct === "lazer") {
-    if (hasAny(messageNorm, [
+  if (
+    hasAny(messageNorm, [
       "zincir boyu",
       "zincir uzunlugu",
       "zincir uzunluğu",
@@ -966,12 +963,79 @@ function buildDeterministicReply(context, state) {
       "zincir kac cm",
       "zincir kaç cm",
       "zincir kisalir mi",
-      "zincir kısalır mı"
-    ])) {
-      return "Standart zincir 60 cm’dir efendim 😊";
-    }
-    return "Zincir modeliyle ilgili detay için ekibimize görsel üzerinden net bilgi verelim 😊";
+      "zincir kısalır mı",
+    ])
+  ) {
+    return "Standart zincir 60 cm’dir efendim 😊";
   }
+
+  return "Zincir modeliyle ilgili detay için ekibimize görsel üzerinden net bilgi verelim 😊";
+}
+
+function handlePhotoQuestionIntent(context) {
+  const { detectedIntent, detectedProduct } = context;
+
+  if (detectedProduct !== "lazer") return "";
+
+  if (detectedIntent === "photo_question") {
+    return "Buradan direkt gönderebilirsiniz efendim 😊 Siz gönderin, biz hemen kontrol edelim.";
+  }
+
+  if (detectedIntent === "photo_suitability_question") {
+    return "Olur efendim 😊 Uygunlukla ilgili bir sorun olursa ekibimiz size geri dönüş sağlayacaktır. Arka yüz için yazı ya da fotoğraf isterseniz onu da iletebilirsiniz.";
+  }
+
+  return "";
+}
+
+function handleBackSideInfoIntent(context) {
+  const { detectedIntent, detectedProduct } = context;
+
+  if (detectedProduct !== "lazer") return "";
+
+  if (detectedIntent === "back_text_info") {
+    return "Evet efendim 😊 Arka yüzüne yazı ekleyebiliyoruz. İsterseniz yazıyı buradan iletebilirsiniz. Arka yüze fotoğraf da yapılabiliyor.";
+  }
+
+  if (detectedIntent === "back_photo_info") {
+    return "Tabi efendim 😊 Ön yüze bir fotoğraf, arka yüze bir fotoğraf yapabiliyoruz. Ek ücret de alınmıyor. İsterseniz arka yüz için fotoğrafı da gönderebilirsiniz.";
+  }
+
+  if (detectedIntent === "back_photo_price") {
+    return "Arka yüze fotoğraf da ekleyebiliriz efendim 😊 Ek ücret alınmıyor.";
+  }
+
+  return "";
+}
+
+function buildDeterministicReply(context, state) {
+  const { detectedIntent, detectedProduct, messageNorm } = context;
+  const nextStage = getNextStage(state);
+
+  if (shouldShowMainMenu(context, state)) {
+    return MAIN_MENU_TEXT;
+  }
+
+  const fixedInfoReply =
+    handleLocationIntent(context) ||
+    handleShippingIntent(context) ||
+    handleTrustIntent(context) ||
+    handleChainIntent(context) ||
+    handlePhotoQuestionIntent(context) ||
+    handleBackSideInfoIntent(context);
+
+  if (fixedInfoReply) {
+    return fixedInfoReply;
+  }
+
+  if (isFreshProductSelection(context, state) && detectedProduct === "lazer") {
+    return LASER_PRICE_TEXT;
+  }
+
+  if (isFreshProductSelection(context, state) && detectedProduct === "atac") {
+    return ATAC_PRICE_TEXT;
+  }
+
   if (detectedIntent === "photo" && detectedProduct === "lazer") {
     if (state.order_status === "completed" || nextStage === "order_completed") {
       return "Sipariş bilgileri tamamlandığı için fotoğraf değişikliği talebinizi ekibimize yönlendirelim efendim 😊";
@@ -1068,6 +1132,18 @@ function buildDeterministicReply(context, state) {
     }
     if (nextStage === "order_completed") {
       return "Adres bilginizi de aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı. Ekibimiz işlemi hazırlayacaktır.";
+    }
+  }
+
+  if (detectedIntent === "order_start") {
+    if (!detectedProduct) {
+      return MAIN_MENU_TEXT;
+    }
+    if (detectedProduct === "lazer") {
+      return LASER_PRICE_TEXT;
+    }
+    if (detectedProduct === "atac") {
+      return ATAC_PRICE_TEXT;
     }
   }
 
