@@ -189,7 +189,7 @@ const KEYWORDS = {
       "zincir kaç cm",
     ],
     orderStart: ["siparis vermek istiyorum", "sipariş vermek istiyorum", "siparis verecegim", "sipariş vereceğim", "almak istiyorum", "hazirlayalim", "hazırlayalım", "istiyorum", "ilgileniyorum"],
-    photoQuestion: [
+photoQuestion: [
       "bu foto olur mu",
       "fotograf uygun mu",
       "foto uygun mu",
@@ -206,6 +206,12 @@ const KEYWORDS = {
       "gondersem olur mu",
       "fotoğraf atsam olur mu",
       "fotoğrafı nasıl göndereceğiz",
+      "fotoğrafı nasıl göndereceğim",
+      "fotografi nasil gonderecegim",
+      "fotoğrafı nasıl gönderebilirim",
+      "fotografi nasil gonderebilirim",
+      "fotoğraf nasıl göndereceğim",
+      "fotograf nasil gonderecegim",
       "resim nasıl gönderiyorum",
       "resim nasil gonderiyorum",
       "resim nasil gonderirim",
