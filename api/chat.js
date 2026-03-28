@@ -658,9 +658,6 @@ if (
   return "photo_suitability_question";
 }
 
-import fs from "fs";
-import path from "path";
-
 const fileCache = {};
 
 const FALLBACK_TEXT = "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊";
