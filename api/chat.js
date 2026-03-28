@@ -992,27 +992,22 @@ function handleChainIntent(context) {
     SUPPORT_MODE_REASON.SELLER_REQUIRED
   );
 }
+
 function getActiveProduct(context, state) {
   const stateProduct =
-    state?.ilgilenilen_urun ||
-    state?.user_product ||
+    state?.product ||
     context?.fields?.ilgilenilen_urun ||
     context?.fields?.user_product ||
     "";
 
-  if (stateProduct) {
-    return stateProduct;
-  }
-
-  if (context?.previousProduct) {
-    return context.previousProduct;
-  }
-
+  if (stateProduct) return stateProduct;
+  if (context?.previousProduct) return context.previousProduct;
   return context?.detectedProduct || "";
 }
+
 function handlePhotoQuestionIntent(context, state) {
   const activeProduct = getActiveProduct(context, state);
-  const raw = normalizeText(context.rawMessage || context.message || "");
+  const raw = normalizeText(context.message || "");
 
   const isPhotoQuestion =
     context.detectedIntent === "photo_question" ||
@@ -1039,9 +1034,7 @@ function handlePhotoQuestionIntent(context, state) {
       "buradan göndereyim",
     ]);
 
-  if (!isPhotoQuestion) {
-    return emptyReply();
-  }
+  if (!isPhotoQuestion) return emptyReply();
 
   if (activeProduct === "atac") {
     return makeReply(
@@ -1064,10 +1057,10 @@ function handlePhotoQuestionIntent(context, state) {
 
 function handleBackSideInfoIntent(context, state) {
   const activeProduct = getActiveProduct(context, state);
-  const raw = normalizeText(context.rawMessage || context.message || "");
+  const raw = normalizeText(context.message || "");
 
   const isBackTextQuestion =
-    context.detectedIntent === "back_text_question" ||
+    context.detectedIntent === "back_text_info" ||
     hasAny(raw, [
       "arkasina yazi",
       "arkasına yazı",
@@ -1082,7 +1075,7 @@ function handleBackSideInfoIntent(context, state) {
     ]);
 
   const isBackPhotoQuestion =
-    context.detectedIntent === "back_photo_question" ||
+    context.detectedIntent === "back_photo_info" ||
     context.detectedIntent === "double_side_photo" ||
     hasAny(raw, [
       "arkasina foto",
@@ -1096,6 +1089,10 @@ function handleBackSideInfoIntent(context, state) {
       "iki tarafina foto",
       "çift taraf foto",
       "cift taraf foto",
+      "arka yuz ozellik",
+      "arka yüz özellik",
+      "arka yuzune fotograf",
+      "arka yüzüne fotoğraf",
     ]);
 
   const isBackPhotoPriceQuestion =
@@ -1124,9 +1121,7 @@ function handleBackSideInfoIntent(context, state) {
     );
   }
 
-  if (activeProduct !== "lazer") {
-    return emptyReply();
-  }
+  if (activeProduct !== "lazer") return emptyReply();
 
   if (isBackPhotoPriceQuestion) {
     return makeReply(
@@ -1136,9 +1131,17 @@ function handleBackSideInfoIntent(context, state) {
     );
   }
 
-  if (isBackTextQuestion || isBackPhotoQuestion) {
+  if (isBackTextQuestion) {
     return makeReply(
-      "Evet efendim 😊 Resimli lazer kolyede arka yüzüne de ekleme yapılabiliyor.",
+      "Evet efendim 😊 Resimli lazer kolyede arka yüzüne yazı ekleyebiliyoruz.",
+      REPLY_CLASS.FIXED_INFO,
+      SUPPORT_MODE_REASON.NONE
+    );
+  }
+
+  if (isBackPhotoQuestion) {
+    return makeReply(
+      "Evet efendim 😊 Resimli lazer kolyede ön yüze bir fotoğraf, arka yüze de ikinci bir fotoğraf eklenebiliyor.",
       REPLY_CLASS.FIXED_INFO,
       SUPPORT_MODE_REASON.NONE
     );
@@ -1370,6 +1373,7 @@ function handleCompletionFlow(context, state, nextStage) {
 
   return emptyReply();
 }
+
 function firstReply(...replies) {
   for (const r of replies) {
     if (r && r.text) return r;
@@ -1385,14 +1389,14 @@ function buildDeterministicReply(context, state) {
     return makeReply(MAIN_MENU_TEXT, REPLY_CLASS.MENU);
   }
 
-const fixedInfoReply = firstReply(
-  handleLocationIntent(context),
-  handleShippingIntent(context),
-  handleTrustIntent(context),
-  handleBackSideInfoIntent(context, state),
-  handlePhotoQuestionIntent(context, state),
-  handleChainIntent(context)
-);
+  const fixedInfoReply = firstReply(
+    handleLocationIntent(context),
+    handleShippingIntent(context),
+    handleTrustIntent(context),
+    handleBackSideInfoIntent(context, state),
+    handlePhotoQuestionIntent(context, state),
+    handleChainIntent(context)
+  );
 
   if (fixedInfoReply.text) {
     return fixedInfoReply;
