@@ -193,7 +193,6 @@ const KEYWORDS = {
       "resmi nasil gonderiyorum",
       "resmi nasil gonderirim",
       "fotografi atsam olur mu",
-      "resim nasil gonderiyorum",
     ],
     backPhotoPrice: [
       "arkasina fotograf ne kadar",
@@ -382,17 +381,9 @@ function extractPhone(rawMessage = "") {
   for (const match of matches) {
     const digits = match.replace(/\D/g, "");
 
-    if (/^905\d{9}$/.test(digits)) {
-      return digits.slice(-10);
-    }
-
-    if (/^05\d{9}$/.test(digits)) {
-      return digits.slice(-10);
-    }
-
-    if (/^5\d{9}$/.test(digits)) {
-      return digits;
-    }
+    if (/^905\d{9}$/.test(digits)) return digits.slice(-10);
+    if (/^05\d{9}$/.test(digits)) return digits.slice(-10);
+    if (/^5\d{9}$/.test(digits)) return digits;
   }
 
   return "";
@@ -581,9 +572,7 @@ function detectIntent(baseContext, extracted) {
     return "back_text_skip";
   }
 
-  if (hasAny(messageNorm, KEYWORDS.intents.cancel)) {
-    return "cancel_order";
-  }
+  if (hasAny(messageNorm, KEYWORDS.intents.cancel)) return "cancel_order";
 
   if (
     conversationStage === "waiting_back_text" &&
@@ -610,9 +599,7 @@ function detectIntent(baseContext, extracted) {
     return "back_photo_info";
   }
 
-  if (hasAny(messageNorm, KEYWORDS.intents.backPhotoPrice)) {
-    return "back_photo_price";
-  }
+  if (hasAny(messageNorm, KEYWORDS.intents.backPhotoPrice)) return "back_photo_price";
 
   if (looksLikePhotoUrl(message) && detectedProduct === "lazer") {
     return conversationStage === "waiting_back_text" ? "back_photo_upload" : "photo";
@@ -626,7 +613,6 @@ function detectIntent(baseContext, extracted) {
   if (hasAny(messageNorm, KEYWORDS.intents.chain)) return "chain_question";
   if (hasAny(messageNorm, KEYWORDS.intents.price)) return "price";
   if (hasAny(messageNorm, KEYWORDS.intents.photoQuestion)) return "photo_question";
-
   if (hasAny(messageNorm, KEYWORDS.intents.backTextDirect)) return "back_text";
 
   if (conversationStage === "waiting_back_text") {
@@ -649,12 +635,7 @@ function detectIntent(baseContext, extracted) {
 
     const raw = String(message || "").trim();
 
-    if (
-      raw &&
-      !blocked &&
-      !looksLikePhotoUrl(message) &&
-      raw.length <= 80
-    ) {
+    if (raw && !blocked && !looksLikePhotoUrl(message) && raw.length <= 80) {
       return "back_text";
     }
   }
@@ -663,9 +644,7 @@ function detectIntent(baseContext, extracted) {
   if (extracted.phone) return "phone";
   if (extracted.hasName) return "name_only";
 
-  if (detectedProduct === "atac" && extracted.letters) {
-    return "letters";
-  }
+  if (detectedProduct === "atac" && extracted.letters) return "letters";
 
   if (hasAny(messageNorm, KEYWORDS.intents.smalltalk)) return "smalltalk";
   if (hasAny(messageNorm, KEYWORDS.intents.orderStart)) return "order_start";
@@ -870,15 +849,7 @@ function shouldShowMainMenu(context, state) {
   if (truthy(state.context_lock)) return false;
   if (state.order_status === "cancel_requested") return false;
 
-  return [
-    "smalltalk",
-    "general",
-    "unknown",
-    "price",
-    "payment",
-    "order_start",
-    "address",
-  ].includes(context.detectedIntent);
+  return ["smalltalk", "general", "unknown", "price", "payment", "order_start", "address"].includes(context.detectedIntent);
 }
 
 function isFreshProductSelection(context, state) {
@@ -896,8 +867,7 @@ function isFreshProductSelection(context, state) {
 }
 
 function handleLocationIntent(context) {
-  const { detectedIntent } = context;
-  if (detectedIntent !== "location") return "";
+  if (context.detectedIntent !== "location") return "";
   return "Eminönü İstanbul’dayız 😊";
 }
 
@@ -948,7 +918,6 @@ function handleTrustIntent(context) {
 
 function handleChainIntent(context) {
   const { detectedIntent, detectedProduct, messageNorm } = context;
-
   if (detectedIntent !== "chain_question") return "";
   if (detectedProduct !== "lazer") return "";
 
@@ -974,7 +943,6 @@ function handleChainIntent(context) {
 
 function handlePhotoQuestionIntent(context) {
   const { detectedIntent, detectedProduct } = context;
-
   if (detectedProduct !== "lazer") return "";
 
   if (detectedIntent === "photo_question") {
@@ -990,7 +958,6 @@ function handlePhotoQuestionIntent(context) {
 
 function handleBackSideInfoIntent(context) {
   const { detectedIntent, detectedProduct } = context;
-
   if (detectedProduct !== "lazer") return "";
 
   if (detectedIntent === "back_text_info") {
@@ -1008,104 +975,92 @@ function handleBackSideInfoIntent(context) {
   return "";
 }
 
-function buildDeterministicReply(context, state) {
-  const { detectedIntent, detectedProduct, messageNorm } = context;
-  const nextStage = getNextStage(state);
+function handleLaserFlow(context, state, nextStage) {
+  const { detectedProduct, detectedIntent } = context;
+  if (detectedProduct !== "lazer") return "";
 
-  if (shouldShowMainMenu(context, state)) {
-    return MAIN_MENU_TEXT;
-  }
-
-  const fixedInfoReply =
-    handleLocationIntent(context) ||
-    handleShippingIntent(context) ||
-    handleTrustIntent(context) ||
-    handleChainIntent(context) ||
-    handlePhotoQuestionIntent(context) ||
-    handleBackSideInfoIntent(context);
-
-  if (fixedInfoReply) {
-    return fixedInfoReply;
-  }
-
-  if (isFreshProductSelection(context, state) && detectedProduct === "lazer") {
-    return LASER_PRICE_TEXT;
-  }
-
-  if (isFreshProductSelection(context, state) && detectedProduct === "atac") {
-    return ATAC_PRICE_TEXT;
-  }
-
-  if (detectedIntent === "photo" && detectedProduct === "lazer") {
+  if (detectedIntent === "photo") {
     if (state.order_status === "completed" || nextStage === "order_completed") {
       return "Sipariş bilgileri tamamlandığı için fotoğraf değişikliği talebinizi ekibimize yönlendirelim efendim 😊";
     }
     return "Fotoğrafınızı aldım efendim 😊 Arka yüzüne yazı eklemek ister misiniz? İsterseniz yazıyı buradan iletebilirsiniz, istemezseniz 'yok' yazabilirsiniz.";
   }
 
-  if (detectedIntent === "back_text_skip" && detectedProduct === "lazer") {
-    if (nextStage === "waiting_payment") {
-      if (state.payment_method === "eft_havale") {
-        return `Tamam efendim 😊 Arka yüz boş kalacak.\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`;
-      }
-      if (state.payment_method === "kapida_odeme") {
-        return `Tamam efendim 😊 Arka yüz boş kalacak.\n\n${ORDER_DETAILS_TEXT}`;
-      }
-      return "Tamam efendim 😊 Arka yüz boş kalacak. Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
+  if (detectedIntent === "back_text_skip" && nextStage === "waiting_payment") {
+    if (state.payment_method === "eft_havale") {
+      return `Tamam efendim 😊 Arka yüz boş kalacak.\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`;
+    }
+    if (state.payment_method === "kapida_odeme") {
+      return `Tamam efendim 😊 Arka yüz boş kalacak.\n\n${ORDER_DETAILS_TEXT}`;
+    }
+    return "Tamam efendim 😊 Arka yüz boş kalacak. Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
+  }
+
+  if (detectedIntent === "back_text" && nextStage === "waiting_payment") {
+    if (state.payment_method === "eft_havale") {
+      return `Not aldım efendim 😊 EFT / Havale ile ilerleyebiliriz.\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`;
+    }
+    if (state.payment_method === "kapida_odeme") {
+      return `Not aldım efendim 😊 Kapıda ödeme ile ilerleyebiliriz.\n\n${ORDER_DETAILS_TEXT}`;
+    }
+    return "Not aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
+  }
+
+  return "";
+}
+
+function handleAtacFlow(context, state, nextStage) {
+  const { detectedProduct, detectedIntent } = context;
+  if (detectedProduct !== "atac") return "";
+
+  if (detectedIntent === "letters" && nextStage === "waiting_payment") {
+    if (state.payment_method === "eft_havale") {
+      return `Harflerinizi aldım efendim 😊 EFT / Havale ile ilerleyebiliriz.\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`;
+    }
+    if (state.payment_method === "kapida_odeme") {
+      return `Harflerinizi aldım efendim 😊 Kapıda ödeme ile ilerleyebiliriz.\n\n${ORDER_DETAILS_TEXT}`;
+    }
+    return "Harflerinizi aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
+  }
+
+  return "";
+}
+
+function handlePaymentFlow(context, state, nextStage) {
+  const { detectedIntent, detectedProduct } = context;
+  if (detectedIntent !== "payment") return "";
+
+  if (!detectedProduct && nextStage === "waiting_product") {
+    return "Ödeme yöntemimiz EFT / Havale veya kapıda ödeme şeklindedir efendim 😊 Önce hangi model ile ilgilendiğinizi yazabilir misiniz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye";
+  }
+
+  if (detectedProduct === "lazer" && nextStage === "waiting_back_text") {
+    return "Ödeme aşamasına geçmeden önce arka yüz için yazı isteyip istemediğinizi iletebilir misiniz? İstemiyorsanız 'yok' yazabilirsiniz 😊";
+  }
+
+  if (detectedProduct === "atac" && !truthy(state.letters_received)) {
+    if (state.payment_method === "eft_havale") {
+      return `EFT / Havale ile ilerleyebiliriz 😊 Önce istediğiniz harfleri yazabilirsiniz.\n\n${EFT_INFO_TEXT}`;
+    }
+    if (state.payment_method === "kapida_odeme") {
+      return "Kapıda ödeme ile ilerleyebiliriz efendim 😊 Önce istediğiniz harfleri yazabilirsiniz.";
     }
   }
 
-  if (detectedIntent === "back_text" && detectedProduct === "lazer") {
-    if (nextStage === "waiting_payment") {
-      if (state.payment_method === "eft_havale") {
-        return `Not aldım efendim 😊 EFT / Havale ile ilerleyebiliriz.\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`;
-      }
-      if (state.payment_method === "kapida_odeme") {
-        return `Not aldım efendim 😊 Kapıda ödeme ile ilerleyebiliriz.\n\n${ORDER_DETAILS_TEXT}`;
-      }
-      return "Not aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
+  if (state.address_status !== "received") {
+    if (state.payment_method === "eft_havale") {
+      return `EFT / Havale için ödeme bilgilerimiz şu şekildedir 😊\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`;
+    }
+    if (state.payment_method === "kapida_odeme") {
+      return `Kapıda ödeme ile ilerleyebiliriz efendim 😊\n\n${ORDER_DETAILS_TEXT}`;
     }
   }
 
-  if (detectedIntent === "letters" && detectedProduct === "atac") {
-    if (nextStage === "waiting_payment") {
-      if (state.payment_method === "eft_havale") {
-        return `Harflerinizi aldım efendim 😊 EFT / Havale ile ilerleyebiliriz.\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`;
-      }
-      if (state.payment_method === "kapida_odeme") {
-        return `Harflerinizi aldım efendim 😊 Kapıda ödeme ile ilerleyebiliriz.\n\n${ORDER_DETAILS_TEXT}`;
-      }
-      return "Harflerinizi aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
-    }
-  }
+  return "";
+}
 
-  if (detectedIntent === "payment") {
-    if (!detectedProduct && nextStage === "waiting_product") {
-      return "Ödeme yöntemimiz EFT / Havale veya kapıda ödeme şeklindedir efendim 😊 Önce hangi model ile ilgilendiğinizi yazabilir misiniz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye";
-    }
-
-    if (detectedProduct === "lazer" && nextStage === "waiting_back_text") {
-      return "Ödeme aşamasına geçmeden önce arka yüz için yazı isteyip istemediğinizi iletebilir misiniz? İstemiyorsanız 'yok' yazabilirsiniz 😊";
-    }
-
-    if (detectedProduct === "atac" && !truthy(state.letters_received)) {
-      if (state.payment_method === "eft_havale") {
-        return `EFT / Havale ile ilerleyebiliriz 😊 Önce istediğiniz harfleri yazabilirsiniz.\n\n${EFT_INFO_TEXT}`;
-      }
-      if (state.payment_method === "kapida_odeme") {
-        return "Kapıda ödeme ile ilerleyebiliriz efendim 😊 Önce istediğiniz harfleri yazabilirsiniz.";
-      }
-    }
-
-    if (state.address_status !== "received") {
-      if (state.payment_method === "eft_havale") {
-        return `EFT / Havale için ödeme bilgilerimiz şu şekildedir 😊\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`;
-      }
-      if (state.payment_method === "kapida_odeme") {
-        return `Kapıda ödeme ile ilerleyebiliriz efendim 😊\n\n${ORDER_DETAILS_TEXT}`;
-      }
-    }
-  }
+function handleAddressFlow(context, state, nextStage) {
+  const { detectedIntent } = context;
 
   if (detectedIntent === "name_only") {
     if (nextStage === "waiting_address") {
@@ -1135,21 +1090,57 @@ function buildDeterministicReply(context, state) {
     }
   }
 
-  if (detectedIntent === "order_start") {
-    if (!detectedProduct) {
-      return MAIN_MENU_TEXT;
-    }
-    if (detectedProduct === "lazer") {
-      return LASER_PRICE_TEXT;
-    }
-    if (detectedProduct === "atac") {
-      return ATAC_PRICE_TEXT;
-    }
+  return "";
+}
+
+function handleCompletionFlow(context, state, nextStage) {
+  if (context.detectedIntent === "order_start") {
+    if (!context.detectedProduct) return MAIN_MENU_TEXT;
+    if (context.detectedProduct === "lazer") return LASER_PRICE_TEXT;
+    if (context.detectedProduct === "atac") return ATAC_PRICE_TEXT;
   }
 
   if (nextStage === "order_completed") {
     return "Sipariş için gerekli bilgiler tamamlandı efendim 😊 Ekibimiz işlemi hazırlayacaktır.";
   }
+
+  return "";
+}
+
+function buildDeterministicReply(context, state) {
+  const { detectedProduct } = context;
+  const nextStage = getNextStage(state);
+
+  if (shouldShowMainMenu(context, state)) {
+    return MAIN_MENU_TEXT;
+  }
+
+  const fixedInfoReply =
+    handleLocationIntent(context) ||
+    handleShippingIntent(context) ||
+    handleTrustIntent(context) ||
+    handleChainIntent(context) ||
+    handlePhotoQuestionIntent(context) ||
+    handleBackSideInfoIntent(context);
+
+  if (fixedInfoReply) return fixedInfoReply;
+
+  if (isFreshProductSelection(context, state) && detectedProduct === "lazer") {
+    return LASER_PRICE_TEXT;
+  }
+
+  if (isFreshProductSelection(context, state) && detectedProduct === "atac") {
+    return ATAC_PRICE_TEXT;
+  }
+
+  const flowReply =
+    handleLaserFlow(context, state, nextStage) ||
+    handleAtacFlow(context, state, nextStage) ||
+    handlePaymentFlow(context, state, nextStage) ||
+    handleAddressFlow(context, state, nextStage) ||
+    handleCompletionFlow(context, state, nextStage);
+
+  if (flowReply) return flowReply;
 
   return "";
 }
