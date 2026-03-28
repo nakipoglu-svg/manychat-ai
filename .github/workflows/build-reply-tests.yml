@@ -1,0 +1,32 @@
+name: Build Replay Tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-replay-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repo'yu çek
+        uses: actions/checkout@v4
+
+      - name: Node kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Candidate dosyasını üret
+        env:
+          GOOGLE_LOG_WEBHOOK_URL: ${{ secrets.GOOGLE_LOG_WEBHOOK_URL }}
+          GOOGLE_LOG_SECRET: ${{ secrets.GOOGLE_LOG_SECRET }}
+        run: node scripts/buildRegressionCandidates.js
+
+      - name: Replay test dosyasını oluştur
+        run: node scripts/buildReplayTests.js
+
+      - name: Oluşan dosyayı artifact olarak yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: replay-generated-tests
+          path: tests/generated/replay.generated.tests.js
