@@ -3,8 +3,6 @@ import path from "path";
 
 const INPUT_FILE = path.join(
   process.cwd(),
-  "scripts",
-  "generated",
   "candidate_regressions.json"
 );
 
