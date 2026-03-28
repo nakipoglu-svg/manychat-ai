@@ -1050,6 +1050,7 @@ function handlePhotoQuestionIntent(context, state) {
     context?.previousProduct ||
     "";
 
+  // KRİTİK: aktif bağlam ataç ise her durumda ataç cevabı ver
   if (stateProduct === "atac") {
     return makeReply(
       "Ataç kolyede fotoğraf gerekmiyor efendim 😊 İsterseniz harfleri yazabilirsiniz.",
@@ -1084,7 +1085,6 @@ function handlePhotoQuestionIntent(context, state) {
 
   return emptyReply();
 }
-
 function handleBackSideInfoIntent(context, state) {
   const activeProduct = getActiveProduct(context, state);
   const raw = normalizeText(context.message || "");
