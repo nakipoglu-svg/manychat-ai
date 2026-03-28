@@ -1,11 +1,15 @@
 import fs from "fs";
 import path from "path";
 
-const APPS_SCRIPT_WEBHOOK_URL = process.env.GOOGLE_LOG_WEBHOOK_URL || "";
-const APPS_SCRIPT_SECRET = process.env.GOOGLE_LOG_SECRET || "";
+const INPUT_FILE = path.join(
+  process.cwd(),
+  "scripts",
+  "generated",
+  "candidate_regressions.json"
+);
 
-const OUTPUT_DIR = path.join(process.cwd(), "scripts", "generated");
-const OUTPUT_FILE = path.join(OUTPUT_DIR, "candidate_regressions.json");
+const OUTPUT_DIR = path.join(process.cwd(), "tests", "generated");
+const OUTPUT_FILE = path.join(OUTPUT_DIR, "replay.generated.tests.js");
 
 function normalizeText(text = "") {
   return String(text)
