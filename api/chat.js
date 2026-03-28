@@ -31,6 +31,25 @@ const CRITICAL_KNOWLEDGE_FILES = [
   "ORDER_FLOW.txt",
 ];
 
+const REPLY_CLASS = {
+  FIXED_INFO: "fixed_info",
+  FLOW_PROGRESS: "flow_progress",
+  SELLER_REQUIRED: "seller_required",
+  OPERATIONAL_REQUIRED: "operational_required",
+  FALLBACK: "fallback",
+  MENU: "menu",
+  PRODUCT_ENTRY: "product_entry",
+  ORDER_COMPLETE: "order_complete",
+};
+
+const SUPPORT_MODE_REASON = {
+  SELLER_REQUIRED: "seller_required",
+  OPERATIONAL_REQUIRED: "operational_required",
+  TRUE_FALLBACK: "true_fallback",
+  MANUAL_CANCEL: "manual_cancel",
+  NONE: "",
+};
+
 const TURKEY_CITIES = [
   "adana", "adiyaman", "afyonkarahisar", "agri", "aksaray", "amasya", "ankara", "antalya", "ardahan", "artvin", "aydin",
   "balikesir", "bartin", "batman", "bayburt", "bilecik", "bingol", "bitlis", "bolu", "burdur", "bursa",
@@ -357,6 +376,22 @@ function cleanReply(text) {
   return t.replace(/^["'\s]+|["'\s]+$/g, "").replace(/\n{3,}/g, "\n\n").trim();
 }
 
+function makeReply(text, replyClass = REPLY_CLASS.FLOW_PROGRESS, supportModeReason = SUPPORT_MODE_REASON.NONE) {
+  return {
+    text,
+    reply_class: replyClass,
+    support_mode_reason: supportModeReason,
+  };
+}
+
+function emptyReply() {
+  return {
+    text: "",
+    reply_class: "",
+    support_mode_reason: SUPPORT_MODE_REASON.NONE,
+  };
+}
+
 function looksLikePhotoUrl(rawMessage = "") {
   const raw = String(rawMessage || "").trim().toLowerCase();
   if (!raw) return false;
@@ -380,7 +415,6 @@ function extractPhone(rawMessage = "") {
 
   for (const match of matches) {
     const digits = match.replace(/\D/g, "");
-
     if (/^905\d{9}$/.test(digits)) return digits.slice(-10);
     if (/^05\d{9}$/.test(digits)) return digits.slice(-10);
     if (/^5\d{9}$/.test(digits)) return digits;
@@ -405,7 +439,6 @@ function looksLikeAddress(messageNorm, rawMessage = "") {
   }
 
   const hasNumber = /\d/.test(raw);
-
   if (hit >= 2) return true;
   if (hit >= 1 && hasNumber) return true;
 
@@ -413,7 +446,6 @@ function looksLikeAddress(messageNorm, rawMessage = "") {
   const districtCount = DISTRICT_KEYWORDS.filter((d) => messageNorm.includes(d)).length;
 
   if (cityCount >= 1 && districtCount >= 1) return true;
-
   return false;
 }
 
@@ -666,6 +698,8 @@ function buildContext(body) {
   const back_text_status = normalizeBackTextStatus(unwrapManychatValue(body.back_text_status));
   const address_status = normalizeAddressStatus(unwrapManychatValue(body.address_status));
   const support_mode = unwrapManychatValue(body.support_mode);
+  const support_mode_reason = unwrapManychatValue(body.support_mode_reason);
+  const reply_class = unwrapManychatValue(body.reply_class);
   const siparis_alindi = unwrapManychatValue(body.siparis_alindi);
   const cancel_reason = unwrapManychatValue(body.cancel_reason);
   const context_lock = unwrapManychatValue(body.context_lock);
@@ -711,6 +745,8 @@ function buildContext(body) {
       back_text_status,
       address_status,
       support_mode,
+      support_mode_reason,
+      reply_class,
       siparis_alindi,
       cancel_reason,
       context_lock,
@@ -742,6 +778,8 @@ function getInitialState(context) {
     back_text_status: f.back_text_status || "",
     address_status: f.address_status || "",
     support_mode: f.support_mode || "",
+    support_mode_reason: f.support_mode_reason || "",
+    reply_class: f.reply_class || "",
     cancel_reason: f.cancel_reason || "",
     context_lock: f.context_lock || "",
     siparis_alindi: truthy(f.siparis_alindi) ? "1" : "",
@@ -760,6 +798,8 @@ function resetForProductSwitch(existing, newProduct) {
     back_text_status: "",
     address_status: "",
     support_mode: "",
+    support_mode_reason: "",
+    reply_class: "",
     cancel_reason: "",
     context_lock: newProduct ? "1" : existing.context_lock || "",
     siparis_alindi: "",
@@ -802,6 +842,8 @@ function applyFacts(context, currentState) {
   if (detectedIntent === "cancel_order") {
     state.cancel_reason = context.message || "cancel_requested";
     state.support_mode = "1";
+    state.support_mode_reason = SUPPORT_MODE_REASON.MANUAL_CANCEL;
+    state.reply_class = REPLY_CLASS.FALLBACK;
     state.order_status = "cancel_requested";
     state.siparis_alindi = "";
   }
@@ -867,33 +909,37 @@ function isFreshProductSelection(context, state) {
 }
 
 function handleLocationIntent(context) {
-  if (context.detectedIntent !== "location") return "";
-  return "Eminönü İstanbul’dayız 😊";
+  if (context.detectedIntent !== "location") return emptyReply();
+  return makeReply("Eminönü İstanbul’dayız 😊", REPLY_CLASS.FIXED_INFO);
 }
 
 function handleShippingIntent(context) {
   const { detectedIntent, messageNorm } = context;
 
   if (detectedIntent === "shipping_price") {
-    return "Kargo ücreti fiyata dahildir efendim 😊 Ekstra bir ücret ödemezsiniz.";
+    return makeReply("Kargo ücreti fiyata dahildir efendim 😊 Ekstra bir ücret ödemezsiniz.", REPLY_CLASS.FIXED_INFO);
   }
 
   if (detectedIntent === "shipping") {
     if (hasAny(messageNorm, ["kargom nerede", "takip no"])) {
-      return "Kargo takip ve durum bilgisi için ekibimiz size destek olacaktır efendim 😊";
+      return makeReply(
+        "Kargo takip ve durum bilgisi için ekibimiz size destek olacaktır efendim 😊",
+        REPLY_CLASS.OPERATIONAL_REQUIRED,
+        SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED
+      );
     }
-    return SHIPPING_TIME_FALLBACK_TEXT;
+    return makeReply(SHIPPING_TIME_FALLBACK_TEXT, REPLY_CLASS.FIXED_INFO);
   }
 
-  return "";
+  return emptyReply();
 }
 
 function handleTrustIntent(context) {
   const { detectedIntent, messageNorm } = context;
-  if (detectedIntent !== "trust") return "";
+  if (detectedIntent !== "trust") return emptyReply();
 
   if (hasAny(messageNorm, ["kaplama", "kaplamasi atar", "kaplaması atar"])) {
-    return "Kaplama atmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.";
+    return makeReply("Kaplama atmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.", REPLY_CLASS.FIXED_INFO);
   }
 
   if (
@@ -910,16 +956,18 @@ function handleTrustIntent(context) {
       "paslan",
     ])
   ) {
-    return "Kararma, solma veya paslanma yapmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.";
+    return makeReply("Kararma, solma veya paslanma yapmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.", REPLY_CLASS.FIXED_INFO);
   }
 
-  return "Güvenle sipariş verebilirsiniz efendim 😊";
+  return makeReply("Güvenle sipariş verebilirsiniz efendim 😊", REPLY_CLASS.FIXED_INFO);
 }
 
 function handleChainIntent(context) {
   const { detectedIntent, detectedProduct, messageNorm } = context;
-  if (detectedIntent !== "chain_question") return "";
-  if (detectedProduct !== "lazer") return "";
+  if (detectedIntent !== "chain_question") return emptyReply();
+  if (detectedProduct !== "lazer") {
+    return makeReply(FALLBACK_TEXT, REPLY_CLASS.FALLBACK, SUPPORT_MODE_REASON.TRUE_FALLBACK);
+  }
 
   if (
     hasAny(messageNorm, [
@@ -935,128 +983,193 @@ function handleChainIntent(context) {
       "zincir kısalır mı",
     ])
   ) {
-    return "Standart zincir 60 cm’dir efendim 😊";
+    return makeReply("Standart zincir 60 cm’dir efendim 😊", REPLY_CLASS.FIXED_INFO);
   }
 
-  return "Zincir modeliyle ilgili detay için ekibimize görsel üzerinden net bilgi verelim 😊";
+  return makeReply(
+    "Zincir modeliyle ilgili detay için ekibimize görsel üzerinden net bilgi verelim 😊",
+    REPLY_CLASS.SELLER_REQUIRED,
+    SUPPORT_MODE_REASON.SELLER_REQUIRED
+  );
 }
 
 function handlePhotoQuestionIntent(context) {
   const { detectedIntent, detectedProduct } = context;
-  if (detectedProduct !== "lazer") return "";
+  if (detectedProduct !== "lazer") return emptyReply();
 
   if (detectedIntent === "photo_question") {
-    return "Buradan direkt gönderebilirsiniz efendim 😊 Siz gönderin, biz hemen kontrol edelim.";
+    return makeReply("Buradan direkt gönderebilirsiniz efendim 😊 Siz gönderin, biz hemen kontrol edelim.", REPLY_CLASS.FIXED_INFO);
   }
 
   if (detectedIntent === "photo_suitability_question") {
-    return "Olur efendim 😊 Uygunlukla ilgili bir sorun olursa ekibimiz size geri dönüş sağlayacaktır. Arka yüz için yazı ya da fotoğraf isterseniz onu da iletebilirsiniz.";
+    return makeReply(
+      "Olur efendim 😊 Uygunlukla ilgili bir sorun olursa ekibimiz size geri dönüş sağlayacaktır. Arka yüz için yazı ya da fotoğraf isterseniz onu da iletebilirsiniz.",
+      REPLY_CLASS.FIXED_INFO
+    );
   }
 
-  return "";
+  return emptyReply();
 }
 
 function handleBackSideInfoIntent(context) {
   const { detectedIntent, detectedProduct } = context;
-  if (detectedProduct !== "lazer") return "";
+  if (detectedProduct !== "lazer") return emptyReply();
 
   if (detectedIntent === "back_text_info") {
-    return "Evet efendim 😊 Arka yüzüne yazı ekleyebiliyoruz. İsterseniz yazıyı buradan iletebilirsiniz. Arka yüze fotoğraf da yapılabiliyor.";
+    return makeReply(
+      "Evet efendim 😊 Arka yüzüne yazı ekleyebiliyoruz. İsterseniz yazıyı buradan iletebilirsiniz. Arka yüze fotoğraf da yapılabiliyor.",
+      REPLY_CLASS.FIXED_INFO
+    );
   }
 
   if (detectedIntent === "back_photo_info") {
-    return "Tabi efendim 😊 Ön yüze bir fotoğraf, arka yüze bir fotoğraf yapabiliyoruz. Ek ücret de alınmıyor. İsterseniz arka yüz için fotoğrafı da gönderebilirsiniz.";
+    return makeReply(
+      "Tabi efendim 😊 Ön yüze bir fotoğraf, arka yüze bir fotoğraf yapabiliyoruz. Ek ücret de alınmıyor. İsterseniz arka yüz için fotoğrafı da gönderebilirsiniz.",
+      REPLY_CLASS.FIXED_INFO
+    );
   }
 
   if (detectedIntent === "back_photo_price") {
-    return "Arka yüze fotoğraf da ekleyebiliriz efendim 😊 Ek ücret alınmıyor.";
+    return makeReply("Arka yüze fotoğraf da ekleyebiliriz efendim 😊 Ek ücret alınmıyor.", REPLY_CLASS.FIXED_INFO);
   }
 
-  return "";
+  return emptyReply();
 }
 
 function handleLaserFlow(context, state, nextStage) {
   const { detectedProduct, detectedIntent } = context;
-  if (detectedProduct !== "lazer") return "";
+  if (detectedProduct !== "lazer") return emptyReply();
 
   if (detectedIntent === "photo") {
     if (state.order_status === "completed" || nextStage === "order_completed") {
-      return "Sipariş bilgileri tamamlandığı için fotoğraf değişikliği talebinizi ekibimize yönlendirelim efendim 😊";
+      return makeReply(
+        "Sipariş bilgileri tamamlandığı için fotoğraf değişikliği talebinizi ekibimize yönlendirelim efendim 😊",
+        REPLY_CLASS.SELLER_REQUIRED,
+        SUPPORT_MODE_REASON.SELLER_REQUIRED
+      );
     }
-    return "Fotoğrafınızı aldım efendim 😊 Arka yüzüne yazı eklemek ister misiniz? İsterseniz yazıyı buradan iletebilirsiniz, istemezseniz 'yok' yazabilirsiniz.";
+    return makeReply(
+      "Fotoğrafınızı aldım efendim 😊 Arka yüzüne yazı eklemek ister misiniz? İsterseniz yazıyı buradan iletebilirsiniz, istemezseniz 'yok' yazabilirsiniz.",
+      REPLY_CLASS.FLOW_PROGRESS
+    );
   }
 
   if (detectedIntent === "back_text_skip" && nextStage === "waiting_payment") {
     if (state.payment_method === "eft_havale") {
-      return `Tamam efendim 😊 Arka yüz boş kalacak.\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`;
+      return makeReply(
+        `Tamam efendim 😊 Arka yüz boş kalacak.\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`,
+        REPLY_CLASS.FLOW_PROGRESS
+      );
     }
     if (state.payment_method === "kapida_odeme") {
-      return `Tamam efendim 😊 Arka yüz boş kalacak.\n\n${ORDER_DETAILS_TEXT}`;
+      return makeReply(
+        `Tamam efendim 😊 Arka yüz boş kalacak.\n\n${ORDER_DETAILS_TEXT}`,
+        REPLY_CLASS.FLOW_PROGRESS
+      );
     }
-    return "Tamam efendim 😊 Arka yüz boş kalacak. Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
+    return makeReply(
+      "Tamam efendim 😊 Arka yüz boş kalacak. Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.",
+      REPLY_CLASS.FLOW_PROGRESS
+    );
   }
 
   if (detectedIntent === "back_text" && nextStage === "waiting_payment") {
     if (state.payment_method === "eft_havale") {
-      return `Not aldım efendim 😊 EFT / Havale ile ilerleyebiliriz.\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`;
+      return makeReply(
+        `Not aldım efendim 😊 EFT / Havale ile ilerleyebiliriz.\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`,
+        REPLY_CLASS.FLOW_PROGRESS
+      );
     }
     if (state.payment_method === "kapida_odeme") {
-      return `Not aldım efendim 😊 Kapıda ödeme ile ilerleyebiliriz.\n\n${ORDER_DETAILS_TEXT}`;
+      return makeReply(
+        `Not aldım efendim 😊 Kapıda ödeme ile ilerleyebiliriz.\n\n${ORDER_DETAILS_TEXT}`,
+        REPLY_CLASS.FLOW_PROGRESS
+      );
     }
-    return "Not aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
+    return makeReply(
+      "Not aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.",
+      REPLY_CLASS.FLOW_PROGRESS
+    );
   }
 
-  return "";
+  return emptyReply();
 }
 
 function handleAtacFlow(context, state, nextStage) {
   const { detectedProduct, detectedIntent } = context;
-  if (detectedProduct !== "atac") return "";
+  if (detectedProduct !== "atac") return emptyReply();
 
   if (detectedIntent === "letters" && nextStage === "waiting_payment") {
     if (state.payment_method === "eft_havale") {
-      return `Harflerinizi aldım efendim 😊 EFT / Havale ile ilerleyebiliriz.\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`;
+      return makeReply(
+        `Harflerinizi aldım efendim 😊 EFT / Havale ile ilerleyebiliriz.\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`,
+        REPLY_CLASS.FLOW_PROGRESS
+      );
     }
     if (state.payment_method === "kapida_odeme") {
-      return `Harflerinizi aldım efendim 😊 Kapıda ödeme ile ilerleyebiliriz.\n\n${ORDER_DETAILS_TEXT}`;
+      return makeReply(
+        `Harflerinizi aldım efendim 😊 Kapıda ödeme ile ilerleyebiliriz.\n\n${ORDER_DETAILS_TEXT}`,
+        REPLY_CLASS.FLOW_PROGRESS
+      );
     }
-    return "Harflerinizi aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
+    return makeReply(
+      "Harflerinizi aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.",
+      REPLY_CLASS.FLOW_PROGRESS
+    );
   }
 
-  return "";
+  return emptyReply();
 }
 
 function handlePaymentFlow(context, state, nextStage) {
   const { detectedIntent, detectedProduct } = context;
-  if (detectedIntent !== "payment") return "";
+  if (detectedIntent !== "payment") return emptyReply();
 
   if (!detectedProduct && nextStage === "waiting_product") {
-    return "Ödeme yöntemimiz EFT / Havale veya kapıda ödeme şeklindedir efendim 😊 Önce hangi model ile ilgilendiğinizi yazabilir misiniz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye";
+    return makeReply(
+      "Ödeme yöntemimiz EFT / Havale veya kapıda ödeme şeklindedir efendim 😊 Önce hangi model ile ilgilendiğinizi yazabilir misiniz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye",
+      REPLY_CLASS.MENU
+    );
   }
 
   if (detectedProduct === "lazer" && nextStage === "waiting_back_text") {
-    return "Ödeme aşamasına geçmeden önce arka yüz için yazı isteyip istemediğinizi iletebilir misiniz? İstemiyorsanız 'yok' yazabilirsiniz 😊";
+    return makeReply(
+      "Ödeme aşamasına geçmeden önce arka yüz için yazı isteyip istemediğinizi iletebilir misiniz? İstemiyorsanız 'yok' yazabilirsiniz 😊",
+      REPLY_CLASS.FLOW_PROGRESS
+    );
   }
 
   if (detectedProduct === "atac" && !truthy(state.letters_received)) {
     if (state.payment_method === "eft_havale") {
-      return `EFT / Havale ile ilerleyebiliriz 😊 Önce istediğiniz harfleri yazabilirsiniz.\n\n${EFT_INFO_TEXT}`;
+      return makeReply(
+        `EFT / Havale ile ilerleyebiliriz 😊 Önce istediğiniz harfleri yazabilirsiniz.\n\n${EFT_INFO_TEXT}`,
+        REPLY_CLASS.FLOW_PROGRESS
+      );
     }
     if (state.payment_method === "kapida_odeme") {
-      return "Kapıda ödeme ile ilerleyebiliriz efendim 😊 Önce istediğiniz harfleri yazabilirsiniz.";
+      return makeReply(
+        "Kapıda ödeme ile ilerleyebiliriz efendim 😊 Önce istediğiniz harfleri yazabilirsiniz.",
+        REPLY_CLASS.FLOW_PROGRESS
+      );
     }
   }
 
   if (state.address_status !== "received") {
     if (state.payment_method === "eft_havale") {
-      return `EFT / Havale için ödeme bilgilerimiz şu şekildedir 😊\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`;
+      return makeReply(
+        `EFT / Havale için ödeme bilgilerimiz şu şekildedir 😊\n\n${EFT_INFO_TEXT}\n\n${ORDER_DETAILS_TEXT}`,
+        REPLY_CLASS.FLOW_PROGRESS
+      );
     }
     if (state.payment_method === "kapida_odeme") {
-      return `Kapıda ödeme ile ilerleyebiliriz efendim 😊\n\n${ORDER_DETAILS_TEXT}`;
+      return makeReply(
+        `Kapıda ödeme ile ilerleyebiliriz efendim 😊\n\n${ORDER_DETAILS_TEXT}`,
+        REPLY_CLASS.FLOW_PROGRESS
+      );
     }
   }
 
-  return "";
+  return emptyReply();
 }
 
 function handleAddressFlow(context, state, nextStage) {
@@ -1065,46 +1178,86 @@ function handleAddressFlow(context, state, nextStage) {
   if (detectedIntent === "name_only") {
     if (nextStage === "waiting_address") {
       if (!truthy(state.phone_received)) {
-        return "Ad soyad bilginizi aldım efendim 😊\n\n📌 Şimdi kalan bilgileri paylaşabilir misiniz?\n\n📱 Cep telefonu\n📍 Açık adres";
+        return makeReply(
+          "Ad soyad bilginizi aldım efendim 😊\n\n📌 Şimdi kalan bilgileri paylaşabilir misiniz?\n\n📱 Cep telefonu\n📍 Açık adres",
+          REPLY_CLASS.FLOW_PROGRESS
+        );
       }
-      return "Ad soyad bilginizi aldım efendim 😊\n\n📍 Şimdi açık adresinizi paylaşabilir misiniz?";
+      return makeReply(
+        "Ad soyad bilginizi aldım efendim 😊\n\n📍 Şimdi açık adresinizi paylaşabilir misiniz?",
+        REPLY_CLASS.FLOW_PROGRESS
+      );
     }
   }
 
   if (detectedIntent === "phone") {
     if (nextStage === "order_completed") {
-      return "Telefon numaranızı da aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı. Ekibimiz işlemi hazırlayacaktır.";
+      return makeReply(
+        "Telefon numaranızı da aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı. Ekibimiz işlemi hazırlayacaktır.",
+        REPLY_CLASS.ORDER_COMPLETE
+      );
     }
     if (!state.payment_method) {
-      return "Telefon numaranızı da aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.";
+      return makeReply(
+        "Telefon numaranızı da aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.",
+        REPLY_CLASS.FLOW_PROGRESS
+      );
     }
-    return "Telefon numaranızı da aldım efendim 😊\n\n📍 Şimdi açık adresinizi yazabilirsiniz. (İl, ilçe, mahalle, sokak)";
+    return makeReply(
+      "Telefon numaranızı da aldım efendim 😊\n\n📍 Şimdi açık adresinizi yazabilirsiniz. (İl, ilçe, mahalle, sokak)",
+      REPLY_CLASS.FLOW_PROGRESS
+    );
   }
 
   if (detectedIntent === "address") {
     if (state.address_status === "address_only" && !truthy(state.phone_received)) {
-      return "Adres bilginizi aldım efendim 😊\n\n📌 Siparişi tamamlayabilmemiz için cep telefonu numaranızı da paylaşabilir misiniz? 📱";
+      return makeReply(
+        "Adres bilginizi aldım efendim 😊\n\n📌 Siparişi tamamlayabilmemiz için cep telefonu numaranızı da paylaşabilir misiniz? 📱",
+        REPLY_CLASS.FLOW_PROGRESS
+      );
     }
     if (nextStage === "order_completed") {
-      return "Adres bilginizi de aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı. Ekibimiz işlemi hazırlayacaktır.";
+      return makeReply(
+        "Adres bilginizi de aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı. Ekibimiz işlemi hazırlayacaktır.",
+        REPLY_CLASS.ORDER_COMPLETE
+      );
     }
   }
 
-  return "";
+  return emptyReply();
+}
+
+function handleOrderStart(context, state, nextStage) {
+  if (context.detectedIntent !== "order_start") return emptyReply();
+
+  if (!context.detectedProduct) {
+    return makeReply(MAIN_MENU_TEXT, REPLY_CLASS.MENU);
+  }
+
+  if (context.detectedProduct === "lazer") {
+    if (nextStage === "waiting_photo" || !truthy(state.photo_received)) {
+      return makeReply(LASER_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
+    }
+  }
+
+  if (context.detectedProduct === "atac") {
+    if (nextStage === "waiting_letters" || !truthy(state.letters_received)) {
+      return makeReply(ATAC_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
+    }
+  }
+
+  return emptyReply();
 }
 
 function handleCompletionFlow(context, state, nextStage) {
-  if (context.detectedIntent === "order_start") {
-    if (!context.detectedProduct) return MAIN_MENU_TEXT;
-    if (context.detectedProduct === "lazer") return LASER_PRICE_TEXT;
-    if (context.detectedProduct === "atac") return ATAC_PRICE_TEXT;
-  }
-
   if (nextStage === "order_completed") {
-    return "Sipariş için gerekli bilgiler tamamlandı efendim 😊 Ekibimiz işlemi hazırlayacaktır.";
+    return makeReply(
+      "Sipariş için gerekli bilgiler tamamlandı efendim 😊 Ekibimiz işlemi hazırlayacaktır.",
+      REPLY_CLASS.ORDER_COMPLETE
+    );
   }
 
-  return "";
+  return emptyReply();
 }
 
 function buildDeterministicReply(context, state) {
@@ -1112,7 +1265,7 @@ function buildDeterministicReply(context, state) {
   const nextStage = getNextStage(state);
 
   if (shouldShowMainMenu(context, state)) {
-    return MAIN_MENU_TEXT;
+    return makeReply(MAIN_MENU_TEXT, REPLY_CLASS.MENU);
   }
 
   const fixedInfoReply =
@@ -1123,14 +1276,14 @@ function buildDeterministicReply(context, state) {
     handlePhotoQuestionIntent(context) ||
     handleBackSideInfoIntent(context);
 
-  if (fixedInfoReply) return fixedInfoReply;
+  if (fixedInfoReply?.text) return fixedInfoReply;
 
   if (isFreshProductSelection(context, state) && detectedProduct === "lazer") {
-    return LASER_PRICE_TEXT;
+    return makeReply(LASER_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
   }
 
   if (isFreshProductSelection(context, state) && detectedProduct === "atac") {
-    return ATAC_PRICE_TEXT;
+    return makeReply(ATAC_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
   }
 
   const flowReply =
@@ -1138,11 +1291,12 @@ function buildDeterministicReply(context, state) {
     handleAtacFlow(context, state, nextStage) ||
     handlePaymentFlow(context, state, nextStage) ||
     handleAddressFlow(context, state, nextStage) ||
+    handleOrderStart(context, state, nextStage) ||
     handleCompletionFlow(context, state, nextStage);
 
-  if (flowReply) return flowReply;
+  if (flowReply?.text) return flowReply;
 
-  return "";
+  return emptyReply();
 }
 
 function buildMessages(context, knowledgePack) {
@@ -1267,19 +1421,29 @@ async function callModel(messages) {
   }
 }
 
-function buildStateUpdate(context, replyText, state) {
+function buildStateUpdate(context, replyPayload, state) {
   const nextStage = getNextStage(state);
+  const replyText = cleanReply(replyPayload.text || "");
   const menuShownNow =
-    cleanReply(replyText) === MAIN_MENU_TEXT ||
-    cleanReply(replyText).includes("Hangi model ile ilgileniyorsunuz?");
+    replyText === MAIN_MENU_TEXT ||
+    replyText.includes("Hangi model ile ilgileniyorsunuz?");
 
   let order_status = state.order_status || "";
   let siparis_alindi = state.siparis_alindi || "";
   let conversation_stage = nextStage || state.conversation_stage || context.fields.conversation_stage || "";
   let menu_gosterildi = state.menu_gosterildi || context.fields.menu_gosterildi || "";
   let support_mode = state.support_mode || "";
+  let support_mode_reason = state.support_mode_reason || "";
+  let reply_class = replyPayload.reply_class || state.reply_class || "";
 
   if (!replyText || replyText === FALLBACK_TEXT) {
+    support_mode = "1";
+    support_mode_reason = replyPayload.support_mode_reason || SUPPORT_MODE_REASON.TRUE_FALLBACK;
+    reply_class = reply_class || REPLY_CLASS.FALLBACK;
+  }
+
+  if (replyPayload.support_mode_reason) {
+    support_mode_reason = replyPayload.support_mode_reason;
     support_mode = "1";
   }
 
@@ -1291,6 +1455,7 @@ function buildStateUpdate(context, replyText, state) {
   if (nextStage === "order_completed") {
     order_status = "completed";
     siparis_alindi = "1";
+    reply_class = reply_class || REPLY_CLASS.ORDER_COMPLETE;
   } else if (!order_status && state.product) {
     order_status = "started";
   }
@@ -1299,7 +1464,9 @@ function buildStateUpdate(context, replyText, state) {
     conversation_stage = "human_support";
     order_status = "cancel_requested";
     support_mode = "1";
+    support_mode_reason = support_mode_reason || SUPPORT_MODE_REASON.MANUAL_CANCEL;
     siparis_alindi = "";
+    reply_class = reply_class || REPLY_CLASS.FALLBACK;
   }
 
   return {
@@ -1315,6 +1482,8 @@ function buildStateUpdate(context, replyText, state) {
     back_text_status: state.back_text_status || "",
     address_status: state.address_status || "",
     support_mode,
+    support_mode_reason,
+    reply_class,
     siparis_alindi,
     cancel_reason: state.cancel_reason || "",
     context_lock: state.context_lock || "",
@@ -1331,22 +1500,29 @@ export async function processChat(body = {}, options = {}) {
   const context = buildContext(body);
   const state = applyFacts(context, getInitialState(context));
 
-  let reply = buildDeterministicReply(context, state);
+  let replyPayload = buildDeterministicReply(context, state);
 
-  if (!reply) {
+  if (!replyPayload?.text) {
     const knowledgePack = getKnowledgePack(context);
     const messages = buildMessages(context, knowledgePack);
 
     try {
-      reply = cleanReply(await callModel(messages));
+      replyPayload = makeReply(
+        cleanReply(await callModel(messages)),
+        REPLY_CLASS.FALLBACK,
+        SUPPORT_MODE_REASON.NONE
+      );
     } catch (error) {
       console.error("Model fallback error:", error.message);
-      reply = FALLBACK_TEXT;
+      replyPayload = makeReply(
+        FALLBACK_TEXT,
+        REPLY_CLASS.FALLBACK,
+        SUPPORT_MODE_REASON.TRUE_FALLBACK
+      );
     }
   }
 
-  const finalReply = cleanReply(reply);
-  const stateUpdate = buildStateUpdate(context, finalReply, state);
+  const stateUpdate = buildStateUpdate(context, replyPayload, state);
 
   return {
     success: true,
@@ -1382,6 +1558,8 @@ export default async function handler(req, res) {
       back_text_status: "",
       address_status: "",
       support_mode: "1",
+      support_mode_reason: SUPPORT_MODE_REASON.TRUE_FALLBACK,
+      reply_class: REPLY_CLASS.FALLBACK,
       siparis_alindi: "",
       cancel_reason: "",
       context_lock: "",
