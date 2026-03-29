@@ -1014,11 +1014,16 @@ function generateReply(context, state) {
   const intent = context.detectedIntent;
 const norm = context.messageNorm || "";
 
-  if (product === "atac") {
-    if (
-      norm.includes("arka yuz") ||
-      norm.includes("arka yüz") ||
-      (norm.includes("arka") && (
+if (product === "atac") {
+  // lazer'e yönlendirilmesi gereken durumlar
+  if (
+    norm.includes("iki yuz") ||
+    norm.includes("iki yüz") ||
+    norm.includes("arka yuz") ||
+    norm.includes("arka yüz") ||
+    (
+      norm.includes("arka") &&
+      (
         norm.includes("yazi") ||
         norm.includes("yazı") ||
         norm.includes("foto") ||
@@ -1027,21 +1032,28 @@ const norm = context.messageNorm || "";
         norm.includes("resim") ||
         norm.includes("ozellik") ||
         norm.includes("özellik")
-      ))
-    ) {
-      return "Bu özellik resimli lazer kolye için geçerlidir efendim 😊";
-    }
-
-    if (
-      norm.includes("resim") ||
-      norm.includes("foto") ||
-      norm.includes("fotograf") ||
-      norm.includes("fotoğraf")
-    ) {
-      return "Bu modelde fotoğraf gerekmiyor efendim 😊";
-    }
+      )
+    )
+  ) {
+    return "Bu özellik resimli lazer kolye için geçerlidir efendim 😊";
   }
 
+  // sadece foto / resim gönderme tipi sorular
+  if (
+    norm.includes("resim gonder") ||
+    norm.includes("resim gönder") ||
+    norm.includes("foto gonder") ||
+    norm.includes("foto gönder") ||
+    norm.includes("fotograf gonder") ||
+    norm.includes("fotoğraf gönder") ||
+    norm.includes("resim at") ||
+    norm.includes("foto at") ||
+    norm.includes("fotograf at") ||
+    norm.includes("fotoğraf at")
+  ) {
+    return "Bu modelde fotoğraf gerekmiyor efendim 😊";
+  }
+}
   // === GLOBAL SIDE QUESTIONS ===
 if (intent === "payment_pending_letters") {
     return "İstediğiniz harfleri yazabilirsiniz efendim 😊";
