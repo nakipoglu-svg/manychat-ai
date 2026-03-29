@@ -830,6 +830,54 @@ function buildContext(body) {
     detectedIntent,
   };
 }
+
+function applyFactsToState(state, context) {
+  const next = { ...state };
+  const { extracted, detectedProduct } = context;
+
+  if (detectedProduct) {
+    next.ilgilenilen_urun = detectedProduct;
+  }
+
+  if (extracted.photoLink) {
+    next.photo_received = "received";
+  }
+
+  if (extracted.letters) {
+    next.letters_received = extracted.letters;
+  }
+
+  if (extracted.payment) {
+    next.payment_method = extracted.payment;
+  }
+
+  if (extracted.hasAddress) {
+    next.address_status = "received";
+  }
+
+  if (extracted.phone) {
+    next.phone_received = "received";
+  }
+
+  if (extracted.hasName) {
+    next.name_received = "received";
+  }
+
+  if (context.detectedIntent === "back_text_skip") {
+    next.back_text_status = "skipped";
+  }
+
+  if (context.detectedIntent === "back_text") {
+    next.back_text_status = "received";
+  }
+
+  if (context.detectedIntent === "back_photo_upload") {
+    next.back_text_status = "received";
+  }
+
+  return next;
+}
+
 function getNextStage(state) {
   const product = state.ilgilenilen_urun;
 
