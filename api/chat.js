@@ -993,8 +993,12 @@ function applyFacts(context, currentState) {
   }
 
   if (extracted.payment) state.payment_method = extracted.payment;
-  if (extracted.photoLink && detectedIntent === "photo") state.photo_received = "1";
-  if (detectedIntent === "letters" && extracted.letters) state.letters_received = "1";
+if (extracted.photoLink && state.product === "lazer" && state.conversation_stage === "waiting_back_text") {
+    state.back_text_status = "received";
+  } else if (extracted.photoLink && detectedIntent === "photo") {
+    state.photo_received = "1";
+  }
+
   if (detectedIntent === "back_text") state.back_text_status = "received";
   if (detectedIntent === "back_text_skip") state.back_text_status = "skipped";
   if (detectedIntent === "back_photo_upload") state.back_text_status = "received";
