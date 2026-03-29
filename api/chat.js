@@ -993,12 +993,8 @@ function applyFacts(context, currentState) {
   }
 
   if (extracted.payment) state.payment_method = extracted.payment;
-if (extracted.photoLink && state.product === "lazer" && state.conversation_stage === "waiting_back_text") {
-    state.back_text_status = "received";
-  } else if (extracted.photoLink && detectedIntent === "photo") {
-    state.photo_received = "1";
-  }
-
+  if (extracted.photoLink && detectedIntent === "photo") state.photo_received = "1";
+  if (detectedIntent === "letters" && extracted.letters) state.letters_received = "1";
   if (detectedIntent === "back_text") state.back_text_status = "received";
   if (detectedIntent === "back_text_skip") state.back_text_status = "skipped";
   if (detectedIntent === "back_photo_upload") state.back_text_status = "received";
@@ -1278,6 +1274,25 @@ function handleLaserFlow(context, state, nextStage) {
         REPLY_CLASS.SELLER_REQUIRED, SUPPORT_MODE_REASON.SELLER_REQUIRED
       );
     }
+
+    // Arka yazı/foto zaten alındıysa veya skip edildiyse tekrar sorma
+    if (state.back_text_status === "received" || state.back_text_status === "skipped") {
+      // Bu ikinci bir foto (arka foto veya değişiklik) — onay ver, ödeme aşamasına devam et
+      if (!state.payment_method) {
+        return makeReply(
+          "Fotoğrafınızı aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.",
+          REPLY_CLASS.FLOW_PROGRESS
+        );
+      }
+      if (state.address_status !== "received") {
+        return makeReply(
+          `Fotoğrafınızı aldım efendim 😊\n\n${ORDER_DETAILS_TEXT}`,
+          REPLY_CLASS.FLOW_PROGRESS
+        );
+      }
+      return makeReply("Fotoğrafınızı aldım efendim 😊", REPLY_CLASS.FLOW_PROGRESS);
+    }
+
     return makeReply(
       "Fotoğrafınızı aldım efendim 😊 Arka yüzüne yazı eklemek ister misiniz? İsterseniz yazıyı buradan iletebilirsiniz, istemezseniz 'yok' yazabilirsiniz.",
       REPLY_CLASS.FLOW_PROGRESS
