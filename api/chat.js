@@ -535,10 +535,11 @@ function extractEntities(baseContext) {
       /^[a-zA-ZçğıöşüÇĞİÖŞÜ\s&]+$/.test(raw) &&
       parts.length <= 3 &&
       !LETTER_STOPWORDS.includes(norm) &&
-      !hasAny(norm, [
+!hasAny(norm, [
         "atac", "ataç", "harfli", "kolye", "istiyorum", "ilgileniyorum", "almak istiyorum",
         "kac tane", "kaç tane", "hangi harf", "hangi harfler", "harf mi", "fiyat", "ne kadar",
         "olur mu", "celik", "çelik", "kararma", "paslanmaz", "malzeme",
+        "kapida", "kapıda", "odeme", "ödeme", "eft", "havale", "iban"
       ]);
     if (looksLikeLetters) letters = raw;
   }
@@ -1011,12 +1012,13 @@ function generateReply(context, state) {
   const stage = state.conversation_stage;
   const product = state.ilgilenilen_urun;
   const intent = context.detectedIntent;
-  const norm = context.messageNorm || "";
+const norm = context.messageNorm || "";
 
   if (product === "atac") {
     if (
-      (norm.includes("arka") || norm.includes("arka yuz") || norm.includes("arka yüz")) &&
-      (
+      norm.includes("arka yuz") ||
+      norm.includes("arka yüz") ||
+      (norm.includes("arka") && (
         norm.includes("yazi") ||
         norm.includes("yazı") ||
         norm.includes("foto") ||
@@ -1025,22 +1027,16 @@ function generateReply(context, state) {
         norm.includes("resim") ||
         norm.includes("ozellik") ||
         norm.includes("özellik")
-      )
+      ))
     ) {
       return "Bu özellik resimli lazer kolye için geçerlidir efendim 😊";
     }
 
     if (
-      norm.includes("resim gonder") ||
-      norm.includes("resim gönder") ||
-      norm.includes("foto gonder") ||
-      norm.includes("foto gönder") ||
-      norm.includes("fotograf gonder") ||
-      norm.includes("fotoğraf gönder") ||
-      norm.includes("resim at") ||
-      norm.includes("foto at") ||
-      norm.includes("fotograf at") ||
-      norm.includes("fotoğraf at")
+      norm.includes("resim") ||
+      norm.includes("foto") ||
+      norm.includes("fotograf") ||
+      norm.includes("fotoğraf")
     ) {
       return "Bu modelde fotoğraf gerekmiyor efendim 😊";
     }
