@@ -1015,12 +1015,13 @@ function generateReply(context, state) {
 const norm = context.messageNorm || "";
 
 if (product === "atac") {
-  // lazer'e yönlendirilmesi gereken durumlar
+  // arka yüz / iki yüz / özellik gibi şeyler -> lazer yönlendirmesi
   if (
     norm.includes("iki yuz") ||
     norm.includes("iki yüz") ||
     norm.includes("arka yuz") ||
     norm.includes("arka yüz") ||
+    norm.includes("arka taraf") ||
     (
       norm.includes("arka") &&
       (
@@ -1038,7 +1039,7 @@ if (product === "atac") {
     return "Bu özellik resimli lazer kolye için geçerlidir efendim 😊";
   }
 
-  // sadece foto / resim gönderme tipi sorular
+  // sadece foto / resim gönderme tarzı cümleler
   if (
     norm.includes("resim gonder") ||
     norm.includes("resim gönder") ||
@@ -1049,7 +1050,15 @@ if (product === "atac") {
     norm.includes("resim at") ||
     norm.includes("foto at") ||
     norm.includes("fotograf at") ||
-    norm.includes("fotoğraf at")
+    norm.includes("fotoğraf at") ||
+    norm.includes("foto atsam") ||
+    norm.includes("fotoğraf atsam") ||
+    norm.includes("fotograf atsam") ||
+    norm.includes("resim atsam") ||
+    norm.includes("foto olur mu") ||
+    norm.includes("fotoğraf olur mu") ||
+    norm.includes("fotograf olur mu") ||
+    norm.includes("resim olur mu")
   ) {
     return "Bu modelde fotoğraf gerekmiyor efendim 😊";
   }
