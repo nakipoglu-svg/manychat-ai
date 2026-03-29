@@ -200,7 +200,7 @@ const LETTER_STOPWORDS = [
 const NOT_A_NAME_PHRASES = [
   "resimli", "fotografli", "fotolu", "lazer", "kolye", "atac", "ataç", "harfli", "celik mi", "çelik mi", "celikmi", "çelikmi", "paslanmaz", "madalyon", "nazar", "boncuk", "boncuklu", "begendim", "beğendim", "begendik", "beğendik", "guzel", "güzel", "saglik", "sağlık", "elinize", "ellerinize", "emeginize", "emeğinize", "siparis", "sipariş", "kargo", "teslimat", "hazir mi", "hazır mı", "hazir", "hazır", "goreyim", "görebilir", "gorebilir", "istiyorum", "ilgileniyorum", "alayim", "alayım", "detay", "bilgi", "fiyat", "ucret", "ücret", "olur mu", "olurmu", "var mi", "var mı", "yapilir mi", "yapılır mı", "yapar mi", "yapar mı", "bekliyorum", "gonderdim", "gönderdim", "gonderirim", "gönderirim", "yaziyorum", "yazıyorum", "yaptirmak", "yaptırmak", "gelmedi", "ulasmadi", "ulaşmadı", "tekrar", "daha", "indirim", "kampanya", "kapida", "kapıda", "durun", "dur", "boncuklu", "madalyon", "resimli",
 ];
-\n// DEVAMI BİR SONRAKİ PARÇADA\n"}
+
 function readKnowledgeFile(filename) {
   if (fileCache[filename]) return fileCache[filename];
   const filePath = path.join(process.cwd(), "knowledge", filename);
