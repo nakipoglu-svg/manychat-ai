@@ -833,46 +833,87 @@ function buildContext(body) {
 
 function applyFactsToState(state, context) {
   const next = { ...state };
-  const { extracted, detectedProduct } = context;
+  const { extracted, detectedProduct, detectedIntent, previousProduct } = context;
+
+  // ürün değişimi
+  if (previousProduct && detectedProduct && previousProduct !== detectedProduct) {
+    next.photo_received = "";
+    next.back_text_status = "";
+    next.letters_received = "";
+    next.payment_method = "";
+    next.address_status = "";
+    next.phone_received = "";
+    next.name_received = "";
+  }
 
   if (detectedProduct) {
     next.ilgilenilen_urun = detectedProduct;
+    next.context_lock = "1";
+    if (!next.order_status) next.order_status = "started";
   }
 
+  // iptal
+  if (detectedIntent === "cancel_order") {
+    next.order_status = "cancel_requested";
+    next.conversation_stage = "human_support";
+    next.siparis_alindi = "";
+    return next;
+  }
+
+  // foto
   if (extracted.photoLink) {
-    next.photo_received = "received";
+    next.photo_received = "1";
   }
 
+  // harf
   if (extracted.letters) {
-    next.letters_received = extracted.letters;
+    next.letters_received = "1";
   }
 
-  if (extracted.payment) {
+  // ödeme
+  if (
+    extracted.payment &&
+    !(next.ilgilenilen_urun === "atac" && !next.letters_received)
+  ) {
     next.payment_method = extracted.payment;
   }
 
-  if (extracted.hasAddress) {
-    next.address_status = "received";
-  }
-
-  if (extracted.phone) {
-    next.phone_received = "received";
-  }
-
-  if (extracted.hasName) {
-    next.name_received = "received";
-  }
-
-  if (context.detectedIntent === "back_text_skip") {
+  // arka yazı
+  if (detectedIntent === "back_text_skip") {
     next.back_text_status = "skipped";
   }
 
-  if (context.detectedIntent === "back_text") {
+  if (detectedIntent === "back_text" || detectedIntent === "back_photo_upload") {
     next.back_text_status = "received";
   }
 
-  if (context.detectedIntent === "back_photo_upload") {
-    next.back_text_status = "received";
+  // telefon
+  if (extracted.phone) {
+    next.phone_received = "1";
+  }
+
+  // isim
+  if (extracted.hasName) {
+    next.name_received = "1";
+  }
+
+  // adres
+  if (extracted.hasAddress && extracted.phone) {
+    next.address_status = "received";
+  } else if (extracted.hasAddress) {
+    next.address_status = "address_only";
+  } else if (next.address_status === "address_only" && extracted.phone) {
+    next.address_status = "received";
+  }
+
+  // ürün bazlı temizlik
+  if (next.ilgilenilen_urun === "atac") {
+    next.photo_received = "";
+    next.back_text_status = "";
+  }
+
+  if (next.ilgilenilen_urun === "lazer") {
+    next.letters_received = "";
   }
 
   return next;
