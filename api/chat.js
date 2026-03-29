@@ -910,9 +910,10 @@ function applyFactsToState(state, context) {
 if (
     next.ilgilenilen_urun === "atac" &&
     !next.letters_received &&
-    detectedIntent === "payment"
+    (detectedIntent === "payment" || detectedIntent === "payment_pending_letters")
   ) {
     next.payment_method = "";
+    next.conversation_stage = "waiting_letters";
   }
   
   // iptal
@@ -1010,6 +1011,40 @@ function generateReply(context, state) {
   const stage = state.conversation_stage;
   const product = state.ilgilenilen_urun;
   const intent = context.detectedIntent;
+  const norm = context.messageNorm || "";
+
+  if (product === "atac") {
+    if (
+      (norm.includes("arka") || norm.includes("arka yuz") || norm.includes("arka yüz")) &&
+      (
+        norm.includes("yazi") ||
+        norm.includes("yazı") ||
+        norm.includes("foto") ||
+        norm.includes("fotograf") ||
+        norm.includes("fotoğraf") ||
+        norm.includes("resim") ||
+        norm.includes("ozellik") ||
+        norm.includes("özellik")
+      )
+    ) {
+      return "Bu özellik resimli lazer kolye için geçerlidir efendim 😊";
+    }
+
+    if (
+      norm.includes("resim gonder") ||
+      norm.includes("resim gönder") ||
+      norm.includes("foto gonder") ||
+      norm.includes("foto gönder") ||
+      norm.includes("fotograf gonder") ||
+      norm.includes("fotoğraf gönder") ||
+      norm.includes("resim at") ||
+      norm.includes("foto at") ||
+      norm.includes("fotograf at") ||
+      norm.includes("fotoğraf at")
+    ) {
+      return "Bu modelde fotoğraf gerekmiyor efendim 😊";
+    }
+  }
 
   // === GLOBAL SIDE QUESTIONS ===
 if (intent === "payment_pending_letters") {
