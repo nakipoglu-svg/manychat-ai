@@ -118,6 +118,13 @@ const KEYWORDS = {
       "cok begendik", "çok beğendik", "cok begendim", "çok beğendim",
       "cok guzel", "çok güzel", "cok guzel olmus", "çok güzel olmuş",
       "super", "süper", "harika",
+      // Müşteri SANA taziye/teşekkür diyor — bot da müşteriye taziye dememeli
+      "basiniz sagolsun", "başınız sağolsun", "basiniz sag olsun", "başınız sağ olsun",
+      "allah yardimciniz olsun", "allah yardımcınız olsun",
+      "hakkinizi helal edin", "hakkınızı helal edin",
+      "bol kazanclar", "bol kazançlar",
+      "hayirli isler", "hayırlı işler",
+      "insallah", "inşallah", "amin", "masallah", "maşallah", "eyvallah",
       "liked a message", "reacted",
     ],
 
@@ -140,10 +147,12 @@ const KEYWORDS = {
     // ──── SHIPPING ────
     shipping: [
       "kargo", "teslimat", "ne zaman gelir", "kac gunde", "kaç günde",
-      "kac gune", "kaç güne",
+      "kac gune", "kaç güne", "kac gun", "kaç gün",
       "takip no", "kargom nerede", "ne zaman kargolarsiniz",
       "ne zaman kargoya verilir", "kac gune gelir", "kaç güne gelir",
       "ne zaman hazir", "ne zaman hazır", "kac gune hazir", "kaç güne hazır",
+      "ne zaman teslim", "teslim suresi", "teslim süresi",
+      "icinde gelir", "içinde gelir",
     ],
 
     // ──── TRUST: genişletildi (çelik/malzeme soruları dahil) ────
@@ -183,11 +192,12 @@ const KEYWORDS = {
 
     // ──── CHAIN ────
     chain: [
-      "zincir modeli", "zincir degisiyor mu", "zincir değişiyor mu",
+      "zincir model", "zincir degisiyor mu", "zincir değişiyor mu",
       "zincir kisalir mi", "zincir kısalır mı",
       "zincir boyu", "zincir uzunlugu", "zincir uzunluğu",
       "zincir ne kadar", "uzunlugu ne kadar", "uzunluğu ne kadar",
       "zincir kac cm", "zincir kaç cm",
+      "zincirlere bakabilir", "zincir secenekleri", "zincir seçenekleri",
     ],
 
     // ──── ORDER START ────
@@ -280,8 +290,14 @@ const KEYWORDS = {
       "kolyem hazir mi", "kolyem hazır mı",
       "ne zaman hazir", "ne zaman hazır",
       "siparisim ne durumda", "siparişim ne durumda",
-      "kargoya verildi mi", "kargoya verildi mi",
+      "kargoya verildi mi",
       "yola cikti mi", "yola çıktı mı",
+      // Sipariş değişikliği talepleri (ürün üretime girmiş olabilir)
+      "fotografi degistirmek", "fotoğrafı değiştirmek",
+      "arka yaziyi degistirmek", "arka yazıyı değiştirmek",
+      "siparisi degistirmek", "siparişi değiştirmek",
+      "degisiklik yapmak", "değişiklik yapmak",
+      "degistirebilir miyim", "değiştirebilir miyim",
     ],
 
     // ──── NEW ORDER (YENİ) ────
@@ -435,7 +451,9 @@ function unwrapManychatValue(value) {
 
 function normalizeText(text) {
   return String(text || "")
+    .replace(/İ/g, "i")  // Türkçe büyük İ → i (combining dot issue fix)
     .toLowerCase()
+    .replace(/i̇/g, "i")  // combining dot above cleanup
     .replace(/ç/g, "c")
     .replace(/ğ/g, "g")
     .replace(/ı/g, "i")
@@ -445,6 +463,7 @@ function normalizeText(text) {
     .replace(/â/g, "a")
     .replace(/î/g, "i")
     .replace(/û/g, "u")
+    .replace(/\u0307/g, "")  // remaining combining dot above
     .replace(/[^\w\s:/?.=&+\-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -834,7 +853,16 @@ function detectIntent(baseContext, extracted) {
       ...KEYWORDS.intents.materialQuestion,
     ]);
 
-    if (raw && !blocked && !looksLikePhotoUrl(message) && raw.length <= 80) {
+    // Soru cümleleri arka yazı değil — "bu foto olur mu", "nasıl olur" vs.
+    const isQuestion = /[?]/.test(raw) || hasAny(messageNorm, [
+      "olur mu", "olurmu", "oluyor mu", "oluyormu",
+      "yapilir mi", "yapılır mı", "yapar mi", "yapar mı",
+      "nasil", "nasıl", "acaba",
+      "bu foto", "bu fotograf", "bu fotoğraf",
+      "uygun mu", "uygunmu",
+    ]);
+
+    if (raw && !blocked && !isQuestion && !looksLikePhotoUrl(message) && raw.length <= 80) {
       return "back_text";
     }
   }
@@ -1101,9 +1129,16 @@ function handleShippingIntent(context) {
   }
 
   if (detectedIntent === "shipping") {
-    if (hasAny(messageNorm, ["kargom nerede", "takip no"])) {
+    // Kargo takip, şikayet, sipariş durumu → fallback (satıcıya ait)
+    if (hasAny(messageNorm, [
+      "kargom nerede", "takip no", "takip numarasi", "takip numarası",
+      "kargoya verildi mi", "kargoya verildi mi",
+      "yola cikti mi", "yola çıktı mı",
+      "kargom gelmedi", "urun gelmedi", "ürün gelmedi",
+      "kargo numarasi", "kargo numarası",
+    ])) {
       return makeReply(
-        "Kargo takip ve durum bilgisi için ekibimiz size destek olacaktır efendim 😊",
+        FALLBACK_TEXT,
         REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED
       );
     }
@@ -1294,7 +1329,7 @@ function handleLaserFlow(context, state, nextStage) {
     }
 
     return makeReply(
-      "Fotoğrafınızı aldım efendim 😊 Arka yüzüne yazı eklemek ister misiniz? İsterseniz yazıyı buradan iletebilirsiniz, istemezseniz 'yok' yazabilirsiniz.",
+      "Fotoğrafınız alındı efendim, uygun görülmezse ekibimiz size dönüş yapacaktır 😊 Arka yüzüne yazı eklemek ister misiniz? İsterseniz yazıyı buradan iletebilirsiniz, istemezseniz 'yok' yazabilirsiniz.",
       REPLY_CLASS.FLOW_PROGRESS
     );
   }
@@ -1369,6 +1404,16 @@ function handlePaymentFlow(context, state, nextStage) {
     );
   }
 
+  // ERKEN ÖDEME: Fotoğraf henüz gelmemişken ödeme gelirse → kaydet, foto istemeye devam et
+  if (detectedProduct === "lazer" && nextStage === "waiting_photo") {
+    if (state.payment_method === "eft_havale") {
+      return makeReply(`EFT / Havale ile ilerleyebiliriz efendim 😊 Önce fotoğrafınızı buradan gönderebilirsiniz.\n\n${EFT_INFO_TEXT}`, REPLY_CLASS.FLOW_PROGRESS);
+    }
+    if (state.payment_method === "kapida_odeme") {
+      return makeReply("Kapıda ödeme ile ilerleyebiliriz efendim 😊 Önce fotoğrafınızı buradan gönderebilirsiniz.", REPLY_CLASS.FLOW_PROGRESS);
+    }
+  }
+
   if (detectedProduct === "lazer" && nextStage === "waiting_back_text") {
     return makeReply("Ödeme aşamasına geçmeden önce arka yüz için yazı isteyip istemediğinizi iletebilir misiniz? İstemiyorsanız 'yok' yazabilirsiniz 😊", REPLY_CLASS.FLOW_PROGRESS);
   }
@@ -1391,6 +1436,16 @@ function handlePaymentFlow(context, state, nextStage) {
     }
   }
 
+  // Adres zaten alınmışsa tekrar adres isteme — sadece ödeme onayla
+  if (state.address_status === "received") {
+    if (state.payment_method === "eft_havale") {
+      return makeReply(`EFT / Havale ile ilerleyebiliriz efendim 😊\n\n${EFT_INFO_TEXT}`, REPLY_CLASS.FLOW_PROGRESS);
+    }
+    if (state.payment_method === "kapida_odeme") {
+      return makeReply("Kapıda ödeme ile ilerleyebiliriz efendim 😊", REPLY_CLASS.FLOW_PROGRESS);
+    }
+  }
+
   return emptyReply();
 }
 
@@ -1408,7 +1463,7 @@ function handleAddressFlow(context, state, nextStage) {
 
   if (detectedIntent === "phone") {
     if (nextStage === "order_completed") {
-      return makeReply("Telefon numaranızı da aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı. Ekibimiz işlemi hazırlayacaktır.", REPLY_CLASS.ORDER_COMPLETE);
+      return makeReply("Telefon numaranızı da aldım efendim 😊 Siparişiniz tamamlanmıştır, ekibimiz en kısa sürede ürününüzü üretmeye başlayacaktır 😊", REPLY_CLASS.ORDER_COMPLETE);
     }
     if (!state.payment_method) {
       return makeReply("Telefon numaranızı da aldım efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.", REPLY_CLASS.FLOW_PROGRESS);
@@ -1421,7 +1476,7 @@ function handleAddressFlow(context, state, nextStage) {
       return makeReply("Adres bilginizi aldım efendim 😊\n\n📌 Siparişi tamamlayabilmemiz için cep telefonu numaranızı da paylaşabilir misiniz? 📱", REPLY_CLASS.FLOW_PROGRESS);
     }
     if (nextStage === "order_completed") {
-      return makeReply("Adres bilginizi de aldım efendim 😊 Sipariş için gerekli bilgiler tamamlandı. Ekibimiz işlemi hazırlayacaktır.", REPLY_CLASS.ORDER_COMPLETE);
+      return makeReply("Adres bilginizi de aldım efendim 😊 Siparişiniz tamamlanmıştır, ekibimiz en kısa sürede ürününüzü üretmeye başlayacaktır 😊", REPLY_CLASS.ORDER_COMPLETE);
     }
   }
 
@@ -1457,26 +1512,17 @@ function handleCompletionFlow(context, state, nextStage) {
 
   const { detectedIntent } = context;
 
-  // Sipariş tamamlandı ama müşteri hâlâ yan soru soruyorsa → cevap ver, "tamamlandı" deme
-  // Bu intent'ler zaten kendi handler'larında yakalanacak, buraya düşmemeli.
-  // Ama güvenlik için: eğer belirli intent'ler geldiyse completion mesajı BASMA.
-  const sideQuestionIntents = [
-    "price", "shipping", "shipping_price", "trust", "material_question",
-    "chain_question", "location", "payment", "photo_question",
-    "back_text_info", "back_photo_info", "back_photo_price",
-    "post_sale", "new_order", "example_request", "cancel_order",
-    "smalltalk",
-  ];
-
-  if (sideQuestionIntents.includes(detectedIntent)) {
-    // Bu intent'ler kendi handler'larında yakalanmalıydı.
-    // Eğer buraya düştülerse, completion mesajı basma, model'e gönder.
+  // Sipariş zaten tamamlandıysa (state'te completed) ve yeni bir mesaj geliyorsa
+  // → "sipariş tamamlandı" mesajını TEKRAR basma
+  if (state.order_status === "completed" || truthy(state.siparis_alindi)) {
+    // Bu noktada sipariş zaten tamamlanmış. Müşterinin yeni mesajına
+    // deterministik handler'lar cevap veremedi, model'e gönder.
     return emptyReply();
   }
 
-  // Gerçekten sipariş bilgileri tamamlanan durumlar
+  // İlk kez order_completed'a geçiş — sipariş bilgileri YENİ tamamlandı
   return makeReply(
-    "Sipariş için gerekli bilgiler tamamlandı efendim 😊 Ekibimiz işlemi hazırlayacaktır.",
+    "Siparişiniz tamamlanmıştır, ekibimiz en kısa sürede ürününüzü üretmeye başlayacaktır 😊",
     REPLY_CLASS.ORDER_COMPLETE
   );
 }
@@ -1529,7 +1575,17 @@ function buildDeterministicReply(context, state) {
       return makeReply("EFT / havale fiyatımız 599 TL, kapıda ödeme fiyatımız 649 TL'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
     }
     if (state.product === "atac") {
-      return makeReply("EFT / havale fiyatımız 499 TL, kapıda ödeme fiyatımız 549 TL'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
+      // Harf sayısı biliniyorsa dinamik fiyat hesapla
+      if (truthy(state.letters_received) && context.extracted?.letters) {
+        const letterCount = context.extracted.letters.replace(/\s+/g, "").length;
+        if (letterCount > 3) {
+          const extra = (letterCount - 3) * 50;
+          const eftPrice = 499 + extra;
+          const kapidaPrice = 549 + extra;
+          return makeReply(`${letterCount} harf için EFT / havale fiyatımız ${eftPrice} TL, kapıda ödeme fiyatımız ${kapidaPrice} TL'dir efendim 😊`, REPLY_CLASS.FIXED_INFO);
+        }
+      }
+      return makeReply("EFT / havale fiyatımız 499 TL, kapıda ödeme fiyatımız 549 TL'dir efendim 😊 3 harfe kadar standarttır, her ek harf +50 TL'dir.", REPLY_CLASS.FIXED_INFO);
     }
   }
 
@@ -1538,12 +1594,21 @@ function buildDeterministicReply(context, state) {
   // ══════════════════════════════════════════════
   if (detectedIntent === "payment" && (nextStage === "order_completed" || state.order_status === "completed")) {
     const { messageNorm } = context;
+    // Dekont sorusu — basit cevap ver
+    if (messageNorm.includes("dekont")) {
+      return makeReply("Tabi efendim, iletebilirsiniz 😊", REPLY_CLASS.FIXED_INFO);
+    }
+    // Açıklama sorusu
+    if (messageNorm.includes("aciklama") || messageNorm.includes("açıklama")) {
+      return makeReply("Açıklama yazmanıza gerek yok efendim 😊", REPLY_CLASS.FIXED_INFO);
+    }
     if (messageNorm.includes("iban")) {
       return makeReply(`Tabi efendim 😊\n\n${EFT_INFO_TEXT}`, REPLY_CLASS.FIXED_INFO);
     }
-    if (hasAny(messageNorm, ["eft attim", "havale yaptim", "odeme yaptim", "ödeme yaptım"])) {
+    if (hasAny(messageNorm, ["eft attim", "havale yaptim", "odeme yaptim", "ödeme yaptım", "odemeyi yaptim", "ödemeyi yaptım", "ucretini yollarim", "ücretini yollarım"])) {
       return makeReply("Teşekkür ederiz efendim, ekibimiz kontrol edip size dönüş sağlayacaktır 😊", REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED);
     }
+    // Ödeme değişikliği veya genel ödeme sorusu → ekibimiz
     return makeReply("Ödeme ile ilgili ekibimiz size yardımcı olacaktır efendim 😊", REPLY_CLASS.SELLER_REQUIRED, SUPPORT_MODE_REASON.SELLER_REQUIRED);
   }
 
@@ -1551,6 +1616,14 @@ function buildDeterministicReply(context, state) {
   // SMALLTALK — order_completed'da bile çalışmalı
   // ══════════════════════════════════════════════
   if (detectedIntent === "smalltalk") {
+    // Müşteri SANA taziye/dua diyor — teşekkür et, taziye geri dönme
+    if (hasAny(context.messageNorm, ["basiniz sagolsun", "basiniz sag olsun", "hakkinizi helal", "allah yardimciniz"])) {
+      return makeReply("Çok teşekkür ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
+    }
+    // Dua mesajları
+    if (hasAny(context.messageNorm, ["insallah", "inşallah", "allah razi olsun", "hayirli isler", "bol kazanclar", "amin", "masallah", "eyvallah"])) {
+      return makeReply("Amin, çok teşekkür ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
+    }
     // Teşekkür mesajları
     if (hasAny(context.messageNorm, ["tesekkur", "teşekkür", "sagolun", "sağolun", "saol", "tsk", "tşk"])) {
       return makeReply("Rica ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
