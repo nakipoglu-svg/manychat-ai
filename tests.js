@@ -538,6 +538,30 @@ const tests = [
   { id: "AF05", name: "[AFIX] İlk foto gelince hâlâ arka yazı sormalı", input: body("https://lookaside.fbsbx.com/photo1.jpg", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "arka yuzune yazi" },
   { id: "AF06", name: "[AFIX] waiting_back_text'te foto gelince back_text=received olmalı", input: body("https://lookaside.fbsbx.com/backphoto.jpg", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "received" } },
 
+  // ════════════════════════════════════════════════════════════════════════
+  // GRUP 22: LOG BUG FIX TESTLERİ (LB01–LB20)
+  // ════════════════════════════════════════════════════════════════════════
+  { id: "LB01", name: "[LOGFIX] Başınız sağolsun → teşekkür (taziye geri dönmemeli)", input: body("Başınız sağolsun", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expectReplyNotIncludes: "basiniz sag olsun" },
+  { id: "LB02", name: "[LOGFIX] Başınız sağolsun → çok teşekkür", input: body("Başınız sağolsun", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expectReplyIncludes: "tesekkur" },
+  { id: "LB03", name: "[LOGFIX] İnşallah (completed) → dua cevabı, sipariş tamamlandı DEĞİL", input: body("İnşallah", lazerCompleted()), expectReplyNotIncludes: "siparis" },
+  { id: "LB04", name: "[LOGFIX] Amin (completed) → dua cevabı", input: body("Amin", lazerCompleted()), expectReplyIncludes: "amin" },
+  { id: "LB05", name: "[LOGFIX] Allah yardımcınız olsun (completed) → teşekkür", input: body("Allah yardımcınız olsun", lazerCompleted()), expectReplyIncludes: "tesekkur" },
+  { id: "LB06", name: "[LOGFIX] Kaç gün içinde gelir (completed) → kargo cevabı", input: body("Kaç gün içinde gelir", lazerCompleted()), expectReplyIncludes: "is gunu" },
+  { id: "LB07", name: "[LOGFIX] Dekont yollayayım mı (completed) → tabi efendim", input: body("Dekont yollayayım mı", lazerCompleted()), expectReplyIncludes: "iletebilirsiniz" },
+  { id: "LB08", name: "[LOGFIX] Kargo takip numarası → fallback", input: body("Kargo takip numarası rica ediyorum", lazerCompleted()), expectReplyIncludes: "ekibimize iletiyorum" },
+  { id: "LB09", name: "[LOGFIX] Fotoğrafı değiştirebilir miyim (completed) → fallback", input: body("Fotoğrafı değiştirebilir miyim", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+  { id: "LB10", name: "[LOGFIX] Bu fotoğraf olur mu (back_text) → soru olarak algıla", input: body("Bu fotoğraf olur mu güzel olur mu", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "" } },
+  { id: "LB11", name: "[LOGFIX] Adres alınmışken ödeme sorusu tekrar adres istememeli", input: body("Kapıda ödeme 649 demi", lazer({ photo_received: "1", back_text_status: "skipped", payment_method: "kapida_odeme", address_status: "received", phone_received: "1", conversation_stage: "order_completed", order_status: "completed", siparis_alindi: "1" })), expectReplyNotIncludes: "ad soyad" },
+  { id: "LB12", name: "[LOGFIX] Resmini yollarmısınız hazır olunca (completed) → sipariş tamamlandı DEĞİL", input: body("Resmini yollarmısınız hazır olunca", lazerCompleted()), expectReplyNotIncludes: "siparis" },
+  { id: "LB13", name: "[LOGFIX] Hakkınızı helal edin → teşekkür", input: body("Hakkınızı helal edin lütfen", lazerCompleted()), expectReplyIncludes: "tesekkur" },
+  { id: "LB14", name: "[LOGFIX] Bol kazançlar → teşekkür", input: body("Bol kazançlar hayırlı işler", lazerCompleted()), expectReplyIncludes: "amin" },
+  { id: "LB15", name: "[LOGFIX] Sipariş sonrası fiyat → fiyat cevabı", input: body("Fiyat bilgisi bekliyorum", lazerCompleted()), expectReplyIncludes: "599" },
+  { id: "LB16", name: "[LOGFIX] Sipariş sonrası kararma → güven cevabı", input: body("Kararma olmaz değil mi", lazerCompleted()), expectReplyIncludes: "kararma" },
+  { id: "LB17", name: "[LOGFIX] Sipariş sonrası çelik mi → malzeme cevabı", input: body("Çelik mi bu", lazerCompleted()), expectReplyIncludes: "paslanmaz" },
+  { id: "LB18", name: "[LOGFIX] Ödemeyi yaptım bilginiz olsun (completed) → ekibimiz", input: body("Ödemeyi yaptım bilginiz olsun", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+  { id: "LB19", name: "[LOGFIX] Sipariş sonrası foto → ekibimize yönlendir", input: body("https://lookaside.fbsbx.com/newphoto.jpg", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+  { id: "LB20", name: "[LOGFIX] Teslimat süresi (completed) → kargo cevabı", input: body("Ne zaman teslim edilir", lazerCompleted()), expectReplyIncludes: "is gunu" },
+
 ];
 
 // ─── RUNNER ───────────────────────────────────────────────────────────────
@@ -569,6 +593,7 @@ async function runTests() {
     if (id.startsWith("TR")) return "TRUST";
     if (id.startsWith("KG")) return "KARGO";
     if (id.startsWith("AF")) return "BACK_FOTO_FIX";
+    if (id.startsWith("LB")) return "LOG_BUG_FIX";
     return "OTHER";
   }
 
@@ -631,6 +656,7 @@ async function runTests() {
     NAME_GUARD: "Name Guard", ADDR_GUARD: "Address Guard",
     MATERIAL: "Material Qs", TRUST: "Trust/Kararma", KARGO: "Kargo",
     BACK_FOTO_FIX: "Back Foto Fix",
+    LOG_BUG_FIX: "Log Bug Fix",
     OTHER: "Other",
   };
 
