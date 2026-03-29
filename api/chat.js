@@ -578,8 +578,47 @@ function detectIntent(baseContext, extracted) {
   if (hasAny(messageNorm, KEYWORDS.intents.location)) return "location";
   if (hasAny(messageNorm, KEYWORDS.intents.payment)) return "payment";
   if (hasAny(messageNorm, KEYWORDS.intents.chain)) return "chain_question";
-  if (hasAny(messageNorm, KEYWORDS.intents.price)) return "price";
+if (hasAny(messageNorm, KEYWORDS.intents.price)) return "price";
   if (hasAny(messageNorm, KEYWORDS.intents.photoQuestion)) return "photo_question";
+
+  // global arka yüz / arka foto / görsel fallback tanıma
+  if (
+    hasAny(messageNorm, KEYWORDS.intents.backTextInfo) ||
+    (messageNorm.includes("arka") && messageNorm.includes("yazi")) ||
+    (messageNorm.includes("arka") && messageNorm.includes("yazı")) ||
+    messageNorm.includes("arka yuz") ||
+    messageNorm.includes("arka yüz")
+  ) {
+    return "back_text_info";
+  }
+
+  if (
+    hasAny(messageNorm, KEYWORDS.intents.backPhotoInfo) ||
+    ((messageNorm.includes("arka") || messageNorm.includes("iki yuz") || messageNorm.includes("iki yüz")) &&
+      (messageNorm.includes("foto") || messageNorm.includes("fotograf") || messageNorm.includes("fotoğraf") || messageNorm.includes("resim")))
+  ) {
+    return "back_photo_info";
+  }
+
+  if (
+    hasAny(messageNorm, KEYWORDS.intents.backPhotoPrice) ||
+    ((messageNorm.includes("arka") || messageNorm.includes("arka yuz") || messageNorm.includes("arka yüz")) &&
+      (messageNorm.includes("foto") || messageNorm.includes("fotograf") || messageNorm.includes("fotoğraf")) &&
+      messageNorm.includes("fiyat"))
+  ) {
+    return "back_photo_price";
+  }
+
+  if (
+    messageNorm.includes("resim gonder") ||
+    messageNorm.includes("resim gönder") ||
+    messageNorm.includes("foto gonder") ||
+    messageNorm.includes("foto gönder") ||
+    messageNorm.includes("fotograf gonder") ||
+    messageNorm.includes("fotoğraf gönder")
+  ) {
+    return "photo_question";
+  }
 
   if (hasAny(messageNorm, KEYWORDS.intents.exampleRequest)) return "example_request";
   if (hasAny(messageNorm, KEYWORDS.intents.detailRequest)) return "detail_request";
@@ -852,6 +891,14 @@ function applyFactsToState(state, context) {
     if (!next.order_status) next.order_status = "started";
   }
 
+if (
+    next.ilgilenilen_urun === "atac" &&
+    !next.letters_received &&
+    detectedIntent === "payment"
+  ) {
+    next.payment_method = "";
+  }
+  
   // iptal
   if (detectedIntent === "cancel_order") {
     next.order_status = "cancel_requested";
@@ -929,7 +976,7 @@ function getNextStage(state) {
     if (!state.photo_received) return "waiting_photo";
     if (!state.back_text_status) return "waiting_back_text";
     if (!state.payment_method) return "waiting_payment";
-    if (!state.address_status) return "waiting_address";
+    if (state.address_status !== "received") return "waiting_address";
     return "order_completed";
   }
 
@@ -937,7 +984,7 @@ function getNextStage(state) {
   if (product === "atac") {
     if (!state.letters_received) return "waiting_letters";
     if (!state.payment_method) return "waiting_payment";
-    if (!state.address_status) return "waiting_address";
+    if (state.address_status !== "received") return "waiting_address";
     return "order_completed";
   }
 
@@ -1077,7 +1124,16 @@ let state = {
 
 // yeni stage hesapla
 if (state.conversation_stage !== "human_support") {
-  state.conversation_stage = getNextStage(state);
+  const shouldPreserveStage =
+    (
+      SIDE_QUESTION_INTENTS.has(context.detectedIntent) ||
+      context.detectedIntent === "payment_pending_letters"
+    ) &&
+    !!body.conversation_stage;
+
+  if (!shouldPreserveStage) {
+    state.conversation_stage = getNextStage(state);
+  }
 }
 
 // cevap üret
