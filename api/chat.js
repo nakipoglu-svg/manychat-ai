@@ -1076,19 +1076,22 @@ if (state.conversation_stage === "order_completed") {
     console.error("logConversationRow error:", err);
   }
 
-  return {
-    ai_reply: reply,
-    ilgilenilen_urun: state.ilgilenilen_urun || "",
-    conversation_stage: state.conversation_stage || "",
-    photo_received: state.photo_received || "",
-    back_text_status: state.back_text_status || "",
-    letters_received: state.letters_received || "",
-    payment_method: state.payment_method || "",
-    address_status: state.address_status || "",
-    phone_received: state.phone_received || "",
-    name_received: state.name_received || "",
-    success: true,
-  };
+return {
+  ai_reply: reply,
+  ilgilenilen_urun: state.ilgilenilen_urun || "",
+  conversation_stage: state.conversation_stage || "",
+  photo_received: state.photo_received || "",
+  back_text_status: state.back_text_status || "",
+  letters_received: state.letters_received || "",
+  payment_method: state.payment_method || "",
+  address_status: state.address_status || "",
+  phone_received: state.phone_received || "",
+  name_received: state.name_received || "",
+  order_status: state.order_status || "",
+  siparis_alindi: state.siparis_alindi || "",
+  context_lock: state.context_lock || "",
+  success: true,
+};
 }
 
 export default async function handler(req, res) {
