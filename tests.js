@@ -528,6 +528,16 @@ const tests = [
   { id: "KG09", name: "[KARGO] 'kargo ücreti ile birlikte mi' → dahil", input: body("kargo ücreti ile birlikte mi", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "dahil" },
   { id: "KG10", name: "[KARGO] Kargo sorusu waiting_address stage bozmamalı", input: body("kaç günde gelir", lazerWaitingAddress()), expect: { conversation_stage: "waiting_address" } },
 
+  // ════════════════════════════════════════════════════════════════════════
+  // GRUP 21: ARKA FOTO SONRASI TEKRAR SORMA BUGFIX (AF01–AF06)
+  // ════════════════════════════════════════════════════════════════════════
+  { id: "AF01", name: "[AFIX] back_text=received iken foto gelince tekrar arka yazı sormamalı", input: body("https://lookaside.fbsbx.com/backphoto.jpg", lazer({ photo_received: "1", back_text_status: "received", conversation_stage: "waiting_payment" })), expectReplyNotIncludes: "arka yuzune yazi eklemek" },
+  { id: "AF02", name: "[AFIX] back_text=skipped iken foto gelince tekrar arka yazı sormamalı", input: body("https://lookaside.fbsbx.com/backphoto.jpg", lazer({ photo_received: "1", back_text_status: "skipped", conversation_stage: "waiting_payment" })), expectReplyNotIncludes: "arka yuzune yazi eklemek" },
+  { id: "AF03", name: "[AFIX] back_text=received + payment yok → ödeme sorusu", input: body("https://lookaside.fbsbx.com/backphoto.jpg", lazer({ photo_received: "1", back_text_status: "received", conversation_stage: "waiting_payment" })), expectReplyIncludes: "odeme" },
+  { id: "AF04", name: "[AFIX] back_text=received + payment var → adres formu", input: body("https://lookaside.fbsbx.com/backphoto.jpg", lazer({ photo_received: "1", back_text_status: "received", payment_method: "eft_havale", conversation_stage: "waiting_address" })), expectReplyIncludes: "ad soyad" },
+  { id: "AF05", name: "[AFIX] İlk foto gelince hâlâ arka yazı sormalı", input: body("https://lookaside.fbsbx.com/photo1.jpg", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "arka yuzune yazi" },
+  { id: "AF06", name: "[AFIX] waiting_back_text'te foto gelince back_text=received olmalı", input: body("https://lookaside.fbsbx.com/backphoto.jpg", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "received" } },
+
 ];
 
 // ─── RUNNER ───────────────────────────────────────────────────────────────
@@ -558,6 +568,7 @@ async function runTests() {
     if (id.startsWith("MT")) return "MATERIAL";
     if (id.startsWith("TR")) return "TRUST";
     if (id.startsWith("KG")) return "KARGO";
+    if (id.startsWith("AF")) return "BACK_FOTO_FIX";
     return "OTHER";
   }
 
@@ -619,6 +630,7 @@ async function runTests() {
     BACKLOG: "Backlog", BACK_TEXT: "Back Text", ORDER_COMP: "Order Completed",
     NAME_GUARD: "Name Guard", ADDR_GUARD: "Address Guard",
     MATERIAL: "Material Qs", TRUST: "Trust/Kararma", KARGO: "Kargo",
+    BACK_FOTO_FIX: "Back Foto Fix",
     OTHER: "Other",
   };
 
