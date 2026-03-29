@@ -1024,31 +1024,45 @@ function generateReply(context, state) {
 export async function processChat(body = {}) {
   const context = buildContext(body);
 
-  let state = {
-    ilgilenilen_urun: body.ilgilenilen_urun || "",
-    conversation_stage: body.conversation_stage || "",
-    photo_received: body.photo_received || "",
-    back_text_status: body.back_text_status || "",
-    letters_received: body.letters_received || "",
-    payment_method: body.payment_method || "",
-    address_status: body.address_status || "",
-    phone_received: body.phone_received || "",
-    name_received: body.name_received || "",
-  };
-
+let state = {
+  ilgilenilen_urun: unwrapManychatValue(body.ilgilenilen_urun),
+  conversation_stage: normalizeStage(unwrapManychatValue(body.conversation_stage)),
+  photo_received: unwrapManychatValue(body.photo_received),
+  back_text_status: normalizeBackTextStatus(unwrapManychatValue(body.back_text_status)),
+  letters_received: unwrapManychatValue(body.letters_received),
+  payment_method: normalizePayment(unwrapManychatValue(body.payment_method)),
+  address_status: normalizeAddressStatus(unwrapManychatValue(body.address_status)),
+  phone_received: unwrapManychatValue(body.phone_received),
+  name_received: unwrapManychatValue(body.name_received),
+  order_status: normalizeOrderStatus(unwrapManychatValue(body.order_status)),
+  siparis_alindi: unwrapManychatValue(body.siparis_alindi),
+  context_lock: unwrapManychatValue(body.context_lock),
+};
   // contextten gelen bilgileri state'e işle
   state = applyFactsToState(state, context);
 
-  // yeni stage hesapla
+// yeni stage hesapla
+if (state.conversation_stage !== "human_support") {
   state.conversation_stage = getNextStage(state);
+}
 
-  // cevap üret
-  let reply = generateReply(context, state);
+// cevap üret
+let reply = generateReply(context, state);
 
-  // güvenlik
-  if (!reply || typeof reply !== "string") {
-    reply = FALLBACK_TEXT;
-  }
+// güvenlik
+if (!reply || typeof reply !== "string") {
+  reply = FALLBACK_TEXT;
+}
+
+// order status senkron
+if (!state.order_status && state.ilgilenilen_urun) {
+  state.order_status = "started";
+}
+
+if (state.conversation_stage === "order_completed") {
+  state.order_status = "completed";
+  state.siparis_alindi = "1";
+}
 
   // log
   try {
