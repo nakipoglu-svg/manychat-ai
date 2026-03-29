@@ -630,22 +630,39 @@ if (hasAny(messageNorm, KEYWORDS.intents.price)) return "price";
 }
   }
 
-  if (
-    hasAny(messageNorm, KEYWORDS.intents.backPhotoInfo) ||
-    ((messageNorm.includes("arka") || messageNorm.includes("iki yuz") || messageNorm.includes("iki yüz")) &&
-      (messageNorm.includes("foto") || messageNorm.includes("fotograf") || messageNorm.includes("fotoğraf") || messageNorm.includes("resim")))
-  ) {
-    return "back_photo_info";
-  }
+if (
+  hasAny(messageNorm, KEYWORDS.intents.backPhotoInfo) ||
+  (
+    (messageNorm.includes("arka") ||
+      messageNorm.includes("iki yuz") ||
+      messageNorm.includes("iki yüz")) &&
+    (
+      messageNorm.includes("foto") ||
+      messageNorm.includes("fotograf") ||
+      messageNorm.includes("fotoğraf") ||
+      messageNorm.includes("resim")
+    )
+  )
+) {
+  return "back_photo_info";
+}
 
-  if (
-    hasAny(messageNorm, KEYWORDS.intents.backPhotoPrice) ||
-    ((messageNorm.includes("arka") || messageNorm.includes("arka yuz") || messageNorm.includes("arka yüz")) &&
-      (messageNorm.includes("foto") || messageNorm.includes("fotograf") || messageNorm.includes("fotoğraf")) &&
-      messageNorm.includes("fiyat"))
-  ) {
-    return "back_photo_price";
-  }
+if (
+  hasAny(messageNorm, KEYWORDS.intents.backPhotoPrice) ||
+  (
+    (messageNorm.includes("arka") ||
+      messageNorm.includes("arka yuz") ||
+      messageNorm.includes("arka yüz")) &&
+    (
+      messageNorm.includes("foto") ||
+      messageNorm.includes("fotograf") ||
+      messageNorm.includes("fotoğraf")
+    ) &&
+    messageNorm.includes("fiyat")
+  )
+) {
+  return "back_photo_price";
+}
 
   if (
     messageNorm.includes("resim gonder") ||
