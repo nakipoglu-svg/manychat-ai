@@ -955,34 +955,56 @@ function generateReply(context, state) {
     return MAIN_MENU_TEXT;
   }
 
-  if (intent === "shipping") {
-    return SHIPPING_TIME_FALLBACK_TEXT;
-  }
+if (intent === "shipping_price") {
+  return "Kargo ücreti fiyata dahildir efendim 😊";
+}
 
-  if (intent === "payment") {
-    return "EFT / Havale veya kapıda ödeme mevcut efendim 😊";
+if (intent === "shipping") {
+  if ((context.messageNorm || "").includes("kargom nerede")) {
+    return "Kargo durumu için ekibimiz size yardımcı olacaktır efendim 😊";
   }
+  return SHIPPING_TIME_FALLBACK_TEXT;
+}
 
-  if (intent === "location") {
-    return "Eminönü İstanbul’dayız efendim 😊";
-  }
+if (intent === "payment") {
+  return "EFT / Havale veya kapıda ödeme mevcut efendim 😊";
+}
 
-  if (intent === "trust") {
-    return "Ürünlerimiz paslanmaz çeliktir, kararma yapmaz efendim 😊";
-  }
+if (intent === "location") {
+  return "Eminönü İstanbul’dayız efendim 😊";
+}
+
+if (intent === "trust") {
+  return "Güvenle sipariş verebilirsiniz efendim 😊 Ürünlerimiz paslanmaz çeliktir, kararma yapmaz.";
+}
+
+if (intent === "chain_question" && product === "lazer") {
+  return "Standart zincir uzunluğu 60 cm'dir efendim 😊";
+}
+
+if (intent === "back_photo_price") {
+  return "Arka foto için ek ucret yok efendim 😊";
+}
 
   // === FLOW ===
 
+if (intent === "cancel_order") {
+  return FALLBACK_TEXT;
+}
+  
   if (!product) {
     return MAIN_MENU_TEXT;
   }
 
   // ===== LAZER =====
-  if (product === "lazer") {
-    if (stage === "waiting_photo") {
-      return "Fotoğrafı buradan gönderebilirsiniz efendim 😊";
-    }
+if (product === "lazer") {
+  if (!context.previousProduct && context.detectedProduct === "lazer" && !context.fields.photo_received) {
+    return LASER_PRICE_TEXT;
+  }
 
+  if (stage === "waiting_photo") {
+    return "Fotoğrafı buradan gönderebilirsiniz efendim 😊";
+  }
     if (stage === "waiting_back_text") {
       return "Arka yüzüne yazı ister misiniz? İstemiyorsanız 'yok' yazabilirsiniz 😊";
     }
@@ -1001,10 +1023,22 @@ function generateReply(context, state) {
   }
 
   // ===== ATAÇ =====
-  if (product === "atac") {
-    if (stage === "waiting_letters") {
-      return "İstediğiniz harfleri yazabilirsiniz efendim 😊";
-    }
+if (product === "atac") {
+  if (!context.previousProduct && context.detectedProduct === "atac" && !context.fields.letters_received) {
+    return ATAC_PRICE_TEXT;
+  }
+
+  if (intent === "photo_question") {
+    return "Bu modelde fotoğraf gerekmiyor efendim 😊";
+  }
+
+  if (intent === "back_text_info" || intent === "back_photo_info" || intent === "back_photo_price") {
+    return "Bu özellik resimli lazer kolye için geçerlidir efendim 😊";
+  }
+
+  if (stage === "waiting_letters") {
+    return "İstediğiniz harfleri yazabilirsiniz efendim 😊";
+  }
 
     if (stage === "waiting_payment") {
       return "Ödeme tercihinizi yazabilir misiniz? 😊";
