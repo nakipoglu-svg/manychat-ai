@@ -619,13 +619,15 @@ if (hasAny(messageNorm, KEYWORDS.intents.price)) return "price";
   ) {
     return "photo_question";
   }
-    hasAny(messageNorm, KEYWORDS.intents.backTextInfo) ||
-    (messageNorm.includes("arka") && messageNorm.includes("yazi")) ||
-    (messageNorm.includes("arka") && messageNorm.includes("yazı")) ||
-    messageNorm.includes("arka yuz") ||
-    messageNorm.includes("arka yüz")
-  ) {
-    return "back_text_info";
+ if (
+  hasAny(messageNorm, KEYWORDS.intents.backTextInfo) ||
+  (messageNorm.includes("arka") && messageNorm.includes("yazi")) ||
+  (messageNorm.includes("arka") && messageNorm.includes("yazı")) ||
+  messageNorm.includes("arka yuz") ||
+  messageNorm.includes("arka yüz")
+) {
+  return "back_text_info";
+}
   }
 
   if (
