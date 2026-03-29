@@ -642,8 +642,7 @@ if (
       messageNorm.includes("fotoğraf") ||
       messageNorm.includes("resim")
     )
-  )
-) {
+  )) {
   return "back_photo_info";
 }
 
