@@ -708,6 +708,11 @@ function detectProduct(messageNorm, existingProduct = "") {
 }
 
 function parsePaymentMethod(messageNorm, existing = "") {
+  // FIX 2: Kredi kartı mesajlarında ödeme kaydedilmez — stage değişmez
+  if (hasAny(messageNorm, ["kredi karti", "kredi kartı", "kartla", "kart ile"])) {
+    return existing || "";
+  }
+
   if (hasAny(messageNorm, ["kapida odeme", "kapıda ödeme", "kapida", "kapıda", "odeme olsun", "ödeme olsun"])) {
     return "kapida_odeme";
   }
@@ -820,8 +825,28 @@ function detectIntent(baseContext, extracted) {
   if (hasAny(messageNorm, KEYWORDS.intents.backPhotoPrice)) return "back_photo_price";
 
   // Fotoğraf URL geldi
-  if (looksLikePhotoUrl(message) && detectedProduct === "lazer") {
-    return conversationStage === "waiting_back_text" ? "back_photo_upload" : "photo";
+  if (looksLikePhotoUrl(message)) {
+    // Ürün bağlamı yoksa → genel fotoğraf, photo sayılmaz
+    if (!detectedProduct) return "photo";
+
+    // Lazer: waiting_photo → müşteri fotoğrafı
+    if (detectedProduct === "lazer") {
+      // Mesajda ürün referansı varsa → bu kolye/ürün fotoğrafı, müşteri fotoğrafı DEĞİL
+      if (hasAny(messageNorm, [
+        "bu", "bunu", "bundan", "ayni", "aynı", "istiyorum",
+        "bu model", "bu kolye", "bu urun", "bu ürün",
+        "bunun aynisi", "bunun aynısı", "bu sekilde", "bu şekilde",
+        "bu tarz", "bu tip",
+      ])) {
+        return "product_image_reference";
+      }
+
+      if (conversationStage === "waiting_back_text") return "back_photo_upload";
+      return "photo";
+    }
+
+    // Ataç: fotoğraf kullanılmaz
+    if (detectedProduct === "atac") return "photo";
   }
 
   // Kargo ücreti soruları (shipping_price, shipping'den ÖNCE kontrol edilmeli)
@@ -1116,9 +1141,9 @@ function applyFacts(context, currentState) {
     state.phone_received = "1";
   }
 
-  // FIX 10: Şubeden alacağım → adres alınmış sayılır
+  // FIX 5: Şubeden alacağım → adres alınmış sayılır (mağazadan teslim)
   if (detectedIntent === "store_pickup") {
-    state.address_status = "address_only";
+    state.address_status = "received";
   }
 
   if (detectedIntent === "cancel_order") {
@@ -1271,9 +1296,9 @@ function handleMaterialQuestion(context) {
   if (context.detectedIntent !== "material_question") return emptyReply();
   const { messageNorm } = context;
 
-  // FIX 9: Alerji sorusu
+  // FIX 4: Alerji sorusu — tam cevap
   if (hasAny(messageNorm, ["alerji", "alerjim", "alerjik"])) {
-    return makeReply("Evet efendim, paslanmaz çelikten üretiliyor 😊 Alerji yapma riski bulunmuyor, cildinize zarar vermez.", REPLY_CLASS.FIXED_INFO);
+    return makeReply("Paslanmaz çelikten üretilmektedir efendim 😊 Kararma, solma yapmaz. Alerji konusunda da risk oluşturacak bir malzeme kullanmıyoruz.", REPLY_CLASS.FIXED_INFO);
   }
 
   return makeReply("Evet efendim, paslanmaz çelikten üretiliyor 😊 Kararma, solma veya paslanma yapmaz.", REPLY_CLASS.FIXED_INFO);
@@ -1336,7 +1361,7 @@ function handleChainIntent(context) {
 
   // Plaka boyutu sorusu — "boyutu ne kadar", "kac cm" (zincir kelimesi olmadan)
   if (hasAny(messageNorm, ["boyutu ne kadar", "plaka boyut", "plaka kac cm"])) {
-    return makeReply("Plaka boyutu yaklaşık 3 cm'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
+    return makeReply("Ürün plaka boyutu 3 cm'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
   }
 
   // Zincir dahil mi
@@ -1346,7 +1371,7 @@ function handleChainIntent(context) {
 
   if (detectedProduct === "lazer") {
     if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "uzunlugu ne kadar", "uzunluğu ne kadar", "zincir kac cm", "zincir kaç cm", "zincir kisalir", "zincir kısalır", "boyu ne kadar"])) {
-      return makeReply("Standart zincir 60 cm'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
+      return makeReply("Zincir uzunluğu standart olarak 60 cm'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
     }
     return makeReply(
       "Zincir modeliyle ilgili detay için ekibimize görsel üzerinden net bilgi verelim 😊",
@@ -1416,6 +1441,14 @@ function handleLaserFlow(context, state, nextStage) {
   }
   if (detectedIntent === "back_text_examples") {
     return makeReply("Genelde isim, tarih, kısa bir not veya dua yazılıyor efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+
+  // FIX 1: Ürün/kolye fotoğrafı referansı — müşteri fotoğrafı DEĞİL, photo_received set edilmez
+  if (detectedIntent === "product_image_reference") {
+    return makeReply(
+      "Tabi efendim, bu modeli not aldım 😊 Şimdi kolyeye basılacak kendi fotoğrafınızı buradan gönderebilirsiniz.",
+      REPLY_CLASS.FLOW_PROGRESS
+    );
   }
 
   if (detectedIntent === "photo") {
@@ -1494,9 +1527,9 @@ function handlePaymentFlow(context, state, nextStage) {
   const { detectedIntent, detectedProduct, messageNorm } = context;
   if (detectedIntent !== "payment") return emptyReply();
 
-  // FIX: Kapıda kredi kartı yok — sadece nakit
+  // FIX 2: Kapıda kredi kartı yok — sadece nakit
   if (hasAny(messageNorm, ["kartla", "kart ile", "kredi karti", "kredi kartı", "banka karti", "banka kartı"])) {
-    return makeReply("Kapıda ödeme seçeneğimizde sadece nakit ödeme kabul edilmektedir efendim 😊 EFT / Havale veya kapıda nakit ödeme ile ilerleyebiliriz.", REPLY_CLASS.FIXED_INFO);
+    return makeReply("Kapıda ödeme sadece nakit olarak alınmaktadır efendim 😊 EFT / Havale veya kapıda nakit ödeme ile ilerleyebiliriz.", REPLY_CLASS.FIXED_INFO);
   }
 
   if (messageNorm.includes("dekont") || messageNorm.includes("aciklama") || messageNorm.includes("açıklama")) {
