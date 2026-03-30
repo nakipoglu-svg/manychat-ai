@@ -2,7 +2,9 @@ import fs from "fs";
 import path from "path";
 import { logConversationRow } from "../lib/sheetsLogger.js";
 
-// ─── CACHE & CONSTANTS ──────────────────────────────────────
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// BÖLÜM 1: CONSTANTS & CONFIG
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ──────────────────────────────────────
 const fileCache = {};
 
 const FALLBACK_TEXT = "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊";
@@ -142,6 +144,8 @@ const KEYWORDS = {
       "kargo ucreti dahil mi", "kargo ücreti dahil mi",
       "kargo fiyata dahil", "kargo dahil",
       "kargo ucretsiz mi", "kargo ücretsiz mi",
+      "kargo parasi", "kargo parasI", "kargo parası",
+      "eve teslim", "kargo var mi", "kargo varmı", "kargo varmi",
     ],
 
     // ──── SHIPPING ────
@@ -185,10 +189,11 @@ const KEYWORDS = {
       "eft", "havale",
       "odeme", "ödeme",
       "iban", "dekont", "aciklama", "açıklama",
+      "kredi karti", "kredi kartı", "kartla", "kart ile",
     ],
 
     // ──── PRICE ────
-    price: ["fiyat", "ne kadar", "ucret", "ücret", "kac tl", "kaç tl", "fıyat"],
+    price: ["fiyat", "fıyat", "fiat", "fyat", "ne kadar", "nekadar", "ucret", "ücret", "kac tl", "kaç tl", "kac lira", "kaç lira"],
 
     // ──── CHAIN ────
     chain: [
@@ -198,6 +203,8 @@ const KEYWORDS = {
       "zincir ne kadar", "uzunlugu ne kadar", "uzunluğu ne kadar",
       "zincir kac cm", "zincir kaç cm",
       "zincirlere bakabilir", "zincir secenekleri", "zincir seçenekleri",
+      "boyu ne kadar", "boyutu ne kadar", "kac cm", "kaç cm",
+      "zincir dahil", "zincir dayil",
     ],
 
     // ──── ORDER START ────
@@ -327,6 +334,7 @@ const KEYWORDS = {
       "urun celik mi", "ürün çelik mi",
       "paslanmaz mi", "paslanmaz mı",
       "malzeme ne", "malzemesi ne",
+      "alerji", "alerjim", "alerjik",
     ],
   },
 };
@@ -364,7 +372,9 @@ const NOT_A_NAME_PHRASES = [
   "boncuklu", "madalyon", "resimli",
 ];
 
-// ─── UTILITY FUNCTIONS ──────────────────────────────────────
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// BÖLÜM 2: UTILITIES
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ──────────────────────────────────────
 
 function readKnowledgeFile(filename) {
   if (fileCache[filename]) return fileCache[filename];
@@ -435,7 +445,14 @@ function buildKnowledgePackFromMap(knowledgeMap) {
 }
 
 function hasAny(text, keywords) {
-  return keywords.some((k) => text.includes(k));
+  return keywords.some((k) => {
+    if (!text.includes(k)) return false;
+    // Tek harfli keyword'ler için word boundary zorunlu (false positive çok yüksek)
+    if (k.length === 1) {
+      return new RegExp(`\\b${k}\\b`).test(text);
+    }
+    return true;
+  });
 }
 
 function unwrapManychatValue(value) {
@@ -488,7 +505,9 @@ function emptyReply() {
   return { text: "", reply_class: "", support_mode_reason: SUPPORT_MODE_REASON.NONE };
 }
 
-// ─── ENTITY DETECTION (YENİDEN YAZILDI) ─────────────────────
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// BÖLÜM 3: PARSERS (Entity Detection)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ (YENİDEN YAZILDI) ─────────────────────
 
 function looksLikePhotoUrl(rawMessage = "") {
   const raw = String(rawMessage || "").trim().toLowerCase();
@@ -588,6 +607,9 @@ function looksLikeNameInput(rawMessage = "", messageNorm = "", conversationStage
   for (const phrase of NOT_A_NAME_PHRASES) {
     if (norm.includes(phrase)) return false;
   }
+
+  // Fiil/niyet kalıpları isim değil — "Adresi yazıyorum", "Foto atacağım"
+  if (/\b(yorum|yorsun|yor|yoruz|yorsunuz|yorlar|acagim|acağım|ecegim|eceğim|ayim|ayım|eyim|elim|alim)\b/i.test(raw)) return false;
 
   // Bilinen intent keyword'lerini kontrol et
   for (const intentKey of Object.keys(KEYWORDS.intents)) {
@@ -729,7 +751,9 @@ function extractEntities(baseContext) {
   return { phone, hasAddress, hasName, payment, photoLink, letters };
 }
 
-// ─── INTENT DETECTION (TAMAMEN YENİDEN YAZILDI) ─────────────
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// BÖLÜM 4: DETECTORS (Intent & Product Detection)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ (TAMAMEN YENİDEN YAZILDI) ─────────────
 /**
  * 3 katmanlı intent algılama:
  * 1. Kesin keyword intent'ler (en yüksek öncelik)
@@ -751,8 +775,17 @@ function detectIntent(baseContext, extracted) {
   // İptal — her zaman en yüksek öncelik
   if (hasAny(messageNorm, KEYWORDS.intents.cancel)) return "cancel_order";
 
-  // Post-sale (sipariş sonrası şikayet/soru)
-  if (hasAny(messageNorm, KEYWORDS.intents.postSale)) return "post_sale";
+  // Post-sale (sipariş sonrası şikayet/soru) — aktif sipariş akışında false positive riski düşürülür
+  if (hasAny(messageNorm, KEYWORDS.intents.postSale)) {
+    // "gelmedi" tek kelime + aktif sipariş akışında → general olarak değerlendir
+    // (müşteri "fotoğraf gelmedi mi" vs "ürün gelmedi" ayrımı)
+    const isShortPostSale = messageNorm === "gelmedi" || messageNorm === "ulasmadi";
+    if (isShortPostSale && conversationStage && conversationStage !== "order_completed") {
+      // Aktif akışta kısa post-sale keyword'leri → general'e düşsün
+    } else {
+      return "post_sale";
+    }
+  }
 
   // Yeni sipariş talebi
   if (hasAny(messageNorm, KEYWORDS.intents.newOrder)) return "new_order";
@@ -806,8 +839,17 @@ function detectIntent(baseContext, extracted) {
   // Lokasyon
   if (hasAny(messageNorm, KEYWORDS.intents.location)) return "location";
 
-  // Ödeme
-  if (hasAny(messageNorm, KEYWORDS.intents.payment)) return "payment";
+  // Ödeme — ama "ödeme ne kadar" veya "ödeme fiyatı" gibi fiyat soruları price'a düşmeli
+  if (hasAny(messageNorm, KEYWORDS.intents.payment)) {
+    // Fiyat sorgusu mu yoksa gerçek ödeme talebi mi?
+    if (hasAny(messageNorm, ["ne kadar", "kac tl", "kac lira", "fiyat", "ucret"])) {
+      // "kapıda ödeme ne kadar" → price intent
+      if (!hasAny(messageNorm, ["yapacagim", "yapacağım", "olsun", "istiyorum", "yapicam", "yapıcam", "seciyorum", "seçiyorum"])) {
+        return "price";
+      }
+    }
+    return "payment";
+  }
 
   // Zincir
   if (hasAny(messageNorm, KEYWORDS.intents.chain)) return "chain_question";
@@ -833,7 +875,13 @@ function detectIntent(baseContext, extracted) {
   if (hasAny(messageNorm, KEYWORDS.intents.detailRequest)) return "detail_request";
 
   // Sipariş başlatma
-  if (hasAny(messageNorm, KEYWORDS.intents.orderStart)) return "order_start";
+  // Sipariş başlatma — ama "ama şuan değil", "henüz değil" gibi erteleme varsa tetikleme
+  if (hasAny(messageNorm, KEYWORDS.intents.orderStart)) {
+    if (hasAny(messageNorm, ["ama suan degil", "ama henuz degil", "ama simdi degil", "ama su an", "ama henuz", "sonra donus", "daha sonra", "dusunuyorum", "düşünüyorum"])) {
+      return "general";
+    }
+    return "order_start";
+  }
 
   // ═══ KATMAN 2: FLOW-AWARE INTENT'LER ═══
 
@@ -854,15 +902,35 @@ function detectIntent(baseContext, extracted) {
     ]);
 
     // Soru cümleleri arka yazı değil — "bu foto olur mu", "nasıl olur" vs.
-    const isQuestion = /[?]/.test(raw) || hasAny(messageNorm, [
-      "olur mu", "olurmu", "oluyor mu", "oluyormu",
-      "yapilir mi", "yapılır mı", "yapar mi", "yapar mı",
-      "nasil", "nasıl", "acaba",
-      "bu foto", "bu fotograf", "bu fotoğraf",
-      "uygun mu", "uygunmu",
-    ]);
+    const isQuestion = /[?]/.test(raw) ||
+      // Türkçe soru ekleri
+      /\b(mi|mı|mu|mü|miyim|mıyım|musun|müsün|misiniz|mısınız|musunuz|müsünüz)\b/i.test(raw) ||
+      hasAny(messageNorm, [
+        "olur mu", "olurmu", "oluyor mu", "oluyormu",
+        "yapilir mi", "yapılır mı", "yapar mi", "yapar mı",
+        "nasil", "nasıl", "acaba", "nedir", "ne kadar",
+        "bu foto", "bu fotograf", "bu fotoğraf",
+        "uygun mu", "uygunmu",
+        "alabilirim", "yapabilir",
+        "gondereyim mi", "göndereyim mi", "atayim mi", "atayım mı",
+        // FIX 4: Rica/niyet cümleleri → back_text değil
+        "yaparsaniz", "yaparsanız", "sevinirim", "memnun olurum",
+        "rica etsem", "rica ediyorum",
+        // FIX 11: "Ne gibi yazı yazılır" → soru
+        "ne gibi", "ne yazilir", "ne yazılır", "ne tarz", "ornek",
+        // FIX 12: "Bu yapılır mı" / "bulamadim" → soru/bilgilendirme
+        "bulamadim", "bulamadım", "tapilir", "yapilir",
+        // FIX 15: arkalı önlü olur mu → soru  
+        "arkali onlu", "arkalı önlü", "onlu arkali", "önlü arkalı",
+        "iki taraf", "iki yuz", "iki yüz",
+      ]);
 
-    if (raw && !blocked && !isQuestion && !looksLikePhotoUrl(message) && raw.length <= 80) {
+    // Mesajda fiil/niyet kalıbı varsa back_text değil
+    const hasIntentVerb = hasAny(messageNorm, [
+      "istiyorum", "isterim", "olsun", "yapalim", "yapın", "yaparsaniz",
+    ]) && raw.length > 15;
+
+    if (raw && !blocked && !isQuestion && !hasIntentVerb && !looksLikePhotoUrl(message) && raw.length <= 80) {
       return "back_text";
     }
   }
@@ -874,6 +942,11 @@ function detectIntent(baseContext, extracted) {
   if (hasAny(messageNorm, KEYWORDS.intents.smalltalk)) return "smalltalk";
 
   // ═══ KATMAN 3: ENTITY-BASED INTENT'LER (en düşük öncelik) ═══
+
+  // FIX 10: "Şubeden alacağım" → adres yerine mağazadan teslim
+  if (hasAny(messageNorm, ["subeden alacagim", "şubeden alacağım", "subeden alma", "şubeden alma", "subeden teslim", "şubeden teslim", "magazadan alacagim", "mağazadan alacağım"])) {
+    return "store_pickup";
+  }
 
   // Adres — sadece ilgili stage'lerde
   if (extracted.hasAddress && ["waiting_address", ""].includes(conversationStage)) return "address";
@@ -970,7 +1043,9 @@ function buildContext(body) {
   return { ...baseContext, extracted, detectedIntent };
 }
 
-// ─── STATE MANAGEMENT ───────────────────────────────────────
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// BÖLÜM 5: STATE ENGINE (State Management & Step Resolver)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ───────────────────────────────────────
 
 function getInitialState(context) {
   const f = context.fields;
@@ -1030,10 +1105,20 @@ function applyFacts(context, currentState) {
 
   if (extracted.hasAddress && extracted.phone) {
     state.address_status = "received";
-  } else if (extracted.hasAddress) {
+    state.phone_received = "1";
+  } else if (extracted.hasAddress && !state.address_status) {
+    state.address_status = "address_only";
+  } else if (extracted.hasAddress && state.address_status === "address_only") {
+    // Yeni adres geldi ama hâlâ telefon yok — address_only kalır
     state.address_status = "address_only";
   } else if (state.address_status === "address_only" && extracted.phone) {
     state.address_status = "received";
+    state.phone_received = "1";
+  }
+
+  // FIX 10: Şubeden alacağım → adres alınmış sayılır
+  if (detectedIntent === "store_pickup") {
+    state.address_status = "address_only";
   }
 
   if (detectedIntent === "cancel_order") {
@@ -1114,7 +1199,9 @@ function firstReply(...replies) {
   return emptyReply();
 }
 
-// ─── INTENT HANDLERS ────────────────────────────────────────
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// BÖLÜM 6A: SIDE QUESTION HANDLERS (Yan Soru Cevapları)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ────────────────────────────────────────
 
 function handleLocationIntent(context) {
   if (context.detectedIntent !== "location") return emptyReply();
@@ -1132,7 +1219,7 @@ function handleShippingIntent(context) {
     // Kargo takip, şikayet, sipariş durumu → fallback (satıcıya ait)
     if (hasAny(messageNorm, [
       "kargom nerede", "takip no", "takip numarasi", "takip numarası",
-      "kargoya verildi mi", "kargoya verildi mi",
+      "kargoya verildi mi",
       "yola cikti mi", "yola çıktı mı",
       "kargom gelmedi", "urun gelmedi", "ürün gelmedi",
       "kargo numarasi", "kargo numarası",
@@ -1141,6 +1228,16 @@ function handleShippingIntent(context) {
         FALLBACK_TEXT,
         REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED
       );
+    }
+
+    // FIX 7: Hangi kargo → PTT
+    if (hasAny(messageNorm, ["hangi kargo", "kargo firmasi", "kargo şirketi"])) {
+      return makeReply("PTT Kargo ile gönderim yapıyoruz efendim 😊", REPLY_CLASS.FIXED_INFO);
+    }
+
+    // FIX 14: Kargo parası/ücreti var mı → dahil
+    if (hasAny(messageNorm, ["kargo parasi", "kargo parasI", "kargo var mi"])) {
+      return makeReply("Kargo ücreti fiyata dahildir efendim 😊 Ekstra bir ücret ödemezsiniz.", REPLY_CLASS.FIXED_INFO);
     }
     return makeReply(SHIPPING_TIME_FALLBACK_TEXT, REPLY_CLASS.FIXED_INFO);
   }
@@ -1172,6 +1269,13 @@ function handleTrustIntent(context) {
  */
 function handleMaterialQuestion(context) {
   if (context.detectedIntent !== "material_question") return emptyReply();
+  const { messageNorm } = context;
+
+  // FIX 9: Alerji sorusu
+  if (hasAny(messageNorm, ["alerji", "alerjim", "alerjik"])) {
+    return makeReply("Evet efendim, paslanmaz çelikten üretiliyor 😊 Alerji yapma riski bulunmuyor, cildinize zarar vermez.", REPLY_CLASS.FIXED_INFO);
+  }
+
   return makeReply("Evet efendim, paslanmaz çelikten üretiliyor 😊 Kararma, solma veya paslanma yapmaz.", REPLY_CLASS.FIXED_INFO);
 }
 
@@ -1230,8 +1334,18 @@ function handleChainIntent(context) {
   const { detectedIntent, detectedProduct, messageNorm } = context;
   if (detectedIntent !== "chain_question") return emptyReply();
 
+  // Plaka boyutu sorusu — "boyutu ne kadar", "kac cm" (zincir kelimesi olmadan)
+  if (hasAny(messageNorm, ["boyutu ne kadar", "plaka boyut", "plaka kac cm"])) {
+    return makeReply("Plaka boyutu yaklaşık 3 cm'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+
+  // Zincir dahil mi
+  if (hasAny(messageNorm, ["zincir dahil", "zincir dayil"])) {
+    return makeReply("Evet efendim, zincir dahildir 😊", REPLY_CLASS.FIXED_INFO);
+  }
+
   if (detectedProduct === "lazer") {
-    if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "uzunlugu ne kadar", "uzunluğu ne kadar", "zincir kac cm", "zincir kaç cm", "zincir kisalir", "zincir kısalır"])) {
+    if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "uzunlugu ne kadar", "uzunluğu ne kadar", "zincir kac cm", "zincir kaç cm", "zincir kisalir", "zincir kısalır", "boyu ne kadar"])) {
       return makeReply("Standart zincir 60 cm'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
     }
     return makeReply(
@@ -1241,7 +1355,7 @@ function handleChainIntent(context) {
   }
 
   if (detectedProduct === "atac") {
-    if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "uzunlugu ne kadar", "uzunluğu ne kadar", "zincir kac cm", "zincir kaç cm"])) {
+    if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "uzunlugu ne kadar", "uzunluğu ne kadar", "zincir kac cm", "zincir kaç cm", "boyu ne kadar"])) {
       return makeReply("Standart zincir 50 cm'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
     }
     return makeReply("Bu üründe tek zincir modeli kullanılıyor efendim 😊", REPLY_CLASS.FIXED_INFO);
@@ -1286,7 +1400,9 @@ function handleBackSideInfoIntent(context, state) {
   return emptyReply();
 }
 
-// ─── FLOW HANDLERS ──────────────────────────────────────────
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// BÖLÜM 6B: FLOW HANDLERS (Sipariş Akış Yöneticileri)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ──────────────────────────────────────────
 
 function handleLaserFlow(context, state, nextStage) {
   const { detectedProduct, detectedIntent } = context;
@@ -1378,6 +1494,11 @@ function handlePaymentFlow(context, state, nextStage) {
   const { detectedIntent, detectedProduct, messageNorm } = context;
   if (detectedIntent !== "payment") return emptyReply();
 
+  // FIX: Kapıda kredi kartı yok — sadece nakit
+  if (hasAny(messageNorm, ["kartla", "kart ile", "kredi karti", "kredi kartı", "banka karti", "banka kartı"])) {
+    return makeReply("Kapıda ödeme seçeneğimizde sadece nakit ödeme kabul edilmektedir efendim 😊 EFT / Havale veya kapıda nakit ödeme ile ilerleyebiliriz.", REPLY_CLASS.FIXED_INFO);
+  }
+
   if (messageNorm.includes("dekont") || messageNorm.includes("aciklama") || messageNorm.includes("açıklama")) {
     if (messageNorm.includes("dekont")) {
       return makeReply("Tabi efendim, iletebilirsiniz 😊", REPLY_CLASS.FIXED_INFO);
@@ -1451,6 +1572,19 @@ function handlePaymentFlow(context, state, nextStage) {
 
 function handleAddressFlow(context, state, nextStage) {
   const { detectedIntent } = context;
+
+  // FIX 10: Şubeden alacağım → adres alındı, isim+tel iste
+  if (detectedIntent === "store_pickup") {
+    if (!truthy(state.phone_received)) {
+      return makeReply("Tabi efendim, şubemizden teslim alabilirsiniz 😊 Ad soyad ve cep telefonu numaranızı paylaşabilir misiniz?", REPLY_CLASS.FLOW_PROGRESS);
+    }
+    return makeReply("Tabi efendim, şubemizden teslim alabilirsiniz 😊", REPLY_CLASS.FLOW_PROGRESS);
+  }
+
+  // FIX 6: Sipariş tamamlandıysa adres/isim soruları flow_progress dönmemeli
+  if (state.order_status === "completed" || truthy(state.siparis_alindi)) {
+    return emptyReply();
+  }
 
   if (detectedIntent === "name_only") {
     if (nextStage === "waiting_address") {
@@ -1527,29 +1661,103 @@ function handleCompletionFlow(context, state, nextStage) {
   );
 }
 
-// ─── MAIN DETERMINISTIC REPLY BUILDER ───────────────────────
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// BÖLÜM 7: ORCHESTRATOR (Deterministic Reply Builder & Main Processor)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ REPLY BUILDER ───────────────────────
 
-function buildDeterministicReply(context, state) {
-  const { detectedProduct, detectedIntent } = context;
-  const nextStage = getNextStage(state);
+/**
+ * Fiyat sorusu handler — ürün bağlamına göre fiyat verir.
+ * Ataçta harf sayısı biliniyorsa dinamik fiyat hesaplar.
+ */
+function handlePriceIntent(context, state) {
+  if (context.detectedIntent !== "price") return emptyReply();
 
-  // ──── Fiyat sorusu, ürün yok ────
-  if (detectedIntent === "price" && !state.product) {
+  // Ürün seçilmemişse → menü
+  if (!state.product) {
     return makeReply(
       "Hemen yardımcı olayım efendim 😊\nHangi ürün için fiyat istersiniz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye",
       REPLY_CLASS.MENU
     );
   }
 
-  // ──── Ana menü göster ────
+  if (state.product === "lazer") {
+    return makeReply("EFT / havale fiyatımız 599 TL, kapıda ödeme fiyatımız 649 TL'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+
+  if (state.product === "atac") {
+    if (truthy(state.letters_received) && context.extracted?.letters) {
+      const letterCount = context.extracted.letters.replace(/\s+/g, "").length;
+      if (letterCount > 3) {
+        const extra = (letterCount - 3) * 50;
+        return makeReply(`${letterCount} harf için EFT / havale fiyatımız ${499 + extra} TL, kapıda ödeme fiyatımız ${549 + extra} TL'dir efendim 😊`, REPLY_CLASS.FIXED_INFO);
+      }
+    }
+    return makeReply("EFT / havale fiyatımız 499 TL, kapıda ödeme fiyatımız 549 TL'dir efendim 😊 3 harfe kadar standarttır, her ek harf +50 TL'dir.", REPLY_CLASS.FIXED_INFO);
+  }
+
+  return emptyReply();
+}
+
+/**
+ * Sipariş tamamlandıktan sonra gelen ödeme soruları (dekont, IBAN, ödeme yaptım).
+ */
+function handlePostCompletionPayment(context, state) {
+  const { detectedIntent, messageNorm } = context;
+  if (detectedIntent !== "payment") return emptyReply();
+  if (state.order_status !== "completed" && getNextStage(state) !== "order_completed") return emptyReply();
+
+  if (messageNorm.includes("dekont")) return makeReply("Tabi efendim, iletebilirsiniz 😊", REPLY_CLASS.FIXED_INFO);
+  if (messageNorm.includes("aciklama") || messageNorm.includes("açıklama")) return makeReply("Açıklama yazmanıza gerek yok efendim 😊", REPLY_CLASS.FIXED_INFO);
+  if (messageNorm.includes("iban")) return makeReply(`Tabi efendim 😊\n\n${EFT_INFO_TEXT}`, REPLY_CLASS.FIXED_INFO);
+
+  if (hasAny(messageNorm, ["eft attim", "havale yaptim", "odeme yaptim", "ödeme yaptım", "odemeyi yaptim", "ödemeyi yaptım", "ucretini yollarim", "ücretini yollarım"])) {
+    return makeReply("Teşekkür ederiz efendim, ekibimiz kontrol edip size dönüş sağlayacaktır 😊", REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED);
+  }
+
+  return makeReply("Ödeme ile ilgili ekibimiz size yardımcı olacaktır efendim 😊", REPLY_CLASS.SELLER_REQUIRED, SUPPORT_MODE_REASON.SELLER_REQUIRED);
+}
+
+/**
+ * Smalltalk handler — selamlama, teşekkür, dua, beğeni cevapları.
+ */
+function handleSmalltalkIntent(context) {
+  if (context.detectedIntent !== "smalltalk") return emptyReply();
+  const { messageNorm } = context;
+
+  // Müşteri SANA taziye/dua diyor
+  if (hasAny(messageNorm, ["basiniz sagolsun", "basiniz sag olsun", "hakkinizi helal", "allah yardimciniz"])) {
+    return makeReply("Çok teşekkür ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+  if (hasAny(messageNorm, ["insallah", "inşallah", "allah razi olsun", "hayirli isler", "bol kazanclar", "amin", "masallah", "eyvallah"])) {
+    return makeReply("Amin, çok teşekkür ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+  if (hasAny(messageNorm, ["tesekkur", "teşekkür", "sagolun", "sağolun", "saol", "tsk", "tşk"])) {
+    return makeReply("Rica ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+  if (hasAny(messageNorm, ["begendim", "beğendim", "begendik", "beğendik", "guzel", "güzel", "super", "süper", "harika", "saglik", "sağlık"])) {
+    return makeReply("Çok teşekkür ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+  if (hasAny(messageNorm, ["merhaba", "selam", "slm", "mrb", "merhabalar"])) {
+    return makeReply("Merhaba, hoş geldiniz 😊", REPLY_CLASS.FIXED_INFO);
+  }
+  return makeReply("Tabi efendim 😊", REPLY_CLASS.FIXED_INFO);
+}
+
+/**
+ * Deterministik cevap üretici — orchestrator.
+ * Sırayla: menü → yan soru handler'lar → fiyat → ödeme sonrası → smalltalk → ürün seçimi → akış handler'lar → completion
+ */
+function buildDeterministicReply(context, state) {
+  const { detectedProduct } = context;
+  const nextStage = getNextStage(state);
+
+  // ── 1. Menü gösterme kararı ──
   if (shouldShowMainMenu(context, state)) {
     return makeReply(MAIN_MENU_TEXT, REPLY_CLASS.MENU);
   }
 
-  // ══════════════════════════════════════════════
-  // FIXED INFO HANDLER'LARI (her stage'de çalışır — order_completed dahil)
-  // ══════════════════════════════════════════════
-  const fixedInfoReply = firstReply(
+  // ── 2. Her stage'de çalışan yan soru handler'ları ──
+  const sideReply = firstReply(
     handleLocationIntent(context),
     handleShippingIntent(context),
     handleMaterialQuestion(context),
@@ -1561,97 +1769,19 @@ function buildDeterministicReply(context, state) {
     handleNewOrderIntent(context, state),
     handleExampleRequest(context),
     handleDetailRequest(context, state),
+    handlePriceIntent(context, state),
+    handlePostCompletionPayment(context, state),
+    handleSmalltalkIntent(context),
   );
+  if (sideReply.text) return sideReply;
 
-  if (fixedInfoReply.text) {
-    return fixedInfoReply;
+  // ── 3. Ürün seçimi ──
+  if (isFreshProductSelection(context, state)) {
+    if (detectedProduct === "lazer") return makeReply(LASER_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
+    if (detectedProduct === "atac") return makeReply(ATAC_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
   }
 
-  // ══════════════════════════════════════════════
-  // FIYAT SORUSU — order_completed'da bile çalışmalı
-  // ══════════════════════════════════════════════
-  if (detectedIntent === "price" && state.product) {
-    if (state.product === "lazer") {
-      return makeReply("EFT / havale fiyatımız 599 TL, kapıda ödeme fiyatımız 649 TL'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
-    }
-    if (state.product === "atac") {
-      // Harf sayısı biliniyorsa dinamik fiyat hesapla
-      if (truthy(state.letters_received) && context.extracted?.letters) {
-        const letterCount = context.extracted.letters.replace(/\s+/g, "").length;
-        if (letterCount > 3) {
-          const extra = (letterCount - 3) * 50;
-          const eftPrice = 499 + extra;
-          const kapidaPrice = 549 + extra;
-          return makeReply(`${letterCount} harf için EFT / havale fiyatımız ${eftPrice} TL, kapıda ödeme fiyatımız ${kapidaPrice} TL'dir efendim 😊`, REPLY_CLASS.FIXED_INFO);
-        }
-      }
-      return makeReply("EFT / havale fiyatımız 499 TL, kapıda ödeme fiyatımız 549 TL'dir efendim 😊 3 harfe kadar standarttır, her ek harf +50 TL'dir.", REPLY_CLASS.FIXED_INFO);
-    }
-  }
-
-  // ══════════════════════════════════════════════
-  // ÖDEME SORUSU — order_completed'da bile çalışmalı
-  // ══════════════════════════════════════════════
-  if (detectedIntent === "payment" && (nextStage === "order_completed" || state.order_status === "completed")) {
-    const { messageNorm } = context;
-    // Dekont sorusu — basit cevap ver
-    if (messageNorm.includes("dekont")) {
-      return makeReply("Tabi efendim, iletebilirsiniz 😊", REPLY_CLASS.FIXED_INFO);
-    }
-    // Açıklama sorusu
-    if (messageNorm.includes("aciklama") || messageNorm.includes("açıklama")) {
-      return makeReply("Açıklama yazmanıza gerek yok efendim 😊", REPLY_CLASS.FIXED_INFO);
-    }
-    if (messageNorm.includes("iban")) {
-      return makeReply(`Tabi efendim 😊\n\n${EFT_INFO_TEXT}`, REPLY_CLASS.FIXED_INFO);
-    }
-    if (hasAny(messageNorm, ["eft attim", "havale yaptim", "odeme yaptim", "ödeme yaptım", "odemeyi yaptim", "ödemeyi yaptım", "ucretini yollarim", "ücretini yollarım"])) {
-      return makeReply("Teşekkür ederiz efendim, ekibimiz kontrol edip size dönüş sağlayacaktır 😊", REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED);
-    }
-    // Ödeme değişikliği veya genel ödeme sorusu → ekibimiz
-    return makeReply("Ödeme ile ilgili ekibimiz size yardımcı olacaktır efendim 😊", REPLY_CLASS.SELLER_REQUIRED, SUPPORT_MODE_REASON.SELLER_REQUIRED);
-  }
-
-  // ══════════════════════════════════════════════
-  // SMALLTALK — order_completed'da bile çalışmalı
-  // ══════════════════════════════════════════════
-  if (detectedIntent === "smalltalk") {
-    // Müşteri SANA taziye/dua diyor — teşekkür et, taziye geri dönme
-    if (hasAny(context.messageNorm, ["basiniz sagolsun", "basiniz sag olsun", "hakkinizi helal", "allah yardimciniz"])) {
-      return makeReply("Çok teşekkür ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
-    }
-    // Dua mesajları
-    if (hasAny(context.messageNorm, ["insallah", "inşallah", "allah razi olsun", "hayirli isler", "bol kazanclar", "amin", "masallah", "eyvallah"])) {
-      return makeReply("Amin, çok teşekkür ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
-    }
-    // Teşekkür mesajları
-    if (hasAny(context.messageNorm, ["tesekkur", "teşekkür", "sagolun", "sağolun", "saol", "tsk", "tşk"])) {
-      return makeReply("Rica ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
-    }
-    // Beğeni mesajları
-    if (hasAny(context.messageNorm, ["begendim", "beğendim", "begendik", "beğendik", "guzel", "güzel", "super", "süper", "harika", "saglik", "sağlık"])) {
-      return makeReply("Çok teşekkür ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
-    }
-    // Selam
-    if (hasAny(context.messageNorm, ["merhaba", "selam", "slm", "mrb", "merhabalar"])) {
-      return makeReply("Merhaba, hoş geldiniz 😊", REPLY_CLASS.FIXED_INFO);
-    }
-    return makeReply("Tabi efendim 😊", REPLY_CLASS.FIXED_INFO);
-  }
-
-  // ══════════════════════════════════════════════
-  // ÜRETİLMİŞ ÜRÜN SEÇİMİ
-  // ══════════════════════════════════════════════
-  if (isFreshProductSelection(context, state) && detectedProduct === "lazer") {
-    return makeReply(LASER_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
-  }
-  if (isFreshProductSelection(context, state) && detectedProduct === "atac") {
-    return makeReply(ATAC_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
-  }
-
-  // ══════════════════════════════════════════════
-  // FLOW HANDLER'LARI
-  // ══════════════════════════════════════════════
+  // ── 4. Akış handler'ları ──
   const flowReply = firstReply(
     handleLaserFlow(context, state, nextStage),
     handleAtacFlow(context, state, nextStage),
@@ -1660,10 +1790,7 @@ function buildDeterministicReply(context, state) {
     handleOrderStart(context, state, nextStage),
     handleCompletionFlow(context, state, nextStage),
   );
-
-  if (flowReply.text) {
-    return flowReply;
-  }
+  if (flowReply.text) return flowReply;
 
   return emptyReply();
 }
