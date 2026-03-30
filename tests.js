@@ -571,7 +571,7 @@ const tests = [
   { id: "NF04", name: "[NOTEFIX] Boyu ne kadar → zincir 60 cm", input: body("Boyu ne kadar", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "60" },
   { id: "NF05", name: "[NOTEFIX] Hangi kargo → PTT", input: body("Hangi kargo ile gönderiyorsunuz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "ptt" },
   { id: "NF06", name: "[NOTEFIX] Alerji sorusu → alerji yapmaz", input: body("Benim alerjim var çelik mi", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "alerji" },
-  { id: "NF07", name: "[NOTEFIX] Şubeden alacağım → address kabul", input: body("Şubeden alacağım", lazerWaitingAddress()), expect: { address_status: "address_only" } },
+  { id: "NF07", name: "[NOTEFIX] Şubeden alacağım → address received", input: body("Şubeden alacağım", lazerWaitingAddress()), expect: { address_status: "received" } },
   { id: "NF08", name: "[NOTEFIX] Kargo parası var mı → dahil", input: body("Kargo parası var mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "dahil" },
   { id: "NF09", name: "[NOTEFIX] Completed + name_only → adres sormamalı", input: body("Tamam olur", lazerCompleted()), expectReplyNotIncludes: "ad soyad" },
   { id: "NF10", name: "[NOTEFIX] Completed + Kolyem hazır mı → ekibimiz", input: body("Kolyem hazır mı", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
