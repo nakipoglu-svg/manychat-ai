@@ -118,8 +118,12 @@ const KEYWORDS = {
       "kolay gelsin",
       "emeginize saglik", "emeğinize sağlık", "ellerinize saglik", "ellerinize sağlık",
       "cok begendik", "çok beğendik", "cok begendim", "çok beğendim",
+      "begendim", "beğendim", "bayildim", "bayıldım",
+      "tatli olmus", "tatlı olmuş", "guzel olmus", "güzel olmuş",
+      "elinize saglik", "elinize sağlık",
       "cok guzel", "çok güzel", "cok guzel olmus", "çok güzel olmuş",
       "super", "süper", "harika",
+      "cok iyi", "çok iyi", "mukemmel", "mükemmel",
       // Müşteri SANA taziye/teşekkür diyor — bot da müşteriye taziye dememeli
       "basiniz sagolsun", "başınız sağolsun", "basiniz sag olsun", "başınız sağ olsun",
       "allah yardimciniz olsun", "allah yardımcınız olsun",
@@ -127,11 +131,12 @@ const KEYWORDS = {
       "bol kazanclar", "bol kazançlar",
       "hayirli isler", "hayırlı işler",
       "insallah", "inşallah", "amin", "masallah", "maşallah", "eyvallah",
+      "bekliyorum", "haber bekliyorum", "bilginiz olsun",
       "liked a message", "reacted",
     ],
 
     // ──── LOCATION ────
-    location: ["yeriniz nerede", "neredesiniz", "konum", "magaza", "mağaza", "eminonu", "eminönü"],
+    location: ["yeriniz nerede", "yeriniz neresi", "neredesiniz", "konum", "magaza", "mağaza", "eminonu", "eminönü"],
 
     // ──── SHIPPING PRICE: genişletildi ────
     shippingPrice: [
@@ -163,7 +168,8 @@ const KEYWORDS = {
     trust: [
       "guvenilir", "guven", "dolandirici", "orijinal", "saglam",
       "kararma", "kararir mi", "kararma yapar mi", "kararma olur mu",
-      "kararır mı", "kararma yapar mı", "kararma olur mu",
+      "kararır mı", "kararma yapar mı",
+      "karar ma", "kararma yapiyomu", "kararma yapıyomu",
       "kararma yaparmi", "kararma yapiyormu", "kararma yapıyor mu",
       "kararma oluyormu", "kararma oluyor mu",
       "solar", "solma", "paslan",
@@ -204,6 +210,7 @@ const KEYWORDS = {
       "zincir kac cm", "zincir kaç cm",
       "zincirlere bakabilir", "zincir secenekleri", "zincir seçenekleri",
       "boyu ne kadar", "boyutu ne kadar", "kac cm", "kaç cm",
+      "kac santim", "kaç santım", "kac santım", "kaç santim",
       "zincir dahil", "zincir dayil",
     ],
 
@@ -262,6 +269,11 @@ const KEYWORDS = {
     backPhotoInfo: [
       "arkali onlu fotograf olur mu", "arkalı önlü fotoğraf olur mu",
       "arkali onlu foto olur mu", "arkalı önlü foto olur mu",
+      "arkali onlu", "arkalı önlü",
+      "onlu arkali", "önlü arkalı",
+      "cift tarafli", "çift taraflı", "iki tarafli", "iki taraflı",
+      "iki tarafa resim", "iki tarafa da resim",
+      "iki yuzune resim", "iki yüzüne resim",
       "on yuze bir fotograf arka yuze bir fotograf",
       "arkasina fotograf olur mu", "arkasına fotoğraf olur mu",
       "arkasina foto olur mu", "arkasına foto olur mu",
@@ -1278,7 +1290,7 @@ function handleTrustIntent(context) {
     return makeReply("Kaplama atmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.", REPLY_CLASS.FIXED_INFO);
   }
 
-  if (hasAny(messageNorm, ["kararma", "kararir", "solar", "solma", "paslan"])) {
+  if (hasAny(messageNorm, ["kararma", "kararir", "solar", "solma", "paslan", "karar ma", "soluyor", "renk bozul"])) {
     return makeReply("Kararma, solma veya paslanma yapmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.", REPLY_CLASS.FIXED_INFO);
   }
 
@@ -1370,7 +1382,7 @@ function handleChainIntent(context) {
   }
 
   if (detectedProduct === "lazer") {
-    if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "uzunlugu ne kadar", "uzunluğu ne kadar", "zincir kac cm", "zincir kaç cm", "zincir kisalir", "zincir kısalır", "boyu ne kadar"])) {
+    if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "uzunlugu ne kadar", "uzunluğu ne kadar", "zincir kac cm", "zincir kaç cm", "zincir kisalir", "zincir kısalır", "boyu ne kadar", "kac santim", "kaç santım", "kac santım"])) {
       return makeReply("Zincir uzunluğu standart olarak 60 cm'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
     }
     return makeReply(
@@ -1781,8 +1793,85 @@ function handleSmalltalkIntent(context) {
  * Sırayla: menü → yan soru handler'lar → fiyat → ödeme sonrası → smalltalk → ürün seçimi → akış handler'lar → completion
  */
 function buildDeterministicReply(context, state) {
-  const { detectedProduct } = context;
+  const { detectedProduct, detectedIntent, messageNorm } = context;
   const nextStage = getNextStage(state);
+
+  // ═══ ORDER COMPLETED GUARD (YENİ KNOWLEDGE KURALLARINA GÖRE) ═══
+  // Sipariş tamamlandıysa, mesajları post-sale olarak değerlendir
+  // SADECE: smalltalk, trust, material, price, location, shipping_price, new_order, post_sale geçebilir
+  // GERİSİ: post-sale guard'a takılır
+  const isOrderCompleted = state.order_status === "completed" || truthy(state.siparis_alindi);
+  if (isOrderCompleted && state.conversation_stage === "order_completed") {
+
+    // 1. Açık yeni sipariş niyeti → new_order handler'a bırak
+    if (detectedIntent === "new_order") {
+      // Handler'a düşsün
+    }
+    // 2. Smalltalk (teşekkür, memnuniyet, selam, dua) → normal handler'a bırak
+    else if (detectedIntent === "smalltalk") {
+      // Handler'a düşsün
+    }
+    // 3. Trust / Material / Price / Location / Chain / Shipping Price → side question, normal handler
+    else if (["trust", "material_question", "price", "location", "chain_question", "shipping_price"].includes(detectedIntent)) {
+      // Handler'a düşsün
+    }
+    // 4. POST-SALE KARGO: kişisel takip → ekibe yönlendir, genel bilgi → shipping handler'a bırak
+    else if (detectedIntent === "shipping") {
+      // Kişisel kargo takibi → post-sale
+      if (hasAny(messageNorm, ["kargom", "siparisim", "siparişim", "gelmedi", "ulasmadi", "ulaşmadı",
+        "verildi mi", "yola cikti", "mesaj gelmedi", "msj gelmedi", "teslim olmadi",
+        "kargo mesaji", "kargoya verilmis", "kargoya verilmiş", "dagitimda", "dağıtımda"])) {
+        return makeReply(
+          "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊",
+          REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED
+        );
+      }
+      // Genel kargo bilgisi sorusu (kaç günde gelir vb.) → normal shipping handler'a bırak
+    }
+    else if (detectedIntent === "post_sale") {
+      return makeReply(
+        "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊",
+        REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED
+      );
+    }
+    // 5. Payment (completed sonrası) → normal handler'a bırak (IBAN verme vb.)
+    else if (detectedIntent === "payment") {
+      // handlePostCompletionPayment'a düşsün
+    }
+    // 6. Şikayet / memnuniyetsizlik keyword'leri
+    else if (hasAny(messageNorm, [
+      "memnun kalmadim", "memnun kalmadım",
+      "istedigim gibi degil", "istediğim gibi değil",
+      "yanlis olmus", "yanlış olmuş", "yanlis", "yanlış",
+      "sikayet", "şikayet", "sikayetim", "şikayetim",
+      "begenmedi", "beğenmedi", "begenmedim", "beğenmedim",
+      "dikkate alinmamis", "dikkate alınmamış",
+      "ilginiz sifir", "ilginiz sıfır",
+      "alakasi yok", "alakası yok",
+      "kotu", "kötü", "berbat",
+      "fakat", "siparisimle", "siparişimle",
+    ])) {
+      return makeReply(
+        "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+        REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED
+      );
+    }
+    // 7. Kısa onay / bekleme mesajları → fallback'e düşürme, kısa nötr cevap ver
+    else if (hasAny(messageNorm, ["tamam", "olur", "peki", "tamamdir", "anladim", "anladım"]) && messageNorm.length < 20) {
+      return makeReply("Tabi efendim 😊", REPLY_CLASS.FIXED_INFO);
+    }
+    // 8. "Bekliyorum" variants
+    else if (hasAny(messageNorm, ["bekliyorum", "haber bekliyorum", "donus bekliyorum", "dönüş bekliyorum", "cvp bekliyorum"])) {
+      return makeReply("Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊", REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED);
+    }
+    // 9. Diğer tüm mesajlar → ekibe yönlendir (post-sale default)
+    else {
+      return makeReply(
+        "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+        REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED
+      );
+    }
+  }
 
   // ── 1. Menü gösterme kararı ──
   if (shouldShowMainMenu(context, state)) {
@@ -1824,6 +1913,25 @@ function buildDeterministicReply(context, state) {
     handleCompletionFlow(context, state, nextStage),
   );
   if (flowReply.text) return flowReply;
+
+  // ── 5. Kısa onay mesajları — model'e düşürmeden stage'e uygun cevap ver ──
+  const raw = String(context.message || "").trim();
+  if (raw.length <= 12 && hasAny(messageNorm, ["tamam", "tamamdir", "tm", "tmm", "tmmm", "olur", "peki", "evet", "ok", "tamam dir"])) {
+    const stage = state.conversation_stage || "";
+    if (stage === "waiting_photo") {
+      return makeReply("Fotoğrafı buradan gönderebilirsiniz efendim 😊", REPLY_CLASS.FALLBACK);
+    }
+    if (stage === "waiting_back_text") {
+      return makeReply("Arka yüze yazı eklemek ister misiniz? İsterseniz yazıyı buradan iletebilirsiniz, istemezseniz \"yok\" yazabilirsiniz 😊", REPLY_CLASS.FALLBACK);
+    }
+    if (stage === "waiting_payment") {
+      return makeReply("Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim? 😊", REPLY_CLASS.FALLBACK);
+    }
+    if (stage === "waiting_address") {
+      return makeReply("Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz efendim? 😊", REPLY_CLASS.FALLBACK);
+    }
+    return makeReply("Tabi efendim 😊", REPLY_CLASS.FALLBACK);
+  }
 
   return emptyReply();
 }
