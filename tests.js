@@ -581,6 +581,60 @@ const tests = [
   { id: "NF14", name: "[NOTEFIX] Eve teslim var mı → kargo dahil", input: body("Eve teslim var mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "dahil" },
   { id: "NF15", name: "[NOTEFIX] Kargo var mı → dahil", input: body("Kargo varmı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "dahil" },
 
+  // ════════════════════════════════════════════════════════════════════════
+  // GRUP 24: POST-SALE / ORDER_COMPLETED REGRESSION (PS01–PS30)
+  // ════════════════════════════════════════════════════════════════════════
+
+  // --- Teşekkür / memnuniyet (completed'da smalltalk olmalı, fallback değil) ---
+  { id: "PS01", name: "[PS] Completed + beğendim → teşekkür", input: body("Begendım cok tatlı olmus", lazerCompleted()), expectReplyIncludes: "tesekkur" },
+  { id: "PS02", name: "[PS] Completed + elinize sağlık → teşekkür", input: body("Emeğinize sağlık", lazerCompleted()), expectReplyIncludes: "tesekkur" },
+  { id: "PS03", name: "[PS] Completed + çok güzel olmuş → teşekkür", input: body("Çok güzel olmuş elinize sağlık", lazerCompleted()), expectReplyIncludes: "tesekkur" },
+  { id: "PS04", name: "[PS] Completed + bayıldım → teşekkür", input: body("Bayıldım çok güzel", lazerCompleted()), expectReplyIncludes: "tesekkur" },
+
+  // --- Kısa onay / bekleme (completed'da fallback değil, kısa cevap) ---
+  { id: "PS05", name: "[PS] Completed + tamam → kısa cevap", input: body("Tamam", lazerCompleted()), expectReplyIncludes: "efendim" },
+  { id: "PS06", name: "[PS] Completed + bekliyorum → kısa cevap", input: body("Bekliyorum", lazerCompleted()), expectReplyIncludes: "efendim" },
+  { id: "PS07", name: "[PS] Completed + peki → kısa cevap", input: body("Peki", lazerCompleted()), expectReplyIncludes: "efendim" },
+  { id: "PS08", name: "[PS] Completed + tamamdır → kısa cevap", input: body("Tamamdır", lazerCompleted()), expectReplyIncludes: "efendim" },
+
+  // --- Kişisel kargo takibi (completed'da ekibe yönlendir) ---
+  { id: "PS09", name: "[PS] Completed + kargom gelmedi → ekibimiz", input: body("Kargom gelmedi", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+  { id: "PS10", name: "[PS] Completed + kargoya verildi mi → ekibimiz", input: body("Kargoya verildi mi", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+  { id: "PS11", name: "[PS] Completed + kargo mesajı gelmedi → ekibimiz", input: body("Hala kargo mesajı gelmedi", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+
+  // --- Genel kargo bilgisi (completed'da da verilebilir) ---
+  { id: "PS12", name: "[PS] Completed + kaç günde gelir → kargo cevabı", input: body("Kaç günde gelir", lazerCompleted()), expectReplyIncludes: "is gunu" },
+
+  // --- Şikayet / memnuniyetsizlik (ekibe yönlendir) ---
+  { id: "PS13", name: "[PS] Completed + memnun kalmadım → ekibimiz", input: body("Memnun kalmadım", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+  { id: "PS14", name: "[PS] Completed + istediğim gibi değil → ekibimiz", input: body("İstediğim gibi değil", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+  { id: "PS15", name: "[PS] Completed + şikayetim var → ekibimiz", input: body("Şikayetim var", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+  { id: "PS16", name: "[PS] Completed + yanlış olmuş → ekibimiz", input: body("Yanlış olmuş", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+
+  // --- State koruması (completed → eski stage'lere dönmemeli) ---
+  { id: "PS17", name: "[PS] Completed + tamam → stage korunmalı", input: body("Tamam", lazerCompleted()), expect: { conversation_stage: "order_completed" } },
+  { id: "PS18", name: "[PS] Completed + bekliyorum → stage korunmalı", input: body("Bekliyorum", lazerCompleted()), expect: { conversation_stage: "order_completed" } },
+  { id: "PS19", name: "[PS] Completed + kargom gelmedi → fotoğraf sormamalı", input: body("Kargom gelmedi", lazerCompleted()), expectReplyNotIncludes: "fotograf" },
+  { id: "PS20", name: "[PS] Completed + memnun kalmadım → adres sormamalı", input: body("Memnun kalmadım", lazerCompleted()), expectReplyNotIncludes: "adres" },
+
+  // --- Kısa mesaj stage-aware handling ---
+  { id: "PS21", name: "[PS] waiting_photo + tm → foto iste", input: body("Tm", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "fotograf" },
+  { id: "PS22", name: "[PS] waiting_photo + tamamdır → foto iste", input: body("Tamamdır", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "fotograf" },
+  { id: "PS23", name: "[PS] waiting_payment + tamam → ödeme sor", input: body("Tamam", lazer({ conversation_stage: "waiting_payment", photo_received: "1", back_text_status: "received" })), expectReplyIncludes: "odeme" },
+
+  // --- Typo / variant coverage ---
+  { id: "PS24", name: "[PS] Karar ma (boşluklu) → trust", input: body("Karar ma oluyor mu", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "kararma" },
+  { id: "PS25", name: "[PS] Yeriniz neresi → location", input: body("Yeriniz neresi", {}), expectReplyIncludes: "eminonu" },
+  { id: "PS26", name: "[PS] Zinciri kaç santım → zincir cevabı", input: body("Zinciri kaç santım", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "60" },
+
+  // --- Arkalı önlü / çift taraflı sorular ---
+  { id: "PS27", name: "[PS] Çift taraflı resim → backPhotoInfo", input: body("Çift taraflı resim olabilir mi", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "arka" },
+  { id: "PS28", name: "[PS] İki tarafa da resim → backPhotoInfo", input: body("İki tarafa da resim koyulabiliyor mu", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "arka" },
+  { id: "PS29", name: "[PS] Önlü arkalı → backPhotoInfo", input: body("Önlü arkalı fotoğraf yapabiliyormusunuz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "arka" },
+
+  // --- Completed'da sipariş akışı açılmamalı ---
+  { id: "PS30", name: "[PS] Completed + ürün geldi ama → ekibimiz (şikayet)", input: body("Ürün geldi fakat siparişimle alakası yok", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+
 ];
 
 // ─── RUNNER ───────────────────────────────────────────────────────────────
@@ -614,6 +668,7 @@ async function runTests() {
     if (id.startsWith("AF")) return "BACK_FOTO_FIX";
     if (id.startsWith("LB")) return "LOG_BUG_FIX";
     if (id.startsWith("NF")) return "NOTE_FIX";
+    if (id.startsWith("PS")) return "POST_SALE_REGRESSION";
     return "OTHER";
   }
 
@@ -678,6 +733,7 @@ async function runTests() {
     BACK_FOTO_FIX: "Back Foto Fix",
     LOG_BUG_FIX: "Log Bug Fix",
     NOTE_FIX: "Note Fix",
+    POST_SALE_REGRESSION: "Post-Sale Regression",
     OTHER: "Other",
   };
 
