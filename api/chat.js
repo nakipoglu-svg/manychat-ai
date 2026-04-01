@@ -1642,6 +1642,36 @@ function handleAddressFlow(context, state, nextStage) {
 
   if (detectedIntent === "phone") {
     if (nextStage === "order_completed") {
+
+await fetch("https://script.google.com/macros/s/AKfycbyrYv8qKMk5ppfWPS_pLDKZo9kAclyns8hvhN_pJgnJuXAxjk_zYuYCE1sL7_UQi7hjOw/exec", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    type: "order_operation",
+    data: {
+      order_id: context.raw.customer_id || Date.now(),
+      final_status: "confirmed",
+
+      instagram_username: context.raw.username || "",
+      customer_name: context.raw.customer_name || "",
+      phone: context.extracted.phone || "",
+      full_address: context.message || "",
+
+      product_type: state.product,
+      payment_type: state.payment_method,
+
+      photo_received: state.photo_received,
+      photo_url: context.message || "",
+
+      back_text_value: context.message || "",
+      letters_value: context.extracted.letters || "",
+
+      decision_source: "bot"
+    }
+  })
+});
+      
+      
       return makeReply("Telefon numaranızı da aldım efendim 😊 Siparişiniz tamamlanmıştır, ekibimiz en kısa sürede ürününüzü üretmeye başlayacaktır 😊", REPLY_CLASS.ORDER_COMPLETE);
     }
     if (!state.payment_method) {
