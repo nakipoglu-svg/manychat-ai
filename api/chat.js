@@ -2255,6 +2255,54 @@ function buildStateUpdate(context, replyPayload, state) {
     phone_received: state.phone_received || "",
   };
 }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ORDER SYNC SYSTEM (v2 — stabil order_id + akıllı alan yazımı)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/**
+ * Stabil order_id üretici.
+ * Aynı müşteri + aynı ürün için açık sipariş boyunca tek ID kullanılır.
+ * Format: open_{customerId}_{productType}
+ * 
+ * Eğer sipariş tamamlanmış/iptal edilmiş ve yeni sipariş başlıyorsa,
+ * yeni bir ID üretilir: {customerId}_{productType}_{timestamp}
+ */
+function buildStableOrderId(context, stateUpdate) {
+  const customerId =
+    unwrapManychatValue(context.raw.customer_id) ||
+    unwrapManychatValue(context.raw.ig_username) ||
+    unwrapManychatValue(context.raw.instagram_username) ||
+    unwrapManychatValue(context.raw.username) ||
+    "";
+
+  const productType = stateUpdate.ilgilenilen_urun || "";
+
+  if (!customerId) return `unknown_${Date.now()}`;
+  if (!productType) return `pre_${customerId}`;
+
+  // Sipariş tamamlanmış veya iptal edilmişse VE yeni sipariş başlıyorsa
+  // → yeni order_id üret (eski kapanmış, yeni açılıyor)
+  const prevOrderStatus = unwrapManychatValue(context.raw.order_status);
+  const prevSiparisAlindi = unwrapManychatValue(context.raw.siparis_alindi);
+  const isNewOrderIntent = context.detectedIntent === "new_order" || context.detectedIntent === "order_start";
+  
+  const wasPreviouslyCompleted = 
+    normalizeText(prevOrderStatus) === "completed" || 
+    truthy(prevSiparisAlindi);
+
+  if (wasPreviouslyCompleted && isNewOrderIntent) {
+    return `${customerId}_${productType}_${Date.now()}`;
+  }
+
+  // Aktif sipariş → stabil ID
+  return `open_${customerId}_${productType}`;
+}
+
+/**
+ * Confirmed/cancel durumunu tespit eder.
+ * Bot reply'si ve mevcut stateUpdate'e bakar.
+ */
 function detectOrderSheetStatusFromTexts(...texts) {
   const joined = normalizeText(texts.filter(Boolean).join(" || "));
 
@@ -2263,6 +2311,8 @@ function detectOrderSheetStatusFromTexts(...texts) {
     "siparisiniz alinmistir",
     "siparisiniz olusturuldu",
     "siparisiniz olusturulmustur",
+    // "tamamlanmıştır" da confirmed sayılır
+    "siparisiniz tamamlanmistir",
   ];
 
   const cancelPhrases = [
@@ -2274,6 +2324,102 @@ function detectOrderSheetStatusFromTexts(...texts) {
   if (cancelPhrases.some((p) => joined.includes(p))) return "cancel";
 
   return "";
+}
+
+/**
+ * Sadece ilgili alanları dolduran akıllı order data builder.
+ * Her mesajda tüm alanları yazmaz — sadece o mesajla ilgili alanları günceller.
+ */
+function buildOrderRawPayload(context, stateUpdate, replyPayload, orderId) {
+  const replyText = cleanReply(replyPayload?.text || "");
+  const finalStatus = detectOrderSheetStatusFromTexts(replyText);
+  const intent = context.detectedIntent || "";
+  const message = String(context.message || "").trim();
+  const messageNorm = context.messageNorm || "";
+
+  const instagramUsername =
+    unwrapManychatValue(context.raw.instagram_username) ||
+    unwrapManychatValue(context.raw.ig_username) ||
+    unwrapManychatValue(context.raw.username) ||
+    "";
+
+  const customerName =
+    unwrapManychatValue(context.raw.customer_name) ||
+    unwrapManychatValue(context.raw.full_name) ||
+    "";
+
+  // ─── AKILLI ALAN YAZIMI ───
+  // Sadece ilgili intent'lerde ilgili alanlar dolar
+
+  // full_address: SADECE gerçek adres mesajında
+  let fullAddress = "";
+  if (intent === "address" || intent === "store_pickup") {
+    fullAddress = message;
+  }
+
+  // phone: SADECE gerçek telefon parse edildiyse
+  const phone =
+    extractPhone(message) ||
+    unwrapManychatValue(context.raw.phone) ||
+    unwrapManychatValue(context.raw.phone_number) ||
+    "";
+
+  // photo_url: SADECE gerçek foto URL'inde
+  let photoUrl = "";
+  if (looksLikePhotoUrl(message) && (intent === "photo" || intent === "back_photo_upload")) {
+    photoUrl = message;
+  }
+
+  // back_text_value: SADECE back_text intent'inde
+  let backTextValue = "";
+  if (intent === "back_text" && stateUpdate.back_text_status === "received") {
+    backTextValue = message;
+  }
+
+  // letters_value: SADECE letters intent'inde
+  let lettersValue = "";
+  if (intent === "letters" && stateUpdate.letters_received) {
+    lettersValue = message;
+  }
+
+  // order_status mapping
+  let orderStatus = "";
+  if (finalStatus) {
+    orderStatus = finalStatus;
+  } else if (stateUpdate.order_status === "completed") {
+    orderStatus = "collecting_info";
+  } else {
+    orderStatus = stateUpdate.order_status || "";
+  }
+
+  return {
+    order_id: orderId,
+    updated_at: new Date().toISOString(),
+    customer_id: unwrapManychatValue(context.raw.customer_id),
+    instagram_username: instagramUsername,
+    customer_name: customerName,
+    phone,
+    full_address: fullAddress,
+    product_type: stateUpdate.ilgilenilen_urun || "",
+    payment_type: stateUpdate.payment_method || "",
+    photo_received: stateUpdate.photo_received || "",
+    photo_count: "",
+    photo_url: photoUrl,
+    back_text_status: stateUpdate.back_text_status || "",
+    back_text_value: backTextValue,
+    letters_value: lettersValue,
+    order_status: orderStatus,
+    confirmation_source: finalStatus ? "bot" : "",
+    confirmed_at: finalStatus === "confirmed" ? new Date().toISOString() : "",
+    cancel_reason: finalStatus === "cancel" ? (stateUpdate.cancel_reason || "bot_cancel") : "",
+    cancelled_at: finalStatus === "cancel" ? new Date().toISOString() : "",
+    needs_review: "",
+    confidence_score: "",
+    reference_type: "",
+    reference_order_id: "",
+    last_message: message,
+    notes: "",
+  };
 }
 
 async function postOrderRaw(orderData) {
@@ -2312,74 +2458,51 @@ async function postOrderOperation(operationData) {
   }
 }
 
+/**
+ * Ana order sync fonksiyonu (v2).
+ * 
+ * Kurallar:
+ * 1. Stabil order_id kullanılır (aynı müşteri+ürün = aynı ID)
+ * 2. Sadece ilgili alanlar güncellenir (full_address sadece adres mesajında vb.)
+ * 3. Orders_Operations'a SADECE confirmed veya cancel durumunda yazılır
+ * 4. Apps Script tarafı order_id ile mevcut satırı bulup günceller
+ */
 async function safeOrderSync(context, stateUpdate, replyPayload) {
+  // Ürün veya müşteri bilgisi yoksa order yazmaya gerek yok
+  const hasProduct = stateUpdate.ilgilenilen_urun;
+  const hasCustomer = unwrapManychatValue(context.raw.customer_id) ||
+    unwrapManychatValue(context.raw.ig_username) ||
+    unwrapManychatValue(context.raw.username);
+
+  if (!hasProduct && !hasCustomer) return;
+
+  const orderId = buildStableOrderId(context, stateUpdate);
   const replyText = cleanReply(replyPayload?.text || "");
-  const incomingMessageText = cleanReply(context.message || "");
-  const aiReplyText = cleanReply(context.fields?.ai_reply || "");
+  const finalStatus = detectOrderSheetStatusFromTexts(replyText);
 
-  const finalStatus = detectOrderSheetStatusFromTexts(
-    replyText,
-    incomingMessageText,
-    aiReplyText
-  );
-
-  const orderId =
-    unwrapManychatValue(context.raw.order_id) ||
-    unwrapManychatValue(context.raw.customer_id) ||
-    unwrapManychatValue(context.raw.ig_username) ||
-    unwrapManychatValue(context.raw.username) ||
-    `order_${Date.now()}`;
-
-  const instagramUsername =
-    unwrapManychatValue(context.raw.instagram_username) ||
-    unwrapManychatValue(context.raw.ig_username) ||
-    unwrapManychatValue(context.raw.username) ||
-    "";
-
-  const customerName =
-    unwrapManychatValue(context.raw.customer_name) ||
-    unwrapManychatValue(context.raw.full_name) ||
-    "";
-
-  const phone =
-    extractPhone(context.message) ||
-    unwrapManychatValue(context.raw.phone) ||
-    unwrapManychatValue(context.raw.phone_number) ||
-    "";
-
-  const orderRawData = {
-    order_id: orderId,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    customer_id: unwrapManychatValue(context.raw.customer_id),
-    instagram_username: instagramUsername,
-    customer_name: customerName,
-    phone,
-    full_address: unwrapManychatValue(context.raw.full_address) || context.message || "",
-    product_type: stateUpdate.ilgilenilen_urun || "",
-    payment_type: stateUpdate.payment_method || "",
-    photo_received: stateUpdate.photo_received || "",
-    photo_count: "",
-    photo_url: looksLikePhotoUrl(context.message) ? context.message : "",
-    back_text_status: stateUpdate.back_text_status || "",
-    back_text_value: stateUpdate.back_text_status === "received" ? context.message : "",
-    letters_value: stateUpdate.letters_received ? context.message : "",
-    order_status: finalStatus || (stateUpdate.order_status === "completed" ? "collecting_info" : (stateUpdate.order_status || "")),
-    confirmation_source: finalStatus ? "bot" : "",
-    confirmed_at: finalStatus === "confirmed" ? new Date().toISOString() : "",
-    cancel_reason: finalStatus === "cancel" ? "bot_cancel" : "",
-    cancelled_at: finalStatus === "cancel" ? new Date().toISOString() : "",
-    needs_review: "",
-    confidence_score: "",
-    reference_type: "",
-    reference_order_id: "",
-    last_message: context.message || "",
-    notes: "",
-  };
-
+  // ─── Orders_Raw: Her mesajda güncelle (ama sadece ilgili alanlar dolar) ───
+  const orderRawData = buildOrderRawPayload(context, stateUpdate, replyPayload, orderId);
   await postOrderRaw(orderRawData);
 
+  // ─── Orders_Operations: SADECE confirmed veya cancel durumunda ───
   if (finalStatus === "confirmed" || finalStatus === "cancel") {
+    const instagramUsername =
+      unwrapManychatValue(context.raw.instagram_username) ||
+      unwrapManychatValue(context.raw.ig_username) ||
+      unwrapManychatValue(context.raw.username) ||
+      "";
+
+    const customerName =
+      unwrapManychatValue(context.raw.customer_name) ||
+      unwrapManychatValue(context.raw.full_name) ||
+      "";
+
+    const phone =
+      extractPhone(context.message) ||
+      unwrapManychatValue(context.raw.phone) ||
+      unwrapManychatValue(context.raw.phone_number) ||
+      "";
+
     await postOrderOperation({
       done: false,
       order_id: orderId,
@@ -2388,7 +2511,7 @@ async function safeOrderSync(context, stateUpdate, replyPayload) {
       instagram_username: instagramUsername,
       customer_name: customerName,
       phone,
-      full_address: unwrapManychatValue(context.raw.full_address) || context.message || "",
+      full_address: "", // Operations'a adres sadece RAW'dan çekilir
       product_type: stateUpdate.ilgilenilen_urun || "",
       payment_type: stateUpdate.payment_method || "",
       photo_received: stateUpdate.photo_received || "",
@@ -2401,6 +2524,7 @@ async function safeOrderSync(context, stateUpdate, replyPayload) {
     });
   }
 }
+
 // ─── MAIN PROCESSOR ─────────────────────────────────────────
 
 export async function processChat(body = {}, options = {}) {
