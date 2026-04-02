@@ -2255,7 +2255,138 @@ function buildStateUpdate(context, replyPayload, state) {
     phone_received: state.phone_received || "",
   };
 }
+function detectOrderSheetStatus(replyText = "") {
+  const text = normalizeText(replyText);
 
+  if (text.includes("siparisiniz alindi") || text.includes("siparisiniz alinmistir")) {
+    return "confirmed";
+  }
+
+  if (text.includes("siparisiniz iptal edildi") || text.includes("siparisiniz iptal edilmistir")) {
+    return "cancel";
+  }
+
+  return "";
+}
+
+async function postOrderRaw(orderData) {
+  const webhookUrl = process.env.GOOGLE_ORDER_WEBHOOK_URL;
+  if (!webhookUrl) return;
+
+  try {
+    await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "order_raw",
+        data: orderData,
+      }),
+    });
+  } catch (error) {
+    console.error("Order RAW sheet error:", error.message);
+  }
+}
+
+async function postOrderOperation(operationData) {
+  const webhookUrl = process.env.GOOGLE_ORDER_WEBHOOK_URL;
+  if (!webhookUrl) return;
+
+  try {
+    await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "order_operation",
+        data: operationData,
+      }),
+    });
+  } catch (error) {
+    console.error("Order OPERATION sheet error:", error.message);
+  }
+}
+
+async function safeOrderSync(context, stateUpdate, replyPayload) {
+  const replyText = cleanReply(replyPayload?.text || "");
+  const finalStatus = detectOrderSheetStatus(replyText);
+
+  const orderId =
+    unwrapManychatValue(context.raw.order_id) ||
+    unwrapManychatValue(context.raw.customer_id) ||
+    unwrapManychatValue(context.raw.ig_username) ||
+    unwrapManychatValue(context.raw.username) ||
+    `order_${Date.now()}`;
+
+  const instagramUsername =
+    unwrapManychatValue(context.raw.instagram_username) ||
+    unwrapManychatValue(context.raw.ig_username) ||
+    unwrapManychatValue(context.raw.username) ||
+    "";
+
+  const customerName =
+    unwrapManychatValue(context.raw.customer_name) ||
+    unwrapManychatValue(context.raw.full_name) ||
+    "";
+
+  const phone =
+    extractPhone(context.message) ||
+    unwrapManychatValue(context.raw.phone) ||
+    unwrapManychatValue(context.raw.phone_number) ||
+    "";
+
+  const orderRawData = {
+    order_id: orderId,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    customer_id: unwrapManychatValue(context.raw.customer_id),
+    instagram_username: instagramUsername,
+    customer_name: customerName,
+    phone,
+    full_address: unwrapManychatValue(context.raw.full_address) || context.message || "",
+    product_type: stateUpdate.ilgilenilen_urun || "",
+    payment_type: stateUpdate.payment_method || "",
+    photo_received: stateUpdate.photo_received || "",
+    photo_count: "",
+    photo_url: looksLikePhotoUrl(context.message) ? context.message : "",
+    back_text_status: stateUpdate.back_text_status || "",
+    back_text_value: stateUpdate.back_text_status === "received" ? context.message : "",
+    letters_value: stateUpdate.letters_received ? context.message : "",
+    order_status: finalStatus || (stateUpdate.order_status === "completed" ? "collecting_info" : (stateUpdate.order_status || "")),
+    confirmation_source: finalStatus ? "bot" : "",
+    confirmed_at: finalStatus === "confirmed" ? new Date().toISOString() : "",
+    cancel_reason: finalStatus === "cancel" ? "bot_cancel" : "",
+    cancelled_at: finalStatus === "cancel" ? new Date().toISOString() : "",
+    needs_review: "",
+    confidence_score: "",
+    reference_type: "",
+    reference_order_id: "",
+    last_message: context.message || "",
+    notes: "",
+  };
+
+  await postOrderRaw(orderRawData);
+
+  if (finalStatus === "confirmed" || finalStatus === "cancel") {
+    await postOrderOperation({
+      done: false,
+      order_id: orderId,
+      final_status: finalStatus,
+      finalized_at: new Date().toISOString(),
+      instagram_username: instagramUsername,
+      customer_name: customerName,
+      phone,
+      full_address: unwrapManychatValue(context.raw.full_address) || context.message || "",
+      product_type: stateUpdate.ilgilenilen_urun || "",
+      payment_type: stateUpdate.payment_method || "",
+      photo_received: stateUpdate.photo_received || "",
+      photo_url: looksLikePhotoUrl(context.message) ? context.message : "",
+      back_text_value: stateUpdate.back_text_status === "received" ? context.message : "",
+      letters_value: stateUpdate.letters_received ? context.message : "",
+      decision_source: "bot",
+      cargo_tracking_no: "",
+      internal_note: "",
+    });
+  }
+}
 // ─── MAIN PROCESSOR ─────────────────────────────────────────
 
 export async function processChat(body = {}, options = {}) {
@@ -2289,7 +2420,7 @@ export async function processChat(body = {}, options = {}) {
 
   const stateUpdate = buildStateUpdate(context, replyPayload, state);
   const finalResult = { success: true, ...stateUpdate };
-
+  await safeOrderSync(context, stateUpdate, replyPayload);
   await logConversationRow({ body, result: finalResult, options });
   return finalResult;
 }
