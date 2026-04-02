@@ -635,6 +635,136 @@ const tests = [
   // --- Completed'da sipariş akışı açılmamalı ---
   { id: "PS30", name: "[PS] Completed + ürün geldi ama → ekibimiz (şikayet)", input: body("Ürün geldi fakat siparişimle alakası yok", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
 
+  // ════════════════════════════════════════════════════════════════════════
+  // GRUP 25: LOG-BASED BUG REGRESSION (LR01–LR50)
+  // ════════════════════════════════════════════════════════════════════════
+
+  // --- BUG-C: İsim false positive — bunlar isim DEĞİL ---
+  { id: "LR01", name: "[LR] 'Bu olsun' → name_only olmamalı", input: body("Bu olsun", lazerWaitingAddress()), expectReplyNotIncludes: "ad soyad bilginizi aldim" },
+  { id: "LR02", name: "[LR] 'Kusura bakmayın ama' → name_only olmamalı", input: body("Kusura bakmayın ama", lazerWaitingAddress()), expectReplyNotIncludes: "ad soyad bilginizi aldim" },
+  { id: "LR03", name: "[LR] 'Basımdan önce' → name_only olmamalı", input: body("Basımdan önce", lazerWaitingAddress()), expectReplyNotIncludes: "ad soyad bilginizi aldim" },
+  { id: "LR04", name: "[LR] 'Diyarbakır Silvan' → name_only olmamalı", input: body("Diyarbakır Silvan", lazerWaitingAddress()), expectReplyNotIncludes: "ad soyad bilginizi aldim" },
+  { id: "LR05", name: "[LR] 'Hevesle bekleyeceğim' → name_only olmamalı", input: body("Hevesle bekleyeceğim", lazerWaitingAddress()), expectReplyNotIncludes: "ad soyad bilginizi aldim" },
+  { id: "LR06", name: "[LR] 'Sizin attığınız' → name_only olmamalı", input: body("Sizin attığınız", lazerWaitingAddress()), expectReplyNotIncludes: "ad soyad bilginizi aldim" },
+  { id: "LR07", name: "[LR] 'Ertesi güne kalır' → name_only olmamalı", input: body("Ertesi güne kalır", lazerWaitingAddress()), expectReplyNotIncludes: "ad soyad bilginizi aldim" },
+  { id: "LR08", name: "[LR] 'İyi satışlar dilerim' → name_only olmamalı", input: body("İyi satışlar dilerim", lazerWaitingAddress()), expectReplyNotIncludes: "ad soyad bilginizi aldim" },
+  { id: "LR09", name: "[LR] 'Bu olacak arkasında' → name_only olmamalı", input: body("Bu olacak arkasında", lazerWaitingAddress()), expectReplyNotIncludes: "ad soyad bilginizi aldim" },
+  { id: "LR10", name: "[LR] 'Benim için anlamlı' → name_only olmamalı", input: body("Benim için anlamlı", lazerWaitingAddress()), expectReplyNotIncludes: "ad soyad bilginizi aldim" },
+
+  // --- Gerçek isimler hala tanınmalı ---
+  { id: "LR11", name: "[LR] 'Ayşe Arabacı' → isim tanınmalı", input: body("Ayşe Arabacı", lazerWaitingAddress()), expectReplyIncludes: "ad soyad" },
+  { id: "LR12", name: "[LR] 'Elif Poyraz' → isim tanınmalı", input: body("Elif Poyraz", lazerWaitingAddress()), expectReplyIncludes: "ad soyad" },
+  { id: "LR13", name: "[LR] 'Serap Ulaş' → isim tanınmalı", input: body("Serap Ulaş", lazerWaitingAddress()), expectReplyIncludes: "ad soyad" },
+  { id: "LR14", name: "[LR] 'Fatma Torun' → isim tanınmalı", input: body("Fatma Torun", lazerWaitingAddress()), expectReplyIncludes: "ad soyad" },
+  { id: "LR15", name: "[LR] 'Veli Çiçek' → isim tanınmalı", input: body("Veli Çiçek", lazerWaitingAddress()), expectReplyIncludes: "ad soyad" },
+
+  // --- BUG-H: Kişisel kargo takibi completed'da → ekibe yönlendir ---
+  { id: "LR16", name: "[LR] Completed + ürünümü kargoya verdiniz mi → ekibimiz", input: body("Benim ürünümü kargoya verdiniz mi acaba", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+  { id: "LR17", name: "[LR] Completed + bana mesaj geldi → ekibimiz", input: body("Ptt den bana mesaj geldi çünkü", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+  { id: "LR18", name: "[LR] Completed + herkesin kargosu geldi benim yok → ekibimiz", input: body("Herkesin kargosu eline ulaştı benim yok", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+  { id: "LR19", name: "[LR] Completed + kargom hazır mı → ekibimiz", input: body("Ya kargom hazırmı", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+
+  // --- BUG-K: Şikayet mesajları → ekibe yönlendir ---
+  { id: "LR20", name: "[LR] Completed + çok kara → ekibimiz", input: body("Çok kara olmuş hiç beğenmedim", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+  { id: "LR21", name: "[LR] Completed + memnun değilim → ekibimiz", input: body("Memnun değilim çok kara", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+  { id: "LR22", name: "[LR] Completed + net değil → ekibimiz", input: body("Hiç net değil anlaşılmıyor", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+  { id: "LR23", name: "[LR] Completed + sinir oldum → ekibimiz", input: body("Gerçekten çok sinir oldum", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+
+  // --- BUG-F: Kargo fiyatı → shipping_price (dahil) ---
+  { id: "LR24", name: "[LR] 'Kargo fiyati' → dahil", input: body("Kargo fiyati", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "dahil" },
+  { id: "LR25", name: "[LR] 'Kargo ücretli mi' → dahil", input: body("Kargo ücretlimi", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "dahil" },
+
+  // --- BUG-G: Kolye boyu kaç cm → 60cm ---
+  { id: "LR26", name: "[LR] 'Kolye boyu kac cm dır' → 60", input: body("Kolye boyu kac cm dır", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "60" },
+  { id: "LR27", name: "[LR] 'Kac cm dır' → 60", input: body("Kac cm dır", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "60" },
+
+  // --- BUG-J: Gümüş mü → material cevabı ---
+  { id: "LR28", name: "[LR] 'Kolye gümüş müdür' → çelik", input: body("Kolye gümüş müdür", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "celik" },
+  { id: "LR29", name: "[LR] 'Gümüş mü çelik mi' → çelik", input: body("Gümüş mü çelik mi", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "celik" },
+
+  // --- BUG-B: Gönderdim/attım → stage-aware ---
+  { id: "LR30", name: "[LR] waiting_photo + gönderdim → tekrar gönder", input: body("Gönderdim fotoğraf", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "ulasma" },
+  { id: "LR31", name: "[LR] waiting_address + yazdım → tekrar yaz", input: body("Yazdım bilgileri", lazerWaitingAddress()), expectReplyIncludes: "tekrar" },
+
+  // --- BUG-N/O: Geçmiş olsun, Rica ederim → smalltalk ---
+  { id: "LR32", name: "[LR] Completed + çok geçmiş olsun → teşekkür", input: body("Çok geçmiş olsun", lazerCompleted()), expectReplyIncludes: "tesekkur" },
+  { id: "LR33", name: "[LR] Completed + rica ederim → ekibe değil smalltalk", input: body("Rica ederim", lazerCompleted()), expectReplyIncludes: "ederiz" },
+  { id: "LR34", name: "[LR] Completed + kolay gelsin → teşekkür", input: body("Kolay gelsin", lazerCompleted()), expectReplyIncludes: "tesekkur" },
+
+  // --- GPT-1: waiting_payment'ta arka yazı sormamalı (deterministik check) ---
+  { id: "LR35", name: "[LR] waiting_payment + evet → ödeme sor, arka yazı sorma", input: body("Evet", lazer({ conversation_stage: "waiting_payment", photo_received: "1", back_text_status: "received" })), expectReplyNotIncludes: "arka yuz" },
+  { id: "LR36", name: "[LR] waiting_payment + tamam → ödeme sor", input: body("Tamam", lazer({ conversation_stage: "waiting_payment", photo_received: "1", back_text_status: "received" })), expectReplyIncludes: "odeme" },
+
+  // --- GPT-2: human_support → ekibe yönlendir (shipping dahil) ---
+  { id: "LR37", name: "[LR] human_support + kargo sorusu → ekibimiz", input: body("Herkesin kargosu geldi benim yok", lazer({ conversation_stage: "human_support", order_status: "cancel_requested" })), expectReplyIncludes: "ekibimiz" },
+  { id: "LR38", name: "[LR] human_support + sinir mesajı → ekibimiz", input: body("Hep aynı şeyleri yazıyorsun sinir oldum", lazer({ conversation_stage: "human_support", order_status: "cancel_requested" })), expectReplyIncludes: "ekibimiz" },
+
+  // --- Stage koruması: completed'da akış açılmamalı ---
+  { id: "LR39", name: "[LR] Completed + ürün fotoğrafı → ekibimiz, flow açılmamalı", input: body("Bu fotoğraf olsun", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+  { id: "LR40", name: "[LR] Completed + kararma → trust cevabı", input: body("Kararma olur mu", lazerCompleted()), expectReplyIncludes: "kararma" },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // GRUP 26: GPT GAP COVERAGE + REAL LOG SCENARIOS (GC01–GC35)
+  // ════════════════════════════════════════════════════════════════════════
+
+  // --- Zor isimler ---
+  { id: "GC01", name: "[GC] Ümmühan Kaya → isim", input: body("Ümmühan Kaya", lazerWaitingAddress()), expectReplyIncludes: "ad soyad" },
+  { id: "GC02", name: "[GC] Fatime Güneş → isim", input: body("Fatime Güneş", lazerWaitingAddress()), expectReplyIncludes: "ad soyad" },
+  { id: "GC03", name: "[GC] Halime Şahin → isim", input: body("Halime Şahin", lazerWaitingAddress()), expectReplyIncludes: "ad soyad" },
+  { id: "GC04", name: "[GC] Büşra Balyedi → isim", input: body("Büşra Balyedi", lazerWaitingAddress()), expectReplyIncludes: "ad soyad" },
+  { id: "GC05", name: "[GC] Mercan Görgülü → isim", input: body("Mercan Görgülü", lazerWaitingAddress()), expectReplyIncludes: "ad soyad" },
+
+  // --- Gönderdim genişletilmiş ---
+  { id: "GC06", name: "[GC] 'biraz önce attım' → tekrar gönder", input: body("biraz önce attım", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "ulasma" },
+  { id: "GC07", name: "[GC] 'daha önce gönderdim' → tekrar gönder", input: body("daha önce gönderdim", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "ulasma" },
+  { id: "GC08", name: "[GC] 'resim yukarıda' → tekrar gönder", input: body("resim yukarıda", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "ulasma" },
+  { id: "GC09", name: "[GC] 'demin attım' → tekrar gönder", input: body("demin attım", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "ulasma" },
+  { id: "GC10", name: "[GC] 'yazdım' w_address → tekrar yaz", input: body("Yazdım bilgileri", lazerWaitingAddress()), expectReplyIncludes: "tekrar" },
+  { id: "GC11", name: "[GC] 'belirtmiştim' w_address → tekrar yaz", input: body("Belirtmiştim efendim", lazerWaitingAddress()), expectReplyIncludes: "tekrar" },
+
+  // --- Completed + Merhaba + operasyonel ---
+  { id: "GC12", name: "[GC] Completed + Merhaba kolyeyi yapınca → ekibimiz", input: body("Merhaba kolyeyi yapınca fotoğrafını atabilir misiniz", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+  { id: "GC13", name: "[GC] Completed + Merhaba kargom hazır mı → ekibimiz", input: body("Merhaba kargom hazır mı acaba", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+
+  // --- Çoklu alım fiyatları ---
+  { id: "GC14", name: "[GC] 2 tane → 1000 TL", input: body("2 tane istiyorum fiyat ne olur", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "1000" },
+  { id: "GC15", name: "[GC] 3 adet → 1400 TL", input: body("3 adet istiyorum fiyat", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "1400" },
+  { id: "GC16", name: "[GC] 4 tane → 1750 TL", input: body("4 tane istiyorum ne kadar", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "1750" },
+
+  // --- waiting_payment arka yazı tekrar sormamalı ---
+  { id: "GC17", name: "[GC] w_payment + K → arka yazı sorma", input: body("K", lazer({ conversation_stage: "waiting_payment", photo_received: "1", back_text_status: "received" })), expectReplyNotIncludes: "arka yuz" },
+
+  // --- Gümüş mü → material ---
+  { id: "GC20", name: "[GC] 'bu gümüş mü' → çelik", input: body("bu gümüş mü", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "celik" },
+  { id: "GC21", name: "[GC] 'Kolye gümüş müdür' → çelik", input: body("Kolye gümüş müdür", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "celik" },
+
+  // --- Kargo fiyatı ---
+  { id: "GC22", name: "[GC] 'Kargo fiyati nedir' → dahil", input: body("Kargo fiyati nedir", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "dahil" },
+
+  // --- Geçmiş olsun / Rica ederim / Kolay gelsin ---
+  { id: "GC24", name: "[GC] Completed + geçmiş olsun → teşekkür", input: body("Çok geçmiş olsun", lazerCompleted()), expectReplyIncludes: "tesekkur" },
+  { id: "GC25", name: "[GC] Completed + rica ederim → ederiz", input: body("Rica ederim", lazerCompleted()), expectReplyIncludes: "ederiz" },
+  { id: "GC26", name: "[GC] Completed + kolay gelsin → teşekkür", input: body("Kolay gelsin", lazerCompleted()), expectReplyIncludes: "tesekkur" },
+
+  // --- Kolye boyu / Ataç zincir ---
+  { id: "GC27", name: "[GC] 'Kolye boyu kac cm' → 60", input: body("Kolye boyu kac cm", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "60" },
+  { id: "GC28", name: "[GC] Ataç zincir → 50", input: body("Zincir uzunluğu kaç cm", { ilgilenilen_urun: "atac", user_product: "atac", context_lock: "1", conversation_stage: "waiting_letters" }), expectReplyIncludes: "50" },
+
+  // --- human_support'ta kargo sorusu ---
+  { id: "GC29", name: "[GC] human_support + PTT mesaj → ekibimiz", input: body("PPT kargola göndermişsiniz mesaj geldi dün", lazer({ conversation_stage: "human_support", order_status: "cancel_requested" })), expectReplyIncludes: "ekibimiz" },
+
+  // --- Merhaba + sipariş niyeti ---
+  { id: "GC30", name: "[GC] 'Merhaba sipariş vermek istiyorum' → smalltalk değil", input: body("Merhaba sipariş vermek istiyorum", lazer({ conversation_stage: "waiting_photo" })), expectReplyNotIncludes: "hos geldiniz" },
+
+  // --- Kişisel kargo completed ---
+  { id: "GC31", name: "[GC] Completed + kargom yarın → ekibimiz", input: body("Kargom yarın elimde olur mu", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+  { id: "GC32", name: "[GC] Completed + benim kargom çıktı mı → ekibimiz", input: body("Benim kargom çıktı mı bilgi verilmedi", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+
+  // --- Name false positive ---
+  { id: "GC33", name: "[GC] 'Sayfanıza bakmadım' → name olmamalı", input: body("Sayfanıza bakmadım bile", lazerWaitingAddress()), expectReplyNotIncludes: "ad soyad bilginizi aldim" },
+  { id: "GC34", name: "[GC] 'Görseli merak ediyorum' → name olmamalı", input: body("Görseli merak ediyorum", lazerWaitingAddress()), expectReplyNotIncludes: "ad soyad bilginizi aldim" },
+  { id: "GC35", name: "[GC] 'Resimleri okeyliyelim' → name olmamalı", input: body("Resimleri okeyliyelim", lazerWaitingAddress()), expectReplyNotIncludes: "ad soyad bilginizi aldim" },
+
 ];
 
 // ─── RUNNER ───────────────────────────────────────────────────────────────
@@ -669,6 +799,8 @@ async function runTests() {
     if (id.startsWith("LB")) return "LOG_BUG_FIX";
     if (id.startsWith("NF")) return "NOTE_FIX";
     if (id.startsWith("PS")) return "POST_SALE_REGRESSION";
+    if (id.startsWith("LR")) return "LOG_REGRESSION";
+    if (id.startsWith("GC")) return "GPT_GAP_COVERAGE";
     return "OTHER";
   }
 
@@ -734,6 +866,8 @@ async function runTests() {
     LOG_BUG_FIX: "Log Bug Fix",
     NOTE_FIX: "Note Fix",
     POST_SALE_REGRESSION: "Post-Sale Regression",
+    LOG_REGRESSION: "Log Regression",
+    GPT_GAP_COVERAGE: "GPT Gap Coverage",
     OTHER: "Other",
   };
 
