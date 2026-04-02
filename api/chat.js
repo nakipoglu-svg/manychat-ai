@@ -132,6 +132,8 @@ const KEYWORDS = {
       "hayirli isler", "hayırlı işler",
       "insallah", "inşallah", "amin", "masallah", "maşallah", "eyvallah",
       "bekliyorum", "haber bekliyorum", "bilginiz olsun",
+      "gecmis olsun", "geçmiş olsun", "cok gecmis olsun", "çok geçmiş olsun",
+      "rica ederim", "rica ederiz",
       "liked a message", "reacted",
     ],
 
@@ -143,7 +145,9 @@ const KEYWORDS = {
       "kargo ucreti", "kargo ücreti",
       "kargo ucreti ne kadar", "kargo ücreti ne kadar",
       "kargo fiyati var mi", "kargo fiyatı var mı",
+      "kargo fiyati", "kargo fiyatı",
       "kargo dahil mi", "kargo ücretli mi", "kargo ucretli mi",
+      "kargo ucretlimi", "kargo ücretlimi",
       "kargo ucreti var mi", "kargo ücreti var mı",
       "kargo birlikte mi", "kargo ile birlikte mi",
       "kargo ucreti dahil mi", "kargo ücreti dahil mi",
@@ -151,6 +155,7 @@ const KEYWORDS = {
       "kargo ucretsiz mi", "kargo ücretsiz mi",
       "kargo parasi", "kargo parasI", "kargo parası",
       "eve teslim", "kargo var mi", "kargo varmı", "kargo varmi",
+      "fiyata dahil mi", "fiyata dahil",
     ],
 
     // ──── SHIPPING ────
@@ -345,7 +350,11 @@ const KEYWORDS = {
       "celik mi", "çelik mi", "celikmi", "çelikmi",
       "urun celik mi", "ürün çelik mi",
       "paslanmaz mi", "paslanmaz mı",
-      "malzeme ne", "malzemesi ne",
+      "malzeme ne", "malzemesi ne", "materyali ne", "materyali nedir",
+      "gumus mu", "gümüş mü", "gumusmu", "gümüşmü",
+      "gumus mudur", "gümüş müdür",
+      "kolye gumus", "kolye gümüş",
+      "celik kolye", "çelik kolye",
       "alerji", "alerjim", "alerjik",
     ],
   },
@@ -361,13 +370,18 @@ const LETTER_STOPWORDS = [
 
 // ──── Mesajlar intent olarak yanlış yorumlanmaması gereken ifadeler ────
 const NOT_A_NAME_PHRASES = [
+  // Ürün/model kelimeleri
   "resimli", "fotografli", "fotolu", "lazer", "kolye", "atac", "ataç", "harfli",
   "celik mi", "çelik mi", "celikmi", "çelikmi", "paslanmaz",
   "madalyon", "nazar", "boncuk", "boncuklu",
+  // Beğeni/memnuniyet
   "begendim", "beğendim", "begendik", "beğendik", "guzel", "güzel",
   "saglik", "sağlık", "elinize", "ellerinize", "emeginize", "emeğinize",
+  "bayildim", "bayıldım", "harika", "super", "süper", "mukemmel", "mükemmel",
+  // Sipariş/kargo
   "siparis", "sipariş", "kargo", "teslimat",
   "hazir mi", "hazır mı", "hazir", "hazır",
+  // Niyet/talep
   "goreyim", "görebilir", "gorebilir",
   "istiyorum", "ilgileniyorum", "alayim", "alayım",
   "detay", "bilgi", "fiyat", "ucret", "ücret",
@@ -381,7 +395,49 @@ const NOT_A_NAME_PHRASES = [
   "indirim", "kampanya",
   "kapida", "kapıda",
   "durun", "dur",
-  "boncuklu", "madalyon", "resimli",
+  // LOG-BASED: Müşteri yönlendirmeleri — isim değil
+  "bu olsun", "olsun", "bunu", "bundan",
+  "kusura", "pardon", "ozur", "özür",
+  "basimdan", "basımdan", "onceden", "önceden",
+  "hevesle", "merakla",
+  "belirtmistim", "belirtmiştim", "belirttim",
+  "ertesi", "yarin", "yarın", "bugun", "bugün",
+  "atmalık", "ciglik", "çığlık",
+  "bence", "bana", "beni", "bize",
+  "gorseli", "görseli", "fotografini", "fotoğrafını",
+  "resimleri", "okeyliyelim", "okeyliyelin",
+  "sayfaniza", "sayfanıza", "sayfaya",
+  "satislar", "satışlar", "dilerim",
+  "aglattiniz", "ağlattınız",
+  "anlamli", "anlamlı", "degerli", "değerli",
+  "okunusu", "okunuşu",
+  "kullansak", "yazsak", "yapsak",
+  "arkasinda", "arkasında",
+  "kalir", "kalır",
+  // Sık geçen kısa ifadeler — isim değil
+  "tamam", "olur", "peki", "evet", "dogru", "doğru",
+  "dikkat", "etmedim", "sorun", "sıkıntı", "sikinti",
+  "tesekkur", "teşekkür", "sagol", "sağol", "saol",
+  "merhaba", "selam",
+  "aldi", "aldı", "aldim", "aldım",
+  "nasil", "nasıl", "neden", "nicin", "niçin",
+  // Şehir/ilçe isimleri (tek başına geldiğinde isim değil)
+  "diyarbakir", "diyarbakır", "silvan", "istanbul",
+  "ankara", "izmir", "antalya", "bursa", "adana",
+  "trabzon", "samsun", "konya", "kayseri", "mersin",
+  "gaziantep", "sanliurfa", "şanlıurfa", "malatya", "elazig", "elazığ",
+  "batman", "mardin", "van", "agri", "ağrı", "bolu",
+  "mugla", "muğla", "aydin", "aydın", "denizli",
+  "eskisehir", "eskişehir", "afyon",
+  "merkez", "ilce", "ilçe",
+  // Fiil kökleri — "Sizin attığınız" gibi cümleler
+  "attigi", "attığı", "attim", "attım", "atti", "attı",
+  "yazdim", "yazdım", "yazdi", "yazdı",
+  "sorucam", "soracagim", "soracağım",
+  "dedim", "dedi", "diyor", "diyorum",
+  // Onay/red — isim değil
+  "hayir", "hayır", "istemiyorum",
+  "tamamdir", "tamamdır", "anladim", "anladım",
 ];
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -621,7 +677,20 @@ function looksLikeNameInput(rawMessage = "", messageNorm = "", conversationStage
   }
 
   // Fiil/niyet kalıpları isim değil — "Adresi yazıyorum", "Foto atacağım"
-  if (/\b(yorum|yorsun|yor|yoruz|yorsunuz|yorlar|acagim|acağım|ecegim|eceğim|ayim|ayım|eyim|elim|alim)\b/i.test(raw)) return false;
+  if (/\b(yorum|yorsun|yor|yoruz|yorsunuz|yorlar|acagim|acağım|ecegim|eceğim|ayim|ayım|eyim|elim|alim|misiniz|mısınız|musunuz|müsünüz|miyim|mıyım|bilir|abilir|ebilir|sana|bana|size|bize)\b/i.test(raw)) return false;
+
+  // Yaygın Türkçe fiil sonekleri — isim olması çok düşük ihtimal
+  if (/\b\S+(mek|mak|dım|dim|tım|tim|dık|dik|tık|tik|sın|sin|sun|sün|lım|lim|nız|niz|lar|ler|dan|den|tan|ten)\b/i.test(norm)) return false;
+
+  // Tek kelime gibi davranan ama 2 kelimelik yaygın ifadeler
+  const COMMON_TWO_WORD_NON_NAMES = [
+    "bu olsun", "su olsun", "bunu istiyorum", "bunu yap",
+    "ne guzel", "cok guzel", "iyi gunler", "iyi aksamlar",
+    "kolay gelsin", "hayirli isler", "bol kazanc",
+    "tamam olur", "peki tamam", "hadi tamam",
+    "cok tesekkur", "rica ederim", "rica ederiz",
+  ];
+  if (COMMON_TWO_WORD_NON_NAMES.some(p => norm.includes(p))) return false;
 
   // Bilinen intent keyword'lerini kontrol et
   for (const intentKey of Object.keys(KEYWORDS.intents)) {
@@ -976,7 +1045,17 @@ function detectIntent(baseContext, extracted) {
   if (looksLikePhotoUrl(message)) return "photo";
 
   // Smalltalk (keyword intent'lerden SONRA kontrol)
-  if (hasAny(messageNorm, KEYWORDS.intents.smalltalk)) return "smalltalk";
+  // AMA: Mesajda sipariş/ürün niyeti de varsa smalltalk'a düşürme
+  if (hasAny(messageNorm, KEYWORDS.intents.smalltalk)) {
+    const hasOrderIntent = hasAny(messageNorm, [
+      ...KEYWORDS.intents.orderStart,
+      ...KEYWORDS.intents.newOrder,
+      "siparis", "sipariş", "almak istiyorum", "yaptirmak", "yaptırmak",
+      "resimli", "lazer", "atac", "ataç", "harfli",
+    ]);
+    if (!hasOrderIntent) return "smalltalk";
+    // Sipariş niyeti de varsa → aşağıda order_start veya general olarak yakalanacak
+  }
 
   // ═══ KATMAN 3: ENTITY-BASED INTENT'LER (en düşük öncelik) ═══
 
@@ -1382,7 +1461,7 @@ function handleChainIntent(context) {
   }
 
   if (detectedProduct === "lazer") {
-    if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "uzunlugu ne kadar", "uzunluğu ne kadar", "zincir kac cm", "zincir kaç cm", "zincir kisalir", "zincir kısalır", "boyu ne kadar", "kac santim", "kaç santım", "kac santım"])) {
+    if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "uzunlugu ne kadar", "uzunluğu ne kadar", "zincir kac cm", "zincir kaç cm", "zincir kisalir", "zincir kısalır", "boyu ne kadar", "kac santim", "kaç santım", "kac santım", "kolye boyu", "kac cm", "kaç cm"])) {
       return makeReply("Zincir uzunluğu standart olarak 60 cm'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
     }
     return makeReply(
@@ -1642,8 +1721,6 @@ function handleAddressFlow(context, state, nextStage) {
 
   if (detectedIntent === "phone") {
     if (nextStage === "order_completed") {
-
-
       return makeReply("Telefon numaranızı da aldım efendim 😊 Siparişiniz tamamlanmıştır, ekibimiz en kısa sürede ürününüzü üretmeye başlayacaktır 😊", REPLY_CLASS.ORDER_COMPLETE);
     }
     if (!state.payment_method) {
@@ -1728,6 +1805,22 @@ function handlePriceIntent(context, state) {
   }
 
   if (state.product === "lazer") {
+    // Çoklu alım kontrolü
+    const multiMatch = context.messageNorm.match(/(\d+)\s*(tane|adet|tanesini|adedini)/);
+    const qty = multiMatch ? parseInt(multiMatch[1]) : 0;
+    if (qty >= 2) {
+      const prices = {
+        2: { eft: 1000, kapida: 1100 },
+        3: { eft: 1400, kapida: 1500 },
+        4: { eft: 1750, kapida: null },
+        5: { eft: 2000, kapida: null },
+      };
+      const p = prices[qty] || prices[5];
+      if (p.kapida) {
+        return makeReply(`${qty} adet resimli lazer kolye: EFT / Havale ile ${p.eft} TL, kapıda ödeme ile ${p.kapida} TL'dir efendim 😊`, REPLY_CLASS.FIXED_INFO);
+      }
+      return makeReply(`${qty} adet resimli lazer kolye: EFT / Havale ile ${p.eft} TL'dir efendim 😊 (${qty}+ adet sadece EFT ile mümkündür)`, REPLY_CLASS.FIXED_INFO);
+    }
     return makeReply("EFT / havale fiyatımız 599 TL, kapıda ödeme fiyatımız 649 TL'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
   }
 
@@ -1778,8 +1871,14 @@ function handleSmalltalkIntent(context) {
   if (hasAny(messageNorm, ["insallah", "inşallah", "allah razi olsun", "hayirli isler", "bol kazanclar", "amin", "masallah", "eyvallah"])) {
     return makeReply("Amin, çok teşekkür ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
   }
-  if (hasAny(messageNorm, ["tesekkur", "teşekkür", "sagolun", "sağolun", "saol", "tsk", "tşk"])) {
+  if (hasAny(messageNorm, ["tesekkur", "teşekkür", "sagolun", "sağolun", "saol", "tsk", "tşk", "rica ederim"])) {
     return makeReply("Rica ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+  if (hasAny(messageNorm, ["gecmis olsun", "geçmiş olsun"])) {
+    return makeReply("Çok teşekkür ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+  if (hasAny(messageNorm, ["kolay gelsin"])) {
+    return makeReply("Teşekkür ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
   }
   if (hasAny(messageNorm, ["begendim", "beğendim", "begendik", "beğendik", "guzel", "güzel", "super", "süper", "harika", "saglik", "sağlık"])) {
     return makeReply("Çok teşekkür ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
@@ -1810,8 +1909,18 @@ function buildDeterministicReply(context, state) {
       // Handler'a düşsün
     }
     // 2. Smalltalk (teşekkür, memnuniyet, selam, dua) → normal handler'a bırak
+    //    AMA: "Merhaba" + uzun mesaj (operasyonel talep içerir) → ekibe yönlendir
     else if (detectedIntent === "smalltalk") {
-      // Handler'a düşsün
+      const rawLen = String(context.message || "").trim().length;
+      if (rawLen > 30 && hasAny(messageNorm, ["merhaba", "selam", "mrb"]) &&
+          hasAny(messageNorm, ["kolye", "siparis", "sipariş", "kargo", "fotograf", "fotoğraf",
+            "yapinca", "yapınca", "hazir", "hazır", "ne zaman", "atabilir", "gonderebilir"])) {
+        return makeReply(
+          "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+          REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED
+        );
+      }
+      // Pure smalltalk → handler'a düşsün
     }
     // 3. Trust / Material / Price / Location / Chain / Shipping Price → side question, normal handler
     else if (["trust", "material_question", "price", "location", "chain_question", "shipping_price"].includes(detectedIntent)) {
@@ -1821,8 +1930,21 @@ function buildDeterministicReply(context, state) {
     else if (detectedIntent === "shipping") {
       // Kişisel kargo takibi → post-sale
       if (hasAny(messageNorm, ["kargom", "siparisim", "siparişim", "gelmedi", "ulasmadi", "ulaşmadı",
-        "verildi mi", "yola cikti", "mesaj gelmedi", "msj gelmedi", "teslim olmadi",
-        "kargo mesaji", "kargoya verilmis", "kargoya verilmiş", "dagitimda", "dağıtımda"])) {
+        "verildi mi", "verdiniz mi", "verdimi", "yola cikti", "yola çıktı",
+        "mesaj geldi", "mesaj gelmedi", "msj gelmedi", "msj geldi",
+        "teslim olmadi", "teslim edilmedi",
+        "kargo mesaji", "kargo mesajı",
+        "kargoya verilmis", "kargoya verilmiş", "kargoya verildimi", "kargoya verildi mi",
+        "dagitimda", "dağıtımda",
+        "urunum", "ürünüm", "urunumu", "ürünümü",
+        "benim kargo", "bana mesaj", "bana kargo",
+        "herkesin", "hala gelmedi", "halen gelmedi",
+        "son gunu", "son günü",
+        "kargom hazir", "kargom hazır",
+        "cikti mi", "çıktı mı", "cikmis", "çıkmış",
+        "nerde kargo", "nerede kargo",
+        "takip numara",
+        "gondermis", "göndermiş", "gondermissiniz", "göndermişsiniz"])) {
         return makeReply(
           "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊",
           REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED
@@ -1842,7 +1964,7 @@ function buildDeterministicReply(context, state) {
     }
     // 6. Şikayet / memnuniyetsizlik keyword'leri
     else if (hasAny(messageNorm, [
-      "memnun kalmadim", "memnun kalmadım",
+      "memnun kalmadim", "memnun kalmadım", "memnun degilim", "memnun değilim",
       "istedigim gibi degil", "istediğim gibi değil",
       "yanlis olmus", "yanlış olmuş", "yanlis", "yanlış",
       "sikayet", "şikayet", "sikayetim", "şikayetim",
@@ -1852,6 +1974,16 @@ function buildDeterministicReply(context, state) {
       "alakasi yok", "alakası yok",
       "kotu", "kötü", "berbat",
       "fakat", "siparisimle", "siparişimle",
+      // LOG-BASED: Gerçek müşteri şikayet pattern'leri
+      "cok kara", "çok kara", "kara olmus", "kara olmuş",
+      "net degil", "net değil", "anlasilmiyor", "anlaşılmıyor",
+      "kimse begenmedi", "kimse beğenmedi",
+      "sinir oldum", "sinir oldm", "sinirliyim",
+      "hic hos degil", "hiç hoş değil",
+      "iade", "iptal",
+      "cevap vermiyorsunuz", "cevap alamiyorum", "cevap alamıyorum",
+      "donus yapmiyorsunuz", "dönüş yapmıyorsunuz",
+      "magdur", "mağdur",
     ])) {
       return makeReply(
         "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
@@ -1868,6 +2000,19 @@ function buildDeterministicReply(context, state) {
     }
     // 9. Diğer tüm mesajlar → ekibe yönlendir (post-sale default)
     else {
+      return makeReply(
+        "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+        REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED
+      );
+    }
+  }
+
+  // ═══ HUMAN_SUPPORT GUARD ═══
+  // Satıcıya devredilmiş konuşmalarda: smalltalk hariç her şeyi ekibe yönlendir
+  if (state.conversation_stage === "human_support") {
+    if (detectedIntent === "smalltalk") {
+      // Smalltalk'a düşsün (aşağıda sideReply'da yakalanacak)
+    } else {
       return makeReply(
         "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
         REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED
@@ -1935,6 +2080,22 @@ function buildDeterministicReply(context, state) {
     return makeReply("Tabi efendim 😊", REPLY_CLASS.FALLBACK);
   }
 
+  // ── 6. "Gönderdim" / "yukarıda attım" pattern'i — stage-aware ──
+  if (hasAny(messageNorm, ["gonderdim", "gönderdim", "attim", "attım", "yukarida", "yukarıda", "ustte", "üstte", "yazdim", "yazdım", "belirttim", "belirtmistim", "belirtmiştim", "demin", "az once", "az önce", "biraz once", "biraz önce", "daha once", "daha önce", "resim yukarida", "resim yukarıda"])) {
+    const stage = state.conversation_stage || "";
+    if (stage === "waiting_photo") {
+      return makeReply("Fotoğrafınız bize ulaşmamış olabilir efendim, tekrar gönderebilir misiniz? 😊", REPLY_CLASS.FALLBACK);
+    }
+    if (stage === "waiting_address") {
+      return makeReply("Bilgileriniz ulaşmamış olabilir efendim, ad soyad, telefon ve açık adresinizi tekrar yazabilir misiniz? 😊", REPLY_CLASS.FALLBACK);
+    }
+    if (stage === "waiting_back_text") {
+      return makeReply("Arka yüz için mesajınız ulaşmamış olabilir efendim, tekrar yazabilir misiniz? 😊", REPLY_CLASS.FALLBACK);
+    }
+  }
+
+  // ── 7. Fallback — model'e düşecek ──
+
   return emptyReply();
 }
 
@@ -1950,6 +2111,15 @@ Rules:
 - If customer already gave payment or address earlier, do not ask the same thing again.
 - If customer asks a side question during order flow, answer it briefly and then continue with the next missing step.
 - If you truly do not know, reply exactly with: ${FALLBACK_TEXT}
+
+CRITICAL STAGE RULES — NEVER VIOLATE:
+- If back_text_status is "received" or "skipped", NEVER ask about back text again. Move to payment or address.
+- If payment_method is set, NEVER ask about payment again. Move to address collection.
+- If address_status is "received", NEVER ask for address again.
+- If conversation_stage is "waiting_payment", ask ONLY about payment method (EFT or kapıda ödeme). Do NOT ask about back text or photo.
+- If conversation_stage is "waiting_address", ask ONLY for ad soyad, telefon, and adres. Do NOT ask about back text, photo, or payment.
+- If conversation_stage is "order_completed", do NOT restart any order flow. Answer briefly or say "Ekibimize iletiyorum".
+- NEVER go backwards in the flow: photo → back_text → payment → address → completed.
 
 KNOWLEDGE:
 ${knowledgePack}
