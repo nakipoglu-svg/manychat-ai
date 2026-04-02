@@ -2255,16 +2255,23 @@ function buildStateUpdate(context, replyPayload, state) {
     phone_received: state.phone_received || "",
   };
 }
-function detectOrderSheetStatus(replyText = "") {
-  const text = normalizeText(replyText);
+function detectOrderSheetStatusFromTexts(...texts) {
+  const joined = normalizeText(texts.filter(Boolean).join(" || "));
 
-  if (text.includes("siparisiniz alindi") || text.includes("siparisiniz alinmistir")) {
-    return "confirmed";
-  }
+  const confirmedPhrases = [
+    "siparisiniz alindi",
+    "siparisiniz alinmistir",
+    "siparisiniz olusturuldu",
+    "siparisiniz olusturulmustur",
+  ];
 
-  if (text.includes("siparisiniz iptal edildi") || text.includes("siparisiniz iptal edilmistir")) {
-    return "cancel";
-  }
+  const cancelPhrases = [
+    "siparisiniz iptal edildi",
+    "siparisiniz iptal edilmistir",
+  ];
+
+  if (confirmedPhrases.some((p) => joined.includes(p))) return "confirmed";
+  if (cancelPhrases.some((p) => joined.includes(p))) return "cancel";
 
   return "";
 }
@@ -2307,7 +2314,14 @@ async function postOrderOperation(operationData) {
 
 async function safeOrderSync(context, stateUpdate, replyPayload) {
   const replyText = cleanReply(replyPayload?.text || "");
-  const finalStatus = detectOrderSheetStatus(replyText);
+  const incomingMessageText = cleanReply(context.message || "");
+  const aiReplyText = cleanReply(context.fields?.ai_reply || "");
+
+  const finalStatus = detectOrderSheetStatusFromTexts(
+    replyText,
+    incomingMessageText,
+    aiReplyText
+  );
 
   const orderId =
     unwrapManychatValue(context.raw.order_id) ||
