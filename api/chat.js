@@ -178,7 +178,7 @@ const KEYWORDS = {
       "kararma yaparmi", "kararma yapiyormu", "kararma yapıyor mu",
       "kararma oluyormu", "kararma oluyor mu",
       "solar", "solma", "paslan",
-      "suya dayanikli", "suya dayanıklı", "duşta", "dusta", "deniz", "ter ",
+      "suya dayanikli", "suya dayanıklı", "duşta", "dusta", "denizde", "denizte", "terle",
       "kaplama", "kaplamasi atar", "kaplaması atar",
       "garanti",
       // malzeme soruları da güven kategorisi
@@ -655,9 +655,13 @@ function looksLikeAddress(messageNorm, rawMessage = "", conversationStage = "") 
   if (/\b(mi|mı|mu|mü|miyim|mıyım|musun|müsün)\b/i.test(raw)) return false;
 
   const addressKeywords = [
-    "mahalle", "mah", "sokak", "sk", "cadde", "cd", "bulvar", "no", "daire", "apt",
+    "mahalle", "mah", "sokak", "sk", "cadde", "cd", "bulvar", "bulvari", "no", "daire", "apt",
     "apartman", "apart", "ap", "kat", "site", "sitesi", "blok", "ilce", "ilçe",
     "mahallesi", "ic kapi", "iç kapı",
+    // 140K log'dan eklenen
+    "konutlari", "konutları", "evleri", "toki",
+    "caddesi", "sokagi", "sokağı",
+    "apartmani", "apartmanı",
   ];
 
   let hit = 0;
