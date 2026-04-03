@@ -2314,7 +2314,7 @@ async function callModel(messages) {
   if (!apiKey) throw new Error("API key missing.");
 
   const controller = new AbortController();
-  const timeoutMs = Number(process.env.MODEL_TIMEOUT_MS || 7000);
+  const timeoutMs = Number(process.env.MODEL_TIMEOUT_MS || 5000);
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
@@ -2675,13 +2675,19 @@ export async function processChat(body = {}, options = {}) {
   const stateUpdate = buildStateUpdate(context, replyPayload, state);
   const finalResult = { success: true, ...stateUpdate };
 
-  // Arka plan görevlerini promise olarak döndür — handler'da waitUntil ile çalıştırılacak
-  const backgroundTasks = Promise.allSettled([
-    safeOrderSync(context, stateUpdate, replyPayload).catch(e => console.error("OrderSync bg error:", e.message)),
-    logConversationRow({ body, result: finalResult, options }).catch(e => console.error("Log bg error:", e.message)),
-  ]);
+  // Log + Order Sync: Cevaptan ÖNCE çalıştır (await ile).
+  // Deterministik cevap 50ms, log+sync 1-2s, toplam 2-3s — ManyChat 10s limiti içinde.
+  // Model fallback'te: 7s model + 2s log = 9s — hala 10s altında.
+  try {
+    await Promise.allSettled([
+      safeOrderSync(context, stateUpdate, replyPayload).catch(e => console.error("OrderSync error:", e.message)),
+      logConversationRow({ body, result: finalResult, options }).catch(e => console.error("Log error:", e.message)),
+    ]);
+  } catch (e) {
+    console.error("Background tasks error:", e.message);
+  }
 
-  return { ...finalResult, _backgroundTasks: backgroundTasks };
+  return finalResult;
 }
 
 // ─── API HANDLER ────────────────────────────────────────────
@@ -2693,28 +2699,7 @@ export default async function handler(req, res) {
 
   try {
     const result = await processChat(req.body || {});
-
-    // _backgroundTasks'ı response'dan ayır
-    const backgroundTasks = result._backgroundTasks;
-    delete result._backgroundTasks;
-
-    // Cevabı HEMEN döndür — ManyChat 10s timeout'u aşmamak için
-    res.status(200).json(result);
-
-    // waitUntil: Vercel function cevap döndükten sonra bile
-    // arka plan görevlerinin (log + order sync) tamamlanmasını bekler.
-    // Bu sayede function erken kapanmaz, webhook'lar yazılır.
-    if (backgroundTasks) {
-      if (typeof res.waitUntil === "function") {
-        // Vercel Edge/Serverless waitUntil desteği (varsa)
-        res.waitUntil(backgroundTasks);
-      } else if (typeof globalThis.waitUntil === "function") {
-        globalThis.waitUntil(backgroundTasks);
-      } else {
-        // waitUntil yoksa en azından await et — function kapanmadan tamamlansın
-        await backgroundTasks;
-      }
-    }
+    return res.status(200).json(result);
   } catch (error) {
     console.error("chat.js error:", error);
     return res.status(200).json({
