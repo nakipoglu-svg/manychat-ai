@@ -112,7 +112,7 @@ const KEYWORDS = {
       "iyi aksamlar", "iyi akşamlar", "iyi gunler", "iyi günler",
       "gunaydin", "günaydın", "iyi geceler",
       "nasilsiniz", "nasılsınız",
-      "tesekkur", "teşekkür", "tesekkurler", "teşekkürler", "tsk", "tşk",
+      "tesekkur", "teşekkür", "tesekkurler", "teşekkürler", "tsk", "tşk", "tesekurler", "teşekürler",
       "sagolun", "sağolun", "saol", "sağol",
       "allah razi olsun", "allah razı olsun",
       "kolay gelsin",
@@ -138,7 +138,7 @@ const KEYWORDS = {
     ],
 
     // ──── LOCATION ────
-    location: ["yeriniz nerede", "yeriniz neresi", "neredesiniz", "konum", "magaza", "mağaza", "eminonu", "eminönü"],
+    location: ["yeriniz nerede", "yeriniz neresi", "yeriniz nerde", "neredesiniz", "konum", "magaza", "mağaza", "eminonu", "eminönü", "subeniz", "şubeniz", "subesi", "şubesi"],
 
     // ──── SHIPPING PRICE: genişletildi ────
     shippingPrice: [
@@ -178,6 +178,7 @@ const KEYWORDS = {
       "kararma yaparmi", "kararma yapiyormu", "kararma yapıyor mu",
       "kararma oluyormu", "kararma oluyor mu",
       "solar", "solma", "paslan",
+      "suya dayanikli", "suya dayanıklı", "duşta", "dusta", "deniz", "ter ",
       "kaplama", "kaplamasi atar", "kaplaması atar",
       "garanti",
       // malzeme soruları da güven kategorisi
@@ -214,7 +215,7 @@ const KEYWORDS = {
       "zincir ne kadar", "uzunlugu ne kadar", "uzunluğu ne kadar",
       "zincir kac cm", "zincir kaç cm",
       "zincirlere bakabilir", "zincir secenekleri", "zincir seçenekleri",
-      "boyu ne kadar", "boyutu ne kadar", "kac cm", "kaç cm",
+      "boyu ne kadar", "boyutu ne kadar", "boyutu nedir", "kac cm", "kaç cm",
       "kac santim", "kaç santım", "kac santım", "kaç santim",
       "zincir dahil", "zincir dayil",
     ],
@@ -223,8 +224,15 @@ const KEYWORDS = {
     orderStart: [
       "siparis vermek istiyorum", "sipariş vermek istiyorum",
       "siparis verecegim", "sipariş vereceğim",
+      "siparis vercegiz", "sipariş vereceğiz", "siparis verecegiz",
+      "nasil siparis", "nasıl sipariş", "nasil sipariş", "nasıl siparis",
+      "siparis verebilir miyim", "sipariş verebilir miyim",
+      "nasil siparis verebilirim", "nasıl sipariş verebilirim",
+      "nasil siparis veriyoruz", "nasıl sipariş veriyoruz",
+      "nasil yaptir", "nasıl yaptır",
       "almak istiyorum", "hazirlayalim", "hazırlayalım",
       "yaptirmak istiyorum", "yaptırmak istiyorum",
+      "bende yaptirmak istiyorum", "ben de yaptırmak istiyorum",
     ],
 
     // ──── PHOTO QUESTION ────
@@ -288,6 +296,22 @@ const KEYWORDS = {
       "iki yuzune de foto olur mu", "iki yüzüne de foto olur mu",
       "arka tarafa foto olur mu", "arka tarafa fotograf olur mu",
       "arka tarafa foto", "arka tarafa fotograf",
+      // LOG-BASED: iki resim birleştirme / çift taraf varyantları
+      "iki resim olur mu", "iki resim oluyor mu", "2 resim olur mu",
+      "iki foto olur mu", "iki foto oluyor mu", "2 foto olur mu",
+      "iki resim", "iki foto", "2 resim", "2 foto",
+      "birlestir", "birleştir", "birlestirme", "birleştirme",
+      "yan yana", "yanyana",
+      "ayri ayri fotograf", "ayrı ayrı fotoğraf", "ayri ayri foto",
+      "iki kisinin foto", "iki kişinin foto", "iki kisinin resim", "iki kişinin resim",
+      "iki cocuk", "iki çocuk", "iki oglum", "iki oğlum",
+      // Kaç kişi sığar
+      "sigar mi", "sığar mı", "sigarmi", "sığarmı",
+      "3 kisi", "3 kişi", "uc kisi", "üç kişi",
+      "3 cocuk", "3 çocuk", "uc cocuk", "üç çocuk",
+      "3 oglu", "3 oğlu",
+      "3 lu fotograf", "3 lü fotoğraf", "uclu foto", "üçlü foto",
+      "3 resim", "uc resim", "üç resim",
     ],
 
     // ──── BACK TEXT SKIP ────
@@ -314,14 +338,20 @@ const KEYWORDS = {
       "kolyem hazir mi", "kolyem hazır mı",
       "ne zaman hazir", "ne zaman hazır",
       "siparisim ne durumda", "siparişim ne durumda",
+      "siparisim hazir mi", "siparişim hazır mı",
       "kargoya verildi mi",
       "yola cikti mi", "yola çıktı mı",
-      // Sipariş değişikliği talepleri (ürün üretime girmiş olabilir)
+      // Sipariş değişikliği talepleri
       "fotografi degistirmek", "fotoğrafı değiştirmek",
       "arka yaziyi degistirmek", "arka yazıyı değiştirmek",
       "siparisi degistirmek", "siparişi değiştirmek",
       "degisiklik yapmak", "değişiklik yapmak",
       "degistirebilir miyim", "değiştirebilir miyim",
+      // İletişim şikayeti
+      "neden cevap vermiyorsunuz", "neden cevap vermiyor",
+      "niye cevap vermiyor", "cevap vermiyorsunuz",
+      "ulasami", "ulaşamı",
+      "bakar misiniz", "bakar mısınız",
     ],
 
     // ──── NEW ORDER (YENİ) ────
@@ -343,19 +373,25 @@ const KEYWORDS = {
     ],
 
     // ──── DETAIL REQUEST (YENİ — 1605 kez gelmiş!) ────
-    detailRequest: ["detay", "detaylar"],
+    detailRequest: ["detay", "detaylar", "bilgi alabilir", "bilgi istiyorum", "bilgi verir misiniz"],
 
     // ──── MATERIAL QUESTION — çelik mi vs ────
     materialQuestion: [
       "celik mi", "çelik mi", "celikmi", "çelikmi",
       "urun celik mi", "ürün çelik mi",
+      "urunler celik", "ürünler çelik",
       "paslanmaz mi", "paslanmaz mı",
       "malzeme ne", "malzemesi ne", "materyali ne", "materyali nedir",
       "gumus mu", "gümüş mü", "gumusmu", "gümüşmü",
       "gumus mudur", "gümüş müdür",
       "kolye gumus", "kolye gümüş",
+      "urun gumus", "ürün gümüş",
       "celik kolye", "çelik kolye",
+      "celikmi", "çelikmi", "celismi", "çelişmi",
+      "altin mi", "altın mı", "altinmi", "altınmı",
+      "celik mi gumus mu", "çelik mi gümüş mü",
       "alerji", "alerjim", "alerjik",
+      "suya dayanikli", "suya dayanıklı",
     ],
   },
 };
@@ -1373,6 +1409,10 @@ function handleTrustIntent(context) {
     return makeReply("Kararma, solma veya paslanma yapmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.", REPLY_CLASS.FIXED_INFO);
   }
 
+  if (hasAny(messageNorm, ["suya dayanikli", "dusta", "duşta", "deniz", "ter "])) {
+    return makeReply("Evet efendim, suya dayanıklıdır 😊 Duş, deniz, ter gibi durumlarda rahatlıkla kullanabilirsiniz.", REPLY_CLASS.FIXED_INFO);
+  }
+
   if (messageNorm.includes("garanti")) {
     return makeReply("Kararma, solma veya kaplama kaynaklı bir durumda destek sağlıyoruz efendim 😊", REPLY_CLASS.FIXED_INFO);
   }
@@ -2061,9 +2101,13 @@ function buildDeterministicReply(context, state) {
   );
   if (flowReply.text) return flowReply;
 
-  // ── 5. Kısa onay mesajları — model'e düşürmeden stage'e uygun cevap ver ──
+  // ── 5. Kısa onay/emoji/bekleme mesajları — model'e düşürmeden stage'e uygun cevap ver ──
   const raw = String(context.message || "").trim();
-  if (raw.length <= 12 && hasAny(messageNorm, ["tamam", "tamamdir", "tm", "tmm", "tmmm", "olur", "peki", "evet", "ok", "tamam dir"])) {
+  const isShortConfirm = raw.length <= 15 && hasAny(messageNorm, ["tamam", "tamamdir", "tm", "tmm", "tmmm", "olur", "peki", "evet", "ok", "tamam dir", "anladim", "anladım"]);
+  const isEmoji = raw.length <= 4 && /^[^\w\s]+$/.test(raw);
+  const isVeryShort = raw.length <= 6 && !hasAny(messageNorm, ["fiyat", "iban", "eft", "iptal"]);
+  
+  if (isShortConfirm || isEmoji || isVeryShort) {
     const stage = state.conversation_stage || "";
     if (stage === "waiting_photo") {
       return makeReply("Fotoğrafı buradan gönderebilirsiniz efendim 😊", REPLY_CLASS.FALLBACK);
@@ -2076,6 +2120,9 @@ function buildDeterministicReply(context, state) {
     }
     if (stage === "waiting_address") {
       return makeReply("Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz efendim? 😊", REPLY_CLASS.FALLBACK);
+    }
+    if (stage === "waiting_letters") {
+      return makeReply("Yapılmasını istediğiniz harfleri yazabilirsiniz efendim 😊", REPLY_CLASS.FALLBACK);
     }
     return makeReply("Tabi efendim 😊", REPLY_CLASS.FALLBACK);
   }
@@ -2094,7 +2141,43 @@ function buildDeterministicReply(context, state) {
     }
   }
 
-  // ── 7. Fallback — model'e düşecek ──
+  // ── 7. STAGE-AWARE CATCH-ALL — model'e düşmeden stage'e uygun son şans yönlendirmesi ──
+  // Bu, model timeout'u yüzünden müşterinin cevapsız kalmasını önler
+  {
+    const stage = state.conversation_stage || "";
+    const msgLen = raw.length;
+
+    // waiting_photo'da tanınmayan mesajlar → foto iste
+    if (stage === "waiting_photo" && msgLen > 2 && msgLen < 120) {
+      // Ama post-sale içerik varsa ekibe yönlendir
+      if (hasAny(messageNorm, ["ulasmadi", "ulaştı", "geldi", "gelmedi", "siparis verdim", "sipariş verdim", "memnun degil"])) {
+        return makeReply("Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊", REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED);
+      }
+      return makeReply("Tabi efendim 😊 Fotoğrafı buradan gönderebilirsiniz.", REPLY_CLASS.FALLBACK);
+    }
+
+    // waiting_payment'ta tanınmayan mesajlar → ödeme sor
+    if (stage === "waiting_payment" && msgLen > 2) {
+      return makeReply("Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim? 😊", REPLY_CLASS.FALLBACK);
+    }
+
+    // waiting_address'te tanınmayan mesajlar → adres sor
+    if (stage === "waiting_address" && msgLen > 2) {
+      return makeReply("Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz efendim? 😊", REPLY_CLASS.FALLBACK);
+    }
+
+    // waiting_letters'ta tanınmayan mesajlar → harf iste
+    if (stage === "waiting_letters" && msgLen > 2) {
+      return makeReply("Yapılmasını istediğiniz harfleri yazabilirsiniz efendim 😊", REPLY_CLASS.FALLBACK);
+    }
+
+    // waiting_back_text'te tanınmayan mesajlar → arka yazı sor
+    if (stage === "waiting_back_text" && msgLen > 2) {
+      return makeReply("Arka yüze yazı eklemek ister misiniz? İsterseniz yazıyı buradan iletebilirsiniz, istemezseniz \"yok\" yazabilirsiniz 😊", REPLY_CLASS.FALLBACK);
+    }
+  }
+
+  // ── 8. Fallback — model'e düşecek (sadece stage bilinmiyorsa veya waiting_product) ──
 
   return emptyReply();
 }
