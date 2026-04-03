@@ -765,6 +765,77 @@ const tests = [
   { id: "GC34", name: "[GC] 'Görseli merak ediyorum' → name olmamalı", input: body("Görseli merak ediyorum", lazerWaitingAddress()), expectReplyNotIncludes: "ad soyad bilginizi aldim" },
   { id: "GC35", name: "[GC] 'Resimleri okeyliyelim' → name olmamalı", input: body("Resimleri okeyliyelim", lazerWaitingAddress()), expectReplyNotIncludes: "ad soyad bilginizi aldim" },
 
+  // ════════════════════════════════════════════════════════════════════════
+  // GRUP 27: 40K MESAJ STRATEJİK TESTLER (ST01–ST84)
+  // 40.294 gerçek müşteri mesajından çıkarılan pattern coverage testleri
+  // ════════════════════════════════════════════════════════════════════════
+
+  // --- fiyat (en sık 5928x!) ---
+  { id: "ST01", name: "[40K] (5928x) Fiyat kontrol", input: body("Bir ürünün fiyatını kontrol edebilir misiniz?"), expectReplyIncludes: "model" },
+  { id: "ST02", name: "[40K] (393x) Fiyat nedir", input: body("Fiyat nedir"), expectReplyIncludes: "model" },
+  { id: "ST03", name: "[40K] (116x) Fiyat", input: body("Fiyat"), expectReplyIncludes: "model" },
+  { id: "ST04", name: "[40K] (60x) Fiyat alabilirmiyim", input: body("Fiyat alabilirmiyim"), expectReplyIncludes: "model" },
+  { id: "ST05", name: "[40K] (56x) Fiyat ne kadar", input: body("Fiyat ne kadar"), expectReplyIncludes: "model" },
+  { id: "ST06", name: "[40K] (43x) Fiyat alabilir miyim", input: body("Fiyat alabilir miyim"), expectReplyIncludes: "model" },
+
+  // --- malzeme (46x çelik mi) ---
+  { id: "ST07", name: "[40K] (46x) Çelik mi", input: body("Çelik mi", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "celik" },
+  { id: "ST08", name: "[40K] (13x) Çelikmi", input: body("Çelikmi", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "celik" },
+  { id: "ST09", name: "[40K] (9x) Gümüş mü", input: body("Gümüş mü", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "celik" },
+  { id: "ST10", name: "[40K] (4x) Materyali nedir", input: body("Ürünün materyali nedir", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "celik" },
+
+  // --- kararma (35x) ---
+  { id: "ST11", name: "[40K] (35x) Kararma yapar mı", input: body("Kararma yapar mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "kararma" },
+  { id: "ST12", name: "[40K] (22x) Kararma yapıyor mu", input: body("Kararma yapıyor mu", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "kararma" },
+  { id: "ST13", name: "[40K] (10x) Kararma olur mu", input: body("Kararma olur mu", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "kararma" },
+  { id: "ST14", name: "[40K] (10x) Kararma yaparmı", input: body("Kararma yaparmı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "kararma" },
+
+  // --- kargo (23x kaç günde) ---
+  { id: "ST15", name: "[40K] (23x) Kaç günde gelir", input: body("Kaç günde gelir", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "gun" },
+  { id: "ST16", name: "[40K] (15x) Kaç güne gelir", input: body("Kaç güne gelir", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "gun" },
+  { id: "ST17", name: "[40K] (6x) Ne zaman gelir", input: body("Ne zaman gelir", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "gun" },
+  { id: "ST18", name: "[40K] (5x) Hangi kargo", input: body("Hangi kargo", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "PTT" },
+
+  // --- ödeme (68x kapıda) ---
+  { id: "ST19", name: "[40K] (68x) Kapıda ödeme", input: body("Kapıda ödeme", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "odeme" },
+  { id: "ST20", name: "[40K] (24x) eft", input: body("eft", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "EFT" },
+  { id: "ST21", name: "[40K] (7x) Kapıda ödeme var mı", input: body("Kapıda ödeme var mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "odeme" },
+
+  // --- zincir (7x) ---
+  { id: "ST22", name: "[40K] (7x) Zincir uzunluğu nedir", input: body("Zincir uzunluğu nedir", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "60" },
+  { id: "ST23", name: "[40K] (4x) Zincir kaç cm", input: body("Zincir kaç cm", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "60" },
+  { id: "ST24", name: "[40K] (7x) Zincir ürünsüz", input: body("Zincir uzunluğu nedir"), expectReplyIncludes: "cm" },
+
+  // --- arka yazı/foto ---
+  { id: "ST25", name: "[40K] (4x) Arkalı önlü", input: body("Arkalı önlü"), expectReplyIncludes: "foto" },
+  { id: "ST26", name: "[40K] (3x) Arka yazı", input: body("Arka yazı"), expectReplyIncludes: "arka" },
+  { id: "ST27", name: "[40K] (2x) İki resim oluyor mu", input: body("İki resim oluyor mu"), expectReplyIncludes: "foto" },
+
+  // --- sipariş başlatma (48x) ---
+  { id: "ST28", name: "[40K] (48x) Sipariş vermek istiyorum", input: body("Sipariş vermek istiyorum", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "TL" },
+  { id: "ST29", name: "[40K] (14x) Yaptırmak istiyorum", input: body("Yaptırmak istiyorum", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "TL" },
+  { id: "ST30", name: "[40K] (8x) Bende yaptırmak istiyorum", input: body("Bende yaptırmak istiyorum", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "TL" },
+  { id: "ST31", name: "[40K] (7x) Nasıl sipariş verebilirim", input: body("Nasıl sipariş verebilirim", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "TL" },
+
+  // --- lokasyon (963x!) ---
+  { id: "ST32", name: "[40K] (963x) Yeriniz nerede?", input: body("Yeriniz nerede?"), expectReplyIncludes: "Eminonu" },
+  { id: "ST33", name: "[40K] (7x) yeriniz nerde", input: body("yeriniz nerde"), expectReplyIncludes: "Eminonu" },
+
+  // --- smalltalk ---
+  { id: "ST34", name: "[40K] (274x) Merhaba", input: body("Merhaba"), expectReplyNotIncludes: "Ekibimize iletiyorum" },
+  { id: "ST35", name: "[40K] (254x) Teşekkür ederim", input: body("Teşekkür ederim"), expectReplyNotIncludes: "Ekibimize iletiyorum" },
+  { id: "ST36", name: "[40K] (187x) Teşekkürler", input: body("Teşekkürler"), expectReplyNotIncludes: "Ekibimize iletiyorum" },
+  { id: "ST37", name: "[40K] (46x) Kolay gelsin", input: body("Kolay gelsin"), expectReplyNotIncludes: "Ekibimize iletiyorum" },
+  { id: "ST38", name: "[40K] (31x) Allah razı olsun", input: body("Allah razı olsun"), expectReplyNotIncludes: "Ekibimize iletiyorum" },
+
+  // --- detay (1602x!) ---
+  { id: "ST39", name: "[40K] (1602x) Detay", input: body("Detay"), expectReplyIncludes: "model" },
+  { id: "ST40", name: "[40K] (12x) Bilgi alabilir miyim", input: body("Bilgi alabilir miyim"), expectReplyIncludes: "model" },
+
+  // --- post-sale ---
+  { id: "ST41", name: "[40K] (8x) Neden cevap vermiyorsunuz", input: body("Neden cevap vermiyorsunuz", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+  { id: "ST42", name: "[40K] (7x) Siparişim hazır mı", input: body("Siparişim hazır mı", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+
 ];
 
 // ─── RUNNER ───────────────────────────────────────────────────────────────
@@ -801,6 +872,7 @@ async function runTests() {
     if (id.startsWith("PS")) return "POST_SALE_REGRESSION";
     if (id.startsWith("LR")) return "LOG_REGRESSION";
     if (id.startsWith("GC")) return "GPT_GAP_COVERAGE";
+    if (id.startsWith("ST")) return "40K_STRATEGIC";
     return "OTHER";
   }
 
@@ -868,6 +940,7 @@ async function runTests() {
     POST_SALE_REGRESSION: "Post-Sale Regression",
     LOG_REGRESSION: "Log Regression",
     GPT_GAP_COVERAGE: "GPT Gap Coverage",
+    "40K_STRATEGIC": "40K Strategic",
     OTHER: "Other",
   };
 
