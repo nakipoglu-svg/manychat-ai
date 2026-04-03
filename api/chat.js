@@ -13,10 +13,10 @@ const MAIN_MENU_TEXT =
   "Merhaba efendim 😊\nHangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye";
 
 const LASER_PRICE_TEXT =
-  "Resimli lazer kolye fiyatımız EFT / Havale ile 599,90 TL, kapıda ödeme ile 649,90 TL'dir efendim 😊 Siparişe devam etmek isterseniz fotoğrafı buradan gönderebilirsiniz.";
+  "Resimli lazer kolye fiyatımız EFT / Havale ile 599 TL, kapıda ödeme ile 649 TL'dir efendim 😊 Siparişe devam etmek isterseniz fotoğrafı buradan gönderebilirsiniz.";
 
 const ATAC_PRICE_TEXT =
-  "Harfli ataç kolye fiyatımız EFT / Havale ile 499,90 TL, kapıda ödeme ile 549,90 TL'dir efendim 😊 Siparişe devam etmek isterseniz istediğiniz harfleri yazabilirsiniz.";
+  "Harfli ataç kolye fiyatımız EFT / Havale ile 499 TL, kapıda ödeme ile 549 TL'dir efendim 😊 Siparişe devam etmek isterseniz istediğiniz harfleri yazabilirsiniz.";
 
 const EFT_INFO_TEXT =
   "IBAN: TR34 0015 7000 0000 0076 2524 67\nAlıcı: Servet Cihan Nakipoğlu";
@@ -233,6 +233,8 @@ const KEYWORDS = {
       "almak istiyorum", "hazirlayalim", "hazırlayalım",
       "yaptirmak istiyorum", "yaptırmak istiyorum",
       "bende yaptirmak istiyorum", "ben de yaptırmak istiyorum",
+      "satin alabilir miyim", "satın alabilir miyim",
+      "urun satin alabilir miyim", "ürün satın alabilir miyim",
     ],
 
     // ──── PHOTO QUESTION ────
@@ -1454,8 +1456,11 @@ function handlePostSaleIntent(context) {
  * YENİ: Yeni sipariş talebi handler
  */
 function handleNewOrderIntent(context, state) {
-  if (context.detectedIntent !== "new_order") return emptyReply();
-  // Satıcıya yönlendir — yeni sipariş akışı mevcut state'te karışıklık yaratır
+  if (context.detectedIntent !== "new_order") {
+    // Completed'da order_start intent gelirse → yeni sipariş olarak yönlendir
+    const isCompleted = state.order_status === "completed" || truthy(state.siparis_alindi);
+    if (!(isCompleted && context.detectedIntent === "order_start")) return emptyReply();
+  }
   return makeReply(
     "Tabi efendim 😊 Yeni sipariş için ekibimiz size yardımcı olacaktır.",
     REPLY_CLASS.SELLER_REQUIRED, SUPPORT_MODE_REASON.SELLER_REQUIRED
@@ -1478,6 +1483,16 @@ function handleExampleRequest(context) {
  */
 function handleDetailRequest(context, state) {
   if (context.detectedIntent !== "detail_request") return emptyReply();
+  
+  // Akışın ilerleyen stage'lerinde detay isteği → flow'u geri götürme
+  const stage = state.conversation_stage || "";
+  if (stage === "waiting_address") {
+    return makeReply("Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz efendim? 😊", REPLY_CLASS.FLOW_PROGRESS);
+  }
+  if (stage === "waiting_payment") {
+    return makeReply("Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim? 😊", REPLY_CLASS.FLOW_PROGRESS);
+  }
+  
   if (!state.product) {
     return makeReply(MAIN_MENU_TEXT, REPLY_CLASS.MENU);
   }
@@ -1505,8 +1520,8 @@ function handleChainIntent(context) {
   }
 
   if (detectedProduct === "lazer") {
-    if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "uzunlugu ne kadar", "uzunluğu ne kadar", "zincir kac cm", "zincir kaç cm", "zincir kisalir", "zincir kısalır", "boyu ne kadar", "kac santim", "kaç santım", "kac santım", "kolye boyu", "kac cm", "kaç cm"])) {
-      return makeReply("Zincir uzunluğu standart olarak 60 cm'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
+    if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "uzunlugu ne kadar", "uzunluğu ne kadar", "zincir kac cm", "zincir kaç cm", "zincir kisalir", "zincir kısalır", "boyu ne kadar", "kac santim", "kaç santım", "kac santım", "kolye boyu", "kac cm", "kaç cm", "zincir ne kadar", "zincir ne uzunlukta"])) {
+      return makeReply("Zincir fiyata dahildir, uzunluğu standart olarak 60 cm'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
     }
     return makeReply(
       "Zincir modeliyle ilgili detay için ekibimize görsel üzerinden net bilgi verelim 😊",
@@ -1515,13 +1530,20 @@ function handleChainIntent(context) {
   }
 
   if (detectedProduct === "atac") {
-    if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "uzunlugu ne kadar", "uzunluğu ne kadar", "zincir kac cm", "zincir kaç cm", "boyu ne kadar"])) {
-      return makeReply("Standart zincir 50 cm'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
+    if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "uzunlugu ne kadar", "uzunluğu ne kadar", "zincir kac cm", "zincir kaç cm", "boyu ne kadar", "zincir ne kadar", "zincir ne uzunlukta"])) {
+      return makeReply("Standart zincir 50 cm'dir, fiyata dahildir efendim 😊", REPLY_CLASS.FIXED_INFO);
     }
     return makeReply("Bu üründe tek zincir modeli kullanılıyor efendim 😊", REPLY_CLASS.FIXED_INFO);
   }
 
-  return makeReply(FALLBACK_TEXT, REPLY_CLASS.FALLBACK, SUPPORT_MODE_REASON.TRUE_FALLBACK);
+  // Ürün seçilmemişse genel bilgi ver
+  if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "uzunlugu ne kadar", "uzunluğu ne kadar", "zincir kac cm", "zincir kaç cm", "boyu ne kadar", "boyutu nedir", "kac cm", "kaç cm", "kac santim", "kaç santım"])) {
+    return makeReply("Resimli lazer kolyede zincir 60 cm, ataç kolyede 50 cm'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+  if (hasAny(messageNorm, ["zincir ne kadar"])) {
+    return makeReply("Zincir fiyata dahildir efendim 😊 Resimli lazer kolyede 60 cm, ataç kolyede 50 cm standart zincir gelir.", REPLY_CLASS.FIXED_INFO);
+  }
+  return makeReply("Resimli lazer kolyede zincir 60 cm, ataç kolyede 50 cm'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
 }
 
 function handlePhotoQuestionIntent(context, state) {
@@ -1546,13 +1568,17 @@ function handleBackSideInfoIntent(context, state) {
   if (activeProduct === "atac") {
     return makeReply("Bu özellik resimli lazer kolye için geçerlidir efendim 😊", REPLY_CLASS.FIXED_INFO);
   }
-  if (activeProduct !== "lazer") return emptyReply();
 
+  // Ürün seçilmemişse de lazer varsayarak cevap ver (bu sorular sadece lazer için geçerli)
   if (detectedIntent === "back_photo_price") {
     return makeReply("Ek ücret olmuyor efendim 😊", REPLY_CLASS.FIXED_INFO);
   }
   if (detectedIntent === "back_photo_info") {
-    return makeReply("Evet efendim 😊 Ön yüze bir fotoğraf, arka yüze de ikinci bir fotoğraf ekleyebiliyoruz. Ek ücret de olmuyor.", REPLY_CLASS.FIXED_INFO);
+    const stage = state.conversation_stage || "";
+    let extra = "";
+    if (stage === "waiting_payment") extra = " Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim?";
+    else if (stage === "waiting_address") extra = " Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz efendim?";
+    return makeReply("Evet efendim 😊 Ön yüze bir fotoğraf, arka yüze de ikinci bir fotoğraf ekleyebiliyoruz. Ek ücret de olmuyor." + extra, REPLY_CLASS.FIXED_INFO);
   }
   if (detectedIntent === "back_text_info") {
     return makeReply("Evet efendim 😊 Resimli lazer kolyede arka yüzüne yazı veya istenirse ikinci bir fotoğraf eklenebiliyor.", REPLY_CLASS.FIXED_INFO);
@@ -1945,12 +1971,22 @@ function buildDeterministicReply(context, state) {
   // Sipariş tamamlandıysa, mesajları post-sale olarak değerlendir
   // SADECE: smalltalk, trust, material, price, location, shipping_price, new_order, post_sale geçebilir
   // GERİSİ: post-sale guard'a takılır
-  const isOrderCompleted = state.order_status === "completed" || truthy(state.siparis_alindi);
-  if (isOrderCompleted && state.conversation_stage === "order_completed") {
+  const isOrderCompleted = state.order_status === "completed" || truthy(state.siparis_alindi) ||
+    context.fields.order_status === "completed" || truthy(context.fields.siparis_alindi);
+  const wasCompleted = context.fields.conversation_stage === "order_completed" || 
+    state.conversation_stage === "order_completed";
+  if (isOrderCompleted && wasCompleted) {
 
     // 1. Açık yeni sipariş niyeti → new_order handler'a bırak
-    if (detectedIntent === "new_order") {
-      // Handler'a düşsün
+    if (detectedIntent === "new_order" || detectedIntent === "order_start") {
+      // Handler'a düşsün — müşteri yeni sipariş istiyor
+    }
+    // 1b. Ürün keyword'ü → müşteri yeni ürün istiyor, direkt yönlendir
+    else if (hasAny(messageNorm, ["resimli", "lazer", "atac", "ataç", "harfli"])) {
+      return makeReply(
+        "Tabi efendim 😊 Yeni sipariş için ekibimiz size yardımcı olacaktır.",
+        REPLY_CLASS.SELLER_REQUIRED, SUPPORT_MODE_REASON.SELLER_REQUIRED
+      );
     }
     // 2. Smalltalk (teşekkür, memnuniyet, selam, dua) → normal handler'a bırak
     //    AMA: "Merhaba" + uzun mesaj (operasyonel talep içerir) → ekibe yönlendir
@@ -2035,7 +2071,10 @@ function buildDeterministicReply(context, state) {
       );
     }
     // 7. Kısa onay / bekleme mesajları → fallback'e düşürme, kısa nötr cevap ver
-    else if (hasAny(messageNorm, ["tamam", "olur", "peki", "tamamdir", "anladim", "anladım"]) && messageNorm.length < 20) {
+    else if (messageNorm.length < 20 && (
+      hasAny(messageNorm, ["tamam", "olur", "peki", "tamamdir", "anladim", "anladım", "evet", "tm", "tmm", "tmmm", "ok", "tmmdir", "dogru", "doğru"]) ||
+      String(context.message || "").trim().length <= 8
+    )) {
       return makeReply("Tabi efendim 😊", REPLY_CLASS.FIXED_INFO);
     }
     // 8. "Bekliyorum" variants
@@ -2088,8 +2127,13 @@ function buildDeterministicReply(context, state) {
   );
   if (sideReply.text) return sideReply;
 
-  // ── 3. Ürün seçimi ──
+  // ── 3. Ürün seçimi (ilk kez veya ürün değişikliği) ──
   if (isFreshProductSelection(context, state)) {
+    if (detectedProduct === "lazer") return makeReply(LASER_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
+    if (detectedProduct === "atac") return makeReply(ATAC_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
+  }
+  // Ürün switch: önceki ürün vardı, yenisi farklı → yeni ürün girişi göster
+  if (context.previousProduct && detectedProduct && context.previousProduct !== detectedProduct) {
     if (detectedProduct === "lazer") return makeReply(LASER_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
     if (detectedProduct === "atac") return makeReply(ATAC_PRICE_TEXT, REPLY_CLASS.PRODUCT_ENTRY);
   }
@@ -2104,6 +2148,11 @@ function buildDeterministicReply(context, state) {
     handleCompletionFlow(context, state, nextStage),
   );
   if (flowReply.text) return flowReply;
+
+  // ── 4b. back_text intent ama stage waiting_back_text DEĞİL → bilgi sorusu olarak cevapla ──
+  if (detectedIntent === "back_text" && state.conversation_stage !== "waiting_back_text") {
+    return makeReply("Evet efendim 😊 Resimli lazer kolyede arka yüzüne yazı veya istenirse ikinci bir fotoğraf eklenebiliyor.", REPLY_CLASS.FIXED_INFO);
+  }
 
   // ── 5. Kısa onay/emoji/bekleme mesajları — model'e düşürmeden stage'e uygun cevap ver ──
   const raw = String(context.message || "").trim();
@@ -2344,22 +2393,7 @@ function buildStateUpdate(context, replyPayload, state) {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ORDER SYNC v7 — TÜM BUGLAR DÜZELTİLDİ
-//
-// Düzeltmeler:
-// 1. Operations her önemli değişiklikte güncellenir (telefon, adres, foto, back_text)
-// 2. photo_url HER foto intent'inde yazılır
-// 3. photo_count sayılır
-// 4. back_text_value düzgün yazılır ("Nazar duası yaz" gibi mesajlar da)
-// 5. photo_received = "foto"
-// 6. Confidence score doğru hesaplanır
-//
-// Bu bloğu chat.js'te MEVCUT order sync fonksiyonlarının YERİNE yapıştır.
-// Silinecek fonksiyonlar: extractCustomerId, buildStableOrderId,
-// buildReferenceInfo, detectOrderSheetStatusFromTexts,
-// detectCustomerCancelIntent, calculateConfidenceScore,
-// extractPhoneEnhanced, buildOrderRawPayload, postOrderRaw,
-// postOrderOperation, safeOrderSync
+// ORDER SYNC SYSTEM v7
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function extractCustomerId(raw) {
@@ -2450,19 +2484,11 @@ function extractPhoneEnhanced(rawMessage) {
   return "";
 }
 
-/**
- * Foto sayacı: Mevcut photo_count'u artırır.
- * İlk foto → 1, ikinci foto → 2...
- */
 function getPhotoCount(context) {
   const existing = parseInt(unwrapManychatValue(context.raw.photo_count) || "0", 10);
   return existing + 1;
 }
 
-/**
- * Orders_Raw payload builder.
- * KURAL: Değer boşsa KEY PAYLOAD'DA OLMAZ → Apps Script o sütuna dokunmaz.
- */
 function buildOrderRawPayload(context, stateUpdate, replyPayload, orderId) {
   const replyText = cleanReply(replyPayload?.text || "");
   const finalStatus = detectOrderSheetStatusFromTexts(replyText);
@@ -2477,75 +2503,48 @@ function buildOrderRawPayload(context, stateUpdate, replyPayload, orderId) {
     if (value !== undefined && value !== null && String(value).trim() !== "") p[key] = value;
   }
 
-  // ═══ HER ZAMAN ═══
   p.order_id = orderId;
   p.updated_at = new Date().toISOString();
   p.last_message = message;
 
-  // order_status
   if (customerWantsCancel) p.order_status = "cancel";
   else if (finalStatus) p.order_status = finalStatus;
   else if (stateUpdate.order_status === "completed") p.order_status = "collecting_info";
   else if (stateUpdate.order_status) p.order_status = stateUpdate.order_status;
 
-  // ═══ KİMLİK BİLGİLERİ ═══
   add("customer_id", extractCustomerId(context.raw));
   add("instagram_username", unwrapManychatValue(context.raw.instagram_username) || unwrapManychatValue(context.raw.ig_username) || unwrapManychatValue(context.raw.username));
   add("customer_name", unwrapManychatValue(context.raw.customer_name) || unwrapManychatValue(context.raw.full_name));
 
-  // ═══ recipient_name: SADECE name_only + waiting_address ═══
   if (intent === "name_only") {
     const stage = context.fields.conversation_stage || context.conversationStage || "";
     if (stage === "waiting_address" && message.length >= 3) add("recipient_name", message);
   }
 
-  // ═══ phone ═══
   const phoneFromMsg = extractPhoneEnhanced(message);
   if (phoneFromMsg) add("phone", phoneFromMsg);
 
-  // ═══ product_type ═══
   add("product_type", stateUpdate.ilgilenilen_urun);
-
-  // ═══ payment_type ═══
   if (stateUpdate.payment_method) add("payment_type", stateUpdate.payment_method);
-
-  // ═══ full_address: SADECE adres intent'inde ═══
   if (intent === "address" || intent === "store_pickup") add("full_address", message);
 
-  // ═══ FOTO: photo_received + photo_url + photo_count ═══
   if (isPhotoMessage && (intent === "photo" || intent === "back_photo_upload")) {
     add("photo_received", "foto");
     add("photo_url", message);
     add("photo_count", getPhotoCount(context));
   }
 
-  // ═══ back_text_status + back_text_value ═══
-  // back_text intent'inde VE back_text_skip/back_photo_upload'da status yazılır
-  if (intent === "back_text" || intent === "back_text_skip" || intent === "back_photo_upload") {
-    add("back_text_status", stateUpdate.back_text_status);
-  }
-
-  // back_text_value: back_text intent'inde mesajı yaz
-  if (intent === "back_text") {
-    add("back_text_value", message);
-  }
-  // back_photo_upload: arka foto URL'i back_text_value'ya yaz
-  if (intent === "back_photo_upload" && isPhotoMessage) {
-    add("back_text_value", message);
-  }
-
-  // ═══ letters_value ═══
+  if (["back_text", "back_text_skip", "back_photo_upload"].includes(intent)) add("back_text_status", stateUpdate.back_text_status);
+  if (intent === "back_text") add("back_text_value", message);
+  if (intent === "back_photo_upload" && isPhotoMessage) add("back_text_value", message);
   if (intent === "letters" && stateUpdate.letters_received) add("letters_value", message);
 
-  // ═══ confidence_score ═══
   const confidence = calculateConfidenceScore(stateUpdate);
   if (confidence > 0) add("confidence_score", confidence);
 
-  // ═══ referans ═══
   const ref = buildReferenceInfo(context, stateUpdate);
   if (ref) { add("reference_type", ref.reference_type); add("reference_order_id", ref.reference_order_id); }
 
-  // ═══ İptal ═══
   if (customerWantsCancel) { add("cancel_reason", "customer_request"); add("cancelled_at", new Date().toISOString()); }
   if (finalStatus) add("confirmation_source", "bot");
   if (finalStatus === "confirmed") add("confirmed_at", new Date().toISOString());
@@ -2568,16 +2567,6 @@ async function postOrderOperation(opData) {
   catch (e) { console.error("Order OPS error:", e.message); }
 }
 
-/**
- * Ana order sync v7.
- *
- * Operations güncelleme mantığı GENİŞLETİLDİ:
- * - confirmed/cancel → yeni satır veya güncelle
- * - Sipariş tamamlandıktan sonra: telefon, adres, foto, back_text,
- *   recipient_name değişirse → Operations'ı da güncelle
- * - Sipariş henüz tamamlanmamışsa → Operations'a yazmaya gerek yok
- *   (confirmed/cancel hariç)
- */
 async function safeOrderSync(context, stateUpdate, replyPayload) {
   const hasProduct = stateUpdate.ilgilenilen_urun;
   const hasCustomer = extractCustomerId(context.raw);
@@ -2592,31 +2581,23 @@ async function safeOrderSync(context, stateUpdate, replyPayload) {
   const message = String(context.message || "").trim();
   const isPhotoMessage = looksLikePhotoUrl(message);
 
-  // ─── Orders_Raw ───
   const rawPayload = buildOrderRawPayload(context, stateUpdate, replyPayload, orderId);
   await postOrderRaw(rawPayload);
 
-  // ─── Operations: Ne zaman yazılacak? ───
   const isConfirmOrCancel = finalStatus === "confirmed" || finalStatus === "cancel" || customerWantsCancel;
   const isCompleted = stateUpdate.order_status === "completed" || truthy(stateUpdate.siparis_alindi);
-
-  // Sipariş tamamlandıktan sonra güncellenmesi gereken alanlar
   const phoneChanged = !!extractPhoneEnhanced(message);
   const addressChanged = intent === "address" || intent === "store_pickup";
   const photoChanged = isPhotoMessage && (intent === "photo" || intent === "back_photo_upload");
   const backTextChanged = intent === "back_text" || intent === "back_photo_upload";
   const nameChanged = intent === "name_only";
-  const paymentChanged = !!stateUpdate.payment_method && intent === "payment";
 
-  const shouldWriteOps = isConfirmOrCancel || (isCompleted && (phoneChanged || addressChanged || photoChanged || backTextChanged || nameChanged || paymentChanged));
+  const shouldWriteOps = isConfirmOrCancel || (isCompleted && (phoneChanged || addressChanged || photoChanged || backTextChanged || nameChanged));
 
   if (shouldWriteOps) {
     const op = { order_id: orderId };
-    function addOp(key, value) {
-      if (value !== undefined && value !== null && String(value).trim() !== "") op[key] = value;
-    }
+    function addOp(key, value) { if (value !== undefined && value !== null && String(value).trim() !== "") op[key] = value; }
 
-    // Confirmed/cancel alanları
     if (isConfirmOrCancel) {
       op.final_status = customerWantsCancel ? "cancel" : finalStatus;
       op.finalized_at = new Date().toISOString();
@@ -2624,49 +2605,26 @@ async function safeOrderSync(context, stateUpdate, replyPayload) {
       op.done = false;
     }
 
-    // Kimlik
-    addOp("instagram_username", unwrapManychatValue(context.raw.instagram_username) || unwrapManychatValue(context.raw.ig_username) || unwrapManychatValue(context.raw.username));
+    addOp("instagram_username", unwrapManychatValue(context.raw.instagram_username) || unwrapManychatValue(context.raw.ig_username));
     addOp("customer_name", unwrapManychatValue(context.raw.customer_name) || unwrapManychatValue(context.raw.full_name));
-
-    // recipient_name
-    if (nameChanged) {
-      const stage = context.fields.conversation_stage || context.conversationStage || "";
-      if (stage === "waiting_address" && message.length >= 3) addOp("recipient_name", message);
-    }
-
-    // phone
+    if (nameChanged && (context.fields.conversation_stage === "waiting_address") && message.length >= 3) addOp("recipient_name", message);
     if (phoneChanged) addOp("phone", extractPhoneEnhanced(message));
-
-    // address
     if (addressChanged) addOp("full_address", message);
-
-    // product & payment
     addOp("product_type", stateUpdate.ilgilenilen_urun);
     if (stateUpdate.payment_method) addOp("payment_type", stateUpdate.payment_method);
-
-    // photo
     if (photoChanged || stateUpdate.photo_received) addOp("photo_received", "foto");
     if (isPhotoMessage) addOp("photo_url", message);
-
-    // back_text
     if (intent === "back_text" && stateUpdate.back_text_status === "received") addOp("back_text_value", message);
     if (intent === "back_photo_upload" && isPhotoMessage) addOp("back_text_value", message);
-
-    // letters
     if (stateUpdate.letters_received) addOp("letters_value", context.message);
-
-    // confidence
     const confidence = calculateConfidenceScore(stateUpdate);
     if (confidence > 0) addOp("confidence_score", confidence);
-
-    // notes
     if (customerWantsCancel) addOp("internal_note", "Müşteri iptal talep etti");
 
     await postOrderOperation(op);
   }
 }
 
-// ━━━━ ORDER SYNC v7 SONU ━━━━
 // ─── MAIN PROCESSOR ─────────────────────────────────────────
 
 export async function processChat(body = {}, options = {}) {
@@ -2701,12 +2659,13 @@ export async function processChat(body = {}, options = {}) {
   const stateUpdate = buildStateUpdate(context, replyPayload, state);
   const finalResult = { success: true, ...stateUpdate };
 
-  // FIRE-AND-FORGET: Arka plan işleri cevabı beklemesin
-  // ManyChat 10s timeout'u aşmamak için await KULLANMA
-  safeOrderSync(context, stateUpdate, replyPayload).catch(e => console.error("OrderSync bg error:", e.message));
-  logConversationRow({ body, result: finalResult, options }).catch(e => console.error("Log bg error:", e.message));
+  // Arka plan görevlerini promise olarak döndür — handler'da waitUntil ile çalıştırılacak
+  const backgroundTasks = Promise.allSettled([
+    safeOrderSync(context, stateUpdate, replyPayload).catch(e => console.error("OrderSync bg error:", e.message)),
+    logConversationRow({ body, result: finalResult, options }).catch(e => console.error("Log bg error:", e.message)),
+  ]);
 
-  return finalResult;
+  return { ...finalResult, _backgroundTasks: backgroundTasks };
 }
 
 // ─── API HANDLER ────────────────────────────────────────────
@@ -2718,7 +2677,28 @@ export default async function handler(req, res) {
 
   try {
     const result = await processChat(req.body || {});
-    return res.status(200).json(result);
+
+    // _backgroundTasks'ı response'dan ayır
+    const backgroundTasks = result._backgroundTasks;
+    delete result._backgroundTasks;
+
+    // Cevabı HEMEN döndür — ManyChat 10s timeout'u aşmamak için
+    res.status(200).json(result);
+
+    // waitUntil: Vercel function cevap döndükten sonra bile
+    // arka plan görevlerinin (log + order sync) tamamlanmasını bekler.
+    // Bu sayede function erken kapanmaz, webhook'lar yazılır.
+    if (backgroundTasks) {
+      if (typeof res.waitUntil === "function") {
+        // Vercel Edge/Serverless waitUntil desteği (varsa)
+        res.waitUntil(backgroundTasks);
+      } else if (typeof globalThis.waitUntil === "function") {
+        globalThis.waitUntil(backgroundTasks);
+      } else {
+        // waitUntil yoksa en azından await et — function kapanmadan tamamlansın
+        await backgroundTasks;
+      }
+    }
   } catch (error) {
     console.error("chat.js error:", error);
     return res.status(200).json({
