@@ -2344,7 +2344,22 @@ function buildStateUpdate(context, replyPayload, state) {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ORDER SYNC SYSTEM v6
+// ORDER SYNC v7 — TÜM BUGLAR DÜZELTİLDİ
+//
+// Düzeltmeler:
+// 1. Operations her önemli değişiklikte güncellenir (telefon, adres, foto, back_text)
+// 2. photo_url HER foto intent'inde yazılır
+// 3. photo_count sayılır
+// 4. back_text_value düzgün yazılır ("Nazar duası yaz" gibi mesajlar da)
+// 5. photo_received = "foto"
+// 6. Confidence score doğru hesaplanır
+//
+// Bu bloğu chat.js'te MEVCUT order sync fonksiyonlarının YERİNE yapıştır.
+// Silinecek fonksiyonlar: extractCustomerId, buildStableOrderId,
+// buildReferenceInfo, detectOrderSheetStatusFromTexts,
+// detectCustomerCancelIntent, calculateConfidenceScore,
+// extractPhoneEnhanced, buildOrderRawPayload, postOrderRaw,
+// postOrderOperation, safeOrderSync
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function extractCustomerId(raw) {
@@ -2383,8 +2398,7 @@ function buildReferenceInfo(context, stateUpdate) {
 
   const prevOrderStatus = normalizeText(unwrapManychatValue(context.raw.order_status));
   const prevSiparisAlindi = truthy(unwrapManychatValue(context.raw.siparis_alindi));
-  const prevCancelReason = unwrapManychatValue(context.raw.cancel_reason);
-  const wasClosed = prevOrderStatus === "completed" || prevOrderStatus === "cancel_requested" || prevSiparisAlindi || !!prevCancelReason;
+  const wasClosed = prevOrderStatus === "completed" || prevOrderStatus === "cancel_requested" || prevSiparisAlindi;
   const isNewIntent = context.detectedIntent === "new_order" || context.detectedIntent === "order_start";
 
   if (wasClosed && isNewIntent) {
@@ -2395,13 +2409,13 @@ function buildReferenceInfo(context, stateUpdate) {
 
 function detectOrderSheetStatusFromTexts(...texts) {
   const joined = normalizeText(texts.filter(Boolean).join(" || "));
-  if (["siparisiniz alindi", "siparisiniz tamamlanmistir", "siparisiniz olusturuldu"].some(p => joined.includes(p))) return "confirmed";
+  if (["siparisiniz alindi", "siparisiniz tamamlanmistir", "siparisiniz olusturuldu", "siparisiniz olusturulmustur", "siparisiniz alinmistir"].some(p => joined.includes(p))) return "confirmed";
   if (["siparisiniz iptal edildi", "iptal edilmistir", "siparis iptal"].some(p => joined.includes(p))) return "cancel";
   return "";
 }
 
 function detectCustomerCancelIntent(messageNorm) {
-  return ["iptal", "vazgectim", "siparisi iptal", "iptal etmek istiyorum", "iptal edebilir misiniz", "almak istemiyorum"].some(p => messageNorm.includes(p));
+  return ["iptal", "vazgectim", "siparisi iptal", "iptal etmek istiyorum", "iptal edebilir misiniz", "almak istemiyorum", "iptal olsun", "iptal edelim", "iptal ettirmek istiyorum"].some(p => messageNorm.includes(p));
 }
 
 function calculateConfidenceScore(stateUpdate) {
@@ -2436,6 +2450,19 @@ function extractPhoneEnhanced(rawMessage) {
   return "";
 }
 
+/**
+ * Foto sayacı: Mevcut photo_count'u artırır.
+ * İlk foto → 1, ikinci foto → 2...
+ */
+function getPhotoCount(context) {
+  const existing = parseInt(unwrapManychatValue(context.raw.photo_count) || "0", 10);
+  return existing + 1;
+}
+
+/**
+ * Orders_Raw payload builder.
+ * KURAL: Değer boşsa KEY PAYLOAD'DA OLMAZ → Apps Script o sütuna dokunmaz.
+ */
 function buildOrderRawPayload(context, stateUpdate, replyPayload, orderId) {
   const replyText = cleanReply(replyPayload?.text || "");
   const finalStatus = detectOrderSheetStatusFromTexts(replyText);
@@ -2443,58 +2470,82 @@ function buildOrderRawPayload(context, stateUpdate, replyPayload, orderId) {
   const message = String(context.message || "").trim();
   const messageNorm = context.messageNorm || "";
   const customerWantsCancel = detectCustomerCancelIntent(messageNorm);
+  const isPhotoMessage = looksLikePhotoUrl(message);
 
   const p = {};
   function add(key, value) {
     if (value !== undefined && value !== null && String(value).trim() !== "") p[key] = value;
   }
 
+  // ═══ HER ZAMAN ═══
   p.order_id = orderId;
   p.updated_at = new Date().toISOString();
   p.last_message = message;
 
+  // order_status
   if (customerWantsCancel) p.order_status = "cancel";
   else if (finalStatus) p.order_status = finalStatus;
   else if (stateUpdate.order_status === "completed") p.order_status = "collecting_info";
   else if (stateUpdate.order_status) p.order_status = stateUpdate.order_status;
 
+  // ═══ KİMLİK BİLGİLERİ ═══
   add("customer_id", extractCustomerId(context.raw));
   add("instagram_username", unwrapManychatValue(context.raw.instagram_username) || unwrapManychatValue(context.raw.ig_username) || unwrapManychatValue(context.raw.username));
   add("customer_name", unwrapManychatValue(context.raw.customer_name) || unwrapManychatValue(context.raw.full_name));
 
+  // ═══ recipient_name: SADECE name_only + waiting_address ═══
   if (intent === "name_only") {
     const stage = context.fields.conversation_stage || context.conversationStage || "";
     if (stage === "waiting_address" && message.length >= 3) add("recipient_name", message);
   }
 
+  // ═══ phone ═══
   const phoneFromMsg = extractPhoneEnhanced(message);
   if (phoneFromMsg) add("phone", phoneFromMsg);
 
+  // ═══ product_type ═══
   add("product_type", stateUpdate.ilgilenilen_urun);
 
-  if (intent === "payment" && stateUpdate.payment_method) add("payment_type", stateUpdate.payment_method);
-  else if (stateUpdate.payment_method) add("payment_type", stateUpdate.payment_method);
+  // ═══ payment_type ═══
+  if (stateUpdate.payment_method) add("payment_type", stateUpdate.payment_method);
 
+  // ═══ full_address: SADECE adres intent'inde ═══
   if (intent === "address" || intent === "store_pickup") add("full_address", message);
 
-  if (looksLikePhotoUrl(message) && (intent === "photo" || intent === "back_photo_upload")) {
+  // ═══ FOTO: photo_received + photo_url + photo_count ═══
+  if (isPhotoMessage && (intent === "photo" || intent === "back_photo_upload")) {
     add("photo_received", "foto");
     add("photo_url", message);
-  } else if (stateUpdate.photo_received && intent === "photo") {
-    add("photo_received", "foto");
+    add("photo_count", getPhotoCount(context));
   }
 
-  if (["back_text", "back_text_skip", "back_photo_upload"].includes(intent)) add("back_text_status", stateUpdate.back_text_status);
-  if (intent === "back_text" && stateUpdate.back_text_status === "received") add("back_text_value", message);
-  if (intent === "back_photo_upload" && looksLikePhotoUrl(message)) add("back_text_value", message);
+  // ═══ back_text_status + back_text_value ═══
+  // back_text intent'inde VE back_text_skip/back_photo_upload'da status yazılır
+  if (intent === "back_text" || intent === "back_text_skip" || intent === "back_photo_upload") {
+    add("back_text_status", stateUpdate.back_text_status);
+  }
+
+  // back_text_value: back_text intent'inde mesajı yaz
+  if (intent === "back_text") {
+    add("back_text_value", message);
+  }
+  // back_photo_upload: arka foto URL'i back_text_value'ya yaz
+  if (intent === "back_photo_upload" && isPhotoMessage) {
+    add("back_text_value", message);
+  }
+
+  // ═══ letters_value ═══
   if (intent === "letters" && stateUpdate.letters_received) add("letters_value", message);
 
+  // ═══ confidence_score ═══
   const confidence = calculateConfidenceScore(stateUpdate);
   if (confidence > 0) add("confidence_score", confidence);
 
+  // ═══ referans ═══
   const ref = buildReferenceInfo(context, stateUpdate);
   if (ref) { add("reference_type", ref.reference_type); add("reference_order_id", ref.reference_order_id); }
 
+  // ═══ İptal ═══
   if (customerWantsCancel) { add("cancel_reason", "customer_request"); add("cancelled_at", new Date().toISOString()); }
   if (finalStatus) add("confirmation_source", "bot");
   if (finalStatus === "confirmed") add("confirmed_at", new Date().toISOString());
@@ -2517,6 +2568,16 @@ async function postOrderOperation(opData) {
   catch (e) { console.error("Order OPS error:", e.message); }
 }
 
+/**
+ * Ana order sync v7.
+ *
+ * Operations güncelleme mantığı GENİŞLETİLDİ:
+ * - confirmed/cancel → yeni satır veya güncelle
+ * - Sipariş tamamlandıktan sonra: telefon, adres, foto, back_text,
+ *   recipient_name değişirse → Operations'ı da güncelle
+ * - Sipariş henüz tamamlanmamışsa → Operations'a yazmaya gerek yok
+ *   (confirmed/cancel hariç)
+ */
 async function safeOrderSync(context, stateUpdate, replyPayload) {
   const hasProduct = stateUpdate.ilgilenilen_urun;
   const hasCustomer = extractCustomerId(context.raw);
@@ -2529,45 +2590,83 @@ async function safeOrderSync(context, stateUpdate, replyPayload) {
   const customerWantsCancel = detectCustomerCancelIntent(messageNorm);
   const intent = context.detectedIntent || "";
   const message = String(context.message || "").trim();
+  const isPhotoMessage = looksLikePhotoUrl(message);
 
+  // ─── Orders_Raw ───
   const rawPayload = buildOrderRawPayload(context, stateUpdate, replyPayload, orderId);
   await postOrderRaw(rawPayload);
 
-  const shouldCreateOps = finalStatus === "confirmed" || finalStatus === "cancel" || customerWantsCancel;
+  // ─── Operations: Ne zaman yazılacak? ───
+  const isConfirmOrCancel = finalStatus === "confirmed" || finalStatus === "cancel" || customerWantsCancel;
   const isCompleted = stateUpdate.order_status === "completed" || truthy(stateUpdate.siparis_alindi);
-  const shouldUpdateOps = isCompleted && (!!extractPhoneEnhanced(message) || intent === "address");
 
-  if (shouldCreateOps || shouldUpdateOps) {
+  // Sipariş tamamlandıktan sonra güncellenmesi gereken alanlar
+  const phoneChanged = !!extractPhoneEnhanced(message);
+  const addressChanged = intent === "address" || intent === "store_pickup";
+  const photoChanged = isPhotoMessage && (intent === "photo" || intent === "back_photo_upload");
+  const backTextChanged = intent === "back_text" || intent === "back_photo_upload";
+  const nameChanged = intent === "name_only";
+  const paymentChanged = !!stateUpdate.payment_method && intent === "payment";
+
+  const shouldWriteOps = isConfirmOrCancel || (isCompleted && (phoneChanged || addressChanged || photoChanged || backTextChanged || nameChanged || paymentChanged));
+
+  if (shouldWriteOps) {
     const op = { order_id: orderId };
-    function addOp(key, value) { if (value !== undefined && value !== null && String(value).trim() !== "") op[key] = value; }
+    function addOp(key, value) {
+      if (value !== undefined && value !== null && String(value).trim() !== "") op[key] = value;
+    }
 
-    if (shouldCreateOps) {
+    // Confirmed/cancel alanları
+    if (isConfirmOrCancel) {
       op.final_status = customerWantsCancel ? "cancel" : finalStatus;
       op.finalized_at = new Date().toISOString();
       op.decision_source = customerWantsCancel ? "customer" : "bot";
       op.done = false;
     }
 
-    addOp("instagram_username", unwrapManychatValue(context.raw.instagram_username) || unwrapManychatValue(context.raw.ig_username));
+    // Kimlik
+    addOp("instagram_username", unwrapManychatValue(context.raw.instagram_username) || unwrapManychatValue(context.raw.ig_username) || unwrapManychatValue(context.raw.username));
     addOp("customer_name", unwrapManychatValue(context.raw.customer_name) || unwrapManychatValue(context.raw.full_name));
-    if (intent === "name_only" && (context.fields.conversation_stage === "waiting_address") && message.length >= 3) addOp("recipient_name", message);
-    const phoneFromMsg = extractPhoneEnhanced(message);
-    if (phoneFromMsg) addOp("phone", phoneFromMsg);
-    if (intent === "address" || intent === "store_pickup") addOp("full_address", message);
+
+    // recipient_name
+    if (nameChanged) {
+      const stage = context.fields.conversation_stage || context.conversationStage || "";
+      if (stage === "waiting_address" && message.length >= 3) addOp("recipient_name", message);
+    }
+
+    // phone
+    if (phoneChanged) addOp("phone", extractPhoneEnhanced(message));
+
+    // address
+    if (addressChanged) addOp("full_address", message);
+
+    // product & payment
     addOp("product_type", stateUpdate.ilgilenilen_urun);
-    addOp("payment_type", stateUpdate.payment_method);
-    if (stateUpdate.photo_received) addOp("photo_received", "foto");
-    if (looksLikePhotoUrl(message)) addOp("photo_url", message);
-    if (stateUpdate.back_text_status === "received") addOp("back_text_value", context.message);
+    if (stateUpdate.payment_method) addOp("payment_type", stateUpdate.payment_method);
+
+    // photo
+    if (photoChanged || stateUpdate.photo_received) addOp("photo_received", "foto");
+    if (isPhotoMessage) addOp("photo_url", message);
+
+    // back_text
+    if (intent === "back_text" && stateUpdate.back_text_status === "received") addOp("back_text_value", message);
+    if (intent === "back_photo_upload" && isPhotoMessage) addOp("back_text_value", message);
+
+    // letters
     if (stateUpdate.letters_received) addOp("letters_value", context.message);
+
+    // confidence
     const confidence = calculateConfidenceScore(stateUpdate);
     if (confidence > 0) addOp("confidence_score", confidence);
+
+    // notes
     if (customerWantsCancel) addOp("internal_note", "Müşteri iptal talep etti");
 
     await postOrderOperation(op);
   }
 }
 
+// ━━━━ ORDER SYNC v7 SONU ━━━━
 // ─── MAIN PROCESSOR ─────────────────────────────────────────
 
 export async function processChat(body = {}, options = {}) {
