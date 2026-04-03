@@ -1087,16 +1087,32 @@ function detectIntent(baseContext, extracted) {
   if (looksLikePhotoUrl(message)) return "photo";
 
   // Smalltalk (keyword intent'lerden SONRA kontrol)
-  // AMA: Mesajda sipariş/ürün niyeti de varsa smalltalk'a düşürme
+  // AMA: Mesajda soru sinyali varsa smalltalk'ı baskıla — soru intent'i öne geçsin
   if (hasAny(messageNorm, KEYWORDS.intents.smalltalk)) {
-    const hasOrderIntent = hasAny(messageNorm, [
-      ...KEYWORDS.intents.orderStart,
-      ...KEYWORDS.intents.newOrder,
-      "siparis", "sipariş", "almak istiyorum", "yaptirmak", "yaptırmak",
-      "resimli", "lazer", "atac", "ataç", "harfli",
-    ]);
-    if (!hasOrderIntent) return "smalltalk";
-    // Sipariş niyeti de varsa → aşağıda order_start veya general olarak yakalanacak
+    // Soru sinyali kontrolü — "Beğendim ama boyutu ne kadar" gibi birleşik mesajlar
+    const hasQuestionSignal = /[?]/.test(raw) ||
+      // Türkçe soru ekleri — bağımsız kelime olarak (geçmiş, yakışır gibi kelimelerde false positive önle)
+      /(?:^|\s)(mi|mı|mu|mü|miyim|mıyım|misiniz|mısınız|musunuz|müsünüz)(?:\s|$|[?.,!])/i.test(raw) ||
+      hasAny(messageNorm, [
+        "ne kadar", "kac", "kaç", "nasil", "nasıl", "nedir",
+        "olur mu", "olurmu", "var mi", "var mı", "varmi", "varmı",
+        "yapilir mi", "yapılır mı", "oluyor mu", "oluyormu",
+        "dayanikli", "kararma", "celik mi", "gumus mu", "altin mi",
+        "kac cm", "kaç cm", "kac gun", "kaç gün", "kac tl", "kaç tl",
+      ]);
+
+    // Soru sinyali varsa → smalltalk'a düşürme, aşağıdaki intent'lere bırak
+    // Soru sinyali yoksa → sipariş niyeti kontrolü yap
+    if (!hasQuestionSignal) {
+      const hasOrderIntent = hasAny(messageNorm, [
+        ...KEYWORDS.intents.orderStart,
+        ...KEYWORDS.intents.newOrder,
+        "siparis", "sipariş", "almak istiyorum", "yaptirmak", "yaptırmak",
+        "resimli", "lazer", "atac", "ataç", "harfli",
+      ]);
+      if (!hasOrderIntent) return "smalltalk";
+    }
+    // Soru sinyali veya sipariş niyeti varsa → aşağıdaki handler'lara düşsün
   }
 
   // ═══ KATMAN 3: ENTITY-BASED INTENT'LER (en düşük öncelik) ═══
