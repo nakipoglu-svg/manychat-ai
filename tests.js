@@ -836,6 +836,47 @@ const tests = [
   { id: "ST41", name: "[40K] (8x) Neden cevap vermiyorsunuz", input: body("Neden cevap vermiyorsunuz", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
   { id: "ST42", name: "[40K] (7x) Siparişim hazır mı", input: body("Siparişim hazır mı", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
 
+  // ════════════════════════════════════════════════════════════════════════
+  // GRUP 28: MIXED MESSAGE SUITE (MX01–MX20)
+  // Smalltalk + soru birleşik mesajlar — soru intent'i kazanmalı
+  // ════════════════════════════════════════════════════════════════════════
+
+  // --- Smalltalk + chain/boyut ---
+  { id: "MX01", name: "[MIX] Beğendim + boyut", input: body("Beğendim ama boyutu ne kadar", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "chain_question" } },
+  { id: "MX02", name: "[MIX] Güzel + zincir cm", input: body("Çok güzel zinciri kaç cm", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "chain_question" } },
+
+  // --- Smalltalk + trust ---
+  { id: "MX03", name: "[MIX] Sağlık + kararma", input: body("Ellerinize sağlık kararır mı", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "trust" } },
+  { id: "MX04", name: "[MIX] Güzel + kararma yapar mı", input: body("Çok güzel olmuş kararma yapar mı", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "trust" } },
+
+  // --- Smalltalk + material ---
+  { id: "MX05", name: "[MIX] Teşekkür + çelik mi", input: body("Teşekkürler çelik mi peki", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "material_question" } },
+  { id: "MX06", name: "[MIX] Kolay gelsin + dayanıklı mı", input: body("Kolay gelsin suya dayanıklı mı", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "material_question" } },
+
+  // --- Smalltalk + price ---
+  { id: "MX07", name: "[MIX] Güzelmiş + fiyat", input: body("Çok güzelmiş fiyat nedir", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "price" } },
+  { id: "MX08", name: "[MIX] Beğendim + ne kadar", input: body("Beğendim ne kadar acaba", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "price" } },
+
+  // --- Smalltalk + shipping ---
+  { id: "MX09", name: "[MIX] Tamam da + kargo", input: body("Tamam da kargo kaç günde gelir", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "shipping" } },
+  { id: "MX10", name: "[MIX] Sağlık + kargo ne kadar", input: body("Elinize sağlık ama kargo ne kadar", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "gun" },
+
+  // --- Smalltalk + back text/photo ---
+  { id: "MX11", name: "[MIX] Bayıldım + arka yazı", input: body("Bayıldım arkasına yazı oluyor mu", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "back_text_info" } },
+  { id: "MX12", name: "[MIX] Teşekkür + iki resim", input: body("Teşekkür ederim iki resim olur mu", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "back_photo_info" } },
+
+  // --- Smalltalk + payment ---
+  { id: "MX13", name: "[MIX] Harika + kapıda ödeme var mı", input: body("Harika olmuş kapıda ödeme var mı", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "payment" } },
+
+  // --- Pure smalltalk hala çalışmalı (regression) ---
+  { id: "MX14", name: "[MIX] Pure: Geçmiş olsun → smalltalk", input: body("Çok geçmiş olsun", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "smalltalk" } },
+  { id: "MX15", name: "[MIX] Pure: Kolay gelsin → smalltalk", input: body("Kolay gelsin", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "smalltalk" } },
+  { id: "MX16", name: "[MIX] Pure: Teşekkür ederim → smalltalk", input: body("Teşekkür ederim"), expect: { last_intent: "smalltalk" } },
+  { id: "MX17", name: "[MIX] Pure: Allah razı olsun → smalltalk", input: body("Allah razı olsun"), expect: { last_intent: "smalltalk" } },
+  { id: "MX18", name: "[MIX] Pure: Merhaba → smalltalk", input: body("Merhaba"), expect: { last_intent: "smalltalk" } },
+  { id: "MX19", name: "[MIX] Pure: Çok beğendim → smalltalk", input: body("Çok beğendim"), expect: { last_intent: "smalltalk" } },
+  { id: "MX20", name: "[MIX] Pure: İnşallah → smalltalk", input: body("İnşallah"), expect: { last_intent: "smalltalk" } },
+
 ];
 
 // ─── RUNNER ───────────────────────────────────────────────────────────────
@@ -873,6 +914,7 @@ async function runTests() {
     if (id.startsWith("LR")) return "LOG_REGRESSION";
     if (id.startsWith("GC")) return "GPT_GAP_COVERAGE";
     if (id.startsWith("ST")) return "40K_STRATEGIC";
+    if (id.startsWith("MX")) return "MIXED_MESSAGE";
     return "OTHER";
   }
 
@@ -941,6 +983,7 @@ async function runTests() {
     LOG_REGRESSION: "Log Regression",
     GPT_GAP_COVERAGE: "GPT Gap Coverage",
     "40K_STRATEGIC": "40K Strategic",
+    MIXED_MESSAGE: "Mixed Message",
     OTHER: "Other",
   };
 
