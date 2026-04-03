@@ -2162,7 +2162,7 @@ async function callModel(messages) {
   if (!apiKey) throw new Error("API key missing.");
 
   const controller = new AbortController();
-  const timeoutMs = Number(process.env.MODEL_TIMEOUT_MS || 15000);
+  const timeoutMs = Number(process.env.MODEL_TIMEOUT_MS || 7000);
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
@@ -2170,7 +2170,7 @@ async function callModel(messages) {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       signal: controller.signal,
-      body: JSON.stringify({ model, temperature: 0.2, max_tokens: 220, messages }),
+      body: JSON.stringify({ model, temperature: 0.2, max_tokens: 150, messages }),
     });
 
     if (!response.ok) {
@@ -2514,8 +2514,12 @@ export async function processChat(body = {}, options = {}) {
 
   const stateUpdate = buildStateUpdate(context, replyPayload, state);
   const finalResult = { success: true, ...stateUpdate };
-  await safeOrderSync(context, stateUpdate, replyPayload);
-  await logConversationRow({ body, result: finalResult, options });
+
+  // FIRE-AND-FORGET: Arka plan işleri cevabı beklemesin
+  // ManyChat 10s timeout'u aşmamak için await KULLANMA
+  safeOrderSync(context, stateUpdate, replyPayload).catch(e => console.error("OrderSync bg error:", e.message));
+  logConversationRow({ body, result: finalResult, options }).catch(e => console.error("Log bg error:", e.message));
+
   return finalResult;
 }
 
