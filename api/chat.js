@@ -2718,15 +2718,12 @@ export async function processChat(body = {}, options = {}) {
   // Log + Order Sync: Cevaptan ÖNCE çalıştır (await ile).
   // Deterministik cevap 50ms, log+sync 1-2s, toplam 2-3s — ManyChat 10s limiti içinde.
   // Model fallback'te: 7s model + 2s log = 9s — hala 10s altında.
-  try {
-    await Promise.allSettled([
-      safeOrderSync(context, stateUpdate, replyPayload).catch(e => console.error("OrderSync error:", e.message)),
-      logConversationRow({ body, result: finalResult, options }).catch(e => console.error("Log error:", e.message)),
-    ]);
+try {
+    await safeOrderSync(context, stateUpdate, replyPayload);
   } catch (e) {
-    console.error("Background tasks error:", e.message);
+    console.error("OrderSync error:", e.message);
   }
-
+  logConversationRow({ body, result: finalResult, options }).catch(e => console.error("Log error:", e.message));
   return finalResult;
 }
 
