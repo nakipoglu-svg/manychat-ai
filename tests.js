@@ -1029,12 +1029,12 @@ const tests = [
   { id: "BF15", name: "[BF] URL w_back_text → back_photo_upload", input: body("https://lookaside.fbsbx.com/photo.jpg", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { last_intent: "back_photo_upload" } },
 
   // --- Soru algılama ("Tabi efendim" deme koruması) ---
-  { id: "BF16", name: "[BF] Kaç resim koyabiliyorsunuz → cevap ver", input: body("Kaç resim koyabiliyorsunuz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "2 fotograf" },
+  { id: "BF16", name: "[BF] Kaç resim koyabiliyorsunuz → cevap ver", input: body("Kaç resim koyabiliyorsunuz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "fotograf koyabil" },
   { id: "BF17", name: "[BF] Gümüş yapabiliyor musunuz → çelik", input: body("Gümüş yapabiliyor musunuz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "celik" },
   { id: "BF18", name: "[BF] Yapım aşamanız nasıl → süreç anlat", input: body("Yapım aşamanız nasıl", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "grafiker" },
   { id: "BF19", name: "[BF] Tel alabilir miyim → WhatsApp", input: body("Tel alabilir miyim", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "0534" },
   { id: "BF20", name: "[BF] Kapıda ödeme nedir → açıklama", input: body("Kapıda ödeme nedir", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "nakit" },
-  { id: "BF21", name: "[BF] 3 lü yapıyor musunuz → 2 foto cevap", input: body("3 lü yapıyormusunuz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "2 fotograf" },
+  { id: "BF21", name: "[BF] 3 lü yapıyor musunuz → evet cevap", input: body("3 lü yapıyormusunuz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "fotograf koyabil" },
 
   // --- Bitince paylaşır mısınız ---
   { id: "BF22", name: "[BF] Bitince paylaşırsanız sevinirim", input: body("Bitince benimle paylaşırsanız sevinirim", lazerCompleted()), expectReplyIncludes: "paylasiyoruz" },
@@ -1086,6 +1086,103 @@ const tests = [
   { id: "BF44", name: "[BF] 650 tl dimi completed → sabit fiyat cevabı", input: body("650 tl dimi", lazerCompleted()), expectReplyIncludes: "649" },
   { id: "BF45", name: "[BF] Fotograflar silinir mi → ekibimiz", input: body("Fotograflar silinir mi", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
 
+  // ════════════════════════════════════════════════════════════════════════
+  // GRUP 31: PRODUCTION LOG TUR 2-3 (LT01–LT50)
+  // Gerçek production loglarından çıkarılmış bug fix + regression testleri
+  // ════════════════════════════════════════════════════════════════════════
+
+  // --- Malzeme / Metal / Gümüş ---
+  { id: "LT01", name: "[LT] Metal → malzeme cevabı", input: body("Metal", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "celik" },
+  { id: "LT02", name: "[LT] Gümüş mü → çelik + kaplama var", input: body("Gümüş mü", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "kaplama" },
+  { id: "LT03", name: "[LT] Gümüş yapabiliyor musunuz → kaplama", input: body("Gümüş yapabiliyor musunuz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "kaplama" },
+  { id: "LT04", name: "[LT] Yuvarlak plakanın ölçüsü → 3 cm", input: body("Yuvarlak plakanın ölçüsü nedir", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "3 cm" },
+
+  // --- Duygusal mesaj ---
+  { id: "LT05", name: "[LT] Oğlum vefat etti → başsağlığı", input: body("Oğlum vefat etti onun için yaptırıyorum", lazerWaitingPayment()), expectReplyIncludes: "basini" },
+  { id: "LT06", name: "[LT] Allah razı olsun → cümlemizden", input: body("Allah razı olsun", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "cumlemizden" },
+
+  // --- Ödeme algılama ---
+  { id: "LT07", name: "[LT] Hesaptan atıcam → EFT kabul", input: body("Hesaptan atıcam", lazerWaitingPayment()), expect: { payment_method: "eft_havale" } },
+  { id: "LT08", name: "[LT] Ücreti attım kontrol edin → ekibimiz", input: body("Ücreti attım kontrol eder misiniz", lazerWaitingAddress()), expectReplyIncludes: "ekibimiz" },
+  { id: "LT09", name: "[LT] Parayı gönderdim → ekibimiz kontrol", input: body("Parayı gönderdim", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+
+  // --- Kargo kapsamı ---
+  { id: "LT10", name: "[LT] Her yere kargo var mı → evet her yere", input: body("Her yere kargo varmı bana yakın gerek", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "her yeri" },
+  { id: "LT11", name: "[LT] Alibeyköydeyim → kargo var", input: body("Alibeyköydeyim ben", lazer({ conversation_stage: "waiting_photo" })), expectReplyNotIncludes: "ekibimize iletiyorum" },
+  { id: "LT12", name: "[LT] Artı kargo dimi → ücretsiz", input: body("Artı kargo dimi", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "ucretsiz" },
+  { id: "LT13", name: "[LT] PTT kargo ile gönderim var mı → evet PTT", input: body("PTT kargo ile gönderim varmı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "PTT" },
+  { id: "LT14", name: "[LT] Kargo mesajı atar mısınız → ekibimiz (completed)", input: body("Kargo mesajını da atar mısınız", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
+
+  // --- Sitem / Bekleme ---
+  { id: "LT15", name: "[LT] Bana dönecektiniz ama → özür + ekibimiz", input: body("Bana dönecektiniz ama", lazerWaitingAddress()), expectReplyIncludes: "ozur" },
+  { id: "LT16", name: "[LT] İlettim ama yeniden mi göndereyim → aldık", input: body("İlettim ama yeniden mi göndereyim anlayamadım", lazerWaitingAddress()), expectReplyIncludes: "aldim" },
+
+  // --- Beğeni + akış devamı ---
+  { id: "LT17", name: "[LT] Çok tatlı duruyor w_address → teşekkür + adres sor", input: body("Çok tatlı duruyor 🥰", lazerWaitingAddress()), expectReplyIncludes: "tesekkur" },
+
+  // --- Arkalı önlü + fiyat ---
+  { id: "LT18", name: "[LT] İki çocuğum arkalı önlü ne kadar → fiyat farkı yok", input: body("İki çocuğum var arkalı önlü ne kadar olur", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "fark" },
+
+  // --- Çoklu foto / resim ---
+  { id: "LT19", name: "[LT] 3 resim aynı karede olur mu → evet", input: body("İyi günler 3 resim aynı karede oluyor mu acaba", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "evet" },
+  { id: "LT20", name: "[LT] Birleştirip yapıyor musunuz → evet birleştiriyoruz", input: body("Çocukların fotoğrafını ayrı ayrı yollasak birleştirip yapıyor musunuz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "evet" },
+  { id: "LT21", name: "[LT] Örnek var mıdır üçlü → ekibimiz gönderecek", input: body("Örnek var mıdır üçlü", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "ekibimiz" },
+  { id: "LT22", name: "[LT] 5 kişi tek yüze olur mu → evet", input: body("5 kişi tek yüze olur mu", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "evet" },
+
+  // --- Bundan olacak / istiyorum ---
+  { id: "LT23", name: "[LT] Bundan olacak → not aldım + foto iste", input: body("Bundan olacak", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "not aldim" },
+  { id: "LT24", name: "[LT] Bu resimli kolye → fallback DEĞİL", input: body("Bu resimli kolye", lazer({ conversation_stage: "waiting_photo" })), expectReplyNotIncludes: "ekibimize iletiyorum" },
+
+  // --- Yapım süreci / değişiklik ---
+  { id: "LT25", name: "[LT] Resimde değişiklik olmaz dimi → grafiker açıkla", input: body("Resimde de herhangi bir değişiklik olmaz dimi", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "grafiker" },
+  { id: "LT26", name: "[LT] Yapay zeka ile mi yapıyorsunuz → hayır", input: body("Yapay zeka ile mi yapıyorsunuz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "yapay zeka kullanmiyoruz" },
+
+  // --- Dönüş yapacağım ---
+  { id: "LT27", name: "[LT] Düşünüp size göndereceğim → bekliyoruz", input: body("Düşünüp size göndereceğim", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "bekliyoruz" },
+
+  // --- Ne zaman elimde olur ---
+  { id: "LT28", name: "[LT] Ne zaman elimde olur sipariş versem → kargo süresi", input: body("Ne zaman elimde olur sipariş versem", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "gun" },
+
+  // --- Kapıda ödeme w_back_text → kabul et ---
+  { id: "LT29", name: "[LT] Tamam kapıda ödeme olur mu w_back_text → ödeme kabul", input: body("Tamam kapıda ödeme olurmu", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { payment_method: "kapida_odeme" } },
+
+  // --- Sipariş onay ---
+  { id: "LT30", name: "[LT] Siparişiniz oluşturuldu completed → onay", input: body("Siparişiniz oluşturuldu", lazerCompleted()), expectReplyIncludes: "onaylanmistir" },
+  { id: "LT31", name: "[LT] Siparişiniz alındı completed → onay", input: body("Siparişiniz alındı", lazerCompleted()), expectReplyIncludes: "onaylanmistir" },
+
+  // --- Negatif testler (yanlış tetiklenmemeli) ---
+  { id: "LT32", name: "[LT] Normal EFT → pazarlık reddi DEĞİL", input: body("EFT ile ödeyeceğim", lazerWaitingPayment()), expectReplyNotIncludes: "sabit" },
+  { id: "LT33", name: "[LT] Merhaba → başsağlığı DEĞİL", input: body("Merhaba", lazer({ conversation_stage: "waiting_photo" })), expectReplyNotIncludes: "basini" },
+  { id: "LT34", name: "[LT] Tamam → birleştirme cevabı DEĞİL", input: body("Tamam", lazer({ conversation_stage: "waiting_photo" })), expectReplyNotIncludes: "birlestir" },
+  { id: "LT35", name: "[LT] Fiyat → kaplama cevabı DEĞİL", input: body("Fiyat ne kadar", lazer({ conversation_stage: "waiting_photo" })), expectReplyNotIncludes: "kaplama" },
+  { id: "LT36", name: "[LT] Kapıda ödeme olsun → nedir cevabı DEĞİL", input: body("Kapıda ödeme olsun", lazerWaitingPayment()), expectReplyNotIncludes: "kurye" },
+  { id: "LT37", name: "[LT] Çelik mi → gümüş kaplama DEĞİL (normal celik cevabı)", input: body("Çelik mi", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "paslanmaz" },
+
+  // --- Kargo süresi farklı sorular ---
+  { id: "LT38", name: "[LT] Kaç güne hazır olur → kargo süresi", input: body("Kaç güne hazır olur", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "gun" },
+  { id: "LT39", name: "[LT] Birkaç gün içinde dönüş yapacağım → kargo DEĞİL", input: body("Tamam birkaç gün içinde dönüş yapacağım teşekkürler", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "bekliyoruz" },
+
+  // --- 600 TL / Pazarlık (regression) ---
+  { id: "LT40", name: "[LT] 600 TL olur mu → sabit fiyat", input: body("600 TL olur mu", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "sabit" },
+  { id: "LT41", name: "[LT] 550 yapın → sabit fiyat", input: body("550 tl yap", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "sabit" },
+  { id: "LT42", name: "[LT] Çok pahalıymış → Tabi efendim DEĞİL", input: body("Çok pahalıymış ya", lazer({ conversation_stage: "waiting_photo" })), expectReplyNotIncludes: "tabi efendim" },
+
+  // --- WhatsApp ---
+  { id: "LT43", name: "[LT] Tel alabilir miyim → WhatsApp", input: body("Tel alabilir miyim", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "0534" },
+
+  // --- Foto keyword daraltma (regression) ---
+  { id: "LT44", name: "[LT] Çıplak URL → müşteri fotoğrafı", input: body("https://lookaside.fbsbx.com/photo.jpg", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "photo", photo_received: "1" } },
+  { id: "LT45", name: "[LT] URL + bu model → product_image_reference", input: body("https://lookaside.fbsbx.com/photo.jpg bu model olsun", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "product_image_reference" } },
+  { id: "LT46", name: "[LT] URL + bu olur mu → müşteri fotoğrafı", input: body("https://lookaside.fbsbx.com/photo.jpg bu olur mu", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "photo" } },
+
+  // --- Gönderdim/yolladım pattern ---
+  { id: "LT47", name: "[LT] Gönderdim w_photo → kabul", input: body("Gönderdim", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "aldim" },
+  { id: "LT48", name: "[LT] Göndermiş olduğum foto uygun mu → ulaştı", input: body("Göndermiş olduğum foto uygun mu acaba", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "ulasti" },
+
+  // --- Cross product fiyat ---
+  { id: "LT49", name: "[LT] Harfli ataç fiyatı lazer'da → 499", input: body("Harfli ataç kolyenin fiyatı nedir", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "499" },
+  { id: "LT50", name: "[LT] Kapıda ödeme nedir → nakit açıklama", input: body("Kapıda ödeme nedir", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "nakit" },
+
 ];
 
 // ─── RUNNER ───────────────────────────────────────────────────────────────
@@ -1126,6 +1223,7 @@ async function runTests() {
     if (id.startsWith("MX")) return "MIXED_MESSAGE";
     if (id.startsWith("PL")) return "PROD_LOG_REGRESSION";
     if (id.startsWith("BF")) return "BUG_FIX_V2";
+    if (id.startsWith("LT")) return "LOG_TUR_2_3";
     return "OTHER";
   }
 
@@ -1197,6 +1295,7 @@ async function runTests() {
     MIXED_MESSAGE: "Mixed Message",
     PROD_LOG_REGRESSION: "Prod Log Regression",
     BUG_FIX_V2: "Bug Fix v2",
+    LOG_TUR_2_3: "Log Tur 2-3",
     OTHER: "Other",
   };
 
