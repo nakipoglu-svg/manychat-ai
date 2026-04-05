@@ -113,6 +113,7 @@ const KEYWORDS = {
       "gunaydin", "günaydın", "iyi geceler",
       "nasilsiniz", "nasılsınız",
       "tesekkur", "teşekkür", "tesekkurler", "teşekkürler", "tsk", "tşk", "tesekurler", "teşekürler",
+      "tesekur", "teşekür",
       "sagolun", "sağolun", "saol", "sağol",
       "allah razi olsun", "allah razı olsun",
       "kolay gelsin",
@@ -135,6 +136,9 @@ const KEYWORDS = {
       "gecmis olsun", "geçmiş olsun", "cok gecmis olsun", "çok geçmiş olsun",
       "rica ederim", "rica ederiz",
       "liked a message", "reacted",
+      "hos bulduk", "hoş bulduk", "hos buldum", "hoş buldum",
+      "hayirli geceler", "hayırlı geceler",
+      "allah sabir versin", "allah sabır versin",
     ],
 
     // ──── LOCATION ────
@@ -314,6 +318,12 @@ const KEYWORDS = {
       "3 oglu", "3 oğlu",
       "3 lu fotograf", "3 lü fotoğraf", "uclu foto", "üçlü foto",
       "3 resim", "uc resim", "üç resim",
+      // Production log'dan: iki kişi soruları
+      "iki kisi oluyor mu", "iki kişi oluyor mu",
+      "iki kisinin fotosu", "iki kişinin fotosu",
+      "iki kisinin resmi", "iki kişinin resmi",
+      "iki kisi olur mu", "iki kişi olur mu",
+      "iki resmi birlestir", "iki resmi birleştir",
     ],
 
     // ──── BACK TEXT SKIP ────
@@ -924,6 +934,11 @@ function detectIntent(baseContext, extracted) {
       "olur mu bu fotograf", "olur mu bu foto", "sizce bu fotograf olur mu",
       "bu fotograf olur mu", "bu foto olur mu", "fotograf uygun mu", "foto uygun mu",
       "uygun mudur",
+      // Production log'dan: kısa soru varyantları
+      "bu olur mu", "bu olurmu", "boyle olur mu", "böyle olur mu",
+      "bu uygun mu", "bu uygunmu",
+      "mesela boyle", "mesela böyle",
+      "bu fotograf uygun", "bu fotoğraf uygun",
     ])) return "photo_suitability_question";
 
     if (hasAny(messageNorm, [
@@ -1957,7 +1972,7 @@ function handleSmalltalkIntent(context) {
   if (hasAny(messageNorm, ["insallah", "inşallah", "allah razi olsun", "hayirli isler", "bol kazanclar", "amin", "masallah", "eyvallah"])) {
     return makeReply("Amin, çok teşekkür ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
   }
-  if (hasAny(messageNorm, ["tesekkur", "teşekkür", "sagolun", "sağolun", "saol", "tsk", "tşk", "rica ederim"])) {
+  if (hasAny(messageNorm, ["tesekkur", "teşekkür", "tesekur", "teşekür", "sagolun", "sağolun", "saol", "tsk", "tşk", "rica ederim"])) {
     return makeReply("Rica ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
   }
   if (hasAny(messageNorm, ["gecmis olsun", "geçmiş olsun"])) {
@@ -2179,34 +2194,34 @@ function buildDeterministicReply(context, state) {
   if (isShortConfirm || isEmoji || isVeryShort) {
     const stage = state.conversation_stage || "";
     if (stage === "waiting_photo") {
-      return makeReply("Fotoğrafı buradan gönderebilirsiniz efendim 😊", REPLY_CLASS.FALLBACK);
+      return makeReply("Fotoğrafı buradan gönderebilirsiniz efendim 😊", REPLY_CLASS.FLOW_PROGRESS);
     }
     if (stage === "waiting_back_text") {
-      return makeReply("Arka yüze yazı eklemek ister misiniz? İsterseniz yazıyı buradan iletebilirsiniz, istemezseniz \"yok\" yazabilirsiniz 😊", REPLY_CLASS.FALLBACK);
+      return makeReply("Arka yüze yazı eklemek ister misiniz? İsterseniz yazıyı buradan iletebilirsiniz, istemezseniz \"yok\" yazabilirsiniz 😊", REPLY_CLASS.FLOW_PROGRESS);
     }
     if (stage === "waiting_payment") {
-      return makeReply("Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim? 😊", REPLY_CLASS.FALLBACK);
+      return makeReply("Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim? 😊", REPLY_CLASS.FLOW_PROGRESS);
     }
     if (stage === "waiting_address") {
-      return makeReply("Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz efendim? 😊", REPLY_CLASS.FALLBACK);
+      return makeReply("Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz efendim? 😊", REPLY_CLASS.FLOW_PROGRESS);
     }
     if (stage === "waiting_letters") {
-      return makeReply("Yapılmasını istediğiniz harfleri yazabilirsiniz efendim 😊", REPLY_CLASS.FALLBACK);
+      return makeReply("Yapılmasını istediğiniz harfleri yazabilirsiniz efendim 😊", REPLY_CLASS.FLOW_PROGRESS);
     }
-    return makeReply("Tabi efendim 😊", REPLY_CLASS.FALLBACK);
+    return makeReply("Tabi efendim 😊", REPLY_CLASS.FLOW_PROGRESS);
   }
 
   // ── 6. "Gönderdim" / "yukarıda attım" pattern'i — stage-aware ──
   if (hasAny(messageNorm, ["gonderdim", "gönderdim", "attim", "attım", "yukarida", "yukarıda", "ustte", "üstte", "yazdim", "yazdım", "belirttim", "belirtmistim", "belirtmiştim", "demin", "az once", "az önce", "biraz once", "biraz önce", "daha once", "daha önce", "resim yukarida", "resim yukarıda"])) {
     const stage = state.conversation_stage || "";
     if (stage === "waiting_photo") {
-      return makeReply("Fotoğrafınız bize ulaşmamış olabilir efendim, tekrar gönderebilir misiniz? 😊", REPLY_CLASS.FALLBACK);
+      return makeReply("Fotoğrafınız bize ulaşmamış olabilir efendim, tekrar gönderebilir misiniz? 😊", REPLY_CLASS.FLOW_PROGRESS);
     }
     if (stage === "waiting_address") {
-      return makeReply("Bilgileriniz ulaşmamış olabilir efendim, ad soyad, telefon ve açık adresinizi tekrar yazabilir misiniz? 😊", REPLY_CLASS.FALLBACK);
+      return makeReply("Bilgileriniz ulaşmamış olabilir efendim, ad soyad, telefon ve açık adresinizi tekrar yazabilir misiniz? 😊", REPLY_CLASS.FLOW_PROGRESS);
     }
     if (stage === "waiting_back_text") {
-      return makeReply("Arka yüz için mesajınız ulaşmamış olabilir efendim, tekrar yazabilir misiniz? 😊", REPLY_CLASS.FALLBACK);
+      return makeReply("Arka yüz için mesajınız ulaşmamış olabilir efendim, tekrar yazabilir misiniz? 😊", REPLY_CLASS.FLOW_PROGRESS);
     }
   }
 
@@ -2217,32 +2232,37 @@ function buildDeterministicReply(context, state) {
     const msgLen = raw.length;
 
     // waiting_photo'da tanınmayan mesajlar → foto iste
-    if (stage === "waiting_photo" && msgLen > 2 && msgLen < 120) {
+    if (stage === "waiting_photo" && msgLen > 2) {
       // Ama post-sale içerik varsa ekibe yönlendir
       if (hasAny(messageNorm, ["ulasmadi", "ulaştı", "geldi", "gelmedi", "siparis verdim", "sipariş verdim", "memnun degil"])) {
         return makeReply("Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊", REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED);
       }
-      return makeReply("Tabi efendim 😊 Fotoğrafı buradan gönderebilirsiniz.", REPLY_CLASS.FALLBACK);
+      return makeReply("Tabi efendim 😊 Fotoğrafı buradan gönderebilirsiniz.", REPLY_CLASS.FLOW_PROGRESS);
     }
 
     // waiting_payment'ta tanınmayan mesajlar → ödeme sor
     if (stage === "waiting_payment" && msgLen > 2) {
-      return makeReply("Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim? 😊", REPLY_CLASS.FALLBACK);
+      return makeReply("Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim? 😊", REPLY_CLASS.FLOW_PROGRESS);
     }
 
     // waiting_address'te tanınmayan mesajlar → adres sor
     if (stage === "waiting_address" && msgLen > 2) {
-      return makeReply("Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz efendim? 😊", REPLY_CLASS.FALLBACK);
+      return makeReply("Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz efendim? 😊", REPLY_CLASS.FLOW_PROGRESS);
     }
 
     // waiting_letters'ta tanınmayan mesajlar → harf iste
     if (stage === "waiting_letters" && msgLen > 2) {
-      return makeReply("Yapılmasını istediğiniz harfleri yazabilirsiniz efendim 😊", REPLY_CLASS.FALLBACK);
+      return makeReply("Yapılmasını istediğiniz harfleri yazabilirsiniz efendim 😊", REPLY_CLASS.FLOW_PROGRESS);
     }
 
     // waiting_back_text'te tanınmayan mesajlar → arka yazı sor
     if (stage === "waiting_back_text" && msgLen > 2) {
-      return makeReply("Arka yüze yazı eklemek ister misiniz? İsterseniz yazıyı buradan iletebilirsiniz, istemezseniz \"yok\" yazabilirsiniz 😊", REPLY_CLASS.FALLBACK);
+      return makeReply("Arka yüze yazı eklemek ister misiniz? İsterseniz yazıyı buradan iletebilirsiniz, istemezseniz \"yok\" yazabilirsiniz 😊", REPLY_CLASS.FLOW_PROGRESS);
+    }
+
+    // waiting_product'ta tanınmayan mesajlar (foto URL dahil) → menü göster
+    if (stage === "waiting_product" && msgLen > 2) {
+      return makeReply("Fotoğrafınız ulaştı efendim 😊 Önce hangi model ile ilgilendiğinizi belirtebilir misiniz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye", REPLY_CLASS.MENU);
     }
   }
 
@@ -2409,17 +2429,7 @@ function buildStateUpdate(context, replyPayload, state) {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ORDER SYNC SYSTEM v9 — COMPLETE REPLACEMENT
-//
-// Bu bloğu chat.js'te "// ORDER SYNC SYSTEM v7" başlığından
-// "// ━━━━ ORDER SYNC v7 SONU" satırına kadar olan her şeyin
-// YERİNE yapıştır. (safeOrderSync dahil)
-//
-// Düzeltmeler:
-// 1. dm_link eklendi
-// 2. Raw ÖNCE yazılır, Operations SONRA yazılır (sıralı)
-//    → fillOpsFromRaw Raw'daki güncel veriyi okur
-// 3. photo_url, back_text_value, recipient_name düzgün çalışır
+// ORDER SYNC SYSTEM v7
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function extractCustomerId(raw) {
@@ -2433,16 +2443,6 @@ function extractCustomerId(raw) {
     if (val) return val;
   }
   return "";
-}
-
-function buildDmLink(raw) {
-  const username =
-    unwrapManychatValue(raw.ig_username) ||
-    unwrapManychatValue(raw.instagram_username) ||
-    unwrapManychatValue(raw.username) ||
-    "";
-  if (!username) return "";
-  return "https://ig.me/m/" + username;
 }
 
 function buildStableOrderId(context, stateUpdate) {
@@ -2539,7 +2539,6 @@ function buildOrderRawPayload(context, stateUpdate, replyPayload, orderId) {
     if (value !== undefined && value !== null && String(value).trim() !== "") p[key] = value;
   }
 
-  // HER ZAMAN
   p.order_id = orderId;
   p.updated_at = new Date().toISOString();
   p.last_message = message;
@@ -2549,55 +2548,39 @@ function buildOrderRawPayload(context, stateUpdate, replyPayload, orderId) {
   else if (stateUpdate.order_status === "completed") p.order_status = "collecting_info";
   else if (stateUpdate.order_status) p.order_status = stateUpdate.order_status;
 
-  // KİMLİK
   add("customer_id", extractCustomerId(context.raw));
-  add("instagram_username", unwrapManychatValue(context.raw.ig_username) || unwrapManychatValue(context.raw.instagram_username) || unwrapManychatValue(context.raw.username));
+  add("instagram_username", unwrapManychatValue(context.raw.instagram_username) || unwrapManychatValue(context.raw.ig_username) || unwrapManychatValue(context.raw.username));
   add("customer_name", unwrapManychatValue(context.raw.customer_name) || unwrapManychatValue(context.raw.full_name));
 
-  // DM LİNK
-  add("dm_link", buildDmLink(context.raw));
-
-  // RECIPIENT NAME
   if (intent === "name_only") {
     const stage = context.fields.conversation_stage || context.conversationStage || "";
     if (stage === "waiting_address" && message.length >= 3) add("recipient_name", message);
   }
 
-  // PHONE
   const phoneFromMsg = extractPhoneEnhanced(message);
   if (phoneFromMsg) add("phone", phoneFromMsg);
 
-  // PRODUCT & PAYMENT
   add("product_type", stateUpdate.ilgilenilen_urun);
   if (stateUpdate.payment_method) add("payment_type", stateUpdate.payment_method);
-
-  // ADDRESS
   if (intent === "address" || intent === "store_pickup") add("full_address", message);
 
-  // PHOTO
   if (isPhotoMessage && (intent === "photo" || intent === "back_photo_upload")) {
     add("photo_received", "foto");
     add("photo_url", message);
     add("photo_count", getPhotoCount(context));
   }
 
-  // BACK TEXT
   if (["back_text", "back_text_skip", "back_photo_upload"].includes(intent)) add("back_text_status", stateUpdate.back_text_status);
   if (intent === "back_text") add("back_text_value", message);
   if (intent === "back_photo_upload" && isPhotoMessage) add("back_text_value", message);
-
-  // LETTERS
   if (intent === "letters" && stateUpdate.letters_received) add("letters_value", message);
 
-  // CONFIDENCE
   const confidence = calculateConfidenceScore(stateUpdate);
   if (confidence > 0) add("confidence_score", confidence);
 
-  // REFERENCE
   const ref = buildReferenceInfo(context, stateUpdate);
   if (ref) { add("reference_type", ref.reference_type); add("reference_order_id", ref.reference_order_id); }
 
-  // CANCEL
   if (customerWantsCancel) { add("cancel_reason", "customer_request"); add("cancelled_at", new Date().toISOString()); }
   if (finalStatus) add("confirmation_source", "bot");
   if (finalStatus === "confirmed") add("confirmed_at", new Date().toISOString());
@@ -2634,11 +2617,9 @@ async function safeOrderSync(context, stateUpdate, replyPayload) {
   const message = String(context.message || "").trim();
   const isPhotoMessage = looksLikePhotoUrl(message);
 
-  // ─── 1. ÖNCE Raw'a yaz ───
   const rawPayload = buildOrderRawPayload(context, stateUpdate, replyPayload, orderId);
   await postOrderRaw(rawPayload);
 
-  // ─── 2. SONRA Operations'a yaz (Raw güncel olduğu için fillOpsFromRaw çalışır) ───
   const isConfirmOrCancel = finalStatus === "confirmed" || finalStatus === "cancel" || customerWantsCancel;
   const isCompleted = stateUpdate.order_status === "completed" || truthy(stateUpdate.siparis_alindi);
   const phoneChanged = !!extractPhoneEnhanced(message);
@@ -2660,9 +2641,8 @@ async function safeOrderSync(context, stateUpdate, replyPayload) {
       op.done = false;
     }
 
-    addOp("instagram_username", unwrapManychatValue(context.raw.ig_username) || unwrapManychatValue(context.raw.instagram_username));
+    addOp("instagram_username", unwrapManychatValue(context.raw.instagram_username) || unwrapManychatValue(context.raw.ig_username));
     addOp("customer_name", unwrapManychatValue(context.raw.customer_name) || unwrapManychatValue(context.raw.full_name));
-    addOp("dm_link", buildDmLink(context.raw));
     if (nameChanged && (context.fields.conversation_stage === "waiting_address") && message.length >= 3) addOp("recipient_name", message);
     if (phoneChanged) addOp("phone", extractPhoneEnhanced(message));
     if (addressChanged) addOp("full_address", message);
@@ -2673,14 +2653,14 @@ async function safeOrderSync(context, stateUpdate, replyPayload) {
     if (intent === "back_text" && stateUpdate.back_text_status === "received") addOp("back_text_value", message);
     if (intent === "back_photo_upload" && isPhotoMessage) addOp("back_text_value", message);
     if (stateUpdate.letters_received) addOp("letters_value", context.message);
+    const confidence = calculateConfidenceScore(stateUpdate);
+    if (confidence > 0) addOp("confidence_score", confidence);
     if (customerWantsCancel) addOp("internal_note", "Müşteri iptal talep etti");
 
-    // Operations Raw'dan eksik alanları dolduracak (fillOpsFromRaw_ Apps Script'te)
     await postOrderOperation(op);
   }
 }
 
-// ━━━━ ORDER SYNC v9 SONU ━━━━
 // ─── MAIN PROCESSOR ─────────────────────────────────────────
 
 export async function processChat(body = {}, options = {}) {
@@ -2718,12 +2698,15 @@ export async function processChat(body = {}, options = {}) {
   // Log + Order Sync: Cevaptan ÖNCE çalıştır (await ile).
   // Deterministik cevap 50ms, log+sync 1-2s, toplam 2-3s — ManyChat 10s limiti içinde.
   // Model fallback'te: 7s model + 2s log = 9s — hala 10s altında.
-try {
-    await safeOrderSync(context, stateUpdate, replyPayload);
+  try {
+    await Promise.allSettled([
+      safeOrderSync(context, stateUpdate, replyPayload).catch(e => console.error("OrderSync error:", e.message)),
+      logConversationRow({ body, result: finalResult, options }).catch(e => console.error("Log error:", e.message)),
+    ]);
   } catch (e) {
-    console.error("OrderSync error:", e.message);
+    console.error("Background tasks error:", e.message);
   }
-  logConversationRow({ body, result: finalResult, options }).catch(e => console.error("Log error:", e.message));
+
   return finalResult;
 }
 
