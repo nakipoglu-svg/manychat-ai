@@ -202,6 +202,7 @@ const KEYWORDS = {
       "kapida odeme olsun", "kapıda ödeme olsun",
       "kapida olsun", "kapıda olsun",
       "kapida", "kapıda",
+      "kalida", "nakit",
       "eft", "havale",
       "odeme", "ödeme",
       "iban", "dekont", "aciklama", "açıklama",
@@ -216,7 +217,9 @@ const KEYWORDS = {
       "zincir model", "zincir degisiyor mu", "zincir değişiyor mu",
       "zincir kisalir mi", "zincir kısalır mı",
       "zincir boyu", "zincir uzunlugu", "zincir uzunluğu",
+      "zincirin boyu", "zincirin uzunlugu", "zincirin uzunluğu",
       "zincir ne kadar", "uzunlugu ne kadar", "uzunluğu ne kadar",
+      "uzunlugu nekadar", "uzunluğu nekadar",
       "zincir kac cm", "zincir kaç cm",
       "zincirlere bakabilir", "zincir secenekleri", "zincir seçenekleri",
       "boyu ne kadar", "boyutu ne kadar", "boyutu nedir", "kac cm", "kaç cm",
@@ -846,7 +849,7 @@ function parsePaymentMethod(messageNorm, existing = "") {
     return existing || "";
   }
 
-  if (hasAny(messageNorm, ["kapida odeme", "kapıda ödeme", "kapida", "kapıda", "odeme olsun", "ödeme olsun"])) {
+  if (hasAny(messageNorm, ["kapida odeme", "kapıda ödeme", "kapida", "kapıda", "odeme olsun", "ödeme olsun", "kalida", "nakit"])) {
     return "kapida_odeme";
   }
   if (hasAny(messageNorm, ["eft", "havale"])) {
@@ -969,12 +972,24 @@ function detectIntent(baseContext, extracted) {
 
     // Lazer: waiting_photo → müşteri fotoğrafı
     if (detectedProduct === "lazer") {
-      // Mesajda ürün referansı varsa → bu kolye/ürün fotoğrafı, müşteri fotoğrafı DEĞİL
+      // Mesajda URL dışında metin var mı?
+      const textWithoutUrl = raw.replace(/https?:\/\/\S+/g, "").trim();
+      const hasText = textWithoutUrl.length > 2;
+      
+      // Çıplak URL (metin yok) → HER ZAMAN müşteri fotoğrafı
+      if (!hasText) {
+        if (conversationStage === "waiting_back_text") return "back_photo_upload";
+        return "photo";
+      }
+      
+      // URL + metin var → sadece GÜÇLÜ ürün referans phrase'leri kontrol et
+      // NOT: Tek "bu", "bunu", "bundan" → ürün referansı DEĞİL (müşteri kendi fotoğrafı için de söyler)
       if (hasAny(messageNorm, [
-        "bu", "bunu", "bundan", "ayni", "aynı", "istiyorum",
         "bu model", "bu kolye", "bu urun", "bu ürün",
         "bunun aynisi", "bunun aynısı", "bu sekilde", "bu şekilde",
-        "bu tarz", "bu tip",
+        "bu tarz", "bu tip", "bu tasarim", "bu tasarım",
+        "aynisından istiyorum", "aynısından istiyorum",
+        "model bu olcak", "model bu olacak",
       ])) {
         return "product_image_reference";
       }
@@ -990,8 +1005,14 @@ function detectIntent(baseContext, extracted) {
   // Kargo ücreti soruları (shipping_price, shipping'den ÖNCE kontrol edilmeli)
   if (hasAny(messageNorm, KEYWORDS.intents.shippingPrice)) return "shipping_price";
 
-  // Kargo
-  if (hasAny(messageNorm, KEYWORDS.intents.shipping)) return "shipping";
+  // Kargo — AMA "dönüş yapacağım/yapıcam" müşterinin kendisi dönecek, kargo değil
+  if (hasAny(messageNorm, KEYWORDS.intents.shipping)) {
+    if (hasAny(messageNorm, ["donus yapicam", "dönüş yapıcam", "donus yapacagim", "dönüş yapacağım", "tekrar donecegim", "tekrar döneceğim", "daha sonra donecegim", "icinde donecegim", "içinde döneceğim", "icinde donus", "içinde dönüş"])) {
+      // Kargo değil, müşteri "ben döneceğim" diyor → general'e düşsün
+    } else {
+      return "shipping";
+    }
+  }
 
   // Malzeme soruları (çelik mi vs) — trust'tan önce kontrol
   if (hasAny(messageNorm, KEYWORDS.intents.materialQuestion)) return "material_question";
@@ -1002,11 +1023,14 @@ function detectIntent(baseContext, extracted) {
   // Lokasyon
   if (hasAny(messageNorm, KEYWORDS.intents.location)) return "location";
 
-  // Ödeme — ama "ödeme ne kadar" veya "ödeme fiyatı" gibi fiyat soruları price'a düşmeli
+  // Ödeme — ama "ödeme ne kadar" veya "ödeme nedir" gibi sorular farklı yorumlanmalı
   if (hasAny(messageNorm, KEYWORDS.intents.payment)) {
+    // "Kapıda ödeme nedir / ne demek" → bilgi sorusu, ödeme seçimi DEĞİL
+    if (hasAny(messageNorm, ["nedir", "ne demek", "ne anlama", "nasil oluyor", "nasıl oluyor"])) {
+      return "payment_info_question";
+    }
     // Fiyat sorgusu mu yoksa gerçek ödeme talebi mi?
     if (hasAny(messageNorm, ["ne kadar", "kac tl", "kac lira", "fiyat", "ucret"])) {
-      // "kapıda ödeme ne kadar" → price intent
       if (!hasAny(messageNorm, ["yapacagim", "yapacağım", "olsun", "istiyorum", "yapicam", "yapıcam", "seciyorum", "seçiyorum"])) {
         return "price";
       }
@@ -1021,6 +1045,11 @@ function detectIntent(baseContext, extracted) {
   if (hasAny(messageNorm, KEYWORDS.intents.price)) {
     if (messageNorm.includes("kargo")) return "shipping_price";
     return "price";
+  }
+
+  // "Göndermiş olduğum foto uygun mu" — foto onayı isteme, photo_question DEĞİL
+  if (hasAny(messageNorm, ["gondermis oldugum", "göndermiş olduğum", "attigim foto uygun", "attığım foto uygun", "gonderdigim foto uygun", "gönderdiğim foto uygun"])) {
+    return "photo_sent_confirmation";
   }
 
   // Fotoğraf sorusu
@@ -1551,7 +1580,7 @@ function handleChainIntent(context) {
   }
 
   if (detectedProduct === "lazer") {
-    if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "uzunlugu ne kadar", "uzunluğu ne kadar", "zincir kac cm", "zincir kaç cm", "zincir kisalir", "zincir kısalır", "boyu ne kadar", "kac santim", "kaç santım", "kac santım", "kolye boyu", "kac cm", "kaç cm", "zincir ne kadar", "zincir ne uzunlukta"])) {
+    if (hasAny(messageNorm, ["zincir boyu", "zincir uzunlugu", "zincir uzunluğu", "uzunlugu ne kadar", "uzunluğu ne kadar", "uzunlugu nekadar", "uzunluğu nekadar", "zincir kac cm", "zincir kaç cm", "zincir kisalir", "zincir kısalır", "boyu ne kadar", "kac santim", "kaç santım", "kac santım", "kolye boyu", "kac cm", "kaç cm", "zincir ne kadar", "zincir ne uzunlukta", "zincirin boyu", "zincirin uzunlugu", "zincirin uzunluğu"])) {
       return makeReply("Zincir fiyata dahildir, uzunluğu standart olarak 60 cm'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
     }
     return makeReply(
@@ -1897,6 +1926,15 @@ function handleCompletionFlow(context, state, nextStage) {
 function handlePriceIntent(context, state) {
   if (context.detectedIntent !== "price") return emptyReply();
 
+  // Cross-product fiyat: Müşteri diğer ürünün fiyatını soruyor
+  const msgNorm = context.messageNorm;
+  if (state.product === "lazer" && hasAny(msgNorm, ["atac", "ataç", "harfli"])) {
+    return makeReply("Harfli ataç kolye: EFT / havale 499 TL, kapıda ödeme 549 TL'dir efendim 😊 3 harfe kadar standarttır, her ek harf +50 TL'dir.", REPLY_CLASS.FIXED_INFO);
+  }
+  if (state.product === "atac" && hasAny(msgNorm, ["resimli", "lazer", "fotografli"])) {
+    return makeReply("Resimli lazer kolye: EFT / havale 599 TL, kapıda ödeme 649 TL'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+
   // Ürün seçilmemişse → menü
   if (!state.product) {
     return makeReply(
@@ -2034,8 +2072,12 @@ function buildDeterministicReply(context, state) {
       // Pure smalltalk → handler'a düşsün
     }
     // 3. Trust / Material / Price / Location / Chain / Shipping Price → side question, normal handler
-    else if (["trust", "material_question", "price", "location", "chain_question", "shipping_price"].includes(detectedIntent)) {
+    else if (["trust", "material_question", "price", "location", "chain_question", "shipping_price", "payment_info_question", "photo_sent_confirmation"].includes(detectedIntent)) {
       // Handler'a düşsün
+    }
+    // 3b. Sipariş onay algılama (satıcı tarafından) → onay cevabı ver
+    else if (hasAny(messageNorm, ["siparisiniz olusturuldu", "siparişiniz oluşturuldu", "siparisiniz alindi", "siparişiniz alındı", "siparisiniz tamamlandi", "siparişiniz tamamlandı"])) {
+      return makeReply("Siparişiniz onaylanmıştır efendim 😊 Ekibimiz en kısa sürede ürününüzü hazırlayacaktır.", REPLY_CLASS.ORDER_COMPLETE);
     }
     // 4. POST-SALE KARGO: kişisel takip → ekibe yönlendir, genel bilgi → shipping handler'a bırak
     else if (detectedIntent === "shipping") {
@@ -2108,6 +2150,13 @@ function buildDeterministicReply(context, state) {
     )) {
       return makeReply("Tabi efendim 😊", REPLY_CLASS.FIXED_INFO);
     }
+    // 7b. Bitince paylaşır mısınız / fiyat doğrulama / yapım süreci → pre-handler'a bırak
+    else if (hasAny(messageNorm, ["bitince", "hazir olunca", "hazır olunca", "gondermeden once", "göndermeden önce", "benimle paylas", "benimle paylaş"]) ||
+             (/\d+\s*(tl|lira)/i.test(String(context.message || "")) && hasAny(messageNorm, ["dimi", "di mi", "degil mi", "değil mi"])) ||
+             hasAny(messageNorm, ["yapim asamasi", "yapım aşaması", "surec nasil", "süreç nasıl"]) ||
+             hasAny(messageNorm, ["siparisiniz olusturuldu", "siparişiniz oluşturuldu", "siparisiniz alindi", "siparişiniz alındı"])) {
+      // Pre-handler'a düşsün
+    }
     // 8. "Bekliyorum" variants
     else if (hasAny(messageNorm, ["bekliyorum", "haber bekliyorum", "donus bekliyorum", "dönüş bekliyorum", "cvp bekliyorum"])) {
       return makeReply("Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊", REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED);
@@ -2132,6 +2181,57 @@ function buildDeterministicReply(context, state) {
         REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED
       );
     }
+  }
+
+  // ═══ PRE-HANDLER KONTROLLER (intent handler'lardan ÖNCE çalışır) ═══
+  // Bu kontroller stage-aware catch-all'dan bağımsız, tüm intent'lerden önce tetiklenir
+  
+  const raw = String(context.message || "").trim();
+
+  // PH-1: FİYAT PAZARLIK KORUMASI
+  if (/\d+\s*(tl|lira)/i.test(raw) && hasAny(messageNorm, ["olur mu", "olurmu", "yapar misiniz", "yaparmisiniz", "yap", "son fiyat", "indirim"])) {
+    return makeReply("Fiyatlarımız sabit olup değişiklik yapılamamaktadır efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+  // PH-1b: Fiyat doğrulama "650 tl dimi"
+  if (/\d+\s*(tl|lira)/i.test(raw) && hasAny(messageNorm, ["dimi", "di mi", "degil mi", "değil mi", "dogrumu", "doğrumu"])) {
+    if (state.product === "lazer") return makeReply("Resimli lazer kolye: EFT / havale 599 TL, kapıda ödeme 649 TL'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
+    if (state.product === "atac") return makeReply("Harfli ataç kolye: EFT / havale 499 TL, kapıda ödeme 549 TL'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+  if (hasAny(messageNorm, ["cok pahali", "çok pahalı", "pahali", "pahalıymış", "pahalıymıs", "pahaliymiş", "pahalıymis", "indirim yap", "indirim olur mu", "indirim var mi", "indirim varmi"])) {
+    return makeReply("Çoklu alımlarda indirimimiz bulunmaktadır efendim 😊 Kaç adet düşünüyorsunuz?", REPLY_CLASS.FIXED_INFO);
+  }
+
+  // PH-2: SORU ALGILAMA (Tabi efendim deme koruması)
+  if (hasAny(messageNorm, ["kac resim", "kaç resim", "3 resim", "uc resim", "üç resim", "3 lu", "3 lü", "uclu", "üçlü", "tek kolyeye uc", "tek kolyeye üç"])) {
+    return makeReply("Ön ve arka olmak üzere 2 fotoğraf koyabiliyoruz efendim 😊 Tek yüze birden fazla fotoğraf için ekibimiz size yardımcı olacaktır.", REPLY_CLASS.FIXED_INFO);
+  }
+  if (hasAny(messageNorm, ["gumus yap", "gümüş yap", "gumus model", "gümüş model", "gumus olsun", "gümüş olsun"])) {
+    return makeReply("Efendim gümüş kaplama çelik modelimiz bulunmaktadır 😊", REPLY_CLASS.FIXED_INFO);
+  }
+  if (hasAny(messageNorm, ["yapim asamasi", "yapım aşaması", "yapim asamaniz", "yapım aşamanız", "surec nasil", "süreç nasıl", "nasil yapiliyor", "nasıl yapılıyor", "yapim sureci", "yapım süreci"])) {
+    return makeReply("Önce sizden fotoğraf alıyoruz, grafikerimiz düzenledikten sonra size gönderiyoruz. Onayınızın ardından üretime geçiyoruz, kargoya vermeden önce de son halini paylaşıyoruz efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+  if (hasAny(messageNorm, ["tel alab", "telefon alab", "whatsapp", "numara alab", "numaraniz", "numaranız"])) {
+    return makeReply("WhatsApp iletişim numaramız: 0534 073 60 09 😊", REPLY_CLASS.FIXED_INFO);
+  }
+  if (hasAny(messageNorm, ["bitince paylas", "bitince paylaş", "hazir olunca paylas", "hazır olunca paylaş", "bitince atar", "hazir olunca atar", "hazır olunca atar", "hazir olunca foto", "hazır olunca foto", "benimle paylas", "benimle paylaş", "gondermeden once", "göndermeden önce", "gondermeden once paylas", "göndermeden önce paylaş"])) {
+    return makeReply("Tabi efendim, ürün lazerden çıktıktan sonra size görselini paylaşıyoruz 😊", REPLY_CLASS.FIXED_INFO);
+  }
+  if (hasAny(messageNorm, ["bu renk", "bu reng", "gold renk", "gumus renk", "gümüş renk", "silver renk", "rose renk", "altin renk", "altın renk"])) {
+    const stageMsg = (state.conversation_stage === "waiting_photo") ? " Fotoğrafı buradan gönderebilirsiniz." :
+                     (state.conversation_stage === "waiting_payment") ? " Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim?" :
+                     (state.conversation_stage === "waiting_address") ? " Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz?" : "";
+    return makeReply("Tabi efendim, not aldım 😊" + stageMsg, REPLY_CLASS.FLOW_PROGRESS);
+  }
+
+  // PH-3: SİPARİŞ ONAY ALGILAMA (satıcı tarafından)
+  if (hasAny(messageNorm, ["siparisiniz olusturuldu", "siparişiniz oluşturuldu", "siparisiniz alindi", "siparişiniz alındı", "siparisiniz tamamlandi", "siparişiniz tamamlandı"])) {
+    return makeReply("Siparişiniz onaylanmıştır efendim 😊 Ekibimiz en kısa sürede ürününüzü hazırlayacaktır.", REPLY_CLASS.ORDER_COMPLETE);
+  }
+
+  // PH-4: "Dönüş yapacağım" → kargo intent DEĞİL, müşteri sonra dönecek
+  if (hasAny(messageNorm, ["donus yapicam", "dönüş yapıcam", "donus yapacagim", "dönüş yapacağım", "tekrar donecegim", "tekrar döneceğim", "daha sonra donecegim"])) {
+    return makeReply("Tabi efendim, bekliyoruz 😊", REPLY_CLASS.FIXED_INFO);
   }
 
   // ── 1. Menü gösterme kararı ──
@@ -2184,9 +2284,18 @@ function buildDeterministicReply(context, state) {
   if (detectedIntent === "back_text" && state.conversation_stage !== "waiting_back_text") {
     return makeReply("Evet efendim 😊 Resimli lazer kolyede arka yüzüne yazı veya istenirse ikinci bir fotoğraf eklenebiliyor.", REPLY_CLASS.FIXED_INFO);
   }
+  
+  // ── 4c. payment_info_question → kapıda ödeme nedir açıklaması ──
+  if (detectedIntent === "payment_info_question") {
+    return makeReply("Kapıda ödeme ile ürün elinize ulaştığında kurye ye nakit olarak ödeme yaparsınız efendim 😊 Kredi kartı geçerli değildir, sadece nakit.", REPLY_CLASS.FIXED_INFO);
+  }
+
+  // ── 4d. photo_sent_confirmation → müşteri fotoğrafını gönderdiğini onaylıyor ──
+  if (detectedIntent === "photo_sent_confirmation") {
+    return makeReply("Fotoğrafınız ulaştı efendim, ekibimiz kontrol edip dönüş sağlayacaktır 😊", REPLY_CLASS.FLOW_PROGRESS);
+  }
 
   // ── 5. Kısa onay/emoji/bekleme mesajları — model'e düşürmeden stage'e uygun cevap ver ──
-  const raw = String(context.message || "").trim();
   const isShortConfirm = raw.length <= 15 && hasAny(messageNorm, ["tamam", "tamamdir", "tm", "tmm", "tmmm", "olur", "peki", "evet", "ok", "tamam dir", "anladim", "anladım"]);
   const isEmoji = raw.length <= 4 && /^[^\w\s]+$/.test(raw);
   const isVeryShort = raw.length <= 6 && !hasAny(messageNorm, ["fiyat", "iban", "eft", "iptal"]);
@@ -2211,29 +2320,33 @@ function buildDeterministicReply(context, state) {
     return makeReply("Tabi efendim 😊", REPLY_CLASS.FLOW_PROGRESS);
   }
 
-  // ── 6. "Gönderdim" / "yukarıda attım" pattern'i — stage-aware ──
-  if (hasAny(messageNorm, ["gonderdim", "gönderdim", "attim", "attım", "yukarida", "yukarıda", "ustte", "üstte", "yazdim", "yazdım", "belirttim", "belirtmistim", "belirtmiştim", "demin", "az once", "az önce", "biraz once", "biraz önce", "daha once", "daha önce", "resim yukarida", "resim yukarıda"])) {
+  // ── 6. "Gönderdim" / "yukarıda attım" pattern'i — KABUL ET ve ilerle ──
+  if (hasAny(messageNorm, ["gonderdim", "gönderdim", "attim", "attım", "yukarida", "yukarıda", "ustte", "üstte", "yazdim", "yazdım", "belirttim", "belirtmistim", "belirtmiştim", "demin", "az once", "az önce", "biraz once", "biraz önce", "daha once", "daha önce", "resim yukarida", "resim yukarıda", "yolladim", "yolladım", "gonderdlm", "gondermiş oldugum"])) {
     const stage = state.conversation_stage || "";
     if (stage === "waiting_photo") {
-      return makeReply("Fotoğrafınız bize ulaşmamış olabilir efendim, tekrar gönderebilir misiniz? 😊", REPLY_CLASS.FLOW_PROGRESS);
+      // Müşteri fotoğrafını göndermiş diyor → kabul et, nextStage'e göre ilerle
+      const nextAfterPhoto = state.back_text_status ? "waiting_payment" : "waiting_back_text";
+      if (nextAfterPhoto === "waiting_back_text") {
+        return makeReply("Fotoğrafınızı aldım efendim 😊 Arka yüze yazı eklemek ister misiniz? İsterseniz yazıyı buradan iletebilirsiniz, istemezseniz \"yok\" yazabilirsiniz.", REPLY_CLASS.FLOW_PROGRESS);
+      }
+      return makeReply("Fotoğrafınızı aldım efendim 😊 Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim?", REPLY_CLASS.FLOW_PROGRESS);
     }
     if (stage === "waiting_address") {
-      return makeReply("Bilgileriniz ulaşmamış olabilir efendim, ad soyad, telefon ve açık adresinizi tekrar yazabilir misiniz? 😊", REPLY_CLASS.FLOW_PROGRESS);
+      return makeReply("Bilgilerinizi aldım efendim 😊 Eksik bilgi varsa ekibimiz sizinle iletişime geçecektir.", REPLY_CLASS.FLOW_PROGRESS);
     }
     if (stage === "waiting_back_text") {
-      return makeReply("Arka yüz için mesajınız ulaşmamış olabilir efendim, tekrar yazabilir misiniz? 😊", REPLY_CLASS.FLOW_PROGRESS);
+      return makeReply("Arka yüz bilginizi aldım efendim 😊 Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak?", REPLY_CLASS.FLOW_PROGRESS);
     }
   }
 
   // ── 7. STAGE-AWARE CATCH-ALL — model'e düşmeden stage'e uygun son şans yönlendirmesi ──
-  // Bu, model timeout'u yüzünden müşterinin cevapsız kalmasını önler
   {
     const stage = state.conversation_stage || "";
     const msgLen = raw.length;
 
     // waiting_photo'da tanınmayan mesajlar → foto iste
     if (stage === "waiting_photo" && msgLen > 2) {
-      // Ama post-sale içerik varsa ekibe yönlendir
+      // Post-sale içerik varsa ekibe yönlendir
       if (hasAny(messageNorm, ["ulasmadi", "ulaştı", "geldi", "gelmedi", "siparis verdim", "sipariş verdim", "memnun degil"])) {
         return makeReply("Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊", REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED);
       }
