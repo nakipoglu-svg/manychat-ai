@@ -225,6 +225,11 @@ const KEYWORDS = {
       "boyu ne kadar", "boyutu ne kadar", "boyutu nedir", "kac cm", "kaç cm",
       "kac santim", "kaç santım", "kac santım", "kaç santim",
       "zincir dahil", "zincir dayil",
+      // Plaka / yuvarlak kısım / çerçeve boyutu
+      "plaka boyut", "plaka olcu", "plaka ölçü", "plakanin olcu", "plakanın ölçü",
+      "yuvarlak plaka", "yuvarlak bolum", "yuvarlak bölüm",
+      "cerceve boyut", "çerçeve boyut", "madalyon boyut",
+      "olcusu nedir", "ölçüsü nedir", "olcusu ne", "ölçüsü ne",
     ],
 
     // ──── ORDER START ────
@@ -852,7 +857,7 @@ function parsePaymentMethod(messageNorm, existing = "") {
   if (hasAny(messageNorm, ["kapida odeme", "kapıda ödeme", "kapida", "kapıda", "odeme olsun", "ödeme olsun", "kalida", "nakit"])) {
     return "kapida_odeme";
   }
-  if (hasAny(messageNorm, ["eft", "havale"])) {
+  if (hasAny(messageNorm, ["eft", "havale", "hesaptan"])) {
     return "eft_havale";
   }
   return existing || "";
@@ -1457,6 +1462,12 @@ function handleShippingIntent(context) {
     if (hasAny(messageNorm, ["kargo parasi", "kargo parasI", "kargo var mi"])) {
       return makeReply("Kargo ücreti fiyata dahildir efendim 😊 Ekstra bir ücret ödemezsiniz.", REPLY_CLASS.FIXED_INFO);
     }
+    
+    // PTT ile gönderim var mı
+    if (hasAny(messageNorm, ["ptt kargo", "ptt ile", "ptt gonderim", "ptt gönderi"])) {
+      return makeReply("Evet efendim, PTT Kargo ile gönderim yapıyoruz 😊", REPLY_CLASS.FIXED_INFO);
+    }
+
     return makeReply(SHIPPING_TIME_FALLBACK_TEXT, REPLY_CLASS.FIXED_INFO);
   }
 
@@ -1496,6 +1507,11 @@ function handleMaterialQuestion(context) {
   // FIX 4: Alerji sorusu — tam cevap
   if (hasAny(messageNorm, ["alerji", "alerjim", "alerjik"])) {
     return makeReply("Paslanmaz çelikten üretilmektedir efendim 😊 Kararma, solma yapmaz. Alerji konusunda da risk oluşturacak bir malzeme kullanmıyoruz.", REPLY_CLASS.FIXED_INFO);
+  }
+
+  // Gümüş mü sorusu — hayır, çelik + gümüş kaplama var
+  if (hasAny(messageNorm, ["gumus mu", "gümüş mü", "gumusmu", "gümüşmü", "gumus mudur", "gümüş müdür", "kolye gumus", "kolye gümüş", "urun gumus", "ürün gümüş"])) {
+    return makeReply("Ürünlerimiz paslanmaz çelikten üretilmektedir efendim 😊 Gümüş kaplama modelimiz de bulunmaktadır. Kararma, solma yapmaz.", REPLY_CLASS.FIXED_INFO);
   }
 
   return makeReply("Evet efendim, paslanmaz çelikten üretiliyor 😊 Kararma, solma veya paslanma yapmaz.", REPLY_CLASS.FIXED_INFO);
@@ -1570,7 +1586,7 @@ function handleChainIntent(context) {
   if (detectedIntent !== "chain_question") return emptyReply();
 
   // Plaka boyutu sorusu — "boyutu ne kadar", "kac cm" (zincir kelimesi olmadan)
-  if (hasAny(messageNorm, ["boyutu ne kadar", "plaka boyut", "plaka kac cm"])) {
+  if (hasAny(messageNorm, ["boyutu ne kadar", "plaka boyut", "plaka kac cm", "plaka olcu", "plaka ölçü", "plakanin olcu", "plakanın ölçü", "yuvarlak plaka", "yuvarlak bolum", "yuvarlak bölüm", "yuvarlak kism", "yuvarlak kısm", "cerceve boyut", "çerçeve boyut", "madalyon boyut", "olcusu nedir", "ölçüsü nedir", "olcusu ne", "ölçüsü ne"])) {
     return makeReply("Ürün plaka boyutu 3 cm'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
   }
 
@@ -2008,6 +2024,9 @@ function handleSmalltalkIntent(context) {
     return makeReply("Çok teşekkür ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
   }
   if (hasAny(messageNorm, ["insallah", "inşallah", "allah razi olsun", "hayirli isler", "bol kazanclar", "amin", "masallah", "eyvallah"])) {
+    if (hasAny(messageNorm, ["allah razi olsun", "allah razı olsun"])) {
+      return makeReply("Cümlemizden inşallah, çok teşekkür ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
+    }
     return makeReply("Amin, çok teşekkür ederiz efendim 😊", REPLY_CLASS.FIXED_INFO);
   }
   if (hasAny(messageNorm, ["tesekkur", "teşekkür", "tesekur", "teşekür", "sagolun", "sağolun", "saol", "tsk", "tşk", "rica ederim"])) {
@@ -2184,15 +2203,12 @@ function buildDeterministicReply(context, state) {
   }
 
   // ═══ PRE-HANDLER KONTROLLER (intent handler'lardan ÖNCE çalışır) ═══
-  // Bu kontroller stage-aware catch-all'dan bağımsız, tüm intent'lerden önce tetiklenir
-  
   const raw = String(context.message || "").trim();
 
   // PH-1: FİYAT PAZARLIK KORUMASI
   if (/\d+\s*(tl|lira)/i.test(raw) && hasAny(messageNorm, ["olur mu", "olurmu", "yapar misiniz", "yaparmisiniz", "yap", "son fiyat", "indirim"])) {
     return makeReply("Fiyatlarımız sabit olup değişiklik yapılamamaktadır efendim 😊", REPLY_CLASS.FIXED_INFO);
   }
-  // PH-1b: Fiyat doğrulama "650 tl dimi"
   if (/\d+\s*(tl|lira)/i.test(raw) && hasAny(messageNorm, ["dimi", "di mi", "degil mi", "değil mi", "dogrumu", "doğrumu"])) {
     if (state.product === "lazer") return makeReply("Resimli lazer kolye: EFT / havale 599 TL, kapıda ödeme 649 TL'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
     if (state.product === "atac") return makeReply("Harfli ataç kolye: EFT / havale 499 TL, kapıda ödeme 549 TL'dir efendim 😊", REPLY_CLASS.FIXED_INFO);
@@ -2201,37 +2217,133 @@ function buildDeterministicReply(context, state) {
     return makeReply("Çoklu alımlarda indirimimiz bulunmaktadır efendim 😊 Kaç adet düşünüyorsunuz?", REPLY_CLASS.FIXED_INFO);
   }
 
-  // PH-2: SORU ALGILAMA (Tabi efendim deme koruması)
-  if (hasAny(messageNorm, ["kac resim", "kaç resim", "3 resim", "uc resim", "üç resim", "3 lu", "3 lü", "uclu", "üçlü", "tek kolyeye uc", "tek kolyeye üç"])) {
-    return makeReply("Ön ve arka olmak üzere 2 fotoğraf koyabiliyoruz efendim 😊 Tek yüze birden fazla fotoğraf için ekibimiz size yardımcı olacaktır.", REPLY_CLASS.FIXED_INFO);
+  // PH-2: DUYGUSAL MESAJ — vefat, kayıp, başsağlığı
+  if (hasAny(messageNorm, ["vefat", "kaybettim", "oldu", "rahmetli", "cenaze", "allah rahmet"])) {
+    if (hasAny(messageNorm, ["vefat etti", "kaybettim", "oldu babam", "oldu annem", "rahmetli"])) {
+      const stageMsg = (state.conversation_stage === "waiting_payment") ? " Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim?" :
+                       (state.conversation_stage === "waiting_photo") ? " Fotoğrafı hazır olduğunda buradan gönderebilirsiniz." :
+                       (state.conversation_stage === "waiting_address") ? " Ad soyad, telefon ve adres bilgilerinizi iletebilir misiniz?" : "";
+      return makeReply("Başınız sağ olsun efendim, çok üzüldüm 😔 Allah rahmet eylesin." + stageMsg, REPLY_CLASS.FLOW_PROGRESS);
+    }
   }
+
+  // PH-3: ÖDEME YAPTIM / KONTROL EDİN — "hesaptan atıcam", "ücreti attım", "parayı gönderdim"
+  if (hasAny(messageNorm, ["hesaptan at", "hesaptan yat", "ucreti attim", "ücreti attım", "parayi gonderdim", "parayı gönderdim", "odemeyi yaptim", "ödemeyi yaptım", "parayı attim", "parayı attım", "odeme yaptim", "ödeme yaptım", "eft attim", "havale yaptim", "kontrol eder", "kontrol ederm"])) {
+    return makeReply("Tabi efendim, ekibimiz kontrol edip size dönüş sağlayacaktır 😊", REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED);
+  }
+
+  // PH-4: ÇOKLU FOTO / RESİM / KİŞİ — "3 resim olur mu", "5 kişi sığar mı", "birleştirir misiniz"
+  if (hasAny(messageNorm, [
+    "kac resim", "kaç resim", "kac foto", "kaç foto",
+    "3 resim", "uc resim", "üç resim", "3 foto", "uc foto", "üç foto",
+    "3 lu", "3 lü", "uclu", "üçlü", "4 lu", "4 lü", "5 li", "5 kisi", "5 kişi",
+    "tek kolyeye uc", "tek kolyeye üç",
+    "tek yuze", "tek yüze", "ayni karede", "aynı karede",
+    "birlestirip", "birleştirip", "birlestirme", "birleştirme",
+    "birlestir", "birleştir", "birlestirirmi", "birleştirirmi",
+    "ayri ayri yollasak", "ayrı ayrı yollasak",
+    "ayri ayri atsak", "ayrı ayrı atsak",
+    "ornek varmidir", "örnek varmıdır", "ornek var mi", "örnek var mı",
+  ])) {
+    if (hasAny(messageNorm, ["ornek", "örnek"])) {
+      return makeReply("Tabi efendim, ekibimiz size örnek görselleri gönderecektir 😊", REPLY_CLASS.SELLER_REQUIRED, SUPPORT_MODE_REASON.SELLER_REQUIRED);
+    }
+    return makeReply("Evet efendim, tek yüze birden fazla fotoğraf koyabiliyoruz 😊 Fotoğrafları buradan gönderebilirsiniz, ekibimiz düzenleyecektir.", REPLY_CLASS.FIXED_INFO);
+  }
+
+  // PH-5: GÜMÜŞ / METAL / MALZEME soruları
   if (hasAny(messageNorm, ["gumus yap", "gümüş yap", "gumus model", "gümüş model", "gumus olsun", "gümüş olsun"])) {
     return makeReply("Efendim gümüş kaplama çelik modelimiz bulunmaktadır 😊", REPLY_CLASS.FIXED_INFO);
   }
+  if (messageNorm === "metal" || messageNorm === "metali ne" || messageNorm === "malzemesi" || hasAny(messageNorm, ["metal cinsi", "metalin cinsi"])) {
+    return makeReply("Paslanmaz çelikten üretilmektedir efendim 😊 Kararma, solma yapmaz.", REPLY_CLASS.FIXED_INFO);
+  }
+
+  // PH-6: YAPIM SÜRECİ / DEĞİŞİKLİK OLMAZ Dİ Mİ / YAPAY ZEKA
   if (hasAny(messageNorm, ["yapim asamasi", "yapım aşaması", "yapim asamaniz", "yapım aşamanız", "surec nasil", "süreç nasıl", "nasil yapiliyor", "nasıl yapılıyor", "yapim sureci", "yapım süreci"])) {
     return makeReply("Önce sizden fotoğraf alıyoruz, grafikerimiz düzenledikten sonra size gönderiyoruz. Onayınızın ardından üretime geçiyoruz, kargoya vermeden önce de son halini paylaşıyoruz efendim 😊", REPLY_CLASS.FIXED_INFO);
   }
+  if (hasAny(messageNorm, ["degisiklik olmaz", "değişiklik olmaz", "resimde degisiklik", "resimde değişiklik", "fotoda degisiklik", "fotoda değişiklik", "yapay zeka", "ai ile"])) {
+    return makeReply("Gönderdiğiniz fotoğrafları grafikerimiz lazer baskıya uygun hale getiriyor efendim 😊 Göz ile görülür bir değişiklik yapılmıyor, yapay zeka kullanmıyoruz.", REPLY_CLASS.FIXED_INFO);
+  }
+
+  // PH-7: TEL / WHATSAPP
   if (hasAny(messageNorm, ["tel alab", "telefon alab", "whatsapp", "numara alab", "numaraniz", "numaranız"])) {
     return makeReply("WhatsApp iletişim numaramız: 0534 073 60 09 😊", REPLY_CLASS.FIXED_INFO);
   }
-  if (hasAny(messageNorm, ["bitince paylas", "bitince paylaş", "hazir olunca paylas", "hazır olunca paylaş", "bitince atar", "hazir olunca atar", "hazır olunca atar", "hazir olunca foto", "hazır olunca foto", "benimle paylas", "benimle paylaş", "gondermeden once", "göndermeden önce", "gondermeden once paylas", "göndermeden önce paylaş"])) {
+
+  // PH-8: BİTİNCE PAYLAŞIR MISINIZ / HAZIR OLUNCA
+  if (hasAny(messageNorm, ["bitince paylas", "bitince paylaş", "hazir olunca paylas", "hazır olunca paylaş", "bitince atar", "hazir olunca atar", "hazır olunca atar", "hazir olunca foto", "hazır olunca foto", "benimle paylas", "benimle paylaş", "gondermeden once", "göndermeden önce"])) {
     return makeReply("Tabi efendim, ürün lazerden çıktıktan sonra size görselini paylaşıyoruz 😊", REPLY_CLASS.FIXED_INFO);
   }
-  if (hasAny(messageNorm, ["bu renk", "bu reng", "gold renk", "gumus renk", "gümüş renk", "silver renk", "rose renk", "altin renk", "altın renk"])) {
+
+  // PH-9: RENK TERCİHİ
+  if (hasAny(messageNorm, ["bu renk", "bu reng", "gold renk", "gumus renk", "gümüş renk", "silver renk", "rose renk", "altin renk", "altın renk", "sari olan", "sarı olan"])) {
     const stageMsg = (state.conversation_stage === "waiting_photo") ? " Fotoğrafı buradan gönderebilirsiniz." :
                      (state.conversation_stage === "waiting_payment") ? " Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim?" :
                      (state.conversation_stage === "waiting_address") ? " Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz?" : "";
     return makeReply("Tabi efendim, not aldım 😊" + stageMsg, REPLY_CLASS.FLOW_PROGRESS);
   }
 
-  // PH-3: SİPARİŞ ONAY ALGILAMA (satıcı tarafından)
+  // PH-10: SİPARİŞ ONAY (satıcı tarafından)
   if (hasAny(messageNorm, ["siparisiniz olusturuldu", "siparişiniz oluşturuldu", "siparisiniz alindi", "siparişiniz alındı", "siparisiniz tamamlandi", "siparişiniz tamamlandı"])) {
     return makeReply("Siparişiniz onaylanmıştır efendim 😊 Ekibimiz en kısa sürede ürününüzü hazırlayacaktır.", REPLY_CLASS.ORDER_COMPLETE);
   }
 
-  // PH-4: "Dönüş yapacağım" → kargo intent DEĞİL, müşteri sonra dönecek
-  if (hasAny(messageNorm, ["donus yapicam", "dönüş yapıcam", "donus yapacagim", "dönüş yapacağım", "tekrar donecegim", "tekrar döneceğim", "daha sonra donecegim"])) {
+  // PH-11: DÖNÜŞ YAPACAĞIM — kargo DEĞİL
+  if (hasAny(messageNorm, ["donus yapicam", "dönüş yapıcam", "donus yapacagim", "dönüş yapacağım", "tekrar donecegim", "tekrar döneceğim", "daha sonra donecegim", "dusunup gonderecegim", "düşünüp göndereceğim", "dusunup size", "düşünüp size"])) {
     return makeReply("Tabi efendim, bekliyoruz 😊", REPLY_CLASS.FIXED_INFO);
+  }
+
+  // PH-12: KARGO KAPSAM — "her yere var mı", "bana yakın", "Alibeyköy"
+  if (hasAny(messageNorm, ["her yere kargo", "her yere gonderim", "her yere gönderi", "turkiye geneli", "türkiye geneli", "il disina", "il dışına", "bana yakin", "bana yakın"])) {
+    return makeReply("Evet efendim, Türkiye'nin her yerine ücretsiz kargo ile gönderim yapıyoruz 😊", REPLY_CLASS.FIXED_INFO);
+  }
+
+  // PH-13: KARGO ÜCRETSİZ Mİ — "artı kargo dimi", "kargo + mı"
+  if (hasAny(messageNorm, ["arti kargo", "artı kargo", "ekstra kargo", "kargo ayri", "kargo ayrı"])) {
+    return makeReply("Kargo ücretsizdir, fiyata dahildir efendim 😊", REPLY_CLASS.FIXED_INFO);
+  }
+
+  // PH-14: KARGO MESAJI — "kargo mesajı atar mısınız"
+  if (hasAny(messageNorm, ["kargo mesaj", "kargo bilgi", "kargo takip"])) {
+    if (hasAny(messageNorm, ["atar mi", "atar mı", "atarmi", "gelir mi", "gelirmi"])) {
+      return makeReply("Kargoya verildiğinde tarafınıza otomatik bilgi mesajı gönderilmektedir efendim 😊", REPLY_CLASS.FIXED_INFO);
+    }
+  }
+
+  // PH-15: NE ZAMAN ELİMDE OLUR
+  if (hasAny(messageNorm, ["ne zaman elimde", "nezaman elimde", "kac gunde elime", "kaç günde elime", "ne zaman ulasir", "ne zaman ulaşır"])) {
+    return makeReply(SHIPPING_TIME_FALLBACK_TEXT, REPLY_CLASS.FIXED_INFO);
+  }
+
+  // PH-16: ARKALI ÖNLÜ + FİYAT FARKI YOK
+  if (hasAny(messageNorm, ["arkali onlu ne kadar", "arkalı önlü ne kadar", "arkali onlu fiyat", "arkalı önlü fiyat", "iki tarafli fiyat", "iki taraflı fiyat", "cift tarafli fiyat", "çift taraflı fiyat"])) {
+    return makeReply("Arkalı önlü fotoğrafta fiyat farkı yoktur efendim 😊 EFT / havale fiyatımız 599 TL, kapıda ödeme fiyatımız 649 TL'dir.", REPLY_CLASS.FIXED_INFO);
+  }
+
+  // PH-17: BEKLEMİŞ / SİTEM — "bana dönecektiniz ama", "cevap vermediniz"
+  if (hasAny(messageNorm, ["donecektiniz", "dönecektiniz", "donus yapmadi", "dönüş yapmadı", "cevap vermediniz", "cevap gelmiyor", "donmadiniz", "dönmedi"])) {
+    return makeReply("Çok özür dileriz efendim, ekibimize hemen iletiyorum 😊", REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_MODE_REASON.OPERATIONAL_REQUIRED);
+  }
+
+  // PH-18: BEĞENİ + DEVAM — "çok tatlı duruyor", "çok güzel" (waiting_address vb'de)
+  if (hasAny(messageNorm, ["tatli duruyor", "tatlı duruyor", "cok tatli", "çok tatlı"]) && state.conversation_stage) {
+    const stageMsg = (state.conversation_stage === "waiting_address") ? " Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz efendim?" :
+                     (state.conversation_stage === "waiting_payment") ? " Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim?" : "";
+    return makeReply("Çok teşekkür ederiz efendim 😊" + stageMsg, REPLY_CLASS.FLOW_PROGRESS);
+  }
+
+  // PH-19: İLETTİM / YENİDEN Mİ GÖNDEREYİM — gönderdim pattern v2
+  if (hasAny(messageNorm, ["ilettim", "yenidenmi gondereyim", "yeniden mi göndereyim", "tekrar mi yazayim", "tekrar mı yazayım"])) {
+    return makeReply("Bilgilerinizi aldım efendim 😊 Eksik bilgi varsa ekibimiz sizinle iletişime geçecektir.", REPLY_CLASS.FLOW_PROGRESS);
+  }
+
+  // PH-20: "BUNDAN OLACAK" / "BUNDAN İSTİYORUM" — ürün/model onayı, fallback DEĞİL
+  if (hasAny(messageNorm, ["bundan olacak", "bundan istiyorum", "bunu istiyorum", "bu olacak"])) {
+    const stageMsg = (state.conversation_stage === "waiting_photo") ? " Fotoğrafı buradan gönderebilirsiniz efendim 😊" :
+                     (state.conversation_stage === "waiting_payment") ? " Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim? 😊" : " 😊";
+    return makeReply("Tabi efendim, not aldım!" + stageMsg, REPLY_CLASS.FLOW_PROGRESS);
   }
 
   // ── 1. Menü gösterme kararı ──
