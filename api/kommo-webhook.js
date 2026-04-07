@@ -13,163 +13,200 @@ const FID = {
   context_lock:1831201, cancel_reason:1831203, ai_reply:1831205,
 };
 
+// Kommo form-encoded body'den veri çıkar
+function g(data, key) { return data[key] || ""; }
+
+// Lead'den custom field değerlerini oku (API'den)
 function readFields(lead) {
   const cf = {};
   if (!lead?.custom_fields_values) return cf;
   for (const f of lead.custom_fields_values) {
-    for (const [n,id] of Object.entries(FID)) {
-      if (f.field_id===id) { cf[n]=f.values?.[0]?.value||""; break; }
+    for (const [n, id] of Object.entries(FID)) {
+      if (f.field_id === id) { cf[n] = f.values?.[0]?.value || ""; break; }
     }
   }
   return cf;
 }
 
 async function kFetch(method, path, body) {
-  const o = {method, headers:H};
+  const o = { method, headers: H };
   if (body) o.body = JSON.stringify(body);
-  const r = await fetch(API+path, o);
+  const r = await fetch(API + path, o);
   const txt = await r.text();
-  console.log("[K]",method,path,r.status);
-  try { return {s:r.status,d:JSON.parse(txt)}; } catch { return {s:r.status,d:txt}; }
+  console.log("[K]", method, path, r.status);
+  try { return { s: r.status, d: JSON.parse(txt) }; } catch { return { s: r.status, d: txt }; }
 }
 
 async function updateFields(leadId, fields) {
   const cfv = [];
-  for (const [n,v] of Object.entries(fields)) {
-    if (FID[n] && v!==undefined) cfv.push({field_id:FID[n],values:[{value:String(v)}]});
+  for (const [n, v] of Object.entries(fields)) {
+    if (FID[n] && v !== undefined) cfv.push({ field_id: FID[n], values: [{ value: String(v) }] });
   }
-  if (cfv.length>0) await kFetch("PATCH","/api/v4/leads/"+leadId,{custom_fields_values:cfv});
+  if (cfv.length > 0) await kFetch("PATCH", "/api/v4/leads/" + leadId, { custom_fields_values: cfv });
+}
+
+async function sendMessage(chatId, text) {
+  if (!chatId || !text) return;
+  // Kommo amoCRM chat API
+  const scope_id = chatId;
+  const payload = {
+    conversation_id: chatId,
+    text: text,
+  };
+  // Try the Kommo messaging endpoint
+  const r = await kFetch("POST", "/api/v2/chats/messages", {
+    conversation_id: chatId,
+    text: text,
+  });
+  if (r.s !== 200) {
+    // Fallback: try talk API
+    console.log("[K] Trying talk API...");
+    await kFetch("POST", "/api/v4/talks/" + chatId + "/messages", { text: text });
+  }
 }
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin","*");
-  res.setHeader("Access-Control-Allow-Methods","POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers","Content-Type");
-  if (req.method==="OPTIONS") return res.status(200).end();
-  if (req.method!=="POST") return res.status(200).json({success:false,message:"Only POST supported."});
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(200).json({ success: false, message: "Only POST supported." });
 
   try {
     const data = req.body || {};
-    console.log("[WH] In:", JSON.stringify(data).slice(0,300));
+    console.log("[WH] Keys:", Object.keys(data).slice(0, 20).join(", "));
 
-    // ── MODE 1: Direkt test (body'de message_text var) ──
-    if (data.message_text || data.custom_fields) {
+    // ── MODE 1: Direkt JSON test (console'dan) ──
+    if (data.message_text) {
       const cf = data.custom_fields || {};
-      const msg = data.message_text || data.message || "";
-      if (!msg) return res.status(200).json({success:false,error:"no message"});
+      const msg = data.message_text;
+      const result = await processChat({
+        message: msg, last_input_text: msg, source: "kommo",
+        customer_id: data.lead_id || "",
+        ilgilenilen_urun: cf.ilgilenilen_urun || data.ilgilenilen_urun || "",
+        conversation_stage: cf.conversation_stage || data.conversation_stage || "",
+        last_intent: cf.last_intent || "", order_status: cf.order_status || "",
+        payment_method: cf.payment_method || "", photo_received: cf.photo_received || "",
+        back_text_status: cf.back_text_status || "", address_status: cf.address_status || "",
+        support_mode: cf.support_mode || "", support_mode_reason: cf.support_mode_reason || "",
+        menu_gosterildi: cf.menu_gosterildi || "", siparis_alindi: cf.siparis_alindi || "",
+        letters_received: cf.letters_received || "", phone_received: cf.phone_received || "",
+        reply_class: cf.reply_class || "", context_lock: cf.context_lock || "",
+        cancel_reason: cf.cancel_reason || "", ai_reply: cf.ai_reply || "",
+        entry_product: cf.ilgilenilen_urun || data.ilgilenilen_urun || "",
+      });
+      return res.status(200).json({ success: true, ai_reply: result.ai_reply || "", fields: result });
+    }
 
-      const payload = {
-        message:msg, last_input_text:msg, source:"kommo",
-        customer_id:data.lead_id||"", 
-        ilgilenilen_urun:cf.ilgilenilen_urun||data.ilgilenilen_urun||"",
-        conversation_stage:cf.conversation_stage||data.conversation_stage||"",
-        last_intent:cf.last_intent||"", order_status:cf.order_status||"",
-        payment_method:cf.payment_method||"", photo_received:cf.photo_received||"",
-        back_text_status:cf.back_text_status||"", address_status:cf.address_status||"",
-        support_mode:cf.support_mode||"", support_mode_reason:cf.support_mode_reason||"",
-        menu_gosterildi:cf.menu_gosterildi||"", siparis_alindi:cf.siparis_alindi||"",
-        letters_received:cf.letters_received||"", phone_received:cf.phone_received||"",
-        reply_class:cf.reply_class||"", context_lock:cf.context_lock||"",
-        cancel_reason:cf.cancel_reason||"", ai_reply:cf.ai_reply||"",
-        entry_product:cf.ilgilenilen_urun||data.ilgilenilen_urun||"",
-      };
+    // ── MODE 2: Kommo webhook (form-encoded keys) ──
 
-      const result = await processChat(payload);
+    // Mesaj metni: unsorted webhook'tan
+    let msgText = g(data, "unsorted[update][0][source_data][data][0][text]")
+               || g(data, "unsorted[add][0][source_data][data][0][text]");
 
-      // Lead varsa field güncelle + mesaj gönder
-      if (data.lead_id && /^\d+$/.test(String(data.lead_id))) {
-        await updateFields(data.lead_id, result);
-        if (data.chat_id && result.ai_reply) {
-          // Kommo chat mesaj gönder
-          await kFetch("POST",`/api/v4/chats/${data.chat_id}/messages`,[{type:"text",text:result.ai_reply}]);
+    // Lead ID
+    let leadId = g(data, "leads[update][0][id]")
+              || g(data, "leads[add][0][id]")
+              || g(data, "unsorted[update][0][data][leads][id]")
+              || g(data, "unsorted[add][0][data][leads][id]");
+
+    // Chat ID (talk)
+    let chatId = g(data, "talk[update][0][chat_id]")
+              || g(data, "talk[add][0][chat_id]")
+              || g(data, "unsorted[update][0][source_data][origin][chat_id]")
+              || g(data, "unsorted[add][0][source_data][origin][chat_id]");
+
+    // Contact ID
+    let contactId = g(data, "talk[update][0][contact_id]")
+                 || g(data, "contacts[update][0][id]")
+                 || g(data, "contacts[add][0][id]");
+
+    console.log("[WH] Parsed — lead:", leadId, "chat:", chatId, "msg:", (msgText || "").slice(0, 50));
+
+    // Mesaj yoksa — bu sadece lead update veya talk update olabilir, skip
+    if (!msgText) {
+      // Talk update geldi — son mesajı API'den alalım
+      if (chatId && leadId) {
+        console.log("[WH] No msg in webhook, fetching last message from API...");
+        // Lead'den field'ları al
+        const leadRes = await kFetch("GET", "/api/v4/leads/" + leadId);
+        if (leadRes.s !== 200) {
+          console.log("[WH] Lead fetch failed");
+          return res.status(200).json({ success: false, error: "lead fetch failed" });
         }
+        const cf = readFields(leadRes.d);
+
+        // Son mesajı Kommo chat API'den al
+        // Not: Kommo chat messages API farklı çalışabilir
+        // Şimdilik skip — sadece unsorted webhook'taki mesajları işle
+        console.log("[WH] Skipping — no message text in webhook");
+        return res.status(200).json({ success: false, error: "no message text" });
       }
-      return res.status(200).json({success:true, ai_reply:result.ai_reply||"", fields:result});
+      console.log("[WH] No message, no chat — skip");
+      return res.status(200).json({ success: false, error: "no data" });
     }
 
-    // ── MODE 2: Kommo webhook (otomatik tetikleme) ──
-    // Kommo farklı webhook formatları gönderebilir
-    let leadId, chatId, msgText;
-
-    // Format: message[add][0]
-    if (data.message?.add) {
-      const m = Array.isArray(data.message.add) ? data.message.add[0] : data.message.add;
-      chatId = m.chat_id;
-      msgText = m.text || "";
-      // Lead ID chat'ten bulunacak
-    }
-
-    // Format: unsorted webhook
-    if (data.unsorted?.add) {
-      const u = Array.isArray(data.unsorted.add) ? data.unsorted.add[0] : data.unsorted.add;
-      leadId = u.lead_id;
-      chatId = u.chat_id;
-    }
-
-    // Salesbot webhook formatı
-    if (!msgText && data.text) msgText = data.text;
-    if (!leadId && data.lead_id) leadId = data.lead_id;
-    if (!chatId && data.chat_id) chatId = data.chat_id;
-
-    // Lead ID'yi chat'ten bul
-    if (chatId && !leadId) {
-      // Chat'e bağlı lead'i bul
-      const chatRes = await kFetch("GET", `/api/v4/leads?filter[chat_id]=${chatId}`);
-      if (chatRes.s===200 && chatRes.d?._embedded?.leads?.[0]) {
-        leadId = chatRes.d._embedded.leads[0].id;
+    // Lead ID yoksa ama mesaj varsa — unsorted'dan lead bulmaya çalış
+    if (!leadId) {
+      console.log("[WH] No lead_id, searching...");
+      // Contact ID ile lead bul
+      if (contactId) {
+        const lr = await kFetch("GET", "/api/v4/leads?filter[contact_id]=" + contactId);
+        if (lr.s === 200 && lr.d?._embedded?.leads?.[0]) {
+          leadId = lr.d._embedded.leads[0].id;
+          console.log("[WH] Found lead via contact:", leadId);
+        }
       }
     }
 
     if (!leadId) {
-      console.log("[WH] No lead_id found");
-      return res.status(200).json({success:false,error:"no lead"});
+      console.log("[WH] Still no lead_id — processing without");
     }
 
-    // Lead bilgilerini al
-    const leadRes = await kFetch("GET", `/api/v4/leads/${leadId}`);
-    if (leadRes.s!==200) {
-      console.log("[WH] Lead fetch failed:", leadRes.s);
-      return res.status(200).json({success:false,error:"lead fetch failed"});
+    // Lead field'larını al
+    let cf = {};
+    if (leadId) {
+      const leadRes = await kFetch("GET", "/api/v4/leads/" + leadId);
+      if (leadRes.s === 200) cf = readFields(leadRes.d);
     }
 
-    const cf = readFields(leadRes.d);
-
-    // Mesaj yoksa son chat mesajını al
-    if (!msgText && chatId) {
-      const msgRes = await kFetch("GET",`/api/v4/chats/${chatId}/messages?limit=1&order=desc`);
-      if (msgRes.s===200 && msgRes.d?._embedded?.messages?.[0]) {
-        const lastMsg = msgRes.d._embedded.messages[0];
-        if (lastMsg.author?.type==="contact") msgText = lastMsg.text||"";
-      }
-    }
-
-    if (!msgText) {
-      console.log("[WH] No message");
-      return res.status(200).json({success:false,error:"no message"});
-    }
-
-    console.log("[WH] Msg:", msgText.slice(0,80), "Lead:", leadId);
+    console.log("[WH] Fields:", JSON.stringify(cf).slice(0, 200));
+    console.log("[WH] Processing msg:", msgText.slice(0, 80));
 
     // chat.js çağır
     const result = await processChat({
-      message:msgText, last_input_text:msgText, source:"kommo",
-      customer_id:String(leadId), ...cf, entry_product:cf.ilgilenilen_urun||"",
+      message: msgText, last_input_text: msgText, source: "kommo",
+      customer_id: String(leadId || contactId || ""),
+      ...cf, entry_product: cf.ilgilenilen_urun || "",
     });
 
-    console.log("[WH] Reply:", (result.ai_reply||"").slice(0,80));
+    console.log("[WH] Reply:", (result.ai_reply || "").slice(0, 80));
 
-    // Field güncelle
-    await updateFields(leadId, result);
+    // Field'ları güncelle
+    if (leadId) {
+      await updateFields(leadId, {
+        ilgilenilen_urun: result.ilgilenilen_urun || result.user_product || "",
+        conversation_stage: result.conversation_stage || "",
+        last_intent: result.last_intent || "", order_status: result.order_status || "",
+        payment_method: result.payment_method || "", photo_received: result.photo_received || "",
+        back_text_status: result.back_text_status || "", address_status: result.address_status || "",
+        support_mode: result.support_mode || "", support_mode_reason: result.support_mode_reason || "",
+        menu_gosterildi: result.menu_gosterildi || "", siparis_alindi: result.siparis_alindi || "",
+        letters_received: result.letters_received || "", phone_received: result.phone_received || "",
+        reply_class: result.reply_class || "", context_lock: result.context_lock || "",
+        cancel_reason: result.cancel_reason || "", ai_reply: result.ai_reply || "",
+      });
+    }
 
     // Mesaj gönder
     if (chatId && result.ai_reply) {
-      await kFetch("POST",`/api/v4/chats/${chatId}/messages`,[{type:"text",text:result.ai_reply}]);
+      await sendMessage(chatId, result.ai_reply);
     }
 
-    return res.status(200).json({success:true, ai_reply:result.ai_reply||""});
+    return res.status(200).json({ success: true, ai_reply: result.ai_reply || "" });
 
-  } catch(e) {
-    console.error("[WH] Err:",e.message);
-    return res.status(200).json({success:false,error:e.message});
+  } catch (e) {
+    console.error("[WH] Err:", e.message);
+    return res.status(200).json({ success: false, error: e.message });
   }
 }
