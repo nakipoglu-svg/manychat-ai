@@ -100,7 +100,8 @@ export default async function handler(req, res) {
 
   try {
     const data = req.body || {};
-
+    console.log("[WH] ALL KEYS:", Object.keys(data).join(" | "));
+    
     // ── MODE 1: Direkt test ──
     if (data.message_text) {
       const cf = data.custom_fields || {};
