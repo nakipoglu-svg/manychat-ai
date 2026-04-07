@@ -6,14 +6,14 @@ export default async function handler(req, res) {
   try {
     // Test 1: Account
     console.log("[TEST] Kommo API test...");
-    const r1 = await fetch("https://api-c.kommo.com/api/v4/account", {
+    const r1 = await fetch("https://nakipoglu.kommo.com/api/v4/account", {
       headers: { "Authorization": `Bearer ${KOMMO_TOKEN}`, "Content-Type": "application/json" },
     });
     const t1 = await r1.text();
     console.log("[TEST] Account:", r1.status, t1.slice(0, 200));
 
     // Test 2: Lead
-    const r2 = await fetch("https://api-c.kommo.com/api/v4/leads?limit=1", {
+    const r2 = await fetch("https://nakipoglu.kommo.com/api/v4/leads?limit=1", {
       headers: { "Authorization": `Bearer ${KOMMO_TOKEN}`, "Content-Type": "application/json" },
     });
     const t2 = await r2.text();
