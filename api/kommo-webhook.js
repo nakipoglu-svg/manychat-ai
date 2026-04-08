@@ -41,19 +41,29 @@ function getProductFromButton(text) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// DEDUP
+// DEDUP — Kommo aynı mesaj için 5-10 webhook çağrısı yapabiliyor
+// Hem msgId hem de lead+text kombinasyonunu kontrol ediyoruz
 // ═══════════════════════════════════════════════════════════════
 const processedMessages = new Map();
 const DEDUP_TTL = 30000;
 
-function isDuplicate(msgId) {
-  if (!msgId) return false;
+function isDuplicate(msgId, leadId, msgText) {
   const now = Date.now();
+  // Eski kayıtları temizle
   for (const [key, ts] of processedMessages) {
     if (now - ts > DEDUP_TTL) processedMessages.delete(key);
   }
-  if (processedMessages.has(msgId)) return true;
-  processedMessages.set(msgId, now);
+
+  // 1. msgId ile kontrol
+  if (msgId && processedMessages.has("id:" + msgId)) return true;
+
+  // 2. lead + text ile kontrol (Kommo farklı ID'lerle aynı mesajı gönderebilir)
+  const textKey = "lt:" + (leadId || "") + ":" + (msgText || "").slice(0, 100);
+  if (processedMessages.has(textKey)) return true;
+
+  // Her iki key'i de kaydet
+  if (msgId) processedMessages.set("id:" + msgId, now);
+  processedMessages.set(textKey, now);
   return false;
 }
 
@@ -157,10 +167,15 @@ export default async function handler(req, res) {
 
     if (!msgText) return res.status(200).json({ ok: true, skipped: true, reason: "no_message_text" });
     if (msgType === "outgoing") return res.status(200).json({ ok: true, skipped: true, reason: "outgoing" });
-    if (isDuplicate(msgId)) return res.status(200).json({ ok: true, skipped: true, reason: "duplicate" });
 
     const leadId = d["message[add][0][element_id]"] || d["message[add][0][entity_id]"] || "";
     const contactId = d["message[add][0][contact_id]"] || "";
+
+    // Güçlendirilmiş dedup: msgId + lead+text kombinasyonu
+    if (isDuplicate(msgId, leadId || contactId, msgText)) {
+      console.log("[WH] ⏭️ Duplicate atlandı:", msgText.slice(0, 40));
+      return res.status(200).json({ ok: true, skipped: true, reason: "duplicate" });
+    }
 
     console.log("[WH] MSG:", msgText.slice(0, 60), "lead:", leadId);
 
