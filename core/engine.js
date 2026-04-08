@@ -184,7 +184,19 @@ export async function processChat(body = {}) {
     committed._nextStage = derived.nextStage;
 
     // 6. Build output
-    return buildOutput(ctx, finalReply, committed, meta);
+    const output = buildOutput(ctx, finalReply, committed, meta);
+    
+    // 7. Extracted raw data (order sync için)
+    output._extracted = {
+      phone: ctx.extracted.phone || "",
+      photoUrl: ctx.extracted.photoLink ? ctx.message.match(/https?:\/\/\S+/)?.[0] || "" : "",
+      letters: ctx.extracted.letters || "",
+      name: ctx.extracted.hasName ? ctx.message : "",
+      addressText: ctx.extracted.hasAddress ? ctx.message : "",
+      backText: (ctx.intent === "back_text" && ctx.fields.conversation_stage === "waiting_back_text") ? ctx.message : "",
+    };
+    
+    return output;
 
   } catch (error) {
     console.error("engine error:", error?.message || error);
