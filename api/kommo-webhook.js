@@ -38,16 +38,18 @@ async function updateFields(leadId,fields){
   for(const[n,v]of Object.entries(fields)){
     if(FID[n]&&v!==undefined)cfv.push({field_id:FID[n],values:[{value:String(v)}]});
   }
-  if(cfv.length>0)await kApi("PATCH","/api/v4/leads/"+leadId,{custom_fields_values:cfv});
+  if(cfv.length>0){
+    const result = await kApi("PATCH","/api/v4/leads/"+leadId,{custom_fields_values:cfv});
+    console.log("[WH] Field update result:", result.s, "fields count:", cfv.length);
+    return result;
+  }
 }
 
-async function sendMsg(talkId,text){
-  if(!talkId||!text)return;
-  console.log("[K] Sending msg to talk:",talkId,"text:",text.slice(0,50));
-  // Kommo internal chat API — talk_id ile mesaj gönder
-  const r=await kApi("POST","/ajax/v1/chats/messages/add",{chat_id:talkId,text:text});
-  console.log("[K] Send result:",r.s,JSON.stringify(r.d).slice(0,200));
-}
+// ═══ MESAJ GÖNDERME FONKSİYONU KALDIRILDI ═══
+// Token scope'unda chat/messaging izni yok (403 hatası).
+// Mesaj gönderme işi Salesbot tarafından yapılacak:
+// 1. Webhook → chat.js cevap üretir → ai_reply field'ına yazar
+// 2. Salesbot → ai_reply dolu mu kontrol → doluysa mesaj gönder → ai_reply temizle
 
 export default async function handler(req,res){
   res.setHeader("Access-Control-Allow-Origin","*");
@@ -78,13 +80,22 @@ export default async function handler(req,res){
     }
 
     // ── Kommo webhook modu ──
+    // Log: Gelen tüm key'leri göster (debug amaçlı)
+    const allKeys = Object.keys(d);
+    console.log("[WH] Incoming keys:", allKeys.slice(0, 30).join(", "));
+
     // SADECE message[add] event'ini işle
     const msgText=d["message[add][0][text]"]||"";
     const msgType=d["message[add][0][type]"]||"";
-    
+
     // message[add] değilse veya outgoing ise atla
-    if(!msgText||msgType==="outgoing"){
-      return res.status(200).json({ok:true,skipped:true});
+    if(!msgText){
+      console.log("[WH] No message text, skipping. type:", msgType);
+      return res.status(200).json({ok:true,skipped:true,reason:"no_message_text"});
+    }
+    if(msgType==="outgoing"){
+      console.log("[WH] Outgoing message, skipping:", msgText.slice(0,40));
+      return res.status(200).json({ok:true,skipped:true,reason:"outgoing"});
     }
 
     const chatId=d["message[add][0][chat_id]"]||"";
@@ -92,49 +103,72 @@ export default async function handler(req,res){
     const leadId=d["message[add][0][element_id]"]||d["message[add][0][entity_id]"]||"";
     const contactId=d["message[add][0][contact_id]"]||"";
 
-    console.log("[WH] MSG:",msgText.slice(0,60),"lead:",leadId,"talk:",talkId,"chat:",chatId);
+    console.log("[WH] MSG:", msgText.slice(0,60));
+    console.log("[WH] IDs → lead:", leadId, "contact:", contactId, "talk:", talkId, "chat:", chatId);
 
-    // Lead field'larını Kommo API'den al
-    let cf={};
-    if(leadId){
-      const lr=await kApi("GET","/api/v4/leads/"+leadId);
-      if(lr.s===200)cf=readFields(lr.d);
+    // ── Lead ID yoksa: contact_id ile lead bulmayı dene ──
+    let resolvedLeadId = leadId;
+    if(!resolvedLeadId && contactId){
+      console.log("[WH] No leadId, trying to find via contact:", contactId);
+      const contactRes = await kApi("GET", "/api/v4/contacts/" + contactId + "?with=leads");
+      if(contactRes.s === 200 && contactRes.d?._embedded?.leads?.[0]?.id){
+        resolvedLeadId = String(contactRes.d._embedded.leads[0].id);
+        console.log("[WH] Found lead via contact:", resolvedLeadId);
+      } else {
+        console.log("[WH] Could not find lead via contact. Status:", contactRes.s);
+      }
     }
 
-    console.log("[WH] Fields:",JSON.stringify(cf).slice(0,200));
+    // ── Lead field'larını Kommo API'den al ──
+    let cf={};
+    if(resolvedLeadId){
+      const lr=await kApi("GET","/api/v4/leads/"+resolvedLeadId);
+      if(lr.s===200){
+        cf=readFields(lr.d);
+        console.log("[WH] Lead fields loaded. Stage:", cf.conversation_stage, "Product:", cf.ilgilenilen_urun);
+      } else {
+        console.log("[WH] Failed to load lead:", lr.s);
+      }
+    } else {
+      console.log("[WH] WARNING: No leadId found! Fields will be empty.");
+    }
 
-    // chat.js çağır
+    // ── chat.js çağır ──
     const result=await processChat({
       message:msgText,last_input_text:msgText,source:"kommo",
-      customer_id:String(leadId||contactId||""),
+      customer_id:String(resolvedLeadId||contactId||""),
       ...cf,entry_product:cf.ilgilenilen_urun||"",
     });
 
-    console.log("[WH] Reply:",(result.ai_reply||"").slice(0,80));
+    console.log("[WH] AI Reply:", (result.ai_reply||"").slice(0,100));
+    console.log("[WH] Intent:", result.last_intent, "Stage:", result.conversation_stage);
 
-    // Field'ları güncelle
-    if(leadId)await updateFields(leadId,{
-      ilgilenilen_urun:result.ilgilenilen_urun||result.user_product||"",
-      conversation_stage:result.conversation_stage||"",
-      last_intent:result.last_intent||"",order_status:result.order_status||"",
-      payment_method:result.payment_method||"",photo_received:result.photo_received||"",
-      back_text_status:result.back_text_status||"",address_status:result.address_status||"",
-      support_mode:result.support_mode||"",support_mode_reason:result.support_mode_reason||"",
-      menu_gosterildi:result.menu_gosterildi||"",siparis_alindi:result.siparis_alindi||"",
-      letters_received:result.letters_received||"",phone_received:result.phone_received||"",
-      reply_class:result.reply_class||"",context_lock:result.context_lock||"",
-      cancel_reason:result.cancel_reason||"",ai_reply:result.ai_reply||"",
-    });
+    // ── Field'ları güncelle (ai_reply dahil) ──
+    if(resolvedLeadId){
+      await updateFields(resolvedLeadId,{
+        ilgilenilen_urun:result.ilgilenilen_urun||result.user_product||"",
+        conversation_stage:result.conversation_stage||"",
+        last_intent:result.last_intent||"",order_status:result.order_status||"",
+        payment_method:result.payment_method||"",photo_received:result.photo_received||"",
+        back_text_status:result.back_text_status||"",address_status:result.address_status||"",
+        support_mode:result.support_mode||"",support_mode_reason:result.support_mode_reason||"",
+        menu_gosterildi:result.menu_gosterildi||"",siparis_alindi:result.siparis_alindi||"",
+        letters_received:result.letters_received||"",phone_received:result.phone_received||"",
+        reply_class:result.reply_class||"",context_lock:result.context_lock||"",
+        cancel_reason:result.cancel_reason||"",ai_reply:result.ai_reply||"",
+      });
+      console.log("[WH] ✅ Fields updated including ai_reply");
+    } else {
+      console.log("[WH] ❌ Cannot update fields — no leadId");
+    }
 
-    // Mesaj gönder — talkId ile
-    if(talkId&&result.ai_reply)await sendMsg(talkId,result.ai_reply);
-    // Fallback: chatId ile
-    else if(chatId&&result.ai_reply)await sendMsg(chatId,result.ai_reply);
+    // ═══ MESAJ GÖNDERME YOK ═══
+    // Salesbot ai_reply field'ını okuyup müşteriye gönderecek
 
-    return res.status(200).json({success:true,ai_reply:result.ai_reply||""});
+    return res.status(200).json({success:true, ai_reply:result.ai_reply||"", leadId: resolvedLeadId||""});
 
   }catch(e){
-    console.error("[WH] Err:",e.message);
+    console.error("[WH] Err:",e.message, e.stack?.slice(0,200));
     return res.status(200).json({success:false,error:e.message});
   }
 }
