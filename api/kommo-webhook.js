@@ -50,7 +50,7 @@ async function kApi(method,path,body){
   if(body)o.body=JSON.stringify(body);
   const r=await fetch(API+path,o);
   const t=await r.text();
-  console.log("[K]",method,path,r.status);
+  console.log("[K]",method,path,r.status,t.slice(0,200));
   try{return{s:r.status,d:JSON.parse(t)};}catch{return{s:r.status,d:t};}
 }
 
@@ -61,31 +61,20 @@ async function updateFields(leadId,fields){
   }
   if(cfv.length>0){
     const result = await kApi("PATCH","/api/v4/leads/"+leadId,{custom_fields_values:cfv});
-    console.log("[WH] Fields updated:", result.s, "count:", cfv.length);
     return result;
   }
 }
 
 // ═══ SALESBOT API TETİKLEME ═══
+// Doğru endpoint: POST /api/v4/bots/{id}/run
 async function triggerSalesbot(leadId) {
-  console.log("[WH] Triggering Salesbot", REPLY_BOT_ID, "for lead", leadId);
+  console.log("[WH] Triggering bot", REPLY_BOT_ID, "for lead", leadId);
   
-  // v4 endpoint dene
-  let result = await kApi("POST", "/api/v4/salesbot/" + REPLY_BOT_ID + "/run", [
+  const result = await kApi("POST", "/api/v4/bots/" + REPLY_BOT_ID + "/run", [
     { entity_id: Number(leadId), entity_type: "leads" }
   ]);
   
-  // v4 başarısızsa v2 dene
-  if (result.s !== 200 && result.s !== 202) {
-    console.log("[WH] v4 failed, trying v2...");
-    result = await kApi("POST", "/api/v2/salesbot/run", {
-      bot_id: REPLY_BOT_ID,
-      entity_id: Number(leadId),
-      entity_type: 2 // 2 = leads
-    });
-  }
-  
-  console.log("[WH] Salesbot trigger result:", result.s);
+  console.log("[WH] Bot trigger result:", result.s);
   return result;
 }
 
