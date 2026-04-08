@@ -200,7 +200,25 @@ export default async function handler(req, res) {
       if (lr.s === 200) cf = readFields(lr.d);
     }
 
-    // Adım 3: chat.js ile cevap üret
+    // ══════════════════════════════════════════════════════════
+    // FIX #5: İLK MESAJ TESPİTİ
+    // menu_gosterildi boş VE ilgilenilen_urun boş → yeni müşteri
+    // Bu durumda Salesbot #3 menüyü göstermeli, webhook araya girmemeli
+    // ══════════════════════════════════════════════════════════
+    const isFirstMessage = !cf.menu_gosterildi && !cf.ilgilenilen_urun;
+
+    if (isFirstMessage) {
+      console.log("[WH] 🆕 İlk mesaj tespit edildi — Salesbot #3'e bırakılıyor, chat.js ATLANYOR");
+      // Salesbot #3'ün koşulları geçmesi için field'lara DOKUNMA
+      // Salesbot #3 menüyü gösterecek ve menu_gosterildi'yi kendisi set edecek
+      return res.status(200).json({
+        ok: true,
+        handled_by: "salesbot3_first_message",
+        reason: "letting salesbot3 show menu",
+      });
+    }
+
+    // Adım 3: chat.js ile cevap üret (ilk mesaj DEĞİL, normal akış)
     const result = await processChat({
       message: msgText, last_input_text: msgText, source: "kommo",
       customer_id: String(resolvedLeadId || contactId || ""),
@@ -209,9 +227,12 @@ export default async function handler(req, res) {
 
     console.log("[WH] Reply:", (result.ai_reply || "").slice(0, 80));
 
-    // Adım 4: Field güncelleme + Bot tetikleme PARALEL
-    // FIX #3: Eskiden sıralı 3 çağrı (~3-4sn), şimdi paralel (~1-1.5sn)
+    // Adım 4: Field güncelleme + Bot tetikleme
     if (resolvedLeadId) {
+      // menu_gosterildi: Salesbot #3 zaten set ediyor, webhook'tan tekrar yazma
+      // (sadece Salesbot #3 set etmemişse ve chat.js "evet" döndüyse yaz)
+      const menuField = cf.menu_gosterildi || result.menu_gosterildi || "";
+
       const fieldUpdatePromise = updateFields(resolvedLeadId, {
         ilgilenilen_urun: result.ilgilenilen_urun || result.user_product || "",
         conversation_stage: result.conversation_stage || "",
@@ -223,7 +244,7 @@ export default async function handler(req, res) {
         address_status: result.address_status || "",
         support_mode: result.support_mode || "",
         support_mode_reason: result.support_mode_reason || "",
-        menu_gosterildi: result.menu_gosterildi || "",
+        menu_gosterildi: menuField,
         siparis_alindi: result.siparis_alindi || "",
         letters_received: result.letters_received || "",
         phone_received: result.phone_received || "",
@@ -234,15 +255,10 @@ export default async function handler(req, res) {
       });
 
       if (result.ai_reply) {
-        // Field güncelleme + bot tetikleme paralel
-        // NOT: ai_reply field'a yazılmalı ÖNCE, sonra bot tetiklenmeli
-        // Çünkü bot ai_reply'ı okuyup gönderiyor.
-        // Bu yüzden: önce field güncelle, sonra bot tetikle (sıralı kalmalı)
-        // AMA lead okuma artık cache'lenmese bile paralel kazanç var
+        // Önce field güncelle (ai_reply yazılsın), sonra bot tetikle (ai_reply'ı okuyacak)
         await fieldUpdatePromise;
         await triggerSalesbot(resolvedLeadId);
       } else {
-        // ai_reply boşsa bot tetiklemeye gerek yok, sadece field güncelle
         await fieldUpdatePromise;
       }
     }
