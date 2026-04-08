@@ -17,6 +17,25 @@ const FID = {
 };
 
 // ═══════════════════════════════════════════════════════════════
+// PIPELINE STAGE MAPPING
+// conversation_stage → Kommo pipeline status_id
+// ═══════════════════════════════════════════════════════════════
+const PIPELINE_ID = 13481231;
+const STAGE_MAP = {
+  "":                    104000639, // Yeni Müşteri
+  "waiting_product":     104000639, // Yeni Müşteri
+  "waiting_photo":       104000647, // Foto/Harf Bekleniyor
+  "waiting_letters":     104000647, // Foto/Harf Bekleniyor
+  "waiting_back_text":   104000651, // Arka Yazı/Foto Bekleniyor
+  "waiting_payment":     104000655, // Ödeme Bekleniyor
+  "waiting_address":     104000659, // Adres Bekleniyor
+  "order_completed":     104106243, // Sipariş Tamamlandı
+  "human_support":       104106247, // Destek / İptal
+};
+// Ürün seçildi ama henüz foto/harf beklenmiyorsa
+const STAGE_PRODUCT_SELECTED = 104000643; // Ürün Seçti
+
+// ═══════════════════════════════════════════════════════════════
 // SALESBOT #3 BUTON TIKLAMALARı — ÇİFT CEVAP KORUMASI
 // Salesbot #3'ün buton metinlerini buraya ekleyin.
 // Bu metinler geldiğinde chat.js ÇAĞRILMAZ (Salesbot #3 zaten cevap veriyor).
@@ -130,6 +149,28 @@ async function triggerSalesbot(leadId) {
   return result;
 }
 
+// Pipeline stage taşıma — conversation_stage'e göre lead'i doğru kolona taşı
+async function movePipelineStage(leadId, conversationStage, hasProduct) {
+  let targetStatus = STAGE_MAP[conversationStage];
+  
+  // Ürün seçildi ama henüz waiting_photo/waiting_letters'a geçmedi
+  if (!targetStatus && hasProduct) {
+    targetStatus = STAGE_PRODUCT_SELECTED;
+  }
+  
+  if (!targetStatus) return; // Stage bilinmiyor, taşıma yapma
+  
+  try {
+    await kApi("PATCH", "/api/v4/leads/" + leadId, {
+      pipeline_id: PIPELINE_ID,
+      status_id: targetStatus,
+    });
+    console.log("[WH] Pipeline stage →", targetStatus, "for lead", leadId);
+  } catch (e) {
+    console.error("[WH] Pipeline move error:", e.message);
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // ANA WEBHOOK HANDLER
 // ═══════════════════════════════════════════════════════════════
@@ -199,14 +240,17 @@ export default async function handler(req, res) {
 
       if (resolvedLeadId) {
         const product = getProductFromButton(msgText);
+        const stage = product === "lazer" ? "waiting_photo" : "waiting_letters";
         // FIX #2: Field güncellemesini SADECE biz yapıyoruz (Salesbot #3'ten kaldırıldı)
         await updateFields(resolvedLeadId, {
           ilgilenilen_urun: product,
-          conversation_stage: product === "lazer" ? "waiting_photo" : "waiting_letters",
+          conversation_stage: stage,
           context_lock: "1",
           order_status: "started",
           last_intent: "product_entry",
         });
+        // Pipeline stage taşı
+        await movePipelineStage(resolvedLeadId, stage, true);
       }
 
       return res.status(200).json({
@@ -361,6 +405,11 @@ export default async function handler(req, res) {
       } else {
         await fieldUpdatePromise;
       }
+
+      // Pipeline stage taşı — conversation_stage'e göre lead'i doğru kolona taşı
+      const newStage = result.conversation_stage || "";
+      const hasProduct = !!(result.ilgilenilen_urun || result.user_product);
+      await movePipelineStage(resolvedLeadId, newStage, hasProduct);
     }
 
     return res.status(200).json({ success: true, ai_reply: result.ai_reply || "" });
