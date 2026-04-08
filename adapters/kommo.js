@@ -54,16 +54,15 @@ function getProductFromButton(text) {
 }
 
 // ─── DEDUP (Kommo Field-Based, Serverless-Safe) ─────────────
-// In-memory Map serverless'ta çalışmaz (her instance ayrı).
-// Dedup TAMAMEN Kommo lead field'larına dayanır.
+// context_lock: SADECE aktif lock → "lock:<msgId>:<timestamp>" veya boş
+// cancel_reason: Replay watermark → "wm:<createdAt>:<id1>|<id2>|..."
 //
-// context_lock FORMAT (tek tip, 2 durum):
-//   İşlem sırasında: "lock:<msgId>:<timestamp>"
-//   İşlem bitince:   "done:<id1>|<id2>|<id3>"    (son 3 msgId, en yeni başta)
-//
-// Başka format KULLANILMAZ. "1", boş string, vs. yok.
+// Watermark mantığı:
+//   gelen created_at < watermark ts → eski mesaj, replay, skip
+//   gelen created_at == watermark ts VE msgId listede → replay, skip
+//   gelen created_at > watermark ts → yeni mesaj, işle, watermark güncelle
 
-const LOCK_TTL_MS = 60000; // 60sn sonra eski lock expire
+const LOCK_TTL_MS = 60000;
 
 function buildLockValue(msgId) {
   return "lock:" + (msgId || "x").slice(0, 20) + ":" + Date.now();
@@ -81,17 +80,41 @@ function isMyLock(lockVal, myLock) {
   return lockVal === myLock;
 }
 
-// Son 10 msgId → "done:<id1>|<id2>|...|<id10>" (en yeni başta, tekilleştirilmiş)
-// ID'ler 12 karaktere kısaltılır (Kommo field 255 char limit)
-function buildDoneValue(msgId, previousLock) {
-  const shortId = (msgId || "").slice(0, 12);
-  let prev = [];
-  if (previousLock && previousLock.startsWith("done:")) {
-    prev = previousLock.slice(5).split("|").filter(Boolean);
+// ─── WATERMARK ──────────────────────────────────────────────
+
+function shortMsgId(msgId) {
+  return (msgId || "").slice(0, 12);
+}
+
+function parseWatermark(val) {
+  if (!val || !val.startsWith("wm:")) return { ts: 0, ids: [] };
+  const rest = val.slice(3);
+  const firstColon = rest.indexOf(":");
+  if (firstColon === -1) return { ts: 0, ids: [] };
+  const ts = parseInt(rest.slice(0, firstColon), 10);
+  const ids = rest.slice(firstColon + 1).split("|").filter(Boolean);
+  return { ts: Number.isFinite(ts) ? ts : 0, ids };
+}
+
+function buildWatermark(createdAt, msgId, prevVal) {
+  const prev = parseWatermark(prevVal);
+  const sid = shortMsgId(msgId);
+  if (!createdAt || !sid) return prevVal || "";
+  if (createdAt > prev.ts) return `wm:${createdAt}:${sid}`;
+  if (createdAt === prev.ts) {
+    const ids = [sid, ...prev.ids.filter(x => x !== sid)].slice(0, 5);
+    return `wm:${createdAt}:${ids.join("|")}`;
   }
-  if (!shortId) return "done:" + prev.slice(0, 10).join("|");
-  prev = [shortId, ...prev.filter(id => id !== shortId)].slice(0, 10);
-  return "done:" + prev.join("|");
+  return prevVal || "";
+}
+
+function isReplayByWatermark(createdAt, msgId, prevVal) {
+  const prev = parseWatermark(prevVal);
+  const sid = shortMsgId(msgId);
+  if (!createdAt || !sid || !prev.ts) return false;
+  if (createdAt < prev.ts) return true;
+  if (createdAt === prev.ts && prev.ids.includes(sid)) return true;
+  return false;
 }
 
 // ─── EMOJI STRIP (Kommo Salesbot emoji'den sonrasını kesiyor) ──
@@ -176,7 +199,9 @@ async function resolveLeadId(leadId, contactId) {
 
 function isFirstMessage(cf, msgText) {
   if (cf.menu_gosterildi || cf.ilgilenilen_urun) return false;
-  if (cf.conversation_stage || cf.context_lock || cf.order_status) return false;
+  if (cf.conversation_stage || cf.order_status) return false;
+  // Watermark varsa daha önce mesaj işlenmiş demek
+  if (cf.cancel_reason && cf.cancel_reason.startsWith("wm:")) return false;
   if (/resimli|lazer|ata[cç]|harfli|fiyat|sipari[sş]|kolye|ücret|ne kadar/i.test(msgText.toLowerCase())) return false;
   return true;
 }
@@ -191,12 +216,6 @@ export default async function handler(req, res) {
   try {
     const d = req.body || {};
 
-    // ══ RAW BODY LOG — her POST'u logla (geçici, debug) ══
-    const rawKeys = Object.keys(d).slice(0, 20).join(", ");
-    const rawSnippet = JSON.stringify(d).slice(0, 500);
-    console.log("[WH] RAW POST keys:", rawKeys);
-    console.log("[WH] RAW POST body:", rawSnippet);
-    // ═══════════════════════════════════════════════════════
     // ── Direct API call (ManyChat-compatible) ──
     if (d.message_text) {
       const cf = d.custom_fields || {};
@@ -281,7 +300,8 @@ export default async function handler(req, res) {
         } catch {}
         await updateFields(btnLid, {
           ilgilenilen_urun: product, conversation_stage: stage,
-          context_lock: buildDoneValue(msgId, btnCf.context_lock),
+          context_lock: "",
+          cancel_reason: buildWatermark(msgCreatedAt, msgId, btnCf.cancel_reason),
           order_status: "started", last_intent: "product_entry",
         });
         await movePipelineStage(btnLid, stage, true);
@@ -302,15 +322,11 @@ export default async function handler(req, res) {
     // DEDUP GUARD — 4 katmanlı, serverless-safe
     // ══════════════════════════════════════════════════════════
 
-    // Katman 0: msgId replay guard — Kommo aynı mesajı tekrar gönderirse
-    // context_lock "done:<id1>|...|<id10>" formatında son 10 msgId saklıyor
-    if (msgId && cf.context_lock && cf.context_lock.startsWith("done:")) {
-      const doneIds = cf.context_lock.slice(5).split("|");
-      const shortId = msgId.slice(0, 12);
-      if (doneIds.includes(shortId)) {
-        console.log("[WH] DEDUP-0: msgId already processed, skip. id:", shortId);
-        return res.status(200).json({ ok: true, skipped: true, reason: "dedup_replay" });
-      }
+    // Katman 0: Watermark replay guard
+    // cancel_reason field'ında "wm:<ts>:<id1>|<id2>|..." formatında saklanıyor
+    if (msgId && msgCreatedAt > 0 && isReplayByWatermark(msgCreatedAt, msgId, cf.cancel_reason)) {
+      console.log("[WH] DEDUP-0: replay by watermark, skip.", shortMsgId(msgId), "ts:", msgCreatedAt);
+      return res.status(200).json({ ok: true, skipped: true, reason: "dedup_replay_watermark" });
     }
 
     // Katman 1: ai_reply doluysa → başka instance zaten cevap yazmış
@@ -326,7 +342,9 @@ export default async function handler(req, res) {
     }
 
     // Katman 3: Double-check write lock (yaz → tekrar oku → doğrula)
-    if (lid) {
+    // msgId yoksa lock yapma
+    const lockable = !!msgId;
+    if (lid && lockable) {
       const myLock = buildLockValue(msgId);
       
       // 3a: Lock yaz
@@ -366,7 +384,10 @@ export default async function handler(req, res) {
       console.log("[WH] First message → menu bot");
       if (lid) {
         await triggerBot(MENU_BOT_ID, lid);
-        await updateFields(lid, { context_lock: buildDoneValue(msgId, cf.context_lock) });
+        await updateFields(lid, {
+          context_lock: "",
+          cancel_reason: buildWatermark(msgCreatedAt, msgId, cf.cancel_reason),
+        });
       }
       return res.status(200).json({ ok: true, handled_by: "menu_bot" });
     }
@@ -397,8 +418,8 @@ export default async function handler(req, res) {
       letters_received: result.letters_received || "",
       phone_received: result.phone_received || "",
       reply_class: result.reply_class || "",
-      context_lock: buildDoneValue(msgId, cf.context_lock),  // Replay guard: son 3 msgId sakla
-      cancel_reason: result.cancel_reason || "",
+      context_lock: "",  // Lock temizle
+      cancel_reason: buildWatermark(msgCreatedAt, msgId, cf.cancel_reason),  // Watermark güncelle
     };
 
     // ── Write ai_reply + trigger bot ──
@@ -427,26 +448,11 @@ export default async function handler(req, res) {
 
   } catch (e) {
     console.error("[WH] Error:", e.message);
-    // Lock takılı kalmasın — ama msgId'yi done'a EKLEME (tekrar denenebilsin)
+    // Lock takılı kalmasın — temizle. Watermark'a dokunma (tekrar denenebilsin).
     try {
       const errLid = (req.body?.["message[add][0][element_id]"]) || "";
       if (errLid) {
-        // Lock aktifse → önceki done listesini geri yükle (lock'u sil)
-        let prevLock = "";
-        try {
-          const errLr = await kApi("GET", "/api/v4/leads/" + errLid);
-          if (errLr.s === 200) {
-            const errCf = readFields(errLr.d);
-            prevLock = errCf.context_lock || "";
-          }
-        } catch {}
-        // Lock formatındaysa → "done:" ile başlayan önceki değere dön
-        // Done formatındaysa → olduğu gibi bırak (msgId eklenmeden)
-        if (prevLock.startsWith("lock:")) {
-          // Lock'u temizle, boş done yaz
-          await updateFields(errLid, { context_lock: "done:" });
-        }
-        // Eğer zaten done: formatındaysa dokunma
+        await updateFields(errLid, { context_lock: "" });
       }
     } catch {}
     return res.status(200).json({ success: false, error: e.message });
