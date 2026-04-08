@@ -183,7 +183,8 @@ export function detectIntent(ctx) {
         "iki taraf","iki yuz","iki yüz",
       ]);
 
-    const hasIntentVerb = hasAny(norm, ["istiyorum","isterim","olsun","yapalim","yapın","yaparsaniz"]) && raw.length > 15;
+    const hasIntentVerb = hasAny(norm, ["istiyorum","isterim","olsun","yapalim","yapın","yaparsaniz"]) && raw.length > 15
+      && !hasAny(norm, ["yazilsin","yazılsın","yazsin","yazsın","yazarsaniz","yazarsanız","ekleyin","eklesin"]);
 
     if (raw && !blocked && !isQuestion && !hasIntentVerb && !looksLikePhotoUrl(message) && raw.length <= 80) {
       return INTENT.BACK_TEXT;
