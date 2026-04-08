@@ -153,11 +153,18 @@ async function movePipelineStage(leadId, stage, hasProduct) {
 }
 
 async function resolveLeadId(leadId, contactId) {
-  if (leadId) return leadId;
-  if (!contactId) return "";
+  if (leadId && !contactId) return { leadId, contactName: "" };
+  if (!contactId) return { leadId: leadId || "", contactName: "" };
   const r = await kApi("GET", "/api/v4/contacts/" + contactId + "?with=leads");
-  if (r.s === 200 && r.d?._embedded?.leads?.[0]?.id) return String(r.d._embedded.leads[0].id);
-  return "";
+  let resolvedLead = leadId || "";
+  let contactName = "";
+  if (r.s === 200) {
+    if (!resolvedLead && r.d?._embedded?.leads?.[0]?.id) {
+      resolvedLead = String(r.d._embedded.leads[0].id);
+    }
+    contactName = r.d?.name || "";
+  }
+  return { leadId: resolvedLead, contactName };
 }
 
 // ─── FIRST MESSAGE DETECTION ────────────────────────────────
@@ -228,28 +235,28 @@ export default async function handler(req, res) {
     // ── Button click ──
     if (isButtonClick(effectiveText)) {
       console.log("[WH] Button:", effectiveText);
-      const lid = await resolveLeadId(leadId, contactId);
-      if (lid) {
+      const { leadId: btnLid } = await resolveLeadId(leadId, contactId);
+      if (btnLid) {
         const product = getProductFromButton(effectiveText);
         const stage = product === "lazer" ? "waiting_photo" : "waiting_letters";
         // Lead field'larını oku (done list için)
         let btnCf = {};
         try {
-          const btnLr = await kApi("GET", "/api/v4/leads/" + lid);
+          const btnLr = await kApi("GET", "/api/v4/leads/" + btnLid);
           if (btnLr.s === 200) btnCf = readFields(btnLr.d);
         } catch {}
-        await updateFields(lid, {
+        await updateFields(btnLid, {
           ilgilenilen_urun: product, conversation_stage: stage,
           context_lock: buildDoneValue(msgId, btnCf.context_lock),
           order_status: "started", last_intent: "product_entry",
         });
-        await movePipelineStage(lid, stage, true);
+        await movePipelineStage(btnLid, stage, true);
       }
       return res.status(200).json({ ok: true, handled_by: "button", product: getProductFromButton(effectiveText) });
     }
 
     // ── Resolve lead + read fields ──
-    const lid = await resolveLeadId(leadId, contactId);
+    const { leadId: lid, contactName } = await resolveLeadId(leadId, contactId);
     let cf = {};
     if (lid) {
       const lr = await kApi("GET", "/api/v4/leads/" + lid);
@@ -375,7 +382,7 @@ export default async function handler(req, res) {
     try {
       await Promise.allSettled([
         logConversationRow({
-          body: { message: effectiveText, lead_id: lid, contact_id: contactId },
+          body: { message: effectiveText, lead_id: lid, contact_id: contactId, instagram_username: contactName || "" },
           result,
         }).catch(e => console.error("[WH] Log error:", e.message)),
         safeOrderSync(effectiveText, lid, result, cf).catch(e => console.error("[WH] OrderSync error:", e.message)),
