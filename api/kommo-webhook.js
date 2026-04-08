@@ -5,6 +5,7 @@ const API = "https://nakipoglu.kommo.com";
 const HDR = { "Authorization": "Bearer " + T, "Content-Type": "application/json" };
 
 const REPLY_BOT_ID = 72303;
+const MENU_BOT_ID = 72073;  // Salesbot #3 — butonlu menü botu
 
 const FID = {
   ilgilenilen_urun: 1831171, conversation_stage: 1831173, last_intent: 1831175,
@@ -253,11 +254,25 @@ export default async function handler(req, res) {
     const isFirstMessage = isFieldsEmpty && !isFlowStarted && !hasProductIntent;
 
     if (isFirstMessage) {
-      console.log("[WH] 🆕 İlk mesaj tespit edildi — Salesbot #3'e bırakılıyor, chat.js ATLANYOR");
+      console.log("[WH] 🆕 İlk mesaj — Salesbot #3'ü API ile tetikliyoruz");
+      
+      // Salesbot #3'ü API ile tetikle (menü göstermesi için)
+      if (resolvedLeadId) {
+        try {
+          const triggerResult = await kApi("POST", "/api/v4/bots/" + MENU_BOT_ID + "/run", {
+            entity_id: Number(resolvedLeadId),
+            entity_type: "leads"
+          });
+          console.log("[WH] Salesbot #3 trigger:", triggerResult.s);
+        } catch (e) {
+          console.error("[WH] Salesbot #3 trigger error:", e.message);
+        }
+      }
+      
       return res.status(200).json({
         ok: true,
         handled_by: "salesbot3_first_message",
-        reason: "letting salesbot3 show menu",
+        reason: "triggered menu bot via API",
       });
     }
 
