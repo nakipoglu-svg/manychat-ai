@@ -287,9 +287,50 @@ export default async function handler(req, res) {
     console.log("[WH] Reply (stripped):", stripEmoji(result.ai_reply || "").slice(0, 80));
 
     // Adım 4: Field güncelleme + Bot tetikleme
+    // FIX #6: Çift mesaj koruması — bot tetiklemeden önce ai_reply'ı kontrol et
+    // Eğer ai_reply zaten doluysa (başka instance yazmış), tekrar yazma
     if (resolvedLeadId) {
-      // menu_gosterildi: Salesbot #3 zaten set ediyor, webhook'tan tekrar yazma
-      // (sadece Salesbot #3 set etmemişse ve chat.js "evet" döndüyse yaz)
+      // Önce lead'i tekrar oku — ai_reply dolu mu kontrol et
+      let aiReplyAlreadySet = false;
+      try {
+        const freshLead = await kApi("GET", "/api/v4/leads/" + resolvedLeadId);
+        if (freshLead.s === 200) {
+          const freshFields = readFields(freshLead.d);
+          if (freshFields.ai_reply && freshFields.ai_reply.length > 0) {
+            aiReplyAlreadySet = true;
+            console.log("[WH] ⏭️ ai_reply zaten dolu, bu instance atlıyor:", freshFields.ai_reply.slice(0, 50));
+          }
+        }
+      } catch (e) {
+        console.error("[WH] Fresh lead read error:", e.message);
+      }
+
+      if (aiReplyAlreadySet) {
+        // Başka instance zaten cevabı yazmış — field güncelle ama ai_reply ve bot tetikleme ATLA
+        await updateFields(resolvedLeadId, {
+          ilgilenilen_urun: result.ilgilenilen_urun || result.user_product || "",
+          conversation_stage: result.conversation_stage || "",
+          last_intent: result.last_intent || "",
+          order_status: result.order_status || "",
+          payment_method: result.payment_method || "",
+          photo_received: result.photo_received || "",
+          back_text_status: result.back_text_status || "",
+          address_status: result.address_status || "",
+          support_mode: result.support_mode || "",
+          support_mode_reason: result.support_mode_reason || "",
+          menu_gosterildi: cf.menu_gosterildi || result.menu_gosterildi || "",
+          siparis_alindi: result.siparis_alindi || "",
+          letters_received: result.letters_received || "",
+          phone_received: result.phone_received || "",
+          reply_class: result.reply_class || "",
+          context_lock: result.context_lock || "",
+          cancel_reason: result.cancel_reason || "",
+          // ai_reply YAZMA — zaten dolu
+        });
+        return res.status(200).json({ success: true, skipped_reply: true, reason: "ai_reply_already_set" });
+      }
+
+      // ai_reply boş — normal akış: field güncelle + bot tetikle
       const menuField = cf.menu_gosterildi || result.menu_gosterildi || "";
 
       const fieldUpdatePromise = updateFields(resolvedLeadId, {
