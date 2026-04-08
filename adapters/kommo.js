@@ -392,7 +392,7 @@ export default async function handler(req, res) {
           body: { message: effectiveText, lead_id: lid, contact_id: contactId, instagram_username: contactName || "" },
           result,
         }).catch(e => console.error("[WH] Log error:", e.message)),
-        safeOrderSync(effectiveText, lid, result, cf).catch(e => console.error("[WH] OrderSync error:", e.message)),
+        safeOrderSync(effectiveText, lid, result, cf, contactName).catch(e => console.error("[WH] OrderSync error:", e.message)),
       ]);
     } catch (e) { console.error("[WH] Background tasks error:", e.message); }
 
@@ -452,13 +452,14 @@ function calculateConfidence(result) {
   return score;
 }
 
-async function safeOrderSync(msgText, leadId, result, cf) {
+async function safeOrderSync(msgText, leadId, result, cf, contactName) {
   if (!ORDER_WEBHOOK_URL) return;
   const product = result.ilgilenilen_urun || "";
   const customerId = leadId || "";
   if (!product && !customerId) return;
 
   const orderId = buildStableOrderId(customerId, product, result);
+  const ext = result._extracted || {};
 
   // Orders_Raw sheet formatı
   const payload = {
@@ -467,19 +468,19 @@ async function safeOrderSync(msgText, leadId, result, cf) {
       order_id: orderId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      customer_name: cf?.customer_name || "",
+      customer_name: contactName || "",
       dm_link: customerId ? `https://nakipoglu.kommo.com/leads/detail/${customerId}` : "",
-      recipient_name: "",
-      phone: cf?.phone || "",
-      full_address: cf?.full_address || "",
+      recipient_name: ext.name || "",
+      phone: ext.phone || "",
+      full_address: ext.addressText || "",
       product_type: product,
       payment_type: result.payment_method || "",
       photo_received: result.photo_received || "",
       photo_count: result.photo_received ? "1" : "",
-      photo_url: cf?.photo_url || "",
+      photo_url: ext.photoUrl || "",
       back_text_status: result.back_text_status || "",
-      back_text_value: cf?.back_text_value || "",
-      letters_value: result.letters_received ? (cf?.letters_value || "") : "",
+      back_text_value: ext.backText || "",
+      letters_value: ext.letters || "",
       order_status: result.order_status || "",
       confirmation_source: "bot",
       confirmed_at: result.conversation_stage === "order_completed" ? new Date().toISOString() : "",
