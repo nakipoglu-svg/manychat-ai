@@ -378,7 +378,7 @@ export default async function handler(req, res) {
           body: { message: effectiveText, lead_id: lid, contact_id: contactId },
           result,
         }).catch(e => console.error("[WH] Log error:", e.message)),
-        safeOrderSync(effectiveText, lid, result).catch(e => console.error("[WH] OrderSync error:", e.message)),
+        safeOrderSync(effectiveText, lid, result, cf).catch(e => console.error("[WH] OrderSync error:", e.message)),
       ]);
     } catch (e) { console.error("[WH] Background tasks error:", e.message); }
 
@@ -438,7 +438,7 @@ function calculateConfidence(result) {
   return score;
 }
 
-async function safeOrderSync(msgText, leadId, result) {
+async function safeOrderSync(msgText, leadId, result, cf) {
   if (!ORDER_WEBHOOK_URL) return;
   const product = result.ilgilenilen_urun || "";
   const customerId = leadId || "";
@@ -446,24 +446,34 @@ async function safeOrderSync(msgText, leadId, result) {
 
   const orderId = buildStableOrderId(customerId, product, result);
 
+  // Orders_Raw sheet formatı
   const payload = {
     type: "order_raw",
     data: {
       order_id: orderId,
+      created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      last_message: msgText,
-      customer_id: customerId,
+      customer_name: cf?.customer_name || "",
+      dm_link: customerId ? `https://nakipoglu.kommo.com/leads/detail/${customerId}` : "",
+      recipient_name: "",
+      phone: cf?.phone || "",
+      full_address: cf?.full_address || "",
       product_type: product,
-      order_status: result.order_status || "",
       payment_type: result.payment_method || "",
       photo_received: result.photo_received || "",
+      photo_count: result.photo_received ? "1" : "",
+      photo_url: cf?.photo_url || "",
       back_text_status: result.back_text_status || "",
-      address_status: result.address_status || "",
-      letters_received: result.letters_received || "",
-      phone_received: result.phone_received || "",
-      confidence_score: calculateConfidence(result),
+      back_text_value: cf?.back_text_value || "",
+      letters_value: result.letters_received ? (cf?.letters_value || "") : "",
+      order_status: result.order_status || "",
+      confirmation_source: "bot",
+      confirmed_at: result.conversation_stage === "order_completed" ? new Date().toISOString() : "",
+      customer_id: customerId,
+      last_message: msgText,
       conversation_stage: result.conversation_stage || "",
       last_intent: result.last_intent || "",
+      confidence_score: calculateConfidence(result),
     },
   };
 
