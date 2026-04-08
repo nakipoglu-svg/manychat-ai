@@ -53,7 +53,8 @@ export function deriveState(initialState, ctx) {
   }
 
   // Entity fact'leri
-  if (extracted.payment) patch.payment_method = extracted.payment;
+  // Payment: fiyat sorusu HARİÇ her durumda set et
+  if (extracted.payment && intent !== INTENT.PRICE && intent !== INTENT.SHIPPING_PRICE) patch.payment_method = extracted.payment;
   if (extracted.photoLink && intent === INTENT.PHOTO) patch.photo_received = "1";
   if (intent === INTENT.LETTERS && extracted.letters) patch.letters_received = "1";
   if (intent === INTENT.BACK_TEXT) patch.back_text_status = "received";

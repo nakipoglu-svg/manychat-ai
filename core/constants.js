@@ -180,6 +180,7 @@ export const KW = {
     "kargo fiyati var mi", "kargo fiyatı var mı", "kargo fiyati", "kargo fiyatı",
     "kargo dahil mi", "kargo ücretli mi", "kargo ucretli mi",
     "kargo ucretlimi", "kargo ücretlimi",
+    "kargo ucretli mj", "kargo ücretli mj",
     "kargo ucreti var mi", "kargo ücreti var mı",
     "kargo birlikte mi", "kargo ile birlikte mi",
     "kargo ucreti dahil mi", "kargo ücreti dahil mi",
@@ -285,6 +286,9 @@ export const KW = {
     "nasil gonderecegim", "nasıl göndereceğim",
     "buradan gondereyim", "buradan göndereyim",
     "buradan mi gonderecegim", "buradan mı göndereceğim",
+    "vesikalik mi", "vesikalık mı", "vesikalik olmali mi", "vesikalık olmalı mı",
+    "nasil bir fotograf", "nasıl bir fotoğraf", "ne tur fotograf", "ne tür fotoğraf",
+    "hangi fotograf", "ne cesit", "ne çeşit", "selfie mi",
   ],
 
   back_photo_price: [
