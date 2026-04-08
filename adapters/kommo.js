@@ -164,24 +164,33 @@ export default async function handler(req, res) {
     const msgText = d["message[add][0][text]"] || "";
     const msgType = d["message[add][0][type]"] || "";
     const msgId = d["message[add][0][id]"] || "";
-    if (!msgText) return res.status(200).json({ ok: true, skipped: true, reason: "no_text" });
+    const msgMedia = d["message[add][0][media]"] || d["message[add][0][attachment]"] || "";
+
+    // Debug: tüm body'yi logla (geçici)
+    console.log("[WH] BODY KEYS:", Object.keys(d).join(", "));
+    console.log("[WH] RAW:", JSON.stringify(d).slice(0, 800));
+
+    // Fotoğraf: text boş ama media/attachment varsa → URL olarak kullan
+    const effectiveText = msgText || msgMedia || "";
+
+    if (!effectiveText) return res.status(200).json({ ok: true, skipped: true, reason: "no_text" });
     if (msgType === "outgoing") return res.status(200).json({ ok: true, skipped: true, reason: "outgoing" });
 
     const leadId = d["message[add][0][element_id]"] || d["message[add][0][entity_id]"] || "";
     const contactId = d["message[add][0][contact_id]"] || "";
 
-    if (isDuplicate(msgId, leadId || contactId, msgText)) {
+    if (isDuplicate(msgId, leadId || contactId, effectiveText)) {
       return res.status(200).json({ ok: true, skipped: true, reason: "duplicate" });
     }
 
-    console.log("[WH] MSG:", msgText.slice(0, 60), "lead:", leadId);
+    console.log("[WH] MSG:", effectiveText.slice(0, 120), "lead:", leadId, "type:", msgType);
 
     // ── Button click ──
-    if (isButtonClick(msgText)) {
-      console.log("[WH] Button:", msgText);
+    if (isButtonClick(effectiveText)) {
+      console.log("[WH] Button:", effectiveText);
       const lid = await resolveLeadId(leadId, contactId);
       if (lid) {
-        const product = getProductFromButton(msgText);
+        const product = getProductFromButton(effectiveText);
         const stage = product === "lazer" ? "waiting_photo" : "waiting_letters";
         await updateFields(lid, {
           ilgilenilen_urun: product, conversation_stage: stage,
@@ -189,7 +198,7 @@ export default async function handler(req, res) {
         });
         await movePipelineStage(lid, stage, true);
       }
-      return res.status(200).json({ ok: true, handled_by: "button", product: getProductFromButton(msgText) });
+      return res.status(200).json({ ok: true, handled_by: "button", product: getProductFromButton(effectiveText) });
     }
 
     // ── Resolve lead + read fields ──
@@ -201,7 +210,7 @@ export default async function handler(req, res) {
     }
 
     // ── First message → trigger menu bot ──
-    if (isFirstMessage(cf, msgText)) {
+    if (isFirstMessage(cf, effectiveText)) {
       console.log("[WH] First message → menu bot");
       if (lid) await triggerBot(MENU_BOT_ID, lid);
       return res.status(200).json({ ok: true, handled_by: "menu_bot" });
@@ -209,7 +218,7 @@ export default async function handler(req, res) {
 
     // ── Normal flow: core engine ──
     const result = await processChat({
-      message: msgText, ...cf, entry_product: cf.ilgilenilen_urun || "",
+      message: effectiveText, ...cf, entry_product: cf.ilgilenilen_urun || "",
     });
 
     console.log("[WH] Reply:", (result.ai_reply || "").slice(0, 80));
@@ -270,10 +279,10 @@ export default async function handler(req, res) {
     try {
       await Promise.allSettled([
         logConversationRow({
-          body: { message: msgText, lead_id: lid, contact_id: contactId },
+          body: { message: effectiveText, lead_id: lid, contact_id: contactId },
           result,
         }).catch(e => console.error("[WH] Log error:", e.message)),
-        safeOrderSync(msgText, lid, result).catch(e => console.error("[WH] OrderSync error:", e.message)),
+        safeOrderSync(effectiveText, lid, result).catch(e => console.error("[WH] OrderSync error:", e.message)),
       ]);
     } catch (e) { console.error("[WH] Background tasks error:", e.message); }
 
