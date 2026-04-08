@@ -168,7 +168,7 @@ export default async function handler(req, res) {
     const attachLink = d["message[add][0][attachment][link]"] || "";
 
     // Debug: logla (geçici)
-    console.log("[WH] BODY:", JSON.stringify(d).slice(0, 500));
+    // debug log removed
 
     // Fotoğraf: text boş ama attachment picture varsa → URL olarak kullan
     let effectiveText = msgText;
