@@ -53,20 +53,29 @@ function getProductFromButton(text) {
   return "";
 }
 
-// ─── DEDUP ──────────────────────────────────────────────────
+// ─── DEDUP (Kommo Field-Based, Serverless-Safe) ─────────────
+// In-memory Map serverless'ta çalışmaz (her instance ayrı).
+// Dedup TAMAMEN Kommo lead field'larına dayanır.
+// Lock field: context_lock → "lock_<msgId>_<timestamp>"
+// Double-check pattern: yaz → tekrar oku → senin lock'un mu kontrol et
 
-const processed = new Map();
-const DEDUP_TTL = 30000;
+const LOCK_PREFIX = "lock_";
+const LOCK_TTL_MS = 60000; // 60 saniye sonra eski lock expire sayılır
 
-function isDuplicate(msgId, leadId, text) {
-  const now = Date.now();
-  for (const [k, ts] of processed) { if (now - ts > DEDUP_TTL) processed.delete(k); }
-  if (msgId && processed.has("id:" + msgId)) return true;
-  const tk = "lt:" + (leadId || "") + ":" + (text || "").slice(0, 100);
-  if (processed.has(tk)) return true;
-  if (msgId) processed.set("id:" + msgId, now);
-  processed.set(tk, now);
-  return false;
+function buildLockValue(msgId) {
+  return LOCK_PREFIX + (msgId || "x").slice(0, 20) + "_" + Date.now();
+}
+
+function isLockActive(lockVal) {
+  if (!lockVal || !lockVal.startsWith(LOCK_PREFIX)) return false;
+  const parts = lockVal.split("_");
+  const ts = parseInt(parts[parts.length - 1], 10);
+  if (isNaN(ts)) return false;
+  return (Date.now() - ts) < LOCK_TTL_MS;
+}
+
+function isMyLock(lockVal, myLock) {
+  return lockVal === myLock;
 }
 
 // ─── EMOJI STRIP (Kommo Salesbot emoji'den sonrasını kesiyor) ──
@@ -164,8 +173,21 @@ export default async function handler(req, res) {
     const msgText = d["message[add][0][text]"] || "";
     const msgType = d["message[add][0][type]"] || "";
     const msgId = d["message[add][0][id]"] || "";
+    const msgCreatedAt = parseInt(d["message[add][0][created_at]"] || "0", 10);
     const attachType = d["message[add][0][attachment][type]"] || "";
     const attachLink = d["message[add][0][attachment][link]"] || "";
+
+    // ══ STALE MESSAGE GUARD ══════════════════════════════════
+    // Kommo eski mesajları tekrar webhook olarak gönderebilir.
+    // Mesaj 120 saniyeden eskiyse → skip
+    if (msgCreatedAt > 0) {
+      const ageSeconds = Math.floor(Date.now() / 1000) - msgCreatedAt;
+      if (ageSeconds > 120) {
+        console.log("[WH] STALE: msg is", ageSeconds, "s old, skip. id:", msgId);
+        return res.status(200).json({ ok: true, skipped: true, reason: "stale_message", age: ageSeconds });
+      }
+    }
+    // ═════════════════════════════════════════════════════════
 
     // Debug: logla (geçici)
     // debug log removed
@@ -182,10 +204,6 @@ export default async function handler(req, res) {
 
     const leadId = d["message[add][0][element_id]"] || d["message[add][0][entity_id]"] || "";
     const contactId = d["message[add][0][contact_id]"] || "";
-
-    if (isDuplicate(msgId, leadId || contactId, effectiveText)) {
-      return res.status(200).json({ ok: true, skipped: true, reason: "duplicate" });
-    }
 
     console.log("[WH] MSG:", effectiveText.slice(0, 120), "lead:", leadId, "type:", msgType);
 
@@ -213,33 +231,72 @@ export default async function handler(req, res) {
       if (lr.s === 200) cf = readFields(lr.d);
     }
 
-    // ══ DEDUP GUARD (Write-Lock Pattern) ═══════════════════
-    // Sorun: Salesbot ai_reply'ı hızlı siliyor → 2. webhook boş buluyor
-    // Çözüm: Hemen last_intent'e "processing_MSGID" yaz → 2. webhook bunu görünce SKIP
-    
-    // Adım 1: ai_reply doluysa → başka instance cevap yazmış, Salesbot henüz silmemiş
+    // ══════════════════════════════════════════════════════════
+    // DEDUP GUARD — 4 katmanlı, serverless-safe
+    // ══════════════════════════════════════════════════════════
+
+    // Katman 0: msgId replay guard — Kommo aynı mesajı tekrar gönderirse
+    // context_lock "done_<msgId>" formatında son işlenen mesajı saklıyor
+    if (msgId && cf.context_lock && cf.context_lock === "done_" + msgId.slice(0, 30)) {
+      console.log("[WH] DEDUP-0: msgId already processed, skip. id:", msgId.slice(0, 20));
+      return res.status(200).json({ ok: true, skipped: true, reason: "dedup_replay" });
+    }
+
+    // Katman 1: ai_reply doluysa → başka instance zaten cevap yazmış
     if (cf.ai_reply && cf.ai_reply.length > 0 && cf.ai_reply !== "#FIELD_NAME#") {
-      console.log("[WH] DEDUP: ai_reply set, skip");
+      console.log("[WH] DEDUP-1: ai_reply set, skip");
       return res.status(200).json({ ok: true, skipped: true, reason: "dedup_ai_reply" });
     }
 
-    // Adım 2: last_intent "processing_" ile başlıyorsa → başka instance işliyor
-    const lockKey = "processing_" + (msgId || "").slice(0, 20);
-    if (cf.last_intent && cf.last_intent.startsWith("processing_")) {
-      console.log("[WH] DEDUP: processing lock active, skip");
+    // Katman 2: Aktif lock varsa → başka instance işliyor
+    if (isLockActive(cf.context_lock)) {
+      console.log("[WH] DEDUP-2: active lock, skip. lock:", cf.context_lock);
       return res.status(200).json({ ok: true, skipped: true, reason: "dedup_lock" });
     }
 
-    // Adım 3: Lock yaz — diğer instance'lar bunu görecek
+    // Katman 3: Double-check write lock (yaz → tekrar oku → doğrula)
     if (lid) {
-      await updateFields(lid, { last_intent: lockKey });
+      const myLock = buildLockValue(msgId);
+      
+      // 3a: Lock yaz
+      await updateFields(lid, { context_lock: myLock });
+      
+      // 3b: 150ms bekle (Kommo API propagation)
+      await new Promise(r => setTimeout(r, 150));
+      
+      // 3c: Tekrar oku — hâlâ senin lock'un mu?
+      try {
+        const recheck = await kApi("GET", "/api/v4/leads/" + lid);
+        if (recheck.s === 200) {
+          const recheckFields = readFields(recheck.d);
+          
+          // ai_reply bu arada dolmuş olabilir
+          if (recheckFields.ai_reply && recheckFields.ai_reply.length > 0 && recheckFields.ai_reply !== "#FIELD_NAME#") {
+            console.log("[WH] DEDUP-3a: ai_reply appeared during lock, skip");
+            return res.status(200).json({ ok: true, skipped: true, reason: "dedup_race_ai_reply" });
+          }
+          
+          // Başka instance lock'u üzerine yazmış olabilir
+          if (!isMyLock(recheckFields.context_lock, myLock)) {
+            console.log("[WH] DEDUP-3b: lock stolen, skip. mine:", myLock, "theirs:", recheckFields.context_lock);
+            return res.status(200).json({ ok: true, skipped: true, reason: "dedup_race_lock" });
+          }
+        }
+      } catch (e) {
+        console.error("[WH] DEDUP recheck error:", e.message);
+      }
+      
+      console.log("[WH] DEDUP: lock acquired, processing. msgId:", msgId.slice(0, 20));
     }
-    // ═════════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════
 
     // ── First message → trigger menu bot ──
     if (isFirstMessage(cf, effectiveText)) {
       console.log("[WH] First message → menu bot");
-      if (lid) await triggerBot(MENU_BOT_ID, lid);
+      if (lid) {
+        await triggerBot(MENU_BOT_ID, lid);
+        await updateFields(lid, { context_lock: msgId ? ("done_" + msgId.slice(0, 30)) : "1" });
+      }
       return res.status(200).json({ ok: true, handled_by: "menu_bot" });
     }
 
@@ -269,7 +326,7 @@ export default async function handler(req, res) {
       letters_received: result.letters_received || "",
       phone_received: result.phone_received || "",
       reply_class: result.reply_class || "",
-      context_lock: result.context_lock || "",
+      context_lock: msgId ? ("done_" + msgId.slice(0, 30)) : "1",  // Replay guard: son işlenen msgId'yi sakla
       cancel_reason: result.cancel_reason || "",
     };
 
@@ -299,6 +356,11 @@ export default async function handler(req, res) {
 
   } catch (e) {
     console.error("[WH] Error:", e.message);
+    try {
+      const errLid = (req.body?.["message[add][0][element_id]"]) || "";
+      const errMsgId = (req.body?.["message[add][0][id]"]) || "";
+      if (errLid) await updateFields(errLid, { context_lock: errMsgId ? ("done_" + errMsgId.slice(0, 30)) : "1" });
+    } catch {}
     return res.status(200).json({ success: false, error: e.message });
   }
 }
