@@ -201,16 +201,23 @@ export default async function handler(req, res) {
     }
 
     // ══════════════════════════════════════════════════════════
-    // FIX #5: İLK MESAJ TESPİTİ
-    // menu_gosterildi boş VE ilgilenilen_urun boş → yeni müşteri
-    // Bu durumda Salesbot #3 menüyü göstermeli, webhook araya girmemeli
+    // FIX #5 v2: İLK MESAJ TESPİTİ (Akıllı)
+    // Salesbot #3 menüyü göstermeli → webhook araya girmemeli
+    // AMA: Sadece gerçek "ilk mesaj" ise atla.
+    // conversation_stage veya context_lock doluysa → akış başlamış, chat.js çağır.
+    // Mesaj ürün/fiyat/sipariş içeriyorsa → ilk mesaj DEĞİL, chat.js çağır.
     // ══════════════════════════════════════════════════════════
-    const isFirstMessage = !cf.menu_gosterildi && !cf.ilgilenilen_urun;
+    const isFieldsEmpty = !cf.menu_gosterildi && !cf.ilgilenilen_urun;
+    const isFlowStarted = !!cf.conversation_stage || !!cf.context_lock || !!cf.order_status;
+    
+    // Mesaj içeriğine bak — ürün/fiyat/sipariş sorusu varsa ilk mesaj değil
+    const msgLower = msgText.trim().toLowerCase();
+    const hasProductIntent = /resimli|lazer|ata[cç]|harfli|fiyat|sipari[sş]|kolye|ücret|ne kadar/i.test(msgLower);
+    
+    const isFirstMessage = isFieldsEmpty && !isFlowStarted && !hasProductIntent;
 
     if (isFirstMessage) {
       console.log("[WH] 🆕 İlk mesaj tespit edildi — Salesbot #3'e bırakılıyor, chat.js ATLANYOR");
-      // Salesbot #3'ün koşulları geçmesi için field'lara DOKUNMA
-      // Salesbot #3 menüyü gösterecek ve menu_gosterildi'yi kendisi set edecek
       return res.status(200).json({
         ok: true,
         handled_by: "salesbot3_first_message",
