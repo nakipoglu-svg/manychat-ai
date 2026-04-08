@@ -4,7 +4,7 @@ const T = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6ImRhZDAzOGMxZjlmNGU0ODQ5M
 const API = "https://nakipoglu.kommo.com";
 const HDR = {"Authorization":"Bearer "+T,"Content-Type":"application/json"};
 
-const REPLY_BOT_ID = 72303;
+const REPLY_BOT_ID = 72073;
 
 const FID = {
   ilgilenilen_urun:1831171,conversation_stage:1831173,last_intent:1831175,
