@@ -81,7 +81,7 @@ function isMyLock(lockVal, myLock) {
   return lockVal === myLock;
 }
 
-// Son 3 msgId → "done:<id1>|<id2>|<id3>" (en yeni başta, tekilleştirilmiş)
+// Son 10 msgId → "done:<id1>|<id2>|...|<id10>" (en yeni başta, tekilleştirilmiş)
 function buildDoneValue(msgId, previousLock) {
   const shortId = (msgId || "").slice(0, 30);
   // Önceki done listesini al (lock: veya done: fark etmez, sadece done:'dan oku)
@@ -89,9 +89,9 @@ function buildDoneValue(msgId, previousLock) {
   if (previousLock && previousLock.startsWith("done:")) {
     prev = previousLock.slice(5).split("|").filter(Boolean);
   }
-  if (!shortId) return "done:" + prev.slice(0, 3).join("|");
-  // Yeni ID başa, duplicate temizle, max 3
-  prev = [shortId, ...prev.filter(id => id !== shortId)].slice(0, 3);
+  if (!shortId) return "done:" + prev.slice(0, 10).join("|");
+  // Yeni ID başa, duplicate temizle, max 10
+  prev = [shortId, ...prev.filter(id => id !== shortId)].slice(0, 10);
   return "done:" + prev.join("|");
 }
 
@@ -210,13 +210,15 @@ export default async function handler(req, res) {
     // ══ STALE MESSAGE GUARD ══════════════════════════════════
     // Kommo eski mesajları tekrar webhook olarak gönderebilir.
     // Mesaj 300 saniyeden (5dk) eskiyse → skip
-    // (Normal webhook gecikmesi 1-5sn, replay genelde 2-5dk sonra)
     if (msgCreatedAt > 0) {
       const ageSeconds = Math.floor(Date.now() / 1000) - msgCreatedAt;
+      console.log("[WH] MSG age:", ageSeconds, "s, created_at:", msgCreatedAt, "now:", Math.floor(Date.now() / 1000));
       if (ageSeconds > 300) {
         console.log("[WH] STALE: msg is", ageSeconds, "s old, skip. id:", msgId);
         return res.status(200).json({ ok: true, skipped: true, reason: "stale_message", age: ageSeconds });
       }
+    } else {
+      console.log("[WH] NO created_at in webhook body");
     }
     // ═════════════════════════════════════════════════════════
 
