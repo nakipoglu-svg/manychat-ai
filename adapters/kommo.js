@@ -56,19 +56,22 @@ function getProductFromButton(text) {
 // ─── DEDUP (Kommo Field-Based, Serverless-Safe) ─────────────
 // In-memory Map serverless'ta çalışmaz (her instance ayrı).
 // Dedup TAMAMEN Kommo lead field'larına dayanır.
-// Lock field: context_lock → "lock_<msgId>_<timestamp>"
-// Double-check pattern: yaz → tekrar oku → senin lock'un mu kontrol et
+//
+// context_lock FORMAT (tek tip, 2 durum):
+//   İşlem sırasında: "lock:<msgId>:<timestamp>"
+//   İşlem bitince:   "done:<id1>|<id2>|<id3>"    (son 3 msgId, en yeni başta)
+//
+// Başka format KULLANILMAZ. "1", boş string, vs. yok.
 
-const LOCK_PREFIX = "lock_";
-const LOCK_TTL_MS = 60000; // 60 saniye sonra eski lock expire sayılır
+const LOCK_TTL_MS = 60000; // 60sn sonra eski lock expire
 
 function buildLockValue(msgId) {
-  return LOCK_PREFIX + (msgId || "x").slice(0, 20) + "_" + Date.now();
+  return "lock:" + (msgId || "x").slice(0, 20) + ":" + Date.now();
 }
 
 function isLockActive(lockVal) {
-  if (!lockVal || !lockVal.startsWith(LOCK_PREFIX)) return false;
-  const parts = lockVal.split("_");
+  if (!lockVal || !lockVal.startsWith("lock:")) return false;
+  const parts = lockVal.split(":");
   const ts = parseInt(parts[parts.length - 1], 10);
   if (isNaN(ts)) return false;
   return (Date.now() - ts) < LOCK_TTL_MS;
@@ -76,6 +79,20 @@ function isLockActive(lockVal) {
 
 function isMyLock(lockVal, myLock) {
   return lockVal === myLock;
+}
+
+// Son 3 msgId → "done:<id1>|<id2>|<id3>" (en yeni başta, tekilleştirilmiş)
+function buildDoneValue(msgId, previousLock) {
+  const shortId = (msgId || "").slice(0, 30);
+  // Önceki done listesini al (lock: veya done: fark etmez, sadece done:'dan oku)
+  let prev = [];
+  if (previousLock && previousLock.startsWith("done:")) {
+    prev = previousLock.slice(5).split("|").filter(Boolean);
+  }
+  if (!shortId) return "done:" + prev.slice(0, 3).join("|");
+  // Yeni ID başa, duplicate temizle, max 3
+  prev = [shortId, ...prev.filter(id => id !== shortId)].slice(0, 3);
+  return "done:" + prev.join("|");
 }
 
 // ─── EMOJI STRIP (Kommo Salesbot emoji'den sonrasını kesiyor) ──
@@ -179,10 +196,11 @@ export default async function handler(req, res) {
 
     // ══ STALE MESSAGE GUARD ══════════════════════════════════
     // Kommo eski mesajları tekrar webhook olarak gönderebilir.
-    // Mesaj 120 saniyeden eskiyse → skip
+    // Mesaj 300 saniyeden (5dk) eskiyse → skip
+    // (Normal webhook gecikmesi 1-5sn, replay genelde 2-5dk sonra)
     if (msgCreatedAt > 0) {
       const ageSeconds = Math.floor(Date.now() / 1000) - msgCreatedAt;
-      if (ageSeconds > 120) {
+      if (ageSeconds > 300) {
         console.log("[WH] STALE: msg is", ageSeconds, "s old, skip. id:", msgId);
         return res.status(200).json({ ok: true, skipped: true, reason: "stale_message", age: ageSeconds });
       }
@@ -214,9 +232,16 @@ export default async function handler(req, res) {
       if (lid) {
         const product = getProductFromButton(effectiveText);
         const stage = product === "lazer" ? "waiting_photo" : "waiting_letters";
+        // Lead field'larını oku (done list için)
+        let btnCf = {};
+        try {
+          const btnLr = await kApi("GET", "/api/v4/leads/" + lid);
+          if (btnLr.s === 200) btnCf = readFields(btnLr.d);
+        } catch {}
         await updateFields(lid, {
           ilgilenilen_urun: product, conversation_stage: stage,
-          context_lock: "1", order_status: "started", last_intent: "product_entry",
+          context_lock: buildDoneValue(msgId, btnCf.context_lock),
+          order_status: "started", last_intent: "product_entry",
         });
         await movePipelineStage(lid, stage, true);
       }
@@ -236,10 +261,15 @@ export default async function handler(req, res) {
     // ══════════════════════════════════════════════════════════
 
     // Katman 0: msgId replay guard — Kommo aynı mesajı tekrar gönderirse
-    // context_lock "done_<msgId>" formatında son işlenen mesajı saklıyor
-    if (msgId && cf.context_lock && cf.context_lock === "done_" + msgId.slice(0, 30)) {
-      console.log("[WH] DEDUP-0: msgId already processed, skip. id:", msgId.slice(0, 20));
-      return res.status(200).json({ ok: true, skipped: true, reason: "dedup_replay" });
+    // context_lock "done:<id1>|<id2>|<id3>" formatında son 3 msgId saklıyor
+    // Böylece done_A → done_B → A tekrar geldi senaryosu da yakalanır
+    if (msgId && cf.context_lock && cf.context_lock.startsWith("done:")) {
+      const doneIds = cf.context_lock.slice(5).split("|");
+      const shortId = msgId.slice(0, 30);
+      if (doneIds.includes(shortId)) {
+        console.log("[WH] DEDUP-0: msgId already processed, skip. id:", shortId);
+        return res.status(200).json({ ok: true, skipped: true, reason: "dedup_replay" });
+      }
     }
 
     // Katman 1: ai_reply doluysa → başka instance zaten cevap yazmış
@@ -295,7 +325,7 @@ export default async function handler(req, res) {
       console.log("[WH] First message → menu bot");
       if (lid) {
         await triggerBot(MENU_BOT_ID, lid);
-        await updateFields(lid, { context_lock: msgId ? ("done_" + msgId.slice(0, 30)) : "1" });
+        await updateFields(lid, { context_lock: buildDoneValue(msgId, cf.context_lock) });
       }
       return res.status(200).json({ ok: true, handled_by: "menu_bot" });
     }
@@ -326,7 +356,7 @@ export default async function handler(req, res) {
       letters_received: result.letters_received || "",
       phone_received: result.phone_received || "",
       reply_class: result.reply_class || "",
-      context_lock: msgId ? ("done_" + msgId.slice(0, 30)) : "1",  // Replay guard: son işlenen msgId'yi sakla
+      context_lock: buildDoneValue(msgId, cf.context_lock),  // Replay guard: son 3 msgId sakla
       cancel_reason: result.cancel_reason || "",
     };
 
@@ -356,10 +386,23 @@ export default async function handler(req, res) {
 
   } catch (e) {
     console.error("[WH] Error:", e.message);
+    // Lock takılı kalmasın — done listesine geçir
     try {
       const errLid = (req.body?.["message[add][0][element_id]"]) || "";
       const errMsgId = (req.body?.["message[add][0][id]"]) || "";
-      if (errLid) await updateFields(errLid, { context_lock: errMsgId ? ("done_" + errMsgId.slice(0, 30)) : "1" });
+      if (errLid) {
+        // Önceki done list'i korumak için lead'i okumayı dene
+        let prevLock = "";
+        try {
+          const errLr = await kApi("GET", "/api/v4/leads/" + errLid);
+          if (errLr.s === 200) {
+            const errCf = readFields(errLr.d);
+            // Lock formatındaysa msgId'yi çıkar, done formatındaysa koru
+            prevLock = errCf.context_lock || "";
+          }
+        } catch {}
+        await updateFields(errLid, { context_lock: buildDoneValue(errMsgId, prevLock) });
+      }
     } catch {}
     return res.status(200).json({ success: false, error: e.message });
   }
