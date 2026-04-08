@@ -206,23 +206,28 @@ export default async function handler(req, res) {
     const attachType = d["message[add][0][attachment][type]"] || "";
     const attachLink = d["message[add][0][attachment][link]"] || "";
 
-    // ══ STALE MESSAGE GUARD ══════════════════════════════════
-    // Kommo eski mesajları tekrar webhook olarak gönderebilir.
-    // Mesaj 300 saniyeden (5dk) eskiyse → skip
-    if (msgCreatedAt > 0) {
-      const ageSeconds = Math.floor(Date.now() / 1000) - msgCreatedAt;
-      console.log("[WH] MSG age:", ageSeconds, "s, created_at:", msgCreatedAt, "now:", Math.floor(Date.now() / 1000));
-      if (ageSeconds > 300) {
-        console.log("[WH] STALE: msg is", ageSeconds, "s old, skip. id:", msgId);
-        return res.status(200).json({ ok: true, skipped: true, reason: "stale_message", age: ageSeconds });
-      }
-    } else {
-      console.log("[WH] NO created_at in webhook body");
+    // ══ EVENT TYPE DETECTION ═════════════════════════════════
+    // Kommo field-change, salesbot, system webhook'ları da gönderiyor.
+    // Gerçek mesaj event'i: msgId DOLU olmalı.
+    // msgId yoksa → non-message event → hemen skip.
+    const hasText = !!msgText;
+    const hasAttachment = !!(attachType && attachLink);
+    
+    if (!msgId) {
+      console.log("[WH] NON-MSG: no msgId. hasText:", hasText, "hasAttach:", hasAttachment, "type:", msgType || "none");
+      return res.status(200).json({ ok: true, skipped: true, reason: "non_message_event" });
     }
     // ═════════════════════════════════════════════════════════
 
-    // Debug: logla (geçici)
-    // debug log removed
+    // ══ STALE MESSAGE GUARD ══════════════════════════════════
+    if (msgCreatedAt > 0) {
+      const ageSeconds = Math.floor(Date.now() / 1000) - msgCreatedAt;
+      if (ageSeconds > 300) {
+        console.log("[WH] STALE: msg is", ageSeconds, "s old, skip. id:", msgId.slice(0, 20));
+        return res.status(200).json({ ok: true, skipped: true, reason: "stale_message", age: ageSeconds });
+      }
+    }
+    // ═════════════════════════════════════════════════════════
 
     // Fotoğraf: text boş ama attachment picture varsa → URL olarak kullan
     let effectiveText = msgText;
@@ -231,8 +236,14 @@ export default async function handler(req, res) {
       console.log("[WH] Photo attachment detected:", attachLink.slice(0, 100));
     }
 
-    if (!effectiveText) return res.status(200).json({ ok: true, skipped: true, reason: "no_text" });
-    if (msgType === "outgoing") return res.status(200).json({ ok: true, skipped: true, reason: "outgoing" });
+    if (!effectiveText) {
+      console.log("[WH] SKIP: no_text. msgId:", msgId.slice(0, 20), "type:", msgType, "attach:", attachType);
+      return res.status(200).json({ ok: true, skipped: true, reason: "no_text" });
+    }
+    if (msgType === "outgoing") {
+      console.log("[WH] SKIP: outgoing. msgId:", msgId.slice(0, 20), "text:", effectiveText.slice(0, 40));
+      return res.status(200).json({ ok: true, skipped: true, reason: "outgoing" });
+    }
 
     const leadId = d["message[add][0][element_id]"] || d["message[add][0][entity_id]"] || "";
     const contactId = d["message[add][0][contact_id]"] || "";
