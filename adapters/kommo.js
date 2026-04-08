@@ -213,6 +213,15 @@ export default async function handler(req, res) {
       if (lr.s === 200) cf = readFields(lr.d);
     }
 
+    // ══ DEDUP GUARD ══════════════════════════════════════════
+    // ai_reply doluysa başka instance zaten cevap yazmış → SKIP
+    // Bu serverless dedup'un TEK güvenilir yolu
+    if (cf.ai_reply && cf.ai_reply.length > 0 && cf.ai_reply !== "#FIELD_NAME#") {
+      console.log("[WH] DEDUP: ai_reply already set, skipping. Value:", cf.ai_reply.slice(0, 50));
+      return res.status(200).json({ ok: true, skipped: true, reason: "dedup_ai_reply" });
+    }
+    // ═════════════════════════════════════════════════════════
+
     // ── First message → trigger menu bot ──
     if (isFirstMessage(cf, effectiveText)) {
       console.log("[WH] First message → menu bot");
@@ -228,19 +237,6 @@ export default async function handler(req, res) {
     console.log("[WH] Reply:", (result.ai_reply || "").slice(0, 80));
 
     if (!lid) return res.status(200).json({ success: true, ai_reply: result.ai_reply || "" });
-
-    // ── Dedup guard: check if another instance already wrote ai_reply ──
-    let alreadySet = false;
-    try {
-      const fresh = await kApi("GET", "/api/v4/leads/" + lid);
-      if (fresh.s === 200) {
-        const ff = readFields(fresh.d);
-        if (ff.ai_reply && ff.ai_reply.length > 0) {
-          alreadySet = true;
-          console.log("[WH] ai_reply already set, skipping");
-        }
-      }
-    } catch {}
 
     // ── Build field update ──
     const fieldUpdate = {
@@ -262,11 +258,6 @@ export default async function handler(req, res) {
       context_lock: result.context_lock || "",
       cancel_reason: result.cancel_reason || "",
     };
-
-    if (alreadySet) {
-      await updateFields(lid, fieldUpdate);
-      return res.status(200).json({ success: true, skipped_reply: true });
-    }
 
     // ── Write ai_reply + trigger bot ──
     fieldUpdate.ai_reply = stripEmoji(result.ai_reply || "");
