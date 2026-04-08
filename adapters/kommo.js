@@ -412,22 +412,26 @@ export default async function handler(req, res) {
 
   } catch (e) {
     console.error("[WH] Error:", e.message);
-    // Lock takılı kalmasın — done listesine geçir
+    // Lock takılı kalmasın — ama msgId'yi done'a EKLEME (tekrar denenebilsin)
     try {
       const errLid = (req.body?.["message[add][0][element_id]"]) || "";
-      const errMsgId = (req.body?.["message[add][0][id]"]) || "";
       if (errLid) {
-        // Önceki done list'i korumak için lead'i okumayı dene
+        // Lock aktifse → önceki done listesini geri yükle (lock'u sil)
         let prevLock = "";
         try {
           const errLr = await kApi("GET", "/api/v4/leads/" + errLid);
           if (errLr.s === 200) {
             const errCf = readFields(errLr.d);
-            // Lock formatındaysa msgId'yi çıkar, done formatındaysa koru
             prevLock = errCf.context_lock || "";
           }
         } catch {}
-        await updateFields(errLid, { context_lock: buildDoneValue(errMsgId, prevLock) });
+        // Lock formatındaysa → "done:" ile başlayan önceki değere dön
+        // Done formatındaysa → olduğu gibi bırak (msgId eklenmeden)
+        if (prevLock.startsWith("lock:")) {
+          // Lock'u temizle, boş done yaz
+          await updateFields(errLid, { context_lock: "done:" });
+        }
+        // Eğer zaten done: formatındaysa dokunma
       }
     } catch {}
     return res.status(200).json({ success: false, error: e.message });
