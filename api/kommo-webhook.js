@@ -60,6 +60,27 @@ function isDuplicate(msgId) {
 // ═══════════════════════════════════════════════════════════════
 // KOMMO API HELPERS
 // ═══════════════════════════════════════════════════════════════
+
+// Kommo Salesbot mesaj bloğu emoji'den sonrasını kesiyor.
+// ai_reply field'ına yazarken emoji'leri kaldır.
+function stripEmoji(text) {
+  if (!text) return "";
+  return text
+    .replace(/[\u{1F600}-\u{1F64F}]/gu, "")  // Emoticons
+    .replace(/[\u{1F300}-\u{1F5FF}]/gu, "")  // Misc Symbols
+    .replace(/[\u{1F680}-\u{1F6FF}]/gu, "")  // Transport
+    .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, "")  // Flags
+    .replace(/[\u{2600}-\u{26FF}]/gu, "")     // Misc symbols
+    .replace(/[\u{2700}-\u{27BF}]/gu, "")     // Dingbats
+    .replace(/[\u{FE00}-\u{FE0F}]/gu, "")     // Variation Selectors
+    .replace(/[\u{1F900}-\u{1F9FF}]/gu, "")   // Supplemental
+    .replace(/[\u{200D}]/gu, "")              // Zero Width Joiner
+    .replace(/[\u{20E3}]/gu, "")              // Combining Enclosing Keycap
+    .replace(/[\u{E0020}-\u{E007F}]/gu, "")   // Tags
+    .replace(/\s{2,}/g, " ")                   // Çift boşlukları temizle
+    .trim();
+}
+
 function readFields(lead) {
   const cf = {};
   if (!lead || !lead.custom_fields_values) return cf;
@@ -233,6 +254,7 @@ export default async function handler(req, res) {
     });
 
     console.log("[WH] Reply:", (result.ai_reply || "").slice(0, 80));
+    console.log("[WH] Reply (stripped):", stripEmoji(result.ai_reply || "").slice(0, 80));
 
     // Adım 4: Field güncelleme + Bot tetikleme
     if (resolvedLeadId) {
@@ -258,7 +280,7 @@ export default async function handler(req, res) {
         reply_class: result.reply_class || "",
         context_lock: result.context_lock || "",
         cancel_reason: result.cancel_reason || "",
-        ai_reply: result.ai_reply || "",
+        ai_reply: stripEmoji(result.ai_reply || ""),
       });
 
       if (result.ai_reply) {
