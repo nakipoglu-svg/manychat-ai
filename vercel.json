@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/**/*.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/kommo-webhook", "dest": "/api/kommo-webhook.js" },
+    { "src": "/api/chat", "dest": "/api/chat.js" }
+  ]
+}
