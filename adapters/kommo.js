@@ -164,14 +164,18 @@ export default async function handler(req, res) {
     const msgText = d["message[add][0][text]"] || "";
     const msgType = d["message[add][0][type]"] || "";
     const msgId = d["message[add][0][id]"] || "";
-    const msgMedia = d["message[add][0][media]"] || d["message[add][0][attachment]"] || "";
+    const attachType = d["message[add][0][attachment][type]"] || "";
+    const attachLink = d["message[add][0][attachment][link]"] || "";
 
-    // Debug: tüm body'yi logla (geçici)
-    console.log("[WH] BODY KEYS:", Object.keys(d).join(", "));
-    console.log("[WH] RAW:", JSON.stringify(d).slice(0, 800));
+    // Debug: logla (geçici)
+    console.log("[WH] BODY:", JSON.stringify(d).slice(0, 500));
 
-    // Fotoğraf: text boş ama media/attachment varsa → URL olarak kullan
-    const effectiveText = msgText || msgMedia || "";
+    // Fotoğraf: text boş ama attachment picture varsa → URL olarak kullan
+    let effectiveText = msgText;
+    if (!effectiveText && attachType === "picture" && attachLink) {
+      effectiveText = attachLink;
+      console.log("[WH] Photo attachment detected:", attachLink.slice(0, 100));
+    }
 
     if (!effectiveText) return res.status(200).json({ ok: true, skipped: true, reason: "no_text" });
     if (msgType === "outgoing") return res.status(200).json({ ok: true, skipped: true, reason: "outgoing" });
