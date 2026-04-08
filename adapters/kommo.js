@@ -213,12 +213,26 @@ export default async function handler(req, res) {
       if (lr.s === 200) cf = readFields(lr.d);
     }
 
-    // ══ DEDUP GUARD ══════════════════════════════════════════
-    // ai_reply doluysa başka instance zaten cevap yazmış → SKIP
-    // Bu serverless dedup'un TEK güvenilir yolu
+    // ══ DEDUP GUARD (Write-Lock Pattern) ═══════════════════
+    // Sorun: Salesbot ai_reply'ı hızlı siliyor → 2. webhook boş buluyor
+    // Çözüm: Hemen last_intent'e "processing_MSGID" yaz → 2. webhook bunu görünce SKIP
+    
+    // Adım 1: ai_reply doluysa → başka instance cevap yazmış, Salesbot henüz silmemiş
     if (cf.ai_reply && cf.ai_reply.length > 0 && cf.ai_reply !== "#FIELD_NAME#") {
-      console.log("[WH] DEDUP: ai_reply already set, skipping. Value:", cf.ai_reply.slice(0, 50));
+      console.log("[WH] DEDUP: ai_reply set, skip");
       return res.status(200).json({ ok: true, skipped: true, reason: "dedup_ai_reply" });
+    }
+
+    // Adım 2: last_intent "processing_" ile başlıyorsa → başka instance işliyor
+    const lockKey = "processing_" + (msgId || "").slice(0, 20);
+    if (cf.last_intent && cf.last_intent.startsWith("processing_")) {
+      console.log("[WH] DEDUP: processing lock active, skip");
+      return res.status(200).json({ ok: true, skipped: true, reason: "dedup_lock" });
+    }
+
+    // Adım 3: Lock yaz — diğer instance'lar bunu görecek
+    if (lid) {
+      await updateFields(lid, { last_intent: lockKey });
     }
     // ═════════════════════════════════════════════════════════
 
