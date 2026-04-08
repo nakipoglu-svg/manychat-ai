@@ -461,13 +461,15 @@ async function safeOrderSync(msgText, leadId, result, cf, contactName) {
   const orderId = buildStableOrderId(customerId, product, result);
   const ext = result._extracted || {};
 
-  // Orders_Raw sheet formatı
+  // Orders_Raw Apps Script header formatına tam uyumlu payload
   const payload = {
     type: "order_raw",
     data: {
       order_id: orderId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      customer_id: customerId,
+      instagram_username: contactName || "",
       customer_name: contactName || "",
       dm_link: customerId ? `https://nakipoglu.kommo.com/leads/detail/${customerId}` : "",
       recipient_name: ext.name || "",
@@ -484,11 +486,8 @@ async function safeOrderSync(msgText, leadId, result, cf, contactName) {
       order_status: result.order_status || "",
       confirmation_source: "bot",
       confirmed_at: result.conversation_stage === "order_completed" ? new Date().toISOString() : "",
-      customer_id: customerId,
-      last_message: msgText,
-      conversation_stage: result.conversation_stage || "",
-      last_intent: result.last_intent || "",
       confidence_score: calculateConfidence(result),
+      last_message: msgText,
     },
   };
 
