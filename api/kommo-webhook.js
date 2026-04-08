@@ -5,7 +5,7 @@ const API = "https://nakipoglu.kommo.com";
 const HDR = {"Authorization":"Bearer "+T,"Content-Type":"application/json"};
 
 const REPLY_BOT_ID = 72073;
-
+ 
 const FID = {
   ilgilenilen_urun:1831171,conversation_stage:1831173,last_intent:1831175,
   order_status:1831177,payment_method:1831179,photo_received:1831181,
