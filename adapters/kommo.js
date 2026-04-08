@@ -191,6 +191,12 @@ export default async function handler(req, res) {
   try {
     const d = req.body || {};
 
+    // ══ RAW BODY LOG — her POST'u logla (geçici, debug) ══
+    const rawKeys = Object.keys(d).slice(0, 20).join(", ");
+    const rawSnippet = JSON.stringify(d).slice(0, 500);
+    console.log("[WH] RAW POST keys:", rawKeys);
+    console.log("[WH] RAW POST body:", rawSnippet);
+    // ═══════════════════════════════════════════════════════
     // ── Direct API call (ManyChat-compatible) ──
     if (d.message_text) {
       const cf = d.custom_fields || {};
@@ -208,14 +214,24 @@ export default async function handler(req, res) {
 
     // ══ EVENT TYPE DETECTION ═════════════════════════════════
     // Kommo field-change, salesbot, system webhook'ları da gönderiyor.
-    // Gerçek mesaj event'i: msgId DOLU olmalı.
-    // msgId yoksa → non-message event → hemen skip.
+    // Gerçek mesaj: msgId VEYA text VEYA attachment olmalı.
+    // Hiçbiri yoksa → non-message event.
+    // msgId yoksa ama text varsa → Kommo farklı payload kullanmış olabilir → devam et.
     const hasText = !!msgText;
     const hasAttachment = !!(attachType && attachLink);
     
-    if (!msgId) {
-      console.log("[WH] NON-MSG: no msgId. hasText:", hasText, "hasAttach:", hasAttachment, "type:", msgType || "none");
+    if (!msgId && !hasText && !hasAttachment) {
+      // Gerçekten non-message mı yoksa bilinmeyen payload mı? Logla.
+      const bodyKeys = Object.keys(d).slice(0, 30).join(", ");
+      console.log("[WH] NON-MSG: no msgId/text/attach. keys:", bodyKeys);
       return res.status(200).json({ ok: true, skipped: true, reason: "non_message_event" });
+    }
+    
+    // msgId yoksa ama text veya attachment var → payload keşfi
+    if (!msgId && (hasText || hasAttachment)) {
+      console.log("[WH] WARN: no msgId but hasText:", hasText, "hasAttach:", hasAttachment, "text:", msgText.slice(0, 80));
+      // Geçici msgId üret — dedup çalışması için
+      // (Kommo bazen msgId göndermeyebilir)
     }
     // ═════════════════════════════════════════════════════════
 
@@ -287,8 +303,7 @@ export default async function handler(req, res) {
     // ══════════════════════════════════════════════════════════
 
     // Katman 0: msgId replay guard — Kommo aynı mesajı tekrar gönderirse
-    // context_lock "done:<id1>|<id2>|<id3>" formatında son 3 msgId saklıyor
-    // Böylece done_A → done_B → A tekrar geldi senaryosu da yakalanır
+    // context_lock "done:<id1>|...|<id10>" formatında son 10 msgId saklıyor
     if (msgId && cf.context_lock && cf.context_lock.startsWith("done:")) {
       const doneIds = cf.context_lock.slice(5).split("|");
       const shortId = msgId.slice(0, 12);
