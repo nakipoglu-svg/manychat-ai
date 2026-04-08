@@ -29,7 +29,8 @@ export function sideQuestions(ctx, state) {
 
   if (intent === INTENT.TRUST) {
     if (hasAny(norm, ["kaplama","kaplamasi atar","kaplaması atar"])) return R("Kaplama atmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.");
-    if (hasAny(norm, ["kararma","kararir","solar","solma","paslan","karar ma","soluyor","renk bozul"])) return R("Kararma, solma veya paslanma yapmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.");
+    if (hasAny(norm, ["paslanmaz demi","paslanmaz demı","paslanmaz mi","paslanmaz mı"])) return R("Evet efendim, paslanmaz çelik 😊 Kararma, solma veya paslanma yapmaz.");
+    if (hasAny(norm, ["kararma","kararir","solar","solma","paslan","karar ma","soluyor","renk bozul","karariyormu","kararıyormu","kararirmi","kararırmi","karaa","renk atma","renk atar","renk atması","silinme","resim silin","rengi gidiyor","rengi gider","rengi aciyor","rengi açıyor"])) return R("Kararma, solma veya paslanma yapmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.");
     if (hasAny(norm, ["suya dayanikli","dusta","duşta","deniz","ter "])) return R("Evet efendim, suya dayanıklıdır 😊 Duş, deniz, ter gibi durumlarda rahatlıkla kullanabilirsiniz.");
     if (norm.includes("garanti")) return R("Kararma, solma veya kaplama kaynaklı bir durumda destek sağlıyoruz efendim 😊");
     return R("Güvenle sipariş verebilirsiniz efendim 😊");
@@ -51,7 +52,13 @@ export function sideQuestions(ctx, state) {
   // Photo question
   if (intent === INTENT.PHOTO_QUESTION) {
     if (ap === PRODUCT.ATAC) return R("Ataç kolyede fotoğraf gerekmiyor efendim 😊 İsterseniz harfleri yazabilirsiniz.");
-    if (ap === PRODUCT.LAZER) return R("Buradan direkt gönderebilirsiniz efendim 😊 Siz gönderin, biz hemen kontrol edelim.");
+    if (ap === PRODUCT.LAZER) {
+      // Vesikalık / fotoğraf türü sorusu
+      if (hasAny(norm, ["vesikalik","vesikalık","selfie","ne tur","ne tür","ne cesit","ne çeşit","nasil bir fotograf","nasıl bir fotoğraf"])) {
+        return R("Vesikalık olmasına gerek yok efendim 😊 İstediğiniz fotoğrafı buradan gönderebilirsiniz, ekibimiz kontrol edecektir.");
+      }
+      return R("Buradan direkt gönderebilirsiniz efendim 😊 Siz gönderin, biz hemen kontrol edelim.");
+    }
     return null;
   }
 
