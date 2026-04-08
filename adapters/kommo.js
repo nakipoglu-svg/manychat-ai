@@ -82,15 +82,14 @@ function isMyLock(lockVal, myLock) {
 }
 
 // Son 10 msgId → "done:<id1>|<id2>|...|<id10>" (en yeni başta, tekilleştirilmiş)
+// ID'ler 12 karaktere kısaltılır (Kommo field 255 char limit)
 function buildDoneValue(msgId, previousLock) {
-  const shortId = (msgId || "").slice(0, 30);
-  // Önceki done listesini al (lock: veya done: fark etmez, sadece done:'dan oku)
+  const shortId = (msgId || "").slice(0, 12);
   let prev = [];
   if (previousLock && previousLock.startsWith("done:")) {
     prev = previousLock.slice(5).split("|").filter(Boolean);
   }
   if (!shortId) return "done:" + prev.slice(0, 10).join("|");
-  // Yeni ID başa, duplicate temizle, max 10
   prev = [shortId, ...prev.filter(id => id !== shortId)].slice(0, 10);
   return "done:" + prev.join("|");
 }
@@ -281,7 +280,7 @@ export default async function handler(req, res) {
     // Böylece done_A → done_B → A tekrar geldi senaryosu da yakalanır
     if (msgId && cf.context_lock && cf.context_lock.startsWith("done:")) {
       const doneIds = cf.context_lock.slice(5).split("|");
-      const shortId = msgId.slice(0, 30);
+      const shortId = msgId.slice(0, 12);
       if (doneIds.includes(shortId)) {
         console.log("[WH] DEDUP-0: msgId already processed, skip. id:", shortId);
         return res.status(200).json({ ok: true, skipped: true, reason: "dedup_replay" });
