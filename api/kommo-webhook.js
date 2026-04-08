@@ -4,6 +4,9 @@ const T = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6ImRhZDAzOGMxZjlmNGU0ODQ5M
 const API = "https://nakipoglu.kommo.com";
 const HDR = {"Authorization":"Bearer "+T,"Content-Type":"application/json"};
 
+// AI Reply Gönderici bot ID
+const REPLY_BOT_ID = 72303;
+
 const FID = {
   ilgilenilen_urun:1831171,conversation_stage:1831173,last_intent:1831175,
   order_status:1831177,payment_method:1831179,photo_received:1831181,
@@ -15,7 +18,7 @@ const FID = {
 
 // ═══ DUPLICATE MESAJ KORUMASI ═══
 const processedMessages = new Map();
-const DEDUP_TTL = 30000; // 30 saniye
+const DEDUP_TTL = 30000;
 
 function isDuplicate(msgId) {
   if (!msgId) return false;
@@ -24,7 +27,7 @@ function isDuplicate(msgId) {
     if (now - ts > DEDUP_TTL) processedMessages.delete(key);
   }
   if (processedMessages.has(msgId)) {
-    console.log("[WH] DUPLICATE message, skipping:", msgId);
+    console.log("[WH] DUPLICATE, skip:", msgId);
     return true;
   }
   processedMessages.set(msgId, now);
@@ -58,9 +61,32 @@ async function updateFields(leadId,fields){
   }
   if(cfv.length>0){
     const result = await kApi("PATCH","/api/v4/leads/"+leadId,{custom_fields_values:cfv});
-    console.log("[WH] Field update result:", result.s, "fields count:", cfv.length);
+    console.log("[WH] Fields updated:", result.s, "count:", cfv.length);
     return result;
   }
+}
+
+// ═══ SALESBOT API TETİKLEME ═══
+async function triggerSalesbot(leadId) {
+  console.log("[WH] Triggering Salesbot", REPLY_BOT_ID, "for lead", leadId);
+  
+  // v4 endpoint dene
+  let result = await kApi("POST", "/api/v4/salesbot/" + REPLY_BOT_ID + "/run", [
+    { entity_id: Number(leadId), entity_type: "leads" }
+  ]);
+  
+  // v4 başarısızsa v2 dene
+  if (result.s !== 200 && result.s !== 202) {
+    console.log("[WH] v4 failed, trying v2...");
+    result = await kApi("POST", "/api/v2/salesbot/run", {
+      bot_id: REPLY_BOT_ID,
+      entity_id: Number(leadId),
+      entity_type: 2 // 2 = leads
+    });
+  }
+  
+  console.log("[WH] Salesbot trigger result:", result.s);
+  return result;
 }
 
 export default async function handler(req,res){
@@ -100,41 +126,29 @@ export default async function handler(req,res){
       return res.status(200).json({ok:true,skipped:true,reason:"no_message_text"});
     }
     if(msgType==="outgoing"){
-      console.log("[WH] Outgoing, skip:", msgText.slice(0,30));
       return res.status(200).json({ok:true,skipped:true,reason:"outgoing"});
     }
-
-    // ═══ DUPLICATE CHECK ═══
     if(isDuplicate(msgId)){
       return res.status(200).json({ok:true,skipped:true,reason:"duplicate"});
     }
 
-    const chatId=d["message[add][0][chat_id]"]||"";
-    const talkId=d["message[add][0][talk_id]"]||"";
     const leadId=d["message[add][0][element_id]"]||d["message[add][0][entity_id]"]||"";
     const contactId=d["message[add][0][contact_id]"]||"";
 
-    console.log("[WH] MSG:", msgText.slice(0,60), "msgId:", msgId);
-    console.log("[WH] IDs → lead:", leadId, "contact:", contactId);
+    console.log("[WH] MSG:", msgText.slice(0,60), "lead:", leadId);
 
     let resolvedLeadId = leadId;
     if(!resolvedLeadId && contactId){
       const contactRes = await kApi("GET", "/api/v4/contacts/" + contactId + "?with=leads");
       if(contactRes.s === 200 && contactRes.d?._embedded?.leads?.[0]?.id){
         resolvedLeadId = String(contactRes.d._embedded.leads[0].id);
-        console.log("[WH] Found lead via contact:", resolvedLeadId);
       }
     }
 
     let cf={};
     if(resolvedLeadId){
       const lr=await kApi("GET","/api/v4/leads/"+resolvedLeadId);
-      if(lr.s===200){
-        cf=readFields(lr.d);
-        console.log("[WH] Fields: stage=", cf.conversation_stage, "product=", cf.ilgilenilen_urun);
-      }
-    } else {
-      console.log("[WH] WARNING: No leadId!");
+      if(lr.s===200) cf=readFields(lr.d);
     }
 
     const result=await processChat({
@@ -146,6 +160,7 @@ export default async function handler(req,res){
     console.log("[WH] Reply:", (result.ai_reply||"").slice(0,80));
 
     if(resolvedLeadId){
+      // 1. Field'ları güncelle (ai_reply dahil)
       await updateFields(resolvedLeadId,{
         ilgilenilen_urun:result.ilgilenilen_urun||result.user_product||"",
         conversation_stage:result.conversation_stage||"",
@@ -158,7 +173,11 @@ export default async function handler(req,res){
         reply_class:result.reply_class||"",context_lock:result.context_lock||"",
         cancel_reason:result.cancel_reason||"",ai_reply:result.ai_reply||"",
       });
-      console.log("[WH] ✅ Done. ai_reply:", (result.ai_reply||"").slice(0,50));
+
+      // 2. Salesbot'u tetikle — ai_reply'ı müşteriye göndersin
+      if(result.ai_reply){
+        await triggerSalesbot(resolvedLeadId);
+      }
     }
 
     return res.status(200).json({success:true, ai_reply:result.ai_reply||""});
