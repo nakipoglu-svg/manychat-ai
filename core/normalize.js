@@ -110,7 +110,8 @@ export function looksLikePhotoUrl(raw = "") {
   return (
     t.includes("lookaside.fbsbx.com") || t.includes("ig_messaging_cdn") ||
     t.includes("cdninstagram") || t.includes("cdn.instagram") ||
-    t.includes(".jpg") || t.includes(".jpeg") ||
+    t.includes("amojo.kommo.com") ||
+    t.includes(".jpg") || t.includes(".jpeg") || t.includes(".jpe") ||
     t.includes(".png") || t.includes(".webp")
   );
 }
