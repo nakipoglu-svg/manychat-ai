@@ -153,17 +153,23 @@ async function movePipelineStage(leadId, stage, hasProduct) {
 }
 
 async function resolveLeadId(leadId, contactId) {
-  if (leadId && !contactId) return { leadId, contactName: "" };
-  if (!contactId) return { leadId: leadId || "", contactName: "" };
-  const r = await kApi("GET", "/api/v4/contacts/" + contactId + "?with=leads");
   let resolvedLead = leadId || "";
   let contactName = "";
-  if (r.s === 200) {
-    if (!resolvedLead && r.d?._embedded?.leads?.[0]?.id) {
-      resolvedLead = String(r.d._embedded.leads[0].id);
+  
+  if (contactId) {
+    try {
+      const r = await kApi("GET", "/api/v4/contacts/" + contactId + "?with=leads");
+      if (r.s === 200) {
+        if (!resolvedLead && r.d?._embedded?.leads?.[0]?.id) {
+          resolvedLead = String(r.d._embedded.leads[0].id);
+        }
+        contactName = r.d?.name || "";
+      }
+    } catch (e) {
+      console.error("[WH] Contact fetch error:", e.message);
     }
-    contactName = r.d?.name || "";
   }
+  
   return { leadId: resolvedLead, contactName };
 }
 
@@ -230,7 +236,7 @@ export default async function handler(req, res) {
     const leadId = d["message[add][0][element_id]"] || d["message[add][0][entity_id]"] || "";
     const contactId = d["message[add][0][contact_id]"] || "";
 
-    console.log("[WH] MSG:", effectiveText.slice(0, 120), "lead:", leadId, "type:", msgType);
+    console.log("[WH] MSG:", effectiveText.slice(0, 120), "lead:", leadId, "contact:", contactId, "type:", msgType);
 
     // ── Button click ──
     if (isButtonClick(effectiveText)) {
@@ -257,6 +263,7 @@ export default async function handler(req, res) {
 
     // ── Resolve lead + read fields ──
     const { leadId: lid, contactName } = await resolveLeadId(leadId, contactId);
+    console.log("[WH] Resolved lid:", lid, "contactName:", contactName);
     let cf = {};
     if (lid) {
       const lr = await kApi("GET", "/api/v4/leads/" + lid);
