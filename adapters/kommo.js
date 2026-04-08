@@ -4,6 +4,7 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import { processChat } from "../core/engine.js";
+import { logConversationRow } from "../lib/sheetsLogger.js";
 
 // ─── CONFIG ─────────────────────────────────────────────────
 
@@ -265,10 +266,89 @@ export default async function handler(req, res) {
     // ── Pipeline stage ──
     await movePipelineStage(lid, result.conversation_stage || "", !!result.ilgilenilen_urun);
 
+    // ── Logging + Order Sync (arka plan) ──
+    try {
+      await Promise.allSettled([
+        logConversationRow({
+          body: { message: msgText, lead_id: lid, contact_id: contactId },
+          result,
+        }).catch(e => console.error("[WH] Log error:", e.message)),
+        safeOrderSync(msgText, lid, result).catch(e => console.error("[WH] OrderSync error:", e.message)),
+      ]);
+    } catch (e) { console.error("[WH] Background tasks error:", e.message); }
+
     return res.status(200).json({ success: true, ai_reply: result.ai_reply || "" });
 
   } catch (e) {
     console.error("[WH] Error:", e.message);
     return res.status(200).json({ success: false, error: e.message });
   }
+}
+
+// ─── ORDER SYNC (Google Sheets) ─────────────────────────────
+
+const ORDER_WEBHOOK_URL = process.env.GOOGLE_ORDER_WEBHOOK_URL || "";
+
+function extractCustomerId(leadId, contactId) {
+  return leadId || contactId || "";
+}
+
+function buildStableOrderId(customerId, product, result) {
+  if (!customerId) return `noid_${Date.now()}`;
+  if (!product) return `pre_${customerId}`;
+  return `open_${customerId}_${product}`;
+}
+
+function calculateConfidence(result) {
+  let score = 0;
+  if (result.ilgilenilen_urun) score += 20;
+  if (result.ilgilenilen_urun === "lazer") {
+    if (result.photo_received) score += 20;
+    if (result.back_text_status) score += 10;
+  } else if (result.ilgilenilen_urun === "atac") {
+    if (result.letters_received) score += 20;
+    score += 10;
+  }
+  if (result.payment_method) score += 20;
+  if (result.address_status === "received") score += 20;
+  if (result.phone_received) score += 10;
+  return score;
+}
+
+async function safeOrderSync(msgText, leadId, result) {
+  if (!ORDER_WEBHOOK_URL) return;
+  const product = result.ilgilenilen_urun || "";
+  const customerId = leadId || "";
+  if (!product && !customerId) return;
+
+  const orderId = buildStableOrderId(customerId, product, result);
+
+  const payload = {
+    type: "order_raw",
+    data: {
+      order_id: orderId,
+      updated_at: new Date().toISOString(),
+      last_message: msgText,
+      customer_id: customerId,
+      product_type: product,
+      order_status: result.order_status || "",
+      payment_type: result.payment_method || "",
+      photo_received: result.photo_received || "",
+      back_text_status: result.back_text_status || "",
+      address_status: result.address_status || "",
+      letters_received: result.letters_received || "",
+      phone_received: result.phone_received || "",
+      confidence_score: calculateConfidence(result),
+      conversation_stage: result.conversation_stage || "",
+      last_intent: result.last_intent || "",
+    },
+  };
+
+  try {
+    await fetch(ORDER_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (e) { console.error("[WH] Order sync error:", e.message); }
 }
