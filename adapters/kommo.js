@@ -571,24 +571,26 @@ export default async function handler(req, res) {
     if (!lid) return res.status(200).json({ success: true, ai_reply: result.ai_reply || "" });
 
     // ── Build field update ──
+    // KURAL: Boş değerle mevcut field'ı silme. Sadece dolu değer yazılır.
+    // completed sonrası context korunmalı.
     const fieldUpdate = {
-      ilgilenilen_urun: result.ilgilenilen_urun || "",
-      conversation_stage: result.conversation_stage || "",
+      ilgilenilen_urun: result.ilgilenilen_urun || cf.ilgilenilen_urun || "",
+      conversation_stage: result.conversation_stage || cf.conversation_stage || "",
       last_intent: result.last_intent || "",
-      order_status: result.order_status || "",
-      payment_method: result.payment_method || "",
-      photo_received: result.photo_received || "",
-      back_text_status: result.back_text_status || "",
-      address_status: result.address_status || "",
+      order_status: result.order_status || cf.order_status || "",
+      payment_method: result.payment_method || cf.payment_method || "",
+      photo_received: result.photo_received || cf.photo_received || "",
+      back_text_status: result.back_text_status || cf.back_text_status || "",
+      address_status: result.address_status || cf.address_status || "",
       support_mode: result.support_mode || "",
       support_mode_reason: result.support_mode_reason || "",
       menu_gosterildi: cf.menu_gosterildi || result.menu_gosterildi || "",
-      siparis_alindi: result.siparis_alindi || "",
-      letters_received: result.letters_received || "",
-      phone_received: result.phone_received || "",
+      siparis_alindi: result.siparis_alindi || cf.siparis_alindi || "",
+      letters_received: result.letters_received || cf.letters_received || "",
+      phone_received: result.phone_received || cf.phone_received || "",
       reply_class: result.reply_class || "",
-      context_lock: "",  // Lock temizle
-      cancel_reason: buildWatermark(msgCreatedAt, msgId, cf.cancel_reason),  // Watermark güncelle
+      context_lock: "",
+      cancel_reason: buildWatermark(msgCreatedAt, msgId, cf.cancel_reason),
     };
 
     // ══ STAGE WRITE STRATEGY ══════════════════════════════════
