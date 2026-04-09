@@ -23,9 +23,9 @@ export function priceRule(ctx, state) {
       if (p.kapida) return R(`${qty} adet resimli lazer kolye: EFT / Havale ile ${p.eft} TL, kapıda ödeme ile ${p.kapida} TL'dir efendim 😊`);
       return R(`${qty} adet resimli lazer kolye: EFT / Havale ile ${p.eft} TL'dir efendim 😊 (${qty}+ adet sadece EFT ile mümkündür)`);
     }
-    return R("EFT / havale fiyatımız 599 TL, kapıda ödeme fiyatımız 649 TL'dir efendim 😊");
+    return R("EFT / Havale ile 599 TL\nKapıda ödeme ile 649 TL'dir efendim 😊");
   }
-  if (state.product === PRODUCT.ATAC) return R("EFT / havale fiyatımız 499 TL, kapıda ödeme fiyatımız 549 TL'dir efendim 😊 3 harfe kadar standarttır, her ek harf +50 TL'dir.");
+  if (state.product === PRODUCT.ATAC) return R("EFT / Havale ile 499 TL\nKapıda ödeme ile 549 TL'dir efendim 😊\n\n3 harfe kadar standarttır, her ek harf +50 TL'dir.");
 
   return null;
 }

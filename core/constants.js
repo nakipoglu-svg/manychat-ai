@@ -71,9 +71,9 @@ export const TEXT = {
 
   MAIN_MENU: "Merhaba efendim 😊\nHangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye",
 
-  LAZER_PRICE: "Resimli lazer kolye fiyatımız EFT / Havale ile 599 TL, kapıda ödeme ile 649 TL'dir efendim 😊 Siparişe devam etmek isterseniz fotoğrafı buradan gönderebilirsiniz.",
+  LAZER_PRICE: "Resimli lazer kolye fiyatımız\n\nEFT / Havale ile 599 TL\nKapıda ödeme ile 649 TL'dir efendim 😊\n\nSiparişe devam etmek isterseniz fotoğrafı buradan gönderebilirsiniz 📷",
 
-  ATAC_PRICE: "Harfli ataç kolye fiyatımız EFT / Havale ile 499 TL, kapıda ödeme ile 549 TL'dir efendim 😊 Siparişe devam etmek isterseniz istediğiniz harfleri yazabilirsiniz.",
+  ATAC_PRICE: "Harfli ataç kolye fiyatımız\n\nEFT / Havale ile 499 TL\nKapıda ödeme ile 549 TL'dir efendim 😊\n\nSiparişe devam etmek isterseniz istediğiniz 3 harfi yazabilirsiniz ✍️",
 
   EFT_INFO: "IBAN: TR34 0015 7000 0000 0076 2524 67\nAlıcı: Servet Cihan Nakipoğlu",
 

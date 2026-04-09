@@ -411,8 +411,8 @@ export default async function handler(req, res) {
         // Ürün switch veya re-select ise Salesbot bitmiş — fiyat cevabını biz gönderelim
         if (isSwitch || isReselect) {
           const priceText = product === "lazer" 
-            ? "Resimli lazer kolye fiyatımız EFT / Havale ile 599 TL, kapıda ödeme ile 649 TL'dir efendim 😊 Siparişe devam etmek isterseniz fotoğrafı buradan gönderebilirsiniz."
-            : "Harfli ataç kolye fiyatımız EFT / Havale ile 499 TL, kapıda ödeme ile 549 TL'dir efendim 😊 Siparişe devam etmek isterseniz istediğiniz 3 harfi yazabilirsiniz.";
+            ? "Resimli lazer kolye fiyatımız\n\nEFT / Havale ile 599 TL\nKapıda ödeme ile 649 TL'dir efendim 😊\n\nSiparişe devam etmek isterseniz fotoğrafı buradan gönderebilirsiniz 📷"
+            : "Harfli ataç kolye fiyatımız\n\nEFT / Havale ile 499 TL\nKapıda ödeme ile 549 TL'dir efendim 😊\n\nSiparişe devam etmek isterseniz istediğiniz 3 harfi yazabilirsiniz ✍️";
           
           await new Promise(r => setTimeout(r, 100));
           await updateFields(btnLid, { ai_reply: stripEmoji(priceText) });
