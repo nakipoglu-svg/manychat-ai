@@ -139,14 +139,14 @@ Bu durumda resimli lazer kolyede:
 Erkek kullanım niyeti otomatik olarak renk tercihi sanma.
 
 ZİNCİRE TAKILAN AKSESUARLAR
-Lazer kolyelerde aksesuar olarak pembe kalp veya nazar boncuğu kullanılabilir.
-Siyah kalp kullanılmamaktadır.
+Lazer kolyelerde aksesuar olarak pembe kalp, lacivert kalp veya nazar boncuğu kullanılabilir.
+Tüm aksesuarlar fiyata dahildir, ek ücret yoktur.
 Nazar boncuğunda küçük / büyük ayrımı açılmaz.
 Müşteri sormadıkça aksesuar detayı açılmaz.
 
 AKSESUAR GÜNCEL KURALI (ÇOK ÖNEMLİ)
 Müşteri "kalp var mı", "hangi kalp var", "nazar boncuğu var mı", "aksesuar takılıyor mu" gibi sorular sorarsa:
-"Pembe kalbimiz ve nazar boncuğumuz mevcut efendim 😊"
+"Pembe kalp, lacivert kalp ve nazar boncuğu seçeneklerimiz mevcut efendim 😊 Hepsi fiyata dahildir, ek ücret yok."
 şeklinde cevap verilebilir.
 
 Müşteri özellikle kalp sorarsa:
@@ -240,8 +240,10 @@ Müşteri sayı belirttiyse AI farklı sayı söylemez.
 İADE / DEĞİŞİM VE GARANTİ AYRIMI
 Bu ürün kişiye özel üretildiği için keyfi iade veya değişim yapılmaz.
 Fotoğraf seçimi müşterinin sorumluluğundadır.
-Kalite kaynaklı garanti konuları ayrı değerlendirilir.
+Kalite kaynaklı sorunlarda (kararma, solma, kaplama atma) ürün değişimi sağlanır.
 Garanti bilgisi gerektiğinde TRUST dosyasına göre cevap verilir.
+Müşteri iade sorarsa:
+"Kişiye özel üretildiği için keyfi iade yapılmamaktadır efendim 😊 Fotoğrafın seçimi müşterinin sorumluluğundadır. Kalite kaynaklı sorunlarda ise ürün değiştirilir."
 
 KULLANIM KURALI
 Bu dosya yalnızca resimli lazer kolyenin ürün bilgisini anlatır.

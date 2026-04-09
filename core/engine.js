@@ -14,7 +14,8 @@ import {
   parsePaymentFromMessage, detectProductFromText, extractLetters,
 } from "./normalize.js";
 import { detectIntent } from "./intent.js";
-import { readInitialState, deriveState, commitPatch } from "./state.js";
+import { extractSignals } from "./signals.js";
+import { readInitialState, deriveState, commitPatch, getFilledSlots, getMissingSlots } from "./state.js";
 import { arbitrate } from "./arbitration.js";
 import { callModelFallback } from "./model.js";
 
@@ -67,7 +68,13 @@ function buildContext(body) {
 
   // Entity extraction
   const stage = fields.conversation_stage;
-  const extracted = {
+  
+  // System message guard — API restrictions, dosya eki gibi mesajlar entity extraction'ı tetiklememeli
+  const isSystemMessage = hasAny(norm, ["the message could not be displayed","api restrictions","could not be displayed","dosya eki gonderdi","bir dosya eki gönderdi","started an audio call","missed an audio call","started a video chat","reacted to your message"]);
+  
+  const extracted = isSystemMessage ? {
+    phone: null, hasAddress: false, hasName: false, payment: null, photoLink: false, letters: null,
+  } : {
     phone: extractPhone(message),
     hasAddress: looksLikeAddress(norm, message, stage),
     hasName: looksLikeName(message, norm, stage),
@@ -77,7 +84,7 @@ function buildContext(body) {
   };
 
   // Intent
-  const intent = detectIntent({ message, norm, product, stage, extracted });
+  const intent = detectIntent({ message, norm, product, stage, extracted, fields });
 
   return { message, norm, product, previousProduct, intent, fields, extracted };
 }
@@ -159,6 +166,46 @@ export async function processChat(body = {}) {
     // 1. Context
     const ctx = buildContext(body);
 
+    // 1.5 STATE CONSISTENCY GUARD — CRM field çelişkilerini düzelt
+    // Kommo API gecikmeleri yüzünden field'lar tutarsız gelebilir
+    const f = ctx.fields;
+    if (f.conversation_stage === "waiting_photo" && f.photo_received === "1") {
+      // Fotoğraf gelmiş ama stage ilerlememiş → düzelt
+      ctx.fields.conversation_stage = f.back_text_status ? "waiting_payment" : "waiting_back_text";
+    }
+    if (f.conversation_stage === "waiting_payment" && f.payment_method && f.payment_method !== "") {
+      // Ödeme seçilmiş ama stage ilerlememiş → düzelt
+      if (f.address_status !== "received") ctx.fields.conversation_stage = "waiting_address";
+      else ctx.fields.conversation_stage = "order_completed";
+    }
+    if (f.conversation_stage === "waiting_address" && f.address_status === "received" && f.phone_received === "1") {
+      // Adres + telefon gelmiş ama stage ilerlememiş → düzelt
+      ctx.fields.conversation_stage = "order_completed";
+    }
+    if (f.conversation_stage === "waiting_letters" && f.letters_received === "1") {
+      // Harfler gelmiş ama stage ilerlememiş → düzelt
+      ctx.fields.conversation_stage = f.payment_method ? "waiting_address" : "waiting_payment";
+    }
+
+    // 1.7 ═══ SIGNAL EXTRACTION (intent'ten ÖNCE) ═══
+    // Mesajdan TÜM sinyalleri çıkar — slot updates, questions, corrections, complaints
+    const signals = extractSignals(ctx);
+    ctx.signals = signals;
+    
+    // 1.8 ═══ SLOT-FIRST COMMIT ═══
+    // Mesajda slot bilgisi varsa, intent ne olursa olsun önce kaydet
+    // Örnek: "EFT seçeyim, kargo ücreti var mı" → EFT önce kaydedilir
+    if (!signals.system_message) {
+      // Payment slot — extracted'da değilse ama signal'de varsa
+      if (signals.slot_updates.payment_method && !ctx.extracted.payment) {
+        ctx.extracted.payment = signals.slot_updates.payment_method;
+      }
+      // Back text — signal'den content geliyorsa
+      if (signals.slot_updates.back_text && !ctx.extracted.backText) {
+        ctx.extracted.backText = signals.slot_updates.back_text;
+      }
+    }
+
     // 2. Derive state (proposed patch + nextStage)
     const initial = readInitialState(ctx.fields, ctx.product);
     const derived = deriveState(initial, ctx);
@@ -166,8 +213,77 @@ export async function processChat(body = {}) {
     // 3. Arbitrate (rule chain → final cevap seçimi)
     const { reply: selectedReply, meta } = arbitrate(ctx, derived);
 
-    // 4. Model fallback (arbitration null döndüyse)
+    // 3.5 ═══ SIGNAL-AWARE REPLY OVERRIDE ═══
+    // Arbitration tek intent'e göre cevap verdi. Ama signal'ler ek şeyler söylüyor olabilir.
     let finalReply = selectedReply;
+
+    // UNDECIDED: "bilemedim", "ne yazsak ki" → arka yazı DEĞİL, yardım cevabı
+    if (signals.undecided && ctx.fields.conversation_stage === STAGE.WAITING_BACK_TEXT) {
+      finalReply = { text: "Genelde isim, tarih, kısa bir not veya özel bir söz yazılıyor efendim 😊 Karar verdiğinizde buradan iletebilirsiniz. İstemezseniz 'yok' yazabilirsiniz.", reply_class: REPLY_CLASS.FIXED_INFO, support_mode_reason: "" };
+      meta.signalOverride = "undecided_back_text";
+    }
+
+    // COMPLAINTS: "verdim ya" → stage'e göre akıllı cevap
+    if (signals.complaints.includes("already_sent") && !signals.confirmations.length) {
+      const missing = getMissingSlots(derived.derivedState);
+      if (missing.length === 0) {
+        finalReply = { text: "Bilgileriniz alınmıştır efendim 😊 Siparişiniz ekibimize iletilmiştir.", reply_class: REPLY_CLASS.FIXED_INFO, support_mode_reason: "" };
+      } else if (missing.length === 1) {
+        const slotMsg = { photo:"Fotoğrafınızı buradan iletebilirsiniz efendim 😊", back_text:"Arka yüze yazı tercihinizi iletebilir misiniz efendim?", payment:"Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim?", phone:"Cep telefonu numaranızı iletebilir misiniz efendim? 📱", address:"Açık adresinizi iletebilir misiniz efendim? 📍" };
+        finalReply = { text: "Bilgilerinizi aldım efendim 😊 " + (slotMsg[missing[0]] || ""), reply_class: REPLY_CLASS.FLOW_PROGRESS, support_mode_reason: "" };
+      } else {
+        const parts = missing.filter(m => !["product","letters"].includes(m)).map(m => ({phone:"📱 Cep telefonu",address:"📍 Açık adres",payment:"💳 Ödeme yöntemi",photo:"📷 Fotoğraf",back_text:"✍️ Arka yazı tercihi"}[m])).filter(Boolean);
+        finalReply = { text: "Bilgilerinizi aldım efendim 😊 Şu bilgiler eksik:\n\n" + parts.join("\n"), reply_class: REPLY_CLASS.FLOW_PROGRESS, support_mode_reason: "" };
+      }
+      meta.signalOverride = "complaint_already_sent";
+    }
+
+    // CONFIRMATIONS: "siparişim alındı mı" 
+    if (signals.confirmations.includes("order_status")) {
+      if (derived.derivedState.order_status === "completed") {
+        finalReply = { text: "Evet efendim, siparişiniz alınmıştır 😊 Ekibimiz en kısa sürede ürününüzü hazırlayacaktır.", reply_class: REPLY_CLASS.FIXED_INFO, support_mode_reason: "" };
+      } else {
+        const missing = getMissingSlots(derived.derivedState);
+        if (missing.length > 0) {
+          const parts = missing.filter(m => !["product","letters"].includes(m)).map(m => ({phone:"📱 Cep telefonu",address:"📍 Açık adres",payment:"💳 Ödeme yöntemi",photo:"📷 Fotoğraf",back_text:"✍️ Arka yazı tercihi"}[m])).filter(Boolean);
+          finalReply = { text: "Siparişiniz devam ediyor efendim 😊 Tamamlamak için şu bilgiler gerekli:\n\n" + parts.join("\n"), reply_class: REPLY_CLASS.FLOW_PROGRESS, support_mode_reason: "" };
+        }
+      }
+      meta.signalOverride = "confirmation_order_status";
+    }
+
+    // CAPABILITY QUESTION: "ikili resim yapıyor musunuz"
+    if (signals.questions.includes("capability_multi_photo") && !meta.signalOverride) {
+      const extra = ctx.fields.conversation_stage === STAGE.WAITING_PHOTO ? " Fotoğrafları buradan gönderebilirsiniz." : "";
+      finalReply = { text: "Evet efendim, tek yüze birden fazla fotoğraf koyabiliyoruz 😊 Profesyonelce birleştirip tek tasarım haline getiriyoruz." + extra, reply_class: REPLY_CLASS.FIXED_INFO, support_mode_reason: "" };
+      meta.signalOverride = "capability_multi_photo";
+    }
+
+    // MULTI-SIGNAL: slot commit + yan soru birlikte
+    // Örnek: "EFT seçeyim kargo ücreti var mı" → EFT kaydedildi + kargo cevabı ver
+    if (signals.slot_updates.payment_method && signals.questions.length > 0 && !meta.signalOverride) {
+      const payLabel = signals.slot_updates.payment_method === "eft_havale" ? "EFT / Havale" : "Kapıda ödeme";
+      let answer = payLabel + " olarak not aldım efendim 😊 ";
+      // En önemli soruya cevap ver
+      if (signals.questions.includes("shipping_price")) answer += "Kargo ücreti fiyata dahildir, ekstra ücret yok.";
+      else if (signals.questions.includes("shipping")) answer += "Kargomuz PTT Kargo ile gönderilmektedir. İstanbul 1-2, diğer iller 2-3 iş günüdür.";
+      else if (signals.questions.includes("trust")) answer += "Kararma solma yapmaz, günlük kullanıma uygundur.";
+      else if (signals.questions.includes("price")) answer += "";
+      
+      // Sonraki adımı ekle
+      const missing = getMissingSlots(derived.derivedState);
+      const nextMissing = missing.filter(m => m !== "payment");
+      if (nextMissing.includes("address") || nextMissing.includes("phone")) {
+        answer += "\n\nAd soyad, cep telefonu ve açık adresinizi iletebilir misiniz?";
+      }
+      
+      if (answer.length > 50) {
+        finalReply = { text: answer, reply_class: REPLY_CLASS.FLOW_PROGRESS, support_mode_reason: "" };
+        meta.signalOverride = "multi_signal_payment_plus_question";
+      }
+    }
+
+    // 4. Model fallback (arbitration null döndüyse)
     if (!finalReply || !finalReply.text) {
       try {
         const modelText = await callModelFallback(ctx);
@@ -179,12 +295,122 @@ export async function processChat(body = {}) {
       }
     }
 
+    // 4.5 ═══ ANTI-REPEAT GUARD ═══════════════════════════════
+    // Bot cevabı çıkmadan ÖNCE: dolu slotu tekrar soruyor mu?
+    // Eğer evet → cevabı otomatik düzelt, sadece eksik slotu sor
+    // İSTİSNA: Correction mesajları bypass eder (yanlış/değiştir/düzelt)
+    const correctionBypass = /yanlis|yanlış|degistir|değiştir|duzelt|düzelt|degil|değil.*olsun|iptal.*ed|vazgec/.test(
+      (ctx.norm || "").toLowerCase()
+    );
+    
+    if (finalReply && finalReply.text && !correctionBypass) {
+      const filledSlots = getFilledSlots(derived.derivedState);
+      const replyLower = finalReply.text.toLowerCase()
+        .replace(/ı/g,"i").replace(/ş/g,"s").replace(/ç/g,"c")
+        .replace(/ö/g,"o").replace(/ü/g,"u").replace(/ğ/g,"g");
+      
+      let violation = null;
+      
+      // Dolu slot tekrar soruluyor mu?
+      if (filledSlots.photo && /fotograf.*gonder|fotograf.*ilet|resim.*gonder|fotografi.*buradan/i.test(replyLower) 
+          && !replyLower.includes("sorun olursa") && !replyLower.includes("aldik")) {
+        violation = "photo_already_received";
+      }
+      if (filledSlots.back_text && /arka yuz.*yazi.*ister|arka yuze.*yazi|ne yazilmasini/i.test(replyLower)
+          && !replyLower.includes("not aldim")) {
+        violation = "back_text_already_set";
+      }
+      if (filledSlots.payment && /eft.*kapida.*tercih|odeme yontemi|hangisini tercih/i.test(replyLower)) {
+        violation = "payment_already_chosen";
+      }
+      if (filledSlots.phone && /telefon numara.*ilet|cep telefon.*ilet|telefon.*paylasabilir/i.test(replyLower)
+          && !replyLower.includes("aldim")) {
+        violation = "phone_already_received";
+      }
+      if (filledSlots.address_full && /acik adres.*ilet|adresinizi.*ilet|adresinizi.*yazabilir/i.test(replyLower)
+          && !replyLower.includes("aldim")) {
+        violation = "address_already_received";
+      }
+      
+      if (violation) {
+        // Dolu slot tekrar soruluyordu → düzelt
+        const missing = getMissingSlots(derived.derivedState);
+        meta.antiRepeatFired = violation;
+        meta.antiRepeatMissing = missing;
+        
+        if (missing.length === 0) {
+          // Hiçbir şey eksik değil → sipariş durumuna göre cevap
+          if (derived.derivedState.order_status === "completed") {
+            finalReply = { text: "Tabi efendim 😊", reply_class: REPLY_CLASS.FIXED_INFO, support_mode_reason: "" };
+          } else {
+            finalReply = { text: "Bilgileriniz alınmıştır efendim 😊 Ekibimiz en kısa sürede ürününüzü hazırlayacaktır.", reply_class: REPLY_CLASS.FLOW_PROGRESS, support_mode_reason: "" };
+          }
+        } else if (missing.length === 1) {
+          // Tek eksik var → sadece onu sor
+          const slotMessages = {
+            photo: "Fotoğrafınızı buradan iletebilirsiniz efendim 😊",
+            back_text: "Arka yüze yazı eklemek ister misiniz? İstemezseniz 'yok' yazabilirsiniz 😊",
+            payment: "Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim? 😊",
+            phone: "Cep telefonu numaranızı iletebilir misiniz efendim? 📱",
+            address: "Açık adresinizi iletebilir misiniz efendim? 📍",
+            letters: "Yapılmasını istediğiniz harfleri yazabilirsiniz efendim 😊",
+            product: "Hangi model ile ilgileniyorsunuz efendim? 😊",
+          };
+          finalReply = { text: slotMessages[missing[0]] || finalReply.text, reply_class: REPLY_CLASS.FLOW_PROGRESS, support_mode_reason: "" };
+        } else {
+          // Birden fazla eksik → sadece eksikleri sor
+          const parts = [];
+          if (missing.includes("phone")) parts.push("📱 Cep telefonu");
+          if (missing.includes("address")) parts.push("📍 Açık adres");
+          if (missing.includes("payment")) parts.push("💳 Ödeme yöntemi");
+          if (missing.includes("photo")) parts.push("📷 Fotoğraf");
+          if (missing.includes("back_text")) parts.push("✍️ Arka yazı tercihi");
+          if (parts.length > 0) {
+            finalReply = { text: "Tabi efendim 😊 Şu bilgileriniz eksik:\n\n" + parts.join("\n"), reply_class: REPLY_CLASS.FLOW_PROGRESS, support_mode_reason: "" };
+          }
+        }
+      }
+    }
+    // ═══════════════════════════════════════════════════════════
+
     // 5. Commit patch (final field'lar)
     const committed = commitPatch(derived, finalReply);
     committed._nextStage = derived.nextStage;
 
     // 6. Build output
     const output = buildOutput(ctx, finalReply, committed, meta);
+    
+    // 6.5 DEBUG SUMMARY — her karar için observability
+    output._debug = {
+      state_before: ctx.fields.conversation_stage || "(none)",
+      state_after: output.conversation_stage || "(none)",
+      state_corrected: ctx.fields.conversation_stage !== (body.conversation_stage || "") ? body.conversation_stage + " → " + ctx.fields.conversation_stage : "",
+      state_frozen: derived._frozenStage || false,
+      freeze_reason: derived._freezeReason || null,
+      detected_intent: ctx.intent,
+      intent_candidates: ctx._intentCandidates || [],
+      reply_source: meta.replySource || "deterministic",
+      selected_rule: meta.selectedRule || "none",
+      product: output.ilgilenilen_urun,
+      message_length: ctx.message.length,
+      is_short_confirm: ctx.message.length <= 15 && /^(evet|tamam|olur|peki|tm|tmm|ok|anladım|tamamdır)$/i.test(ctx.message.trim()),
+      field_confidence: derived._confidence || {},
+      field_source: derived._source || {},
+      corrections: derived._corrections || {},
+      anti_repeat_fired: meta.antiRepeatFired || null,
+      anti_repeat_missing: meta.antiRepeatMissing || null,
+      signal_override: meta.signalOverride || null,
+      signals_summary: {
+        slots: Object.keys(signals.slot_updates || {}),
+        questions: signals.questions || [],
+        corrections: signals.corrections || [],
+        complaints: signals.complaints || [],
+        confirmations: signals.confirmations || [],
+        ack: signals.ack || false,
+        undecided: signals.undecided || false,
+        topic: signals.topic_hint || null,
+      },
+    };
     
     // 7. Extracted raw data (order sync için)
     output._extracted = {

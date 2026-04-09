@@ -16,10 +16,28 @@ import { hasAny, looksLikePhotoUrl } from "./normalize.js";
 export function detectIntent(ctx) {
   const { message, norm, product, stage, extracted } = ctx;
   const raw = String(message || "").trim();
+  const _candidates = []; // Intent competition log
+
+  function candidate(name, score) { _candidates.push({ intent: name, score }); }
 
   // ═══ KATMAN 0: Boş / çok kısa ═══
-  if (!raw || raw.length <= 1) return INTENT.GENERAL;
-  if (/^(liked a message|reacted)/.test(norm)) return INTENT.SMALLTALK;
+  if (!raw || raw.length <= 1) { ctx._intentCandidates = [{ intent: "general", score: 0 }]; return INTENT.GENERAL; }
+  if (/^(liked a message|reacted)/.test(norm)) { ctx._intentCandidates = [{ intent: "smalltalk", score: 1 }]; return INTENT.SMALLTALK; }
+
+  // API RESTRICTIONS / boş içerik guard — bu mesajlar gerçek mesaj değil
+  if (hasAny(norm, ["the message could not be displayed","api restrictions","could not be displayed","bu mesaj gosterilemiyor","mesaj görüntülenemiyor","dosya eki gonderdi","bir dosya eki gönderdi","started an audio call","missed an audio call","started a video chat"])) {
+    ctx._intentCandidates = [{ intent: "system_message", score: 1 }];
+    return INTENT.GENERAL; // Hiçbir slot doldurmadan geç
+  }
+
+  // ═══ NEGATIVE SIGNAL LIST ═══
+  // Belirli pattern'ler belirli intent'leri baskılar
+  const negativeSignals = {
+    suppress_order_flow: hasAny(norm, ["kargom nerede","siparisim ne durumda","siparişim ne durumda","gelmedi","ulasmadi"]),
+    suppress_product_info: hasAny(norm, ["iade","geri gonder","geri gönder","memnun degil","memnun değil"]),
+    suppress_back_text: hasAny(norm, ["foto uygun","fotoğraf uygun","bu foto olur","olur mu bu"]),
+    suppress_address: /[?]/.test(raw) && hasAny(norm, ["magaza","mağaza","nerede","konum","sube","şube"]),
+  };
 
   // ═══ KATMAN 1: KESİN KEYWORD INTENT'LER ═══
 
@@ -96,6 +114,16 @@ export function detectIntent(ctx) {
   // Kargo ücreti (shipping'den ÖNCE)
   if (hasAny(norm, KW.shipping_price)) return INTENT.SHIPPING_PRICE;
 
+  // ═══ TRUST FOLLOW-UP (shipping'den ÖNCE) ═══
+  // Son intent trust ise ve "süre/garanti/ne kadar" geliyorsa → trust olarak yorumla
+  // Yoksa "ne kadar süre" shipping keyword'üne düşer
+  const lastIntent = ctx.fields?.last_intent || "";
+  if (lastIntent === "trust" && hasAny(norm, ["sure","süre","garanti","kac yil","kaç yıl","1 yil","ne kadar sure","ne kadar süre","mesela","kac sene","kaç sene","yillik","yıllık","omur boyu","ömür boyu"])) {
+    candidate("trust_followup", 0.8);
+    ctx._intentCandidates = _candidates;
+    return INTENT.TRUST;
+  }
+
   // Kargo
   if (hasAny(norm, KW.shipping)) {
     if (hasAny(norm, ["donus yapicam","dönüş yapıcam","donus yapacagim","dönüş yapacağım","tekrar donecegim","tekrar döneceğim","daha sonra donecegim","icinde donecegim","içinde döneceğim","icinde donus","içinde dönüş"])) {
@@ -159,6 +187,10 @@ export function detectIntent(ctx) {
 
   // waiting_back_text: kısa mesajlar arka yazı olarak yorumlanır
   if (stage === STAGE.WAITING_BACK_TEXT) {
+    // Kısa onay mesajları arka yazı DEĞİL — "tamamdır" demek "arka yazı istiyorum" demek
+    const CONFIRM_NOT_BACKTEXT = ["tamam","tamamdir","tmm","tmmm","olur","peki","evet","ok","he","hee","tm"];
+    const isJustConfirm = raw.length <= 15 && (CONFIRM_NOT_BACKTEXT.includes(norm) || norm === "tamam dir");
+
     const blocked = hasAny(norm, [
       ...KW.smalltalk, ...KW.cancel, ...KW.payment, ...KW.shipping,
       ...KW.shipping_price, ...KW.trust, ...KW.location, ...KW.price,
@@ -178,6 +210,10 @@ export function detectIntent(ctx) {
         "yaparsaniz","yaparsanız","sevinirim","memnun olurum",
         "rica etsem","rica ediyorum",
         "ne gibi","ne yazilir","ne yazılır","ne tarz","ornek",
+        "ne yaziyorsunuz","ne yazılıyor","ne yazabiliriz","ne yazilabilir",
+        "hangi charm","hangi aksesuar","hangi seceneg","hangi seçenek",
+        "neler var","var mi","var mı","neler yaziliyor","neler yazılıyor",
+        "genelde ne","ne genelde","ne olur genelde",
         "bulamadim","bulamadım","tapilir","yapilir",
         "arkali onlu","arkalı önlü","onlu arkali","önlü arkalı",
         "iki taraf","iki yuz","iki yüz",
@@ -186,7 +222,7 @@ export function detectIntent(ctx) {
     const hasIntentVerb = hasAny(norm, ["istiyorum","isterim","olsun","yapalim","yapın","yaparsaniz"]) && raw.length > 15
       && !hasAny(norm, ["yazilsin","yazılsın","yazsin","yazsın","yazarsaniz","yazarsanız","ekleyin","eklesin"]);
 
-    if (raw && !blocked && !isQuestion && !hasIntentVerb && !looksLikePhotoUrl(message) && raw.length <= 80) {
+    if (raw && !blocked && !isQuestion && !hasIntentVerb && !isJustConfirm && !looksLikePhotoUrl(message) && raw.length <= 80) {
       return INTENT.BACK_TEXT;
     }
   }
@@ -219,19 +255,25 @@ export function detectIntent(ctx) {
   // ═══ KATMAN 3: ENTITY-BASED INTENT'LER ═══
 
   // Şubeden teslim
-  if (hasAny(norm, ["subeden alacagim","şubeden alacağım","subeden alma","şubeden alma","subeden teslim","şubeden teslim","magazadan alacagim","mağazadan alacağım"])) return INTENT.STORE_PICKUP;
+  if (hasAny(norm, ["subeden alacagim","şubeden alacağım","subeden alma","şubeden alma","subeden teslim","şubeden teslim","magazadan alacagim","mağazadan alacağım"])) { candidate("store_pickup", 0.9); ctx._intentCandidates = _candidates; return INTENT.STORE_PICKUP; }
 
-  // Adres
-  if (extracted.hasAddress && ["waiting_address", ""].includes(stage)) return INTENT.ADDRESS;
+  // Adres — negative signal: soru cümlesi ile lokasyon soruyorsa adres değil
+  if (extracted.hasAddress && ["waiting_address", ""].includes(stage) && !negativeSignals.suppress_address) {
+    candidate("address", 0.85);
+    ctx._intentCandidates = _candidates;
+    return INTENT.ADDRESS;
+  }
 
   // Telefon
-  if (extracted.phone && ["waiting_address", ""].includes(stage)) return INTENT.PHONE;
+  if (extracted.phone && ["waiting_address", ""].includes(stage)) { candidate("phone", 0.85); ctx._intentCandidates = _candidates; return INTENT.PHONE; }
 
   // İsim
-  if (extracted.hasName && stage === "waiting_address") return INTENT.NAME_ONLY;
+  if (extracted.hasName && stage === "waiting_address") { candidate("name_only", 0.7); ctx._intentCandidates = _candidates; return INTENT.NAME_ONLY; }
 
   // Harfler
-  if (product === PRODUCT.ATAC && extracted.letters) return INTENT.LETTERS;
+  if (product === PRODUCT.ATAC && extracted.letters) { candidate("letters", 0.8); ctx._intentCandidates = _candidates; return INTENT.LETTERS; }
 
+  candidate("general", 0.1);
+  ctx._intentCandidates = _candidates;
   return INTENT.GENERAL;
 }

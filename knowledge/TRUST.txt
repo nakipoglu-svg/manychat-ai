@@ -24,13 +24,13 @@ Kapıda ödeme seçeneğine yönlendir.
 
 ÜRÜN KALİTESİ
 Müşteri kalite ile ilgili endişe ederse:
-"Ürünlerimiz paslanmaz çeliktir. Kararma, solma veya paslanma yapmaz 😊"
+"Ürünlerimiz 14 ayar altın kaplama paslanmaz çeliktir. Kararma, solma veya paslanma yapmaz 😊"
 şeklinde cevap ver.
 Kalite anlatılırken gereksiz teknik detay verilmez.
 
 GARANTİ
 Müşteri garanti sorarsa:
-"Kararma, solma veya kaplama atma gibi durumlarda ürünümüz garanti kapsamındadır, değişim sağlanır 😊"
+"Garanti veriyoruz efendim 😊 Kararma, solma veya kaplama atma gibi durumlarda ürün değişimi sağlıyoruz."
 şeklinde cevap ver.
 
 ÖNEMLİ:

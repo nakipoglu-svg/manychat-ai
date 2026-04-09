@@ -157,11 +157,11 @@ export function looksLikeAddress(norm, raw = "", stage = "") {
 export function looksLikeName(raw = "", norm = "", stage = "") {
   if (stage !== "waiting_address") return false;
   raw = String(raw).trim();
-  if (!raw || raw.length < 4 || raw.length > 40) return false;
+  if (!raw || raw.length < 3 || raw.length > 40) return false;
   if (/\d/.test(raw) || /[?!.:/]/.test(raw)) return false;
 
   const parts = raw.split(/\s+/).filter(Boolean);
-  if (parts.length < 2 || parts.length > 4) return false;
+  if (parts.length > 4) return false;
   if (!/^[a-zA-ZçğıöşüÇĞİÖŞÜ\s]+$/.test(raw)) return false;
 
   const n = normalizeText(raw);
@@ -185,11 +185,25 @@ export function looksLikeName(raw = "", norm = "", stage = "") {
   }
 
   if (looksLikeAddress(n, raw, stage)) return false;
+
+  // Tek kelime isim: sadece büyük harfle başlıyor ve 4+ karakter ise kabul et
+  if (parts.length === 1) {
+    return /^[A-ZÇĞİÖŞÜ]/.test(raw) && raw.length >= 4;
+  }
+
   return true;
 }
 
 export function parsePaymentFromMessage(norm, existing = "") {
   if (hasAny(norm, ["kredi karti", "kredi kartı", "kartla", "kart ile"])) return existing || "";
+  
+  // Negation detection: "kapıda değil" → kapıda'yı reddet
+  const negatesKapida = hasAny(norm, ["kapida degil","kapıda değil","kapida istemiyorum","kapıda istemiyorum","kapida olmaz","kapıda olmaz"]);
+  const negatesEft = hasAny(norm, ["eft degil","eft değil","eft istemiyorum","havale degil","havale değil","havale istemiyorum"]);
+  
+  if (negatesKapida && hasAny(norm, ["eft","havale","hesaptan"])) return "eft_havale";
+  if (negatesEft && hasAny(norm, ["kapida","kapıda","nakit"])) return "kapida_odeme";
+  
   if (hasAny(norm, ["kapida odeme", "kapıda ödeme", "kapida", "kapıda", "odeme olsun", "ödeme olsun", "kalida", "nakit"])) return "kapida_odeme";
   if (hasAny(norm, ["eft", "havale", "hesaptan"])) return "eft_havale";
   return existing || "";

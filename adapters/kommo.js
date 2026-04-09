@@ -4,6 +4,7 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import { processChat } from "../core/engine.js";
+import { looksLikePhotoUrl } from "../core/normalize.js";
 import { logConversationRow } from "../lib/sheetsLogger.js";
 
 // ─── CONFIG ─────────────────────────────────────────────────
@@ -17,17 +18,25 @@ const MENU_BOT_ID = 72073;
 
 const PIPELINE_ID = 13481231;
 const STAGE_MAP = {
-  "":                    104000639,
-  "waiting_product":     104000639,
-  "waiting_photo":       104000647,
-  "waiting_letters":     104000647,
-  "waiting_back_text":   104000651,
-  "waiting_payment":     104000655,
-  "waiting_address":     104000659,
-  "order_completed":     104106243,
-  "human_support":       104106247,
+  "":                    104000639,  // Gelen Talepler
+  "waiting_product":     104000639,  // Gelen Talepler
+  "waiting_photo":       104000647,  // Fotoğraf Bekleniyor
+  "waiting_letters":     104000647,  // Harf Bekleniyor (aynı kolon)
+  "waiting_back_text":   104000651,  // Arka Yazı Bekleniyor
+  "waiting_payment":     104000655,  // Ödeme Seçimi Bekleniyor
+  "waiting_address":     104000659,  // Adres Bekleniyor
+  "order_completed":     104106243,  // Sipariş Tamamlandı
+  "human_support":       104106247,  // İnsan Desteği
 };
-const STAGE_PRODUCT_SELECTED = 104000643;
+const STAGE_PRODUCT_SELECTED = 104000643;  // Ürün Seçildi
+
+// Ödeme yöntemine göre ek pipeline aşamaları (varsa)
+// Not: Kommo'da bu aşamalar yoksa oluşturulmalı veya mevcut ID'ler güncellenmelidir
+// Şimdilik waiting_address kullanılır, ileride ayrılabilir
+const PAYMENT_STAGE_MAP = {
+  "eft_waiting":   104000659,  // EFT seçildi, ödeme bekleniyor → mevcut "Adres Bekleniyor" kullan
+  "kapida_ready":  104000659,  // Kapıda ödeme → adres iste
+};
 
 const FID = {
   ilgilenilen_urun: 1831171, conversation_stage: 1831173, last_intent: 1831175,
@@ -165,13 +174,28 @@ async function triggerBot(botId, leadId) {
   return kApi("POST", `/api/v4/bots/${botId}/run`, { entity_id: Number(leadId), entity_type: "leads" });
 }
 
-async function movePipelineStage(leadId, stage, hasProduct) {
+async function movePipelineStage(leadId, stage, hasProduct, paymentMethod) {
   let target = STAGE_MAP[stage];
   if (!target && hasProduct) target = STAGE_PRODUCT_SELECTED;
   if (!target) return;
+
+  // Ödeme-aware pipeline: EFT seçildi ama adres bekleniyor → özel stage
+  if (stage === "waiting_address" && paymentMethod === "eft_havale" && PAYMENT_STAGE_MAP["eft_waiting"]) {
+    target = PAYMENT_STAGE_MAP["eft_waiting"];
+  }
+
   try {
     await kApi("PATCH", "/api/v4/leads/" + leadId, { pipeline_id: PIPELINE_ID, status_id: target });
+    console.log("[WH] Pipeline moved:", stage, "→", target, paymentMethod ? "(payment:" + paymentMethod + ")" : "");
   } catch (e) { console.error("[WH] Pipeline move error:", e.message); }
+}
+
+async function readLeadFields(leadId) {
+  try {
+    const r = await kApi("GET", "/api/v4/leads/" + leadId);
+    if (r.s === 200) return readFields(r.d);
+  } catch (e) { console.error("[WH] readLeadFields error:", e.message); }
+  return {};
 }
 
 async function resolveLeadId(leadId, contactId) {
@@ -276,6 +300,72 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, skipped: true, reason: "no_text" });
     }
     if (msgType === "outgoing") {
+      // ═══ SELLER MESSAGE STATE SYNC ═══════════════════════════
+      // İşletme sahibi yazdığında cevap üretme ama state'i güncelle.
+      // Böylece sonraki müşteri mesajı doğru stage'de işlenir.
+      const outNorm = effectiveText.toLowerCase()
+        .replace(/İ/g, "i").replace(/ç/g, "c").replace(/ğ/g, "g")
+        .replace(/ı/g, "i").replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u");
+
+      const shouldSync = lid && effectiveText.length > 3;
+
+      if (shouldSync) {
+        let stateUpdates = null;
+
+        // Fotoğraf alındı sinyalleri
+        if (/fotograf.*(ald|geldi|ulast|tamam)|fotonu.*(ald|gordu)|resmi.*(ald|gordu)|fotografi kontrol/i.test(outNorm) ||
+            /gorsel.*(ald|geldi)|fotografiniz.*ald|resminiz.*ald/i.test(outNorm)) {
+          const curCf = await readLeadFields(lid);
+          if (curCf.conversation_stage === "waiting_photo" || !curCf.back_text_status) {
+            stateUpdates = { photo_received: "1", conversation_stage: "waiting_back_text" };
+          }
+        }
+
+        // Arka yazı alındı / sipariş ilerleme sinyalleri
+        if (/arka.*ald|yazi.*ald|not.*ald|yaziniz.*ald/i.test(outNorm)) {
+          const curCf = await readLeadFields(lid);
+          if (curCf.conversation_stage === "waiting_back_text") {
+            stateUpdates = { back_text_status: "received", conversation_stage: "waiting_payment" };
+          }
+        }
+
+        // Ödeme alındı sinyalleri
+        if (/odeme.*(ald|geldi|gordu|kontrol)|eft.*(geldi|ald)|havale.*(geldi|ald)|dekont.*(ald|gordu)/i.test(outNorm)) {
+          const curCf = await readLeadFields(lid);
+          if (curCf.conversation_stage === "waiting_payment" || !curCf.payment_method) {
+            stateUpdates = { payment_method: curCf.payment_method || "eft_havale" };
+            if (curCf.address_status !== "received") stateUpdates.conversation_stage = "waiting_address";
+          }
+        }
+
+        // Sipariş tamamlandı sinyalleri
+        if (/siparis.*(olustur|tamamlan|alindi|onaylan)|kargoya.*(veril|cik)/i.test(outNorm)) {
+          stateUpdates = { order_status: "completed", conversation_stage: "order_completed", siparis_alindi: "1" };
+        }
+
+        // Adres alındı sinyalleri
+        if (/adres.*(ald|tamam|not)|bilgiler.*(ald|tamam)|tesekk.*bilgi/i.test(outNorm)) {
+          const curCf = await readLeadFields(lid);
+          if (curCf.conversation_stage === "waiting_address") {
+            stateUpdates = { address_status: "received" };
+            if (curCf.phone_received === "1") {
+              stateUpdates.conversation_stage = "order_completed";
+              stateUpdates.order_status = "completed";
+              stateUpdates.siparis_alindi = "1";
+            }
+          }
+        }
+
+        if (stateUpdates) {
+          console.log("[WH] SELLER-SYNC: detected state signals in outgoing:", JSON.stringify(stateUpdates));
+          await updateFields(lid, stateUpdates);
+          if (stateUpdates.conversation_stage) {
+            await movePipelineStage(lid, stateUpdates.conversation_stage, true);
+          }
+        }
+      }
+      // ═══════════════════════════════════════════════════════════
+
       console.log("[WH] SKIP: outgoing. msgId:", msgId.slice(0, 20), "text:", effectiveText.slice(0, 40));
       return res.status(200).json({ ok: true, skipped: true, reason: "outgoing" });
     }
@@ -329,10 +419,20 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, skipped: true, reason: "dedup_replay_watermark" });
     }
 
-    // Katman 1: ai_reply doluysa → başka instance zaten cevap yazmış
+    // Katman 1: ai_reply doluysa → eski cevap kalıntısı olabilir
+    // Salesbot okumuş ama temizlememiş olabilir — watermark ile teyit et
     if (cf.ai_reply && cf.ai_reply.length > 0 && cf.ai_reply !== "#FIELD_NAME#") {
-      console.log("[WH] DEDUP-1: ai_reply set, skip");
-      return res.status(200).json({ ok: true, skipped: true, reason: "dedup_ai_reply" });
+      // Watermark kontrolü: bu mesajın created_at'i watermark'tan büyükse → YENİ mesaj, ai_reply eski kalıntı
+      const wm = parseWatermark(cf.cancel_reason);
+      if (msgCreatedAt > 0 && wm.ts > 0 && msgCreatedAt > wm.ts) {
+        // Yeni mesaj — eski ai_reply'i temizle ve devam et
+        console.log("[WH] DEDUP-1: ai_reply stale (msg newer than watermark), clearing and processing");
+        await updateFields(lid, { ai_reply: "" });
+        cf.ai_reply = "";
+      } else {
+        console.log("[WH] DEDUP-1: ai_reply set, skip");
+        return res.status(200).json({ ok: true, skipped: true, reason: "dedup_ai_reply" });
+      }
     }
 
     // Katman 2: Aktif lock varsa → başka instance işliyor
@@ -359,10 +459,14 @@ export default async function handler(req, res) {
         if (recheck.s === 200) {
           const recheckFields = readFields(recheck.d);
           
-          // ai_reply bu arada dolmuş olabilir
+          // ai_reply bu arada dolmuş olabilir — AMA watermark ile teyit et
           if (recheckFields.ai_reply && recheckFields.ai_reply.length > 0 && recheckFields.ai_reply !== "#FIELD_NAME#") {
-            console.log("[WH] DEDUP-3a: ai_reply appeared during lock, skip");
-            return res.status(200).json({ ok: true, skipped: true, reason: "dedup_race_ai_reply" });
+            const recheckWm = parseWatermark(recheckFields.cancel_reason);
+            if (!(msgCreatedAt > 0 && recheckWm.ts > 0 && msgCreatedAt > recheckWm.ts)) {
+              console.log("[WH] DEDUP-3a: ai_reply appeared during lock, skip");
+              return res.status(200).json({ ok: true, skipped: true, reason: "dedup_race_ai_reply" });
+            }
+            console.log("[WH] DEDUP-3a: ai_reply stale during lock, continuing");
           }
           
           // Başka instance lock'u üzerine yazmış olabilir
@@ -378,6 +482,34 @@ export default async function handler(req, res) {
       console.log("[WH] DEDUP: lock acquired, processing. msgId:", msgId.slice(0, 20));
     }
     // ══════════════════════════════════════════════════════════
+
+    // ══ MULTI-MESSAGE BUNDLING ═══════════════════════════════
+    // Müşteri hızlıca ardışık mesaj atıyorsa (isim + tel + adres gibi)
+    // 2 saniye bekleyip son hali ile devam et
+    // Sadece kısa mesajlarda (<40 char) bundle yap — uzun mesajlar anında işle
+    if (lid && effectiveText.length < 40 && !looksLikePhotoUrl(effectiveText)) {
+      await new Promise(r => setTimeout(r, 2000));
+      
+      // Tekrar oku — yeni mesaj gelmiş mi?
+      try {
+        const bundleCheck = await kApi("GET", `/api/v4/leads/${lid}/notes?note_type=incoming_message&limit=3`);
+        // Not: Bu endpoint varsa son mesajları kontrol ederiz
+        // Yoksa sadece field'ları kontrol ederiz
+      } catch {}
+      
+      // Lock hâlâ bizde mi? Başka instance devralmış olabilir
+      try {
+        const lockCheck = await kApi("GET", "/api/v4/leads/" + lid);
+        if (lockCheck.s === 200) {
+          const lcf = readFields(lockCheck.d);
+          if (lcf.ai_reply && lcf.ai_reply.length > 0 && lcf.ai_reply !== "#FIELD_NAME#") {
+            console.log("[WH] BUNDLE: ai_reply appeared during wait, another instance handled it");
+            return res.status(200).json({ ok: true, skipped: true, reason: "bundle_superseded" });
+          }
+        }
+      } catch {}
+    }
+    // ═════════════════════════════════════════════════════════
 
     // ── First message → trigger menu bot ──
     if (isFirstMessage(cf, effectiveText)) {
@@ -398,6 +530,7 @@ export default async function handler(req, res) {
     });
 
     console.log("[WH] Reply:", (result.ai_reply || "").slice(0, 80));
+    console.log("[WH] Stage:", cf.conversation_stage, "→", result.conversation_stage, "| Intent:", result.last_intent);
 
     if (!lid) return res.status(200).json({ success: true, ai_reply: result.ai_reply || "" });
 
@@ -422,19 +555,46 @@ export default async function handler(req, res) {
       cancel_reason: buildWatermark(msgCreatedAt, msgId, cf.cancel_reason),  // Watermark güncelle
     };
 
-    // ── Write ai_reply + trigger bot ──
-    fieldUpdate.ai_reply = stripEmoji(result.ai_reply || "");
-    await updateFields(lid, fieldUpdate);
+    // ══ STAGE WRITE STRATEGY ══════════════════════════════════
+    // 1. Önce state field'larını yaz (ai_reply HARİÇ)
+    //    → Böylece sonraki mesaj gelirse doğru stage'i okur
+    // 2. Sonra ai_reply yaz + bot trigger
+    //    → Salesbot ai_reply'i okuyup müşteriye gönderir
+    // 3. Pipeline move (en son)
+    // ══════════════════════════════════════════════════════════
+
+    // Adım 1: State field'larını yaz (ai_reply boş bırak)
+    await updateFields(lid, { ...fieldUpdate, ai_reply: "" });
+
+    // Adım 2: Kısa bekleme — Kommo API propagation
+    await new Promise(r => setTimeout(r, 100));
+
+    // Adım 3: ai_reply yaz + bot trigger
+    const cleanReplyText = stripEmoji(result.ai_reply || "");
+    await updateFields(lid, { ai_reply: cleanReplyText });
 
     if (result.ai_reply) {
       await triggerBot(REPLY_BOT_ID, lid);
     }
 
-    // ── Pipeline stage ──
-    await movePipelineStage(lid, result.conversation_stage || "", !!result.ilgilenilen_urun);
+    // Adım 4: Pipeline stage (arka planda)
+    await movePipelineStage(lid, result.conversation_stage || "", !!result.ilgilenilen_urun, result.payment_method || "");
 
     // ── Logging + Order Sync (arka plan) ──
     try {
+      // Debug summary log — production root cause analysis için
+      const dbg = result._debug || {};
+      console.log("[WH] DECISION:", JSON.stringify({
+        msg: effectiveText.slice(0, 60),
+        intent: result.last_intent,
+        rule: dbg.selected_rule,
+        source: dbg.reply_source,
+        stage: dbg.state_before + " → " + dbg.state_after,
+        corrected: dbg.state_corrected || false,
+        product: result.ilgilenilen_urun,
+        is_confirm: dbg.is_short_confirm,
+      }));
+
       await Promise.allSettled([
         logConversationRow({
           body: { message: effectiveText, lead_id: lid, contact_id: contactId, instagram_username: contactName || "" },
@@ -497,19 +657,29 @@ async function safeOrderSync(msgText, leadId, result, cf, contactName) {
 
   const orderId = buildStableOrderId(customerId, product, result);
   const ext = result._extracted || {};
+  const isCompleted = result.conversation_stage === "order_completed" || result.order_status === "completed";
+  const hadPreviousData = !!(cf.ilgilenilen_urun || cf.photo_received || cf.payment_method || cf.address_status);
+
+  // Operation type: Apps Script'in INSERT/UPDATE kararı için
+  // "create" = ilk kez sipariş oluşturuluyor
+  // "update" = mevcut sipariş güncelleniyor
+  // "complete" = sipariş tamamlandı
+  const operation = isCompleted ? "complete" : hadPreviousData ? "update" : "create";
 
   // Orders_Raw Apps Script header formatına tam uyumlu payload
   const payload = {
     type: "order_raw",
+    operation,  // ← Apps Script buna bakarak UPDATE/INSERT kararı verecek
     data: {
       order_id: orderId,
-      created_at: new Date().toISOString(),
+      created_at: operation === "create" ? new Date().toISOString() : "",
       updated_at: new Date().toISOString(),
       customer_id: customerId,
       instagram_username: contactName || "",
       customer_name: contactName || "",
       dm_link: customerId ? `https://nakipoglu.kommo.com/leads/detail/${customerId}` : "",
-      recipient_name: ext.name || "",
+      // Cumulative: hem yeni extracted hem de önceki CRM field'ları birleştir
+      recipient_name: ext.name || cf.recipient_name || "",
       phone: ext.phone || "",
       full_address: ext.addressText || "",
       product_type: product,
@@ -522,17 +692,23 @@ async function safeOrderSync(msgText, leadId, result, cf, contactName) {
       letters_value: ext.letters || "",
       order_status: result.order_status || "",
       confirmation_source: "bot",
-      confirmed_at: result.conversation_stage === "order_completed" ? new Date().toISOString() : "",
+      confirmed_at: isCompleted ? new Date().toISOString() : "",
       confidence_score: calculateConfidence(result),
       last_message: msgText,
+      // Yeni: stage + intent bilgisi (operations dashboard için)
+      conversation_stage: result.conversation_stage || "",
+      last_intent: result.last_intent || "",
+      reply_class: result.reply_class || "",
+      support_mode: result.support_mode || "",
     },
   };
 
   try {
-    await fetch(ORDER_WEBHOOK_URL, {
+    const resp = await fetch(ORDER_WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    console.log("[WH] OrderSync:", operation, "orderId:", orderId.slice(0, 30), "status:", resp.status);
   } catch (e) { console.error("[WH] Order sync error:", e.message); }
 }

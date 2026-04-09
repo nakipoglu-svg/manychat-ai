@@ -1663,6 +1663,191 @@ const tests = [
   // Kararma → her stage'de doğru cevap
   { id: "KT227", name: "Kararma w_address", input: body("Kararma yapar mı", lazerWaitingAddress()), expectReplyIncludes: "kararma" },
   { id: "KT228", name: "Kararma w_back_text", input: body("Kararma olur mu", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expectReplyIncludes: "kararma" },
+
+  // ═══ 16 MADDE DÜZELTME TESTLERİ ═══
+
+  // FIX #1: 14 AYAR ALTIN KAPLAMA ÇELİK
+  { id: "NF01", name: "çelik mi → 14 ayar", input: body("çelik mi", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "14 ayar" },
+  { id: "NF02", name: "çelik mi → paslanmaz", input: body("çelik mi", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "paslanmaz" },
+  { id: "NF03", name: "malzeme ne → 14 ayar", input: body("malzeme ne", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "14 ayar" },
+  { id: "NF04", name: "altın mı → 14 ayar", input: body("altın mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "14 ayar" },
+  { id: "NF05", name: "gümüş mü → altın kaplama gümüş kaplama", input: body("gümüş mü", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "kaplama" },
+  { id: "NF06", name: "alerji → 14 ayar", input: body("alerjim var sorun olur mu", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "14 ayar" },
+  { id: "NF07", name: "paslanmaz mı → 14 ayar", input: body("paslanmaz mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "14 ayar" },
+
+  // FIX #2: LOKASYON — ONLINE SATIŞ
+  { id: "NF08", name: "neredesiniz → online", input: body("neredesiniz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "online" },
+  { id: "NF09", name: "konum → kargo", input: body("konum nerede", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "kargo" },
+  { id: "NF10", name: "yeriniz nerede → istanbul", input: body("yeriniz nerede", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "istanbul" },
+
+  // FIX #3-4: KARGO SMS + DETAYLI SÜRE
+  { id: "NF11", name: "kargo süresi → SMS", input: body("kargo ne zaman gelir", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "sms" },
+  { id: "NF12", name: "kargo süresi → istanbul", input: body("kaç günde gelir", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "istanbul" },
+  { id: "NF13", name: "PTT kargo → SMS", input: body("ptt kargo ile mi gönderiyorsunuz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "sms" },
+  { id: "NF14", name: "SMS gelir mi → SMS", input: body("kargoya verilince haber verir misiniz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "sms" },
+
+  // FIX #5: KAPIDA ÖDEME — SADECE NAKİT
+  { id: "NF15", name: "kredi kartı → nakit", input: body("kredi kartıyla ödeme yapmak istiyorum", lazerWaitingPayment()), expectReplyIncludes: "nakit" },
+  { id: "NF16", name: "kartla → nakit", input: body("kartla ödeyebilir miyim", lazerWaitingPayment()), expectReplyIncludes: "nakit" },
+  { id: "NF17", name: "kapıda ödeme bilgi → nakit", input: body("kapıda ödeme nasıl oluyor", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "nakit" },
+
+  // FIX #6: AKSESUAR
+  { id: "NF18", name: "aksesuar → pembe kalp", input: body("aksesuar var mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "pembe" },
+  { id: "NF19", name: "aksesuar → lacivert", input: body("aksesuar takılıyor mu", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "lacivert" },
+  { id: "NF20", name: "aksesuar → fiyata dahil", input: body("aksesuar var mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "dahil" },
+  { id: "NF21", name: "nazar boncuğu → mevcut", input: body("nazar boncuğu var mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "mevcut" },
+
+  // FIX #7: İADE POLİTİKASI
+  { id: "NF22", name: "iade → kişiye özel", input: body("iade yapılıyor mu", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "kisiye ozel" },
+  { id: "NF23", name: "iade → değiştirilir", input: body("iade edebilir miyim", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "degistirilir" },
+  { id: "NF24", name: "iade kalite → değişim", input: body("bozuk gelirse garanti var mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "degisim" },
+
+  // FIX #8: ARAS KARGO
+  { id: "NF25", name: "aras kargo → +25 TL", input: body("aras kargo ile gönderebilir misiniz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "25" },
+  { id: "NF26", name: "farklı kargo → aras", input: body("farklı kargo ile gönderim var mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "aras" },
+  { id: "NF27", name: "aras kapıda → sadece PTT", input: body("kapıda ödeme ile aras kargo olur mu", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "ptt" },
+
+  // FIX #9: ZİNCİR UZATMA/KISALTMA
+  { id: "NF28", name: "zincir kısaltma → yok", input: body("zinciri kısaltabilir misiniz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "kisaltma" },
+  { id: "NF29", name: "zincir uzatma → 70", input: body("zinciri uzatabilir misiniz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "70" },
+  { id: "NF30", name: "zincir uzatma → +50 TL", input: body("daha uzun zincir olabilir mi", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "50" },
+  { id: "NF31", name: "lazer zincir → uzatma bilgisi", input: body("zincir boyu ne kadar", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "70" },
+
+  // FIX #10: RENK SEÇENEKLERİ
+  { id: "NF32", name: "renk seçenekleri → altın kaplama", input: body("hangi renk seçenekleri var", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "altin kaplama" },
+  { id: "NF33", name: "renk → gümüş kaplama", input: body("renk seçenekleri neler", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "gumus kaplama" },
+  { id: "NF34", name: "renk → mat çelik", input: body("ne renk var", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "mat celik" },
+
+  // FIX #13: GARANTİ — DEĞİŞİM
+  { id: "NF35", name: "garanti → değişim", input: body("garanti var mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "degisim" },
+  { id: "NF36", name: "garanti → kararma", input: body("garanti var mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "kararma" },
+
+  // FIX #14: KARGO TAKİP
+  { id: "NF37", name: "kargo takip → SMS", input: body("kargoyu nasıl takip ederim", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "sms" },
+  { id: "NF38", name: "kargo takip → PTT", input: body("kargo takip nasıl yapılır", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "ptt" },
+
+  // FIX #15: FOTOĞRAF BİRLEŞTİRME
+  { id: "NF39", name: "foto birleştirme → profesyonelce", input: body("3 kişinin fotoğrafını birleştirebilir misiniz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "profesyonel" },
+  { id: "NF40", name: "çoklu foto → birleştirme detay", input: body("3 farklı fotoğrafı birleştirip tek tasarım yapabilir misiniz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "birlestir" },
+
+  // FIX #16: ERKEK ÜRÜN
+  { id: "NF41", name: "erkek için → uygun", input: body("erkek için uygun mu", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "erkek" },
+  { id: "NF42", name: "erkek → gümüş", input: body("erkek için olacak", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "gumus" },
+  { id: "NF43", name: "erkek zincir → 50 cm", input: body("erkek için zincir boyu ne kadar", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "50" },
+  { id: "NF44", name: "babam için → erkek", input: body("babam için yaptırmak istiyorum", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "erkek" },
+
+  // TRUST 14 AYAR
+  { id: "NF45", name: "kararma → 14 ayar", input: body("kararma yapar mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "14 ayar" },
+  { id: "NF46", name: "kaplama atar → 14 ayar", input: body("kaplama atar mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "14 ayar" },
+  { id: "NF47", name: "suya dayanıklı → deniz havuz", input: body("suya dayanıklı mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "havuz" },
+
+  // ═══ YAPISAL İYİLEŞTİRME TESTLERİ ═══
+
+  // State Consistency Guard
+  { id: "SC01", name: "photo=1 stage=w_photo → back_text_info çalışmalı", input: body("Ne yazabiliriz arkasına", { ilgilenilen_urun: "lazer", user_product: "lazer", conversation_stage: "waiting_photo", photo_received: "1", context_lock: "1", order_status: "started", menu_gosterildi: "evet" }), expectReplyIncludes: "arka", expectReplyNotIncludes: "ekibimize iletiyorum" },
+  { id: "SC02", name: "photo=1 stage=w_photo → genelde ne yazılıyor çalışmalı", input: body("Genelde ne yazılıyor", { ilgilenilen_urun: "lazer", user_product: "lazer", conversation_stage: "waiting_photo", photo_received: "1", context_lock: "1", order_status: "started", menu_gosterildi: "evet" }), expectReplyIncludes: "arka", expectReplyNotIncludes: "ekibimize iletiyorum" },
+  { id: "SC03", name: "pay=eft stage=w_pay → adres stage'ine geçmeli", input: body("Ali Yılmaz 05551234567 İstanbul Kadıköy Moda Mah No:5", { ilgilenilen_urun: "lazer", user_product: "lazer", conversation_stage: "waiting_payment", photo_received: "1", back_text_status: "skipped", payment_method: "eft_havale", context_lock: "1", order_status: "started" }), expect: { address_status: "received", conversation_stage: "order_completed" } },
+  { id: "SC04", name: "letters=1 stage=w_letters → ödeme stage'ine geçmeli", input: body("kapıda ödeme", { ilgilenilen_urun: "atac", user_product: "atac", conversation_stage: "waiting_letters", letters_received: "1", context_lock: "1", order_status: "started" }), expect: { payment_method: "kapida_odeme" } },
+
+  // w_payment Onay Tekrarı Düzeltmesi
+  { id: "WP01", name: "evet w_pay → ödeme sorusu tekrar sormamalı", input: body("evet", lazerWaitingPayment()), expectReplyNotIncludes: "eft / havale mi" },
+  { id: "WP02", name: "tamam w_pay → ödeme sorusu tekrar sormamalı", input: body("tamam", lazerWaitingPayment()), expectReplyNotIncludes: "eft / havale mi" },
+  { id: "WP03", name: "evet w_pay → seçenek sunmalı", input: body("evet", lazerWaitingPayment()), expectReplyIncludes: "tercih" },
+  { id: "WP04", name: "kapıda ödeme w_pay → hâlâ çalışmalı", input: body("kapıda ödeme", lazerWaitingPayment()), expect: { payment_method: "kapida_odeme" } },
+  { id: "WP05", name: "eft w_pay → hâlâ çalışmalı", input: body("eft", lazerWaitingPayment()), expect: { payment_method: "eft_havale" } },
+
+  // Sipariş Oluştur Keyword
+  { id: "SO01", name: "sipariş oluştur → order_start", input: body("sipariş oluştur"), expectReplyIncludes: "hangi" },
+  { id: "SO02", name: "fiyat alabilir miyim → order_start", input: body("fiyat alabilir miyim"), expectReplyIncludes: "hangi" },
+  { id: "SO03", name: "bir ürünün fiyatını kontrol edebilir misiniz → tanınmalı", input: body("bir ürünün fiyatını kontrol edebilir misiniz"), expectReplyIncludes: "hangi" },
+
+  // ═══ SERTLEŞTİRME REGRESSION TESTLERİ ═══
+
+  // Slot overwrite: ödeme değişimi
+  { id: "HN01", name: "EFT→kapıda overwrite", input: body("kapıda ödeme olsun", lazer({ photo_received: "1", back_text_status: "skipped", conversation_stage: "waiting_address", payment_method: "eft_havale" })), expect: { payment_method: "kapida_odeme" } },
+
+  // Tek isim w_address tanınmalı
+  { id: "HN02", name: "Fatma w_addr → name_only", input: body("Fatma", lazerWaitingAddress()), expectReplyNotIncludes: "ekibimize iletiyorum" },
+  { id: "HN03", name: "Hatice w_addr → name_only", input: body("Hatice", lazerWaitingAddress()), expectReplyNotIncludes: "ekibimize iletiyorum" },
+  { id: "HN04", name: "Emine w_addr → name_only", input: body("Emine", lazerWaitingAddress()), expectReplyNotIncludes: "ekibimize iletiyorum" },
+  { id: "HN05", name: "Tamer w_addr → name_only", input: body("Tamer", lazerWaitingAddress()), expectReplyNotIncludes: "ekibimize iletiyorum" },
+
+  // İsim w_back_text → arka yazı olarak kaydedilmeli
+  { id: "HN06", name: "Fatma w_back → arka yazı", input: body("Fatma", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "received" } },
+  { id: "HN07", name: "Ayşe Nur w_back → arka yazı", input: body("Ayşe Nur", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "received" } },
+
+  // İsim w_photo → isim olarak tanınmalı (catch-all name detection)
+  { id: "HN08", name: "Fatma Yılmaz w_photo → bilgi aldım", input: body("Fatma Yılmaz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "bilgilerinizi" },
+  { id: "HN09", name: "Ali Veli w_photo → bilgi aldım", input: body("Ali Veli", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "bilgilerinizi" },
+
+  // Short confirm exact-match safety: isimler onay sanılmamalı
+  { id: "HN10", name: "Fatma w_photo fallback olmamalı", input: body("Fatma", lazer({ conversation_stage: "waiting_photo" })), expectReplyNotIncludes: "ekibimize iletiyorum" },
+  { id: "HN11", name: "Emine w_photo fallback olmamalı", input: body("Emine", lazer({ conversation_stage: "waiting_photo" })), expectReplyNotIncludes: "ekibimize iletiyorum" },
+
+  // Kısa onaylar hâlâ çalışıyor
+  { id: "HN12", name: "tm w_photo → fotoğraf iste", input: body("tm", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "foto" },
+  { id: "HN13", name: "evet w_photo → fotoğraf iste", input: body("evet", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "foto" },
+  { id: "HN14", name: "Bu w_photo → fotoğraf iste", input: body("Bu", lazer({ conversation_stage: "waiting_photo" })), expectReplyNotIncludes: "ekibimize iletiyorum" },
+  { id: "HN15", name: "olur w_photo → fotoğraf iste", input: body("olur", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "foto" },
+
+  // w_payment onay tekrar sorma
+  { id: "HN16", name: "evet w_pay → tercih sorusu", input: body("evet", lazerWaitingPayment()), expectReplyIncludes: "tercih" },
+  { id: "HN17", name: "tamam w_pay → tekrar sormaz", input: body("tamam", lazerWaitingPayment()), expectReplyNotIncludes: "eft / havale mi" },
+
+  // State consistency guard
+  { id: "HN18", name: "photo=1 stage=w_photo → düzeltilmeli", input: body("çelik mi", { ilgilenilen_urun: "lazer", user_product: "lazer", conversation_stage: "waiting_photo", photo_received: "1", context_lock: "1", order_status: "started", menu_gosterildi: "evet" }), expectReplyIncludes: "14 ayar" },
+  { id: "HN19", name: "pay=eft stage=w_pay → w_addr düzeltilmeli", input: body("İstanbul Kadıköy Moda Mah No:5", { ilgilenilen_urun: "lazer", user_product: "lazer", conversation_stage: "waiting_payment", photo_received: "1", back_text_status: "skipped", payment_method: "eft_havale", context_lock: "1", order_status: "started" }), expect: { address_status: "address_only" } },
+
+  // Ödeme+Adres tek mesajda sipariş tamamlanmalı
+  { id: "HN20", name: "ödeme+adres tek mesaj → tamamlandı", input: body("kapıda ödeme, Fatma Yılmaz 05551234567 İstanbul Kadıköy Moda Mah No:5", lazerWaitingPayment()), expect: { order_status: "completed", payment_method: "kapida_odeme" } },
+
+  // Completed'da yan sorular çalışmalı
+  { id: "HN21", name: "aksesuar completed → pembe", input: body("aksesuar var mı", lazerCompleted()), expectReplyIncludes: "pembe" },
+  { id: "HN22", name: "erkek completed → erkek", input: body("erkek için uygun mu", lazerCompleted()), expectReplyIncludes: "erkek" },
+  { id: "HN23", name: "renk completed → kaplama", input: body("renk seçenekleri neler", lazerCompleted()), expectReplyIncludes: "kaplama" },
+
+  // Ödeme sonrası sadece eksik bilgi sorsun
+  { id: "HN24", name: "kapıda+tel var → sadece adres sor", input: body("kapıda ödeme", lazer({ photo_received: "1", back_text_status: "skipped", conversation_stage: "waiting_payment", phone_received: "1", order_status: "started" })), expectReplyNotIncludes: "cep telefonu" },
+
+  // ═══ P2 REGRESSION TESTLERİ ═══
+
+  // Phone correction mode
+  { id: "P2_01", name: "phone correction → overwrite", input: body("numaram yanlış doğrusu 05559999999", lazerWaitingAddress({ phone_received: "1", address_status: "address_only" })), expect: { phone_received: "1" } },
+  { id: "P2_02", name: "phone no correction → korunsun", input: body("05559999999", lazerWaitingAddress({ phone_received: "1", address_status: "address_only" })), expect: { phone_received: "1" } },
+
+  // Low-confidence safe reply
+  { id: "P2_03", name: "soru w_photo → seller'a gitmesin", input: body("Bu kolye için özel kutu var mı acaba?", lazer({ conversation_stage: "waiting_photo" })), expectReplyNotIncludes: "ekibimize iletiyorum" },
+  { id: "P2_04", name: "soru w_payment → soft ödeme", input: body("Hediye olacak güzel paketler misiniz acaba", lazerWaitingPayment()), expectReplyNotIncludes: "ekibimize iletiyorum" },
+
+  // Smart missing info in w_address
+  { id: "P2_05", name: "addr+no_phone → sadece tel sor", input: body("başka sorum yok", lazerWaitingAddress({ address_status: "address_only" })), expectReplyIncludes: "telefon" },
+  { id: "P2_06", name: "phone+no_addr → sadece adres sor", input: body("tamam anladım", lazerWaitingAddress({ phone_received: "1" })), expectReplyIncludes: "adres" },
+
+  // Stage freeze
+  { id: "P2_07", name: "güzel w_pay → stage korunsun", input: body("güzel çok beğendim", lazerWaitingPayment()), expect: { conversation_stage: "waiting_payment" } },
+  { id: "P2_08", name: "harika w_addr → stage korunsun", input: body("harika süper", lazerWaitingAddress()), expect: { conversation_stage: "waiting_address" } },
+
+  // ═══ ANTI-REPEAT GUARD TESTLERİ ═══
+  // Dolu slot tekrar sorulmamalı
+
+  // Foto zaten alındıysa tekrar fotoğraf isteme
+  { id: "AR01", name: "foto var → foto isteme", input: body("selam", lazer({ conversation_stage: "waiting_back_text", photo_received: "1" })), expectReplyNotIncludes: "fotoğrafınızı buradan iletebilirsiniz" },
+
+  // Arka yazı zaten alındıysa tekrar sorma
+  { id: "AR02", name: "back_text var → arka yazı sorma", input: body("selam", lazer({ conversation_stage: "waiting_payment", photo_received: "1", back_text_status: "received" })), expectReplyNotIncludes: "arka yüze yazı eklemek" },
+  { id: "AR03", name: "back_text skipped → arka yazı sorma", input: body("peki", lazer({ conversation_stage: "waiting_payment", photo_received: "1", back_text_status: "skipped" })), expectReplyNotIncludes: "arka yüze yazı eklemek" },
+
+  // Ödeme zaten seçildiyse tekrar EFT/kapıda sorma
+  { id: "AR04", name: "payment var → ödeme sorma", input: body("tamam", lazer({ conversation_stage: "waiting_address", photo_received: "1", back_text_status: "skipped", payment_method: "eft_havale" })), expectReplyNotIncludes: "hangisini tercih" },
+
+  // Telefon zaten alındıysa tekrar telefon isteme
+  { id: "AR05", name: "phone var → tel isteme", input: body("peki", lazer({ conversation_stage: "waiting_address", photo_received: "1", back_text_status: "skipped", payment_method: "eft_havale", phone_received: "1" })), expectReplyNotIncludes: "cep telefonu" },
+
+  // Adres zaten alındıysa tekrar adres isteme
+  { id: "AR06", name: "addr received → adres isteme", input: body("tamam", lazer({ conversation_stage: "waiting_address", photo_received: "1", back_text_status: "skipped", payment_method: "eft_havale", address_status: "received", phone_received: "1" })), expectReplyNotIncludes: "adresinizi iletebilir" },
+
+  // Hepsi doluyken hiçbirini sorma
+  { id: "AR07", name: "hepsi dolu → tekrar yok", input: body("tamam", lazerCompleted()), expectReplyNotIncludes: "iletebilir misiniz" },
 ];
 
 async function runTests() {

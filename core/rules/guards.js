@@ -16,8 +16,16 @@ export function guards(ctx, state, nextStage) {
 
     // Pass-through intents (rule chain'e bırak)
     if ([INTENT.CANCEL, INTENT.NEW_ORDER, INTENT.ORDER_START].includes(intent)) return null;
-    if (["trust","material_question","price","location","chain_question","shipping_price","payment_info_question","photo_sent_confirmation"].includes(intent)) return null;
+    if (["trust","material_question","price","location","chain_question","shipping_price","payment_info_question","photo_sent_confirmation","back_text_info","back_photo_info","back_photo_price","back_text_examples"].includes(intent)) return null;
     if (intent === INTENT.PAYMENT) return null; // post-completion payment handler'a
+
+    // Pre-handler patterns: completed'da da cevap verilmeli (bilgi soruları)
+    if (hasAny(norm, ["aksesuar","pembe kalp","nazar boncugu","nazar boncuğu","kalp var mi","kalp var mı"])) return null;
+    if (hasAny(norm, ["erkek icin","erkek için","erkek uygun","babam icin","babam için"])) return null;
+    if (hasAny(norm, ["renk secenek","renk seceneg","hangi renk","ne renk var","kac renk","kaç renk"])) return null;
+    if (hasAny(norm, ["birlestir","birleştir","birlestirme","birleştirme","tek yuze","tek yüze"])) return null;
+    // İade completed'da → seller'a (müşteri gerçekten iade istiyor olabilir)
+    // Adres değişimi completed'da → seller'a
 
     // Ürün keyword → yeni sipariş yönlendir
     if (hasAny(norm, ["resimli","lazer","atac","ataç","harfli"])) {
@@ -53,9 +61,19 @@ export function guards(ctx, state, nextStage) {
       return OP("Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊");
     }
 
-    // Kısa onay
+    // Kısa onay + "verdim ya" pattern
     if (norm.length < 20 && (hasAny(norm, ["tamam","olur","peki","tamamdir","anladim","anladım","evet","tm","tmm","ok","dogru","doğru"]) || raw.length <= 8)) {
       return R("Tabi efendim 😊", REPLY_CLASS.FIXED_INFO);
+    }
+
+    // "Verdim ya" / "Yazdım yukarıda" → sipariş tamamlandıysa onay ver
+    if (hasAny(norm, ["verdim","verdim ya","yazdim","yazdım","yukarida","yukarıda","gonderdim","gönderdim","zaten verdim","bilgi verdim","hepsini verdim","soyledim","söyledim","belirttim"])) {
+      return R("Bilgileriniz alınmıştır efendim 😊 Siparişiniz ekibimize iletilmiştir, en kısa sürede hazırlanacaktır.", REPLY_CLASS.FIXED_INFO);
+    }
+
+    // "Siparişim alındı mı" / "Sipariş tamam mı" → onay ver
+    if (hasAny(norm, ["siparis alindi mi","siparişim alındı mı","siparis alindi","siparişim alındı","siparis tamam mi","siparişim tamam mı","siparis onaylandi","siparişim onaylandı","siparisim","siparişim"])) {
+      return R("Evet efendim, siparişiniz alınmıştır 😊 Ekibimiz en kısa sürede ürününüzü hazırlayacaktır.", REPLY_CLASS.FIXED_INFO);
     }
 
     // Bekliyorum

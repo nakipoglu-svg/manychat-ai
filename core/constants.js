@@ -79,7 +79,7 @@ export const TEXT = {
 
   ORDER_DETAILS: "📌 Sipariş için lütfen şu 3 bilgiyi mümkünse tek mesajda paylaşın:\n\n👤 Ad soyad\n📱 Cep telefonu\n📍 Açık adres",
 
-  SHIPPING_TIME: "Kargo süremiz İstanbul için genelde 1-2 iş günü, diğer iller için 2-3 iş günü civarındadır efendim 😊",
+  SHIPPING_TIME: "Siparişler 1 gün içinde hazırlanıp PTT Kargo'ya verilir efendim 😊 İstanbul içi 1-2 iş günü, İstanbul dışı 2-3 iş günü içinde teslim edilir. Kargoya verildiğinde size otomatik SMS gelecektir 📦",
 
   WHATSAPP: "WhatsApp iletişim numaramız: 0534 073 60 09 😊",
 };
@@ -260,6 +260,9 @@ export const KW = {
     "yuvarlak plaka", "yuvarlak bolum", "yuvarlak bölüm",
     "cerceve boyut", "çerçeve boyut", "madalyon boyut",
     "olcusu nedir", "ölçüsü nedir", "olcusu ne", "ölçüsü ne",
+    "zincir kisalt", "zincir kısalt", "kisaltma", "kısaltma", "kisaltilabilir", "kısaltılabilir", "kisaltabilir", "kısaltabilir",
+    "zincir uzat", "uzatma", "uzatilabilir", "uzatılabilir", "uzatabilir", "daha uzun zincir",
+    "70 cm", "70cm",
   ],
 
   order_start: [
@@ -276,6 +279,14 @@ export const KW = {
     "bende yaptirmak istiyorum", "ben de yaptırmak istiyorum",
     "satin alabilir miyim", "satın alabilir miyim",
     "urun satin alabilir miyim", "ürün satın alabilir miyim",
+    "siparis olustur", "sipariş oluştur",
+    "siparis olusturmak", "sipariş oluşturmak",
+    "siparis basla", "sipariş başla",
+    "bir urunun fiyatini kontrol edebilir misiniz", "bir ürünün fiyatını kontrol edebilir misiniz",
+    "fiyat alabilirmiyim", "fiyat alabilir miyim",
+    "fiyat bilgisi alabilir miyim",
+    "fiyat ogrenebilir miyim", "fiyat öğrenebilir miyim",
+    "fiyatini ogrenebilir miyim", "fiyatını öğrenebilir miyim",
   ],
 
   photo_question: [
@@ -297,6 +308,13 @@ export const KW = {
     "vesikalik mi", "vesikalık mı", "vesikalik olmali mi", "vesikalık olmalı mı",
     "nasil bir fotograf", "nasıl bir fotoğraf", "ne tur fotograf", "ne tür fotoğraf",
     "hangi fotograf", "ne cesit", "ne çeşit", "selfie mi",
+    "fotograf nasil olmali", "fotoğraf nasıl olmalı", "foto nasil olmali", "foto nasıl olmalı",
+    "fotograf nasil olsun", "fotoğraf nasıl olsun", "foto nasil olsun", "foto nasıl olsun",
+    "fotografi nasil gonderecegiz", "fotoğrafı nasıl göndereceğiz",
+    "nasil bir resim", "nasıl bir resim", "fotograf nasil olacak", "fotoğraf nasıl olacak",
+    "bu olur mu", "bu olurmu", "bu foto olur mu", "bu fotograf olur mu",
+    "resimleri buradan mi atiyorum", "resmi buradan mi gondericez",
+    "tekli fotograf mi", "tekli mi olmali",
   ],
 
   back_photo_price: [
@@ -319,6 +337,16 @@ export const KW = {
     "arka tarafa yazi oluyor mu", "arka tarafa yazi olur mu",
     "dua yazilir mi", "dua yazılır mı",
     "isim yazilir mi", "isim yazılır mı",
+    "ne yazabiliriz arkasina", "ne yazabiliriz arkasına",
+    "arkasina ne yazabiliriz", "arkasına ne yazabiliriz",
+    "arkasina ne yazilir", "arkasına ne yazılır",
+    "arkaya ne yazabiliriz", "arkaya ne yazılır",
+    "ne yaziliyor genelde", "ne yazılıyor genelde",
+    "genelde ne yaziliyor", "genelde ne yazılıyor",
+    "arkasina ne yazdirabilir", "arkasına ne yazdırabilir",
+    "arkasina ne yazalim", "arkasına ne yazalım",
+    "o zaman arkasina", "o zaman arkasına",
+    "arka yazi ne olsun", "arka yazı ne olsun",
   ],
 
   back_photo_info: [

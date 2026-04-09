@@ -10,29 +10,38 @@ export function sideQuestions(ctx, state) {
   const { intent, norm } = ctx;
   const ap = state.product || ctx.fields.ilgilenilen_urun || ctx.fields.user_product || ctx.product || "";
 
-  if (intent === INTENT.LOCATION) return R("Eminönü İstanbul'dayız 😊");
+  if (intent === INTENT.LOCATION) return R("İstanbul Eminönü'ndeyiz efendim 😊 Satışlarımız online üzerinden yapılmaktadır, Türkiye'nin her yerine kargo ile gönderim yapıyoruz.");
   if (intent === INTENT.SHIPPING_PRICE) return R("Kargo ücreti fiyata dahildir efendim 😊 Ekstra bir ücret ödemezsiniz.");
 
   if (intent === INTENT.SHIPPING) {
     if (hasAny(norm, ["kargom nerede","takip no","takip numarasi","takip numarası","kargoya verildi mi","yola cikti mi","yola çıktı mı","kargom gelmedi","urun gelmedi","ürün gelmedi","kargo numarasi","kargo numarası"])) return OP(TEXT.FALLBACK);
+    if (hasAny(norm, ["kargo takip","nasil takip","nasıl takip","takip edebilir"])) return R("Ürününüz kargoya verildiğinde size SMS ile takip numarası gönderilecektir efendim 😊 PTT'nin resmi sitesinden takip edebilirsiniz.");
     if (hasAny(norm, ["hangi kargo","kargo firmasi","kargo şirketi"])) return R("PTT Kargo ile gönderim yapıyoruz efendim 😊");
-    if (hasAny(norm, ["kargo parasi","kargo parasI","kargo var mi"])) return R("Kargo ücreti fiyata dahildir efendim 😊 Ekstra bir ücret ödemezsiniz.");
-    if (hasAny(norm, ["ptt kargo","ptt ile","ptt gonderim","ptt gönderi"])) return R("Evet efendim, PTT Kargo ile gönderim yapıyoruz 😊");
+    if (hasAny(norm, ["aras kargo","aras ile","aras gonder","farkli kargo","farklı kargo","baska kargo","başka kargo"])) {
+      if (hasAny(norm, ["kapida","kapıda"])) return R("Kapıda ödeme siparişlerinde yalnızca PTT Kargo ile gönderim yapılmaktadır efendim 😊 Aras Kargo seçeneği EFT/Havale siparişlerinde geçerlidir.");
+      return R("EFT / Havale ile ödeme yaparsanız Aras Kargo ile gönderebiliriz, +25 TL fark ile efendim 😊 Kapıda ödeme siparişlerinde yalnızca PTT Kargo geçerlidir.");
+    }
+    if (hasAny(norm, ["ptt yavas","ptt yavaş","kargo yavas","kargo yavaş"])) return R("PTT Kargo ile gönderim yapıyoruz efendim 😊 İstanbul içi 1-2, İstanbul dışı 2-3 iş günü içinde teslim edilir.");
+    if (hasAny(norm, ["kargo parasi","kargo parasI","kargo var mi"])) return R("Kargo ücretsizdir efendim 😊 Ekstra bir ücret ödemezsiniz.");
+    if (hasAny(norm, ["ptt kargo","ptt ile","ptt gonderim","ptt gönderi"])) return R("Evet efendim, PTT Kargo ile gönderim yapıyoruz 😊 Kargoya verildiğinde size otomatik SMS gelecektir.");
+    if (hasAny(norm, ["sms","mesaj gelir mi","mesaj gelirmi","bilgi gelir mi","bilgi gelirmi","haber verir mi"])) return R("Ürününüz kargoya verildiğinde size SMS gelecektir, ayrıca şubenize ulaştığında da bir SMS daha alacaksınız efendim 😊");
     return R(TEXT.SHIPPING_TIME);
   }
 
   if (intent === INTENT.MATERIAL) {
-    if (hasAny(norm, ["alerji","alerjim","alerjik"])) return R("Paslanmaz çelikten üretilmektedir efendim 😊 Kararma, solma yapmaz. Alerji konusunda da risk oluşturacak bir malzeme kullanmıyoruz.");
-    if (hasAny(norm, ["gumus mu","gümüş mü","gumusmu","gümüşmü","gumus mudur","gümüş müdür","kolye gumus","kolye gümüş","urun gumus","ürün gümüş"])) return R("Ürünlerimiz paslanmaz çelikten üretilmektedir efendim 😊 Gümüş kaplama modelimiz de bulunmaktadır. Kararma, solma yapmaz.");
-    return R("Evet efendim, paslanmaz çelikten üretiliyor 😊 Kararma, solma veya paslanma yapmaz.");
+    if (hasAny(norm, ["alerji","alerjim","alerjik"])) return R("14 ayar altın kaplama paslanmaz çeliktir efendim 😊 Kararma, solma yapmaz. Alerji konusunda da risk oluşturacak bir malzeme kullanmıyoruz.");
+    if (hasAny(norm, ["gumus mu","gümüş mü","gumusmu","gümüşmü","gumus mudur","gümüş müdür","kolye gumus","kolye gümüş","urun gumus","ürün gümüş"])) return R("Ürünlerimiz paslanmaz çelikten üretilmektedir efendim 😊 Altın kaplama ve gümüş kaplama modelimiz bulunmaktadır. Kararma, solma yapmaz.");
+    if (hasAny(norm, ["altin mi","altın mı","altinmi","altınmı"])) return R("14 ayar altın kaplama paslanmaz çeliktir efendim 😊 Kararma, solma yapmaz.");
+    if (hasAny(norm, ["suya dayanikli","dusta","duşta","deniz","havuz"])) return R("Denizde, havuzda veya duşta gönül rahatlığıyla kullanabilirsiniz efendim 😊 Uzun ömürlü ve dayanıklıdır.");
+    return R("14 ayar altın kaplama paslanmaz çeliktir efendim 😊 Kararma, solma yapmaz.");
   }
 
   if (intent === INTENT.TRUST) {
-    if (hasAny(norm, ["kaplama","kaplamasi atar","kaplaması atar"])) return R("Kaplama atmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.");
-    if (hasAny(norm, ["paslanmaz demi","paslanmaz demı","paslanmaz mi","paslanmaz mı"])) return R("Evet efendim, paslanmaz çelik 😊 Kararma, solma veya paslanma yapmaz.");
-    if (hasAny(norm, ["kararma","kararir","solar","solma","paslan","karar ma","soluyor","renk bozul","karariyormu","kararıyormu","kararirmi","kararırmi","karaa","renk atma","renk atar","renk atması","silinme","resim silin","rengi gidiyor","rengi gider","rengi aciyor","rengi açıyor"])) return R("Kararma, solma veya paslanma yapmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.");
-    if (hasAny(norm, ["suya dayanikli","dusta","duşta","deniz","ter "])) return R("Evet efendim, suya dayanıklıdır 😊 Duş, deniz, ter gibi durumlarda rahatlıkla kullanabilirsiniz.");
-    if (norm.includes("garanti")) return R("Kararma, solma veya kaplama kaynaklı bir durumda destek sağlıyoruz efendim 😊");
+    if (hasAny(norm, ["kaplama","kaplamasi atar","kaplaması atar"])) return R("14 ayar altın kaplama çeliktir, kaplama atmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.");
+    if (hasAny(norm, ["paslanmaz demi","paslanmaz demı","paslanmaz mi","paslanmaz mı"])) return R("Evet efendim, 14 ayar altın kaplama paslanmaz çeliktir 😊 Kararma, solma veya paslanma yapmaz.");
+    if (hasAny(norm, ["kararma","kararir","solar","solma","paslan","karar ma","soluyor","renk bozul","karariyormu","kararıyormu","kararirmi","kararırmi","karaa","renk atma","renk atar","renk atması","silinme","resim silin","rengi gidiyor","rengi gider","rengi aciyor","rengi açıyor"])) return R("14 ayar altın kaplama çeliktir, kararma solma yapmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.");
+    if (hasAny(norm, ["suya dayanikli","dusta","duşta","deniz","ter ","havuz"])) return R("Denizde, havuzda veya duşta gönül rahatlığıyla kullanabilirsiniz efendim 😊 Uzun ömürlü ve dayanıklıdır.");
+    if (norm.includes("garanti")) return R("Garanti veriyoruz efendim 😊 Kararma, solma veya kaplama kaynaklı bir durumda ürün değişimi sağlıyoruz.");
     return R("Güvenle sipariş verebilirsiniz efendim 😊");
   }
 
@@ -66,8 +75,10 @@ export function sideQuestions(ctx, state) {
   if (intent === INTENT.CHAIN) {
     if (hasAny(norm, ["boyutu ne kadar","plaka boyut","plaka kac cm","plaka olcu","plaka ölçü","plakanin olcu","plakanın ölçü","yuvarlak plaka","yuvarlak bolum","yuvarlak bölüm","yuvarlak kism","yuvarlak kısm","cerceve boyut","çerçeve boyut","madalyon boyut","olcusu nedir","ölçüsü nedir","olcusu ne","ölçüsü ne"])) return R("Ürün plaka boyutu 3 cm'dir efendim 😊");
     if (hasAny(norm, ["zincir dahil","zincir dayil"])) return R("Evet efendim, zincir dahildir 😊");
+    if (hasAny(norm, ["kisalt","kısalt","kisalir","kısalır","kisaltma","kısaltma"])) return R("Zinciri kısaltma seçeneği bulunmamaktadır efendim 😊");
+    if (hasAny(norm, ["uzat","uzatma","uzatilir","uzatılır","uzatabilir","70 cm","70cm","daha uzun"])) return R("Zinciri 70 cm'ye kadar uzatabiliyoruz efendim 😊 Uzatma için +50 TL ek ücret alınmaktadır.");
     if (ap === PRODUCT.LAZER) {
-      if (hasAny(norm, ["zincir boyu","zincir uzunlugu","zincir uzunluğu","uzunlugu ne kadar","uzunluğu ne kadar","uzunlugu nekadar","uzunluğu nekadar","zincir kac cm","zincir kaç cm","zincir kisalir","zincir kısalır","boyu ne kadar","kac santim","kaç santım","kac santım","kolye boyu","kac cm","kaç cm","zincir ne kadar","zincirin boyu","zincirin uzunlugu","zincirin uzunluğu"])) return R("Zincir fiyata dahildir, uzunluğu standart olarak 60 cm'dir efendim 😊");
+      if (hasAny(norm, ["zincir boyu","zincir uzunlugu","zincir uzunluğu","uzunlugu ne kadar","uzunluğu ne kadar","uzunlugu nekadar","uzunluğu nekadar","zincir kac cm","zincir kaç cm","zincir kisalir","zincir kısalır","boyu ne kadar","kac santim","kaç santım","kac santım","kolye boyu","kac cm","kaç cm","zincir ne kadar","zincirin boyu","zincirin uzunlugu","zincirin uzunluğu"])) return R("Zincir fiyata dahildir, uzunluğu standart olarak 60 cm'dir efendim 😊 İsterseniz 70 cm'ye kadar uzatılabilir (+50 TL).");
       return SEL("Zincir modeliyle ilgili detay için ekibimize görsel üzerinden net bilgi verelim 😊");
     }
     if (ap === PRODUCT.ATAC) {
@@ -101,7 +112,7 @@ export function sideQuestions(ctx, state) {
   if (intent === INTENT.BACK_TEXT && state.conversation_stage !== STAGE.WAITING_BACK_TEXT) {
     return R("Evet efendim 😊 Resimli lazer kolyede arka yüzüne yazı veya istenirse ikinci bir fotoğraf eklenebiliyor.");
   }
-  if (intent === INTENT.PAYMENT_INFO) return R("Kapıda ödeme ile ürün elinize ulaştığında kurye ye nakit olarak ödeme yaparsınız efendim 😊 Kredi kartı geçerli değildir, sadece nakit.");
+  if (intent === INTENT.PAYMENT_INFO) return R("Kapıda ödeme ile ürün elinize ulaştığında kurye ye nakit olarak ödeme yaparsınız efendim 😊 Kapıda ödemede sadece nakit geçerlidir, kredi kartı kullanılamamaktadır.");
   if (intent === INTENT.PHOTO_SENT_CONFIRM) return R("Fotoğrafınız ulaştı efendim, ekibimiz kontrol edip dönüş sağlayacaktır 😊", REPLY_CLASS.FLOW_PROGRESS);
 
   return null;

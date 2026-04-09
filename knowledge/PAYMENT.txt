@@ -66,7 +66,10 @@ KAPIDA ÖDEME
 Sipariş teslim edilirken ödeme yapılır.
 Kapıda ödeme fiyatı, EFT fiyatından farklıdır.
 Kapıda ödemede ön ödeme istenmez.
+Kapıda ödemede SADECE NAKİT ödeme geçerlidir. PTT sadece nakitle çalışmaktadır.
+Kredi kartı veya banka kartı ile kapıda ödeme yapılamamaktadır.
 Müşteri kapıda ödeme istiyorsa banka / havale cümlesine kayma.
+Müşteri kapıda ödeme sorduğunda her zaman "sadece nakit" bilgisi belirtilmelidir.
 
 KAPIDA ÖDEME VAR MI SORUSUNDA FİYAT KURALI
 Müşteri "kapıda ödeme var mı" diye sorarsa ve ürün bağlamı netse sadece seçenek var demekle yetinme.

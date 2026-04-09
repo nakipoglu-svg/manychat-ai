@@ -11,6 +11,17 @@ export function preHandlers(ctx, state, nextStage) {
   const raw = String(message || "").trim();
   const stage = state.conversation_stage || "";
 
+  // ═══ ARKA YAZI TALEBİ (her stage'de) ═══
+  // Müşteri "arkasına X yazın" diyorsa → not al, akışı devam ettir
+  // AMA: soru cümlelerini hariç tut ("arkasına yazı olur mu" = bilgi sorusu)
+  const isBackTextQuestion = hasAny(norm, ["olur mu","olurmu","oluyor mu","yazilir mi","yazılır mı","yapilir mi","yapılır mı","ne yazalim","ne yazılır","ne yazılıyor","genelde"]);
+  if (hasAny(norm, ["arkasina","arkasına","arkaya","arka kisma","arka kısma","arka tarafina","arka tarafına"]) && hasAny(norm, ["yaz","yazalim","yazılsın","yazsın","ekle"]) && !isBackTextQuestion) {
+    const extra = stage === STAGE.WAITING_PAYMENT ? " Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim?" :
+                  stage === STAGE.WAITING_ADDRESS ? " Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz?" :
+                  stage === STAGE.WAITING_PHOTO ? " Fotoğrafınızı buradan iletebilirsiniz." : "";
+    return FP("Arka yazı notunuzu aldım efendim 😊" + extra);
+  }
+
   // Fiyat pazarlık
   if (/\d+\s*(tl|lira)/i.test(raw) && hasAny(norm, ["olur mu","olurmu","yapar misiniz","yaparmisiniz","yap","son fiyat","indirim"])) {
     return R("Fiyatlarımız sabit olup değişiklik yapılamamaktadır efendim 😊");
@@ -36,15 +47,57 @@ export function preHandlers(ctx, state, nextStage) {
     return OP("Tabi efendim, ekibimiz kontrol edip size dönüş sağlayacaktır 😊");
   }
 
-  // Çoklu foto
+  // Çoklu foto / birleştirme (Fix #15)
   if (hasAny(norm, ["kac resim","kaç resim","kac foto","kaç foto","3 resim","uc resim","üç resim","3 foto","3 lu","3 lü","uclu","üçlü","4 lu","4 lü","5 li","5 kisi","5 kişi","tek kolyeye uc","tek kolyeye üç","tek yuze","tek yüze","ayni karede","aynı karede","birlestirip","birleştirip","birlestirme","birleştirme","birlestir","birleştir","ayri ayri yollasak","ayrı ayrı yollasak","ayri ayri atsak","ayrı ayrı atsak"])) {
     if (hasAny(norm, ["ornek","örnek"])) return R("Tabi efendim, ekibimiz size örnek görselleri gönderecektir 😊", REPLY_CLASS.SELLER_REQUIRED, SUPPORT_REASON.SELLER);
-    return R("Evet efendim, tek yüze birden fazla fotoğraf koyabiliyoruz 😊 Fotoğrafları buradan gönderebilirsiniz, ekibimiz düzenleyecektir.");
+    const extra = stage === STAGE.WAITING_PHOTO ? " Fotoğrafları buradan gönderebilirsiniz, ekibimiz düzenleyecektir." :
+                  stage === STAGE.WAITING_PAYMENT ? " Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim?" :
+                  stage === STAGE.WAITING_ADDRESS ? " Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz?" : "";
+    return FP("Evet efendim, tek yüze birden fazla fotoğraf koyabiliyoruz 😊 Profesyonelce birleştirip tek tasarım haline getiriyoruz." + extra);
+  }
+
+  // Özel tasarım talepleri — sonsuzluk, kalp, yıldız, ay vb.
+  // Bunları kabul et, not al, akışı devam ettir (seller'a atma)
+  if (hasAny(norm, ["sonsuzluk isareti","sonsuzluk işareti","sonsuzluk","infinity","kalp isareti","kalp işareti","kalp ekle","yildiz isareti","yıldız işareti","yildiz ekle","yıldız ekle","ay yildiz","ay yıldız","kelebek","melek","pati","kuyruklu yildiz"])) {
+    const extra = stage === STAGE.WAITING_PHOTO ? " Fotoğrafı buradan gönderebilirsiniz efendim." :
+                  stage === STAGE.WAITING_BACK_TEXT ? "" :
+                  stage === STAGE.WAITING_PAYMENT ? " Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim?" :
+                  stage === STAGE.WAITING_ADDRESS ? " Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz?" : "";
+    return FP("Tabi efendim, not aldım 😊 Ekibimiz tasarıma ekleyecektir." + extra);
+  }
+
+  // Farklı zincir modeli → seller'a (bunu bot yapamaz) — sadece lazer'da
+  if (ctx.product !== PRODUCT.ATAC && hasAny(norm, ["farkli zincir","farklı zincir","italyan zincir","kral zincir","gurmet zincir","halat zincir","bismark zincir","zincir model degistir","zincir model değiştir"])) {
+    return R("Zincir modeli ile ilgili detay için ekibimize görsel üzerinden net bilgi verelim 😊", REPLY_CLASS.SELLER_REQUIRED, SUPPORT_REASON.SELLER);
+  }
+
+  // Aksesuar (Fix #6)
+  if (hasAny(norm, ["aksesuar","pembe kalp","siyah kalp","lacivert kalp","nazar boncugu","nazar boncuğu","kalp var mi","kalp var mı","hangi kalp","kalp renk","kalp seceneg","kalp seçeneg"])) {
+    if (hasAny(norm, ["nazar boncugu","nazar boncuğu"]) && !hasAny(norm, ["kalp","aksesuar"])) return R("Nazar boncuğumuz mevcut efendim 😊 Hepsi fiyata dahildir, ek ücret yok.");
+    if (hasAny(norm, ["pembe kalp"]) && !hasAny(norm, ["siyah","lacivert","nazar","aksesuar"])) return R("Pembe kalbimiz mevcut efendim 😊 Hepsi fiyata dahildir.");
+    return R("Pembe kalp, lacivert kalp ve nazar boncuğu seçeneklerimiz mevcut efendim 😊 Hepsi fiyata dahildir, ek ücret yok.");
+  }
+
+  // İade / değişim (Fix #7)
+  if (hasAny(norm, ["iade","degisim","değişim","geri gonder","geri gönder","iade edebilir","iade yapilir","iade yapılır","geri yollayabilir","geri yolla"])) {
+    if (hasAny(norm, ["garanti","kalite","bozuk","kirik","kırık","hatali","hatalı"])) return R("Kalite kaynaklı sorunlarda ürün değişimi sağlıyoruz efendim 😊");
+    return R("Kişiye özel üretildiği için keyfi iade yapılmamaktadır efendim 😊 Fotoğrafın seçimi müşterinin sorumluluğundadır. Kalite kaynaklı sorunlarda ise ürün değiştirilir.");
+  }
+
+  // Renk seçenekleri sorusu (Fix #10)
+  if (hasAny(norm, ["renk secenek","renk seceneg","hangi renk","renk cesit","renk cesid","renkler neler","ne renk var","renk var mi","renk var mı","kac renk","kaç renk"])) {
+    return R("Altın kaplama (gold) ve gümüş kaplama seçeneğimiz mevcut efendim 😊 Ayrıca mat çelik (saf çelik) de bulunmaktadır. Hepsinde fiyat aynıdır.");
+  }
+
+  // Erkek (Fix #16)
+  if (hasAny(norm, ["erkek icin","erkek için","erkek uygun","erkek takabilir","erkek takar","babam icin","babam için","esim icin","eşim için","oglum icin","oğlum için","erkek model"])) {
+    if (hasAny(norm, ["zincir"])) return R("Tabi efendim, erkek için 50 cm gümüş zincirimiz mevcut 😊");
+    return R("Tabi efendim, erkekler için de uygun 😊 Ona göre zincir göndeririz. Gümüş kaplama erkek için önerilmektedir.");
   }
 
   // Gümüş yap / metal
   if (hasAny(norm, ["gumus yap","gümüş yap","gumus model","gümüş model","gumus olsun","gümüş olsun"])) return R("Efendim gümüş kaplama çelik modelimiz bulunmaktadır 😊");
-  if (norm === "metal" || norm === "metali ne" || norm === "malzemesi" || hasAny(norm, ["metal cinsi","metalin cinsi"])) return R("Paslanmaz çelikten üretilmektedir efendim 😊 Kararma, solma yapmaz.");
+  if (norm === "metal" || norm === "metali ne" || norm === "malzemesi" || hasAny(norm, ["metal cinsi","metalin cinsi"])) return R("14 ayar altın kaplama paslanmaz çeliktir efendim 😊 Kararma, solma yapmaz.");
 
   // Yapım süreci / yapay zeka
   if (hasAny(norm, ["yapim asamasi","yapım aşaması","yapim asamaniz","yapım aşamanız","surec nasil","süreç nasıl","nasil yapiliyor","nasıl yapılıyor","yapim sureci","yapım süreci"])) {
@@ -84,9 +137,9 @@ export function preHandlers(ctx, state, nextStage) {
   if (hasAny(norm, ["her yere kargo","her yere gonderim","her yere gönderi","turkiye geneli","türkiye geneli","il disina","il dışına","bana yakin","bana yakın"])) return R("Evet efendim, Türkiye'nin her yerine ücretsiz kargo ile gönderim yapıyoruz 😊");
   if (hasAny(norm, ["arti kargo","artı kargo","ekstra kargo","kargo ayri","kargo ayrı"])) return R("Kargo ücretsizdir, fiyata dahildir efendim 😊");
 
-  // Kargo mesajı
+  // Kargo mesajı / SMS
   if (hasAny(norm, ["kargo mesaj","kargo bilgi","kargo takip"]) && hasAny(norm, ["atar mi","atar mı","atarmi","gelir mi","gelirmi"])) {
-    return R("Kargoya verildiğinde tarafınıza otomatik bilgi mesajı gönderilmektedir efendim 😊");
+    return R("Ürününüz kargoya verildiğinde size SMS gelecektir, ayrıca şubenize ulaştığında da bir SMS daha alacaksınız efendim 😊");
   }
 
   // Ne zaman elimde

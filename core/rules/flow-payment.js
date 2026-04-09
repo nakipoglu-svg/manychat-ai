@@ -12,7 +12,7 @@ export function flowPayment(ctx, state, nextStage) {
 
   // Kredi kartı → nakit uyarısı
   if (hasAny(norm, ["kartla","kart ile","kredi karti","kredi kartı","banka karti","banka kartı"])) {
-    return FI("Kapıda ödeme sadece nakit olarak alınmaktadır efendim 😊 EFT / Havale veya kapıda nakit ödeme ile ilerleyebiliriz.");
+    return FI("Kapıda ödemede sadece nakit geçerlidir efendim 😊 PTT sadece nakitle çalışmaktadır. EFT / Havale veya kapıda nakit ödeme ile ilerleyebiliriz.");
   }
 
   // Dekont / açıklama
@@ -25,10 +25,17 @@ export function flowPayment(ctx, state, nextStage) {
   // Ödeme yaptım
   if (hasAny(norm, ["eft attim","havale yaptim","odeme yaptim","ödeme yaptım"])) return OP("Teşekkür ederiz efendim, ekibimiz kontrol edip size dönüş sağlayacaktır 😊");
 
-  // Post-completion payment
-  if (state.order_status === "completed" || nextStage === STAGE.ORDER_COMPLETED) {
+  // Post-completion payment — sipariş ZATEN tamamlanmış, sonra ödeme soruluyor
+  if (state.order_status === "completed" && nextStage === STAGE.ORDER_COMPLETED) {
     if (hasAny(norm, ["odemeyi yaptim","ödemeyi yaptım","ucretini yollarim","ücretini yollarım"])) return OP("Teşekkür ederiz efendim, ekibimiz kontrol edip size dönüş sağlayacaktır 😊");
     return ({ text: "Ödeme ile ilgili ekibimiz size yardımcı olacaktır efendim 😊", reply_class: REPLY_CLASS.SELLER_REQUIRED, support_mode_reason: SUPPORT_REASON.SELLER });
+  }
+
+  // Sipariş BU MESAJDA tamamlanıyor — adres zaten alınmış, ödeme şimdi geldi
+  if (nextStage === STAGE.ORDER_COMPLETED && state.order_status !== "completed") {
+    if (state.payment_method === "eft_havale") return R(`Siparişiniz tamamlanmıştır efendim 😊 Ekibimiz en kısa sürede ürününüzü üretmeye başlayacaktır.\n\n${TEXT.EFT_INFO}`, REPLY_CLASS.ORDER_COMPLETE);
+    if (state.payment_method === "kapida_odeme") return R("Siparişiniz tamamlanmıştır efendim 😊 Kapıda ödeme ile gönderilecektir. Ekibimiz en kısa sürede ürününüzü üretmeye başlayacaktır.", REPLY_CLASS.ORDER_COMPLETE);
+    return R("Siparişiniz tamamlanmıştır efendim 😊 Ekibimiz en kısa sürede ürününüzü üretmeye başlayacaktır.", REPLY_CLASS.ORDER_COMPLETE);
   }
 
   // Ürün yok → menü
@@ -55,8 +62,23 @@ export function flowPayment(ctx, state, nextStage) {
 
   // Normal akış — adres henüz alınmadı
   if (state.address_status !== "received") {
-    if (state.payment_method === "eft_havale") return R(`EFT / Havale için ödeme bilgilerimiz şu şekildedir 😊\n\n${TEXT.EFT_INFO}\n\n${TEXT.ORDER_DETAILS}`);
-    if (state.payment_method === "kapida_odeme") return R(`Kapıda ödeme ile ilerleyebiliriz efendim 😊\n\n${TEXT.ORDER_DETAILS}`);
+    // Hangi bilgiler eksik?
+    const hasPhone = state.phone_received === "1";
+    const hasAddr = state.address_status === "address_only";
+    
+    let missingParts = [];
+    if (!hasPhone) missingParts.push("📱 Cep telefonu");
+    if (!hasAddr) missingParts.push("📍 Açık adres");
+    
+    // Sadece açık adres eksikse kısa sor
+    const addressPrompt = missingParts.length === 0
+      ? "" // Her şey var (isim+tel+addr) → bu noktaya düşmemeli
+      : missingParts.length === 1
+        ? "\n\n📌 " + missingParts[0] + " bilginizi iletebilir misiniz efendim?"
+        : "\n\n📌 Sipariş için lütfen şu bilgileri iletebilir misiniz?\n\n👤 Ad soyad\n" + missingParts.join("\n");
+    
+    if (state.payment_method === "eft_havale") return R(`EFT / Havale için ödeme bilgilerimiz şu şekildedir 😊\n\n${TEXT.EFT_INFO}${addressPrompt}`);
+    if (state.payment_method === "kapida_odeme") return R(`Kapıda ödeme ile ilerleyebiliriz efendim 😊${addressPrompt}`);
   }
 
   // Adres zaten alınmış
