@@ -104,6 +104,12 @@ export function guards(ctx, state, nextStage) {
     if (/\d+\s*(tl|lira)/i.test(raw) && hasAny(norm, ["dimi","di mi","degil mi","değil mi"])) return null;
     if (hasAny(norm, ["yapim asamasi","yapım aşaması","surec nasil","süreç nasıl"])) return null;
 
+    // Smalltalk / selamlama / kısa soru → AI'ye bırak (doğal cevap versin)
+    if (intent === INTENT.SMALLTALK) return null;
+    if (hasAny(norm, ["nasilsiniz","nasılsınız","iyi misiniz","iyimisiniz","iyi mi","naber","nasilsin","nasılsın"])) return null;
+    if (hasAny(norm, ["ilgilenir misiniz","ilgilenirmisiniz","bakar misiniz","bakarmisiniz","musait misiniz","müsait misiniz"])) return null;
+    if (raw.length <= 15 && !hasAny(norm, ["siparis","kargo","iade","iptal","gelmedi"])) return null;
+
     // Default: ekibe yönlendir
     return OP("Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊");
   }

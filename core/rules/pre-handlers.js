@@ -29,6 +29,10 @@ export function preHandlers(ctx, state, nextStage) {
   if (/\d+\s*(tl|lira)/i.test(raw) && hasAny(norm, ["olur mu","olurmu","yapar misiniz","yaparmisiniz","yap","son fiyat","indirim"])) {
     return R("Fiyatlarımız sabit olup değişiklik yapılamamaktadır efendim 😊");
   }
+  // Rakam + pazarlık fiili (TL olmadan da yakala)
+  if (/\d{3}/.test(raw) && hasAny(norm, ["anlasalim","anlaşalım","anlas","yapalim","yapalım","verelim","versem","gondersenize","göndersen","gondersenize","siz bana","bana yapin"])) {
+    return R("Fiyatlarımız sabit olup değişiklik yapılamamaktadır efendim 😊");
+  }
   if (/\d+\s*(tl|lira)/i.test(raw) && hasAny(norm, ["dimi","di mi","degil mi","değil mi","dogrumu","doğrumu"])) {
     if (state.product === PRODUCT.LAZER) return R("Resimli lazer kolye: EFT / havale 599 TL, kapıda ödeme 649 TL'dir efendim 😊");
     if (state.product === PRODUCT.ATAC) return R("Harfli ataç kolye: EFT / havale 499 TL, kapıda ödeme 549 TL'dir efendim 😊");

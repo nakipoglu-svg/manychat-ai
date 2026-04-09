@@ -7,9 +7,9 @@ export function productEntry(ctx, state) {
   const { product, previousProduct, fields } = ctx;
   if (!product) return null;
 
-  // İlk seçim: önceki ürün yok + henüz akış başlamamış
+  // İlk seçim: akış henüz başlamamış
   const stage = fields.conversation_stage || "";
-  const fresh = !previousProduct && !state.photo_received && !state.letters_received &&
+  const fresh = !state.photo_received && !state.letters_received &&
                 !state.payment_method && !state.address_status && !state.back_text_status &&
                 (!stage || stage === STAGE.WAITING_PRODUCT);
 

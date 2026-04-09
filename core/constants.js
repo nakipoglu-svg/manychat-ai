@@ -145,6 +145,7 @@ export const KW = {
     "iyi aksamlar", "iyi akşamlar", "iyi gunler", "iyi günler",
     "gunaydin", "günaydın", "iyi geceler",
     "nasilsiniz", "nasılsınız",
+    "iyi misiniz", "iyimisiniz", "nasilsin", "nasılsın", "naber",
     "tesekkur", "teşekkür", "tesekkurler", "teşekkürler", "tsk", "tşk", "tesekurler", "teşekürler",
     "tesekur", "teşekür",
     "sagolun", "sağolun", "saol", "sağol",

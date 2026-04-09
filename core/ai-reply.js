@@ -80,6 +80,9 @@ export function shouldUseAI(ctx, signals, arbitrationResult) {
   }
   // Letters (ataç) → kesin
   if (signals.slot_updates?.letters) return false;
+  // Price/bargaining → deterministic (AI fiyat kırabilir, pazarlığı kabul edebilir)
+  if (ctx.intent === "price" || ctx.intent === "shipping_price") return false;
+  if (/\d{3}/.test(ctx.message || "") && /tl|lira|olur mu|yapar|indirim|anlasalim|anlaşalım/i.test(ctx.norm || "")) return false;
 
   // ═══ AI'YE GİDECEK DURUMLAR ═══
 
@@ -152,7 +155,9 @@ YASAK:
 - Ödeme yöntemi SEÇME. "EFT seçtim efendim" gibi cümleler YASAK.
 - Telefon/adres/isim bilgisi KAYDETME kararı verme.
 - Sipariş tamamlandı DEME.
-- Fiyat UYDURMA.
+- Fiyat UYDURMA. Fiyatlar SABİT: Lazer EFT 599, kapıda 649. Ataç EFT 499, kapıda 549.
+- İNDİRİM YAPMA, fiyat KIRMA. Müşteri pazarlık yaparsa "Fiyatlarımız sabittir efendim" de.
+- "Tabi efendim" diyerek fiyat teklifini KABUL ETME. Fiyat konusunda taviz verme.
 - should_commit_slot'u TRUE yapma. HER ZAMAN false olacak.
 
 BAĞLAM:

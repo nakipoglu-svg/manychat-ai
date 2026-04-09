@@ -16,5 +16,6 @@ export function smalltalkRule(ctx) {
   if (hasAny(norm, ["kolay gelsin"])) return R("Teşekkür ederiz efendim 😊");
   if (hasAny(norm, ["begendim","beğendim","begendik","beğendik","guzel","güzel","super","süper","harika","saglik","sağlık"])) return R("Çok teşekkür ederiz efendim 😊");
   if (hasAny(norm, ["merhaba","selam","slm","mrb","merhabalar"])) return R("Merhaba, hoş geldiniz 😊");
+  if (hasAny(norm, ["nasilsiniz","iyi misiniz","iyimisiniz","nasilsin","naber"])) return R("İyiyiz efendim, teşekkür ederiz 😊 Size nasıl yardımcı olabiliriz?");
   return R("Tabi efendim 😊");
 }

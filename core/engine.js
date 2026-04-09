@@ -156,7 +156,9 @@ function antiRepeatGuard(reply, derivedState, norm, intent) {
   }
 
   const INFO_INTENTS = new Set(["back_text_info","back_photo_info","back_photo_price","back_text_examples","photo_question","trust","material_question","shipping","shipping_price","chain_question","location","payment_info_question","photo_suitability_question"]);
-  if (INFO_INTENTS.has(intent)) return { reply, fired: false };
+  // Flow progress intents: foto/ödeme/adres ALINDI cevapları "tekrar sorma" değil
+  const FLOW_INTENTS = new Set(["photo","back_photo_upload","payment","address","phone","name_only","letters","back_text","back_text_skip"]);
+  if (INFO_INTENTS.has(intent) || FLOW_INTENTS.has(intent)) return { reply, fired: false };
 
   const filled = getFilledSlots(derivedState);
   const rl = reply.text.toLowerCase().replace(/ı/g,"i").replace(/ş/g,"s").replace(/ç/g,"c").replace(/ö/g,"o").replace(/ü/g,"u").replace(/ğ/g,"g");
