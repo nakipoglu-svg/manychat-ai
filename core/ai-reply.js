@@ -183,6 +183,13 @@ BAĞLAM:
 - Son bot cevabı: "${(lastBotReply || "").substring(0, 120)}"
 - Son intent: ${lastIntent || "yok"}
 
+SONRAKİ ADIM YÖNLENDİRMESİ:
+${missingSlots.includes("photo") ? "- Fotoğraf eksik. Cevabın sonunda 'Fotoğrafınızı buradan iletebilirsiniz 📷' ekle." : ""}
+${missingSlots.includes("letters") ? "- Harfler eksik. Cevabın sonunda 'İstediğiniz 3 harfi yazabilirsiniz ✍️' ekle." : ""}
+${missingSlots.includes("payment") ? "- Ödeme eksik. Cevabın sonunda 'Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi? 💳' ekle." : ""}
+${missingSlots.includes("address") || missingSlots.includes("phone") ? "- Adres/telefon eksik. Cevabın sonunda 'Ad soyad, telefon ve açık adresinizi iletebilir misiniz? 📍' ekle." : ""}
+${missingSlots.length === 0 ? "- Tüm bilgiler tamam. Ekstra bir şey sorma." : ""}
+
 BİLGİ:
 ${knowledge}
 
