@@ -240,6 +240,13 @@ export default async function handler(req, res) {
   try {
     const d = req.body || {};
 
+    // ── DEBUG: Gelen tüm payload key'lerini logla ──
+    const allKeys = Object.keys(d).slice(0, 50).join(", ");
+    const hasMsg = !!d["message[add][0][text]"] || !!d["message[add][0][id]"];
+    const hasTalk = allKeys.includes("talk[");
+    const hasLead = allKeys.includes("leads[");
+    console.log("[WH_DEBUG]", JSON.stringify({ hasMsg, hasTalk, hasLead, keyCount: Object.keys(d).length, firstKeys: allKeys.substring(0, 200) }));
+
     // ── Direct API call (ManyChat-compatible) ──
     if (d.message_text) {
       const cf = d.custom_fields || {};
@@ -658,6 +665,7 @@ async function safeOrderSync(msgText, leadId, result, cf, contactName) {
   const orderId = buildStableOrderId(customerId, product, result);
   const ext = result._extracted || {};
   const isCompleted = result.conversation_stage === "order_completed" || result.order_status === "completed";
+  const isCancelled = result.order_status === "cancel_requested" || result.conversation_stage === "human_support";
   const hadPreviousData = !!(cf.ilgilenilen_urun || cf.photo_received || cf.payment_method || cf.address_status);
 
   // Operation type: Apps Script'in INSERT/UPDATE kararı için
@@ -710,5 +718,38 @@ async function safeOrderSync(msgText, leadId, result, cf, contactName) {
       body: JSON.stringify(payload),
     });
     console.log("[WH] OrderSync:", operation, "orderId:", orderId.slice(0, 30), "status:", resp.status);
+
+    // ═══ Sipariş tamamlandıysa veya iptal edildiyse Operations sayfasına da gönder ═══
+    if (isCompleted || isCancelled) {
+      const opsPayload = {
+        type: "order_operation",
+        data: {
+          order_id: orderId,
+          final_status: isCancelled ? "cancelled" : "confirmed",
+          finalized_at: new Date().toISOString(),
+          instagram_username: contactName || "",
+          customer_name: contactName || "",
+          dm_link: customerId ? `https://nakipoglu.kommo.com/leads/detail/${customerId}` : "",
+          recipient_name: ext.name || cf.recipient_name || "",
+          phone: ext.phone || "",
+          full_address: ext.addressText || "",
+          product_type: product,
+          payment_type: result.payment_method || "",
+          photo_received: result.photo_received || "",
+          photo_url: ext.photoUrl || "",
+          back_text_value: ext.backText || "",
+          letters_value: ext.letters || "",
+          decision_source: "bot",
+        },
+      };
+      try {
+        await fetch(ORDER_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(opsPayload),
+        });
+        console.log("[WH] OpsSync: confirmed", orderId.slice(0, 30));
+      } catch (oe) { console.error("[WH] Ops sync error:", oe.message); }
+    }
   } catch (e) { console.error("[WH] Order sync error:", e.message); }
 }
