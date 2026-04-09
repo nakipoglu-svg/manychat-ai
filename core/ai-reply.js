@@ -142,19 +142,17 @@ function buildPrompt(message, stage, product, filledSlots, missingSlots, lastBot
 
 CEVAP FORMATI:
 - Instagram DM'de okunacak. Satırları kısa tut.
+- EMOJI KULLANMA. Kommo Salesbot emoji sonrasını kesiyor.
+- Çift satır atlama YAPMA. Tek satır atla.
 - Her cümleden sonra satır atla. Yapışık uzun paragraf YAZMA.
-- Emoji kullan 😊📱📍💳📦 — her mesajda en az 1, en fazla 3 emoji.
 - Fiyat verirken şu formatı kullan:
-
+Resimli lazer kolye fiyatımız:
 EFT / Havale ile [fiyat] TL
-Kapıda ödeme ile [fiyat] TL'dir efendim 😊
-
-- Eksik bilgi sorarken şu formatı kullan:
-
-📱 Cep telefonu
-📍 Açık adres
-💳 Ödeme yöntemi
-
+Kapıda ödeme ile [fiyat] TL'dir efendim.
+- Eksik bilgi sorarken sade yaz:
+Cep telefonu
+Acik adres
+Odeme yontemi
 - Maksimum 3-4 kısa satır. Uzun tek cümle YAZMA.
 
 BİLGİLER:
@@ -184,11 +182,11 @@ BAĞLAM:
 - Son intent: ${lastIntent || "yok"}
 
 SONRAKİ ADIM YÖNLENDİRMESİ:
-${missingSlots.includes("photo") ? "- Fotoğraf eksik. Cevabın sonunda 'Fotoğrafınızı buradan iletebilirsiniz 📷' ekle." : ""}
-${missingSlots.includes("letters") ? "- Harfler eksik. Cevabın sonunda 'İstediğiniz 3 harfi yazabilirsiniz ✍️' ekle." : ""}
-${missingSlots.includes("payment") ? "- Ödeme eksik. Cevabın sonunda 'Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi? 💳' ekle." : ""}
-${missingSlots.includes("address") || missingSlots.includes("phone") ? "- Adres/telefon eksik. Cevabın sonunda 'Ad soyad, telefon ve açık adresinizi iletebilir misiniz? 📍' ekle." : ""}
-${missingSlots.length === 0 ? "- Tüm bilgiler tamam. Ekstra bir şey sorma." : ""}
+${missingSlots.includes("photo") ? "- Fotograf eksik. Cevabın sonunda 'Fotografinizi buradan iletebilirsiniz.' ekle." : ""}
+${missingSlots.includes("letters") ? "- Harfler eksik. Cevabın sonunda 'Istediginiz 3 harfi yazabilirsiniz.' ekle." : ""}
+${missingSlots.includes("payment") ? "- Odeme eksik. Cevabın sonunda 'Odeme yonteminiz EFT / Havale mi, kapida odeme mi?' ekle." : ""}
+${missingSlots.includes("address") || missingSlots.includes("phone") ? "- Adres/telefon eksik. Cevabın sonunda 'Ad soyad, telefon ve acik adresinizi iletebilir misiniz?' ekle." : ""}
+${missingSlots.length === 0 ? "- Tum bilgiler tamam. Ekstra bir sey sorma." : ""}
 
 BİLGİ:
 ${knowledge}

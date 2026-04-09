@@ -198,19 +198,8 @@ function antiRepeatGuard(reply, derivedState, norm, intent) {
 // AI'nin next_action önerisine göre reply'e ek yap (policy engine kararı)
 
 function appendNextAction(replyText, nextAction, derivedState, missingSlots) {
-  if (!nextAction || nextAction === "none") return replyText;
-  // Zaten sorulmuş mu kontrol
-  const filled = getFilledSlots(derivedState);
-  
-  if (nextAction === "ask_payment" && !filled.payment && missingSlots.includes("payment")) {
-    return replyText + "\n\nÖdeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim? 😊";
-  }
-  if (nextAction === "ask_address" && !filled.address_full && (missingSlots.includes("address") || missingSlots.includes("phone"))) {
-    return replyText + "\n\nAd soyad, cep telefonu ve açık adresinizi iletebilir misiniz efendim? 😊";
-  }
-  if (nextAction === "ask_photo" && !filled.photo && missingSlots.includes("photo")) {
-    return replyText + "\n\nFotoğrafınızı buradan iletebilirsiniz efendim 😊";
-  }
+  // AI prompt zaten sonraki adım yönlendirmesini ekliyor.
+  // Burada tekrar eklemeye gerek yok — çift yönlendirme olur.
   return replyText;
 }
 
