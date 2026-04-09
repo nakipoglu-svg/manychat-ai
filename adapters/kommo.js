@@ -386,24 +386,46 @@ export default async function handler(req, res) {
     console.log("[WH] MSG:", effectiveText.slice(0, 120), "lead:", leadId, "contact:", contactId, "type:", msgType);
 
     // ── Button click ──
+    // İlk tıklama: Salesbot zaten aktif, kartı kendi gösterir.
+    // İkinci tıklama (ürün switch): Salesbot bitmiş, biz handle ederiz.
     if (isButtonClick(effectiveText)) {
       console.log("[WH] Button:", effectiveText);
       const { leadId: btnLid } = await resolveLeadId(leadId, contactId);
       if (btnLid) {
         const product = getProductFromButton(effectiveText);
         const stage = product === "lazer" ? "waiting_photo" : "waiting_letters";
-        // Lead field'larını oku (done list için)
         let btnCf = {};
         try {
           const btnLr = await kApi("GET", "/api/v4/leads/" + btnLid);
           if (btnLr.s === 200) btnCf = readFields(btnLr.d);
         } catch {}
+
+        const isSwitch = !!btnCf.ilgilenilen_urun && btnCf.ilgilenilen_urun !== product;
+        const isReselect = !!btnCf.ilgilenilen_urun && btnCf.ilgilenilen_urun === product;
+
+        // Field'ları set et
         await updateFields(btnLid, {
-          ilgilenilen_urun: product, conversation_stage: stage,
+          ilgilenilen_urun: product, 
+          conversation_stage: stage,
           context_lock: "",
           cancel_reason: buildWatermark(msgCreatedAt, msgId, btnCf.cancel_reason),
-          order_status: "started", last_intent: "product_entry",
+          order_status: "started", 
+          last_intent: "product_entry",
+          menu_gosterildi: "evet",
         });
+
+        // Ürün switch veya re-select ise Salesbot bitmiş — fiyat cevabını biz gönderelim
+        if (isSwitch || isReselect) {
+          const priceText = product === "lazer" 
+            ? "Resimli lazer kolye fiyatımız EFT / Havale ile 599 TL, kapıda ödeme ile 649 TL'dir efendim 😊 Siparişe devam etmek isterseniz fotoğrafı buradan gönderebilirsiniz."
+            : "Harfli ataç kolye fiyatımız EFT / Havale ile 499 TL, kapıda ödeme ile 549 TL'dir efendim 😊 Siparişe devam etmek isterseniz istediğiniz 3 harfi yazabilirsiniz.";
+          
+          await new Promise(r => setTimeout(r, 100));
+          await updateFields(btnLid, { ai_reply: stripEmoji(priceText) });
+          await triggerBot(REPLY_BOT_ID, btnLid);
+          console.log("[WH] Button switch/reselect:", product, "→ reply bot with price");
+        }
+
         await movePipelineStage(btnLid, stage, true);
       }
       return res.status(200).json({ ok: true, handled_by: "button", product: getProductFromButton(effectiveText) });
