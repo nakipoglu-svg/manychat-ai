@@ -329,6 +329,12 @@ export async function processChat(body = {}) {
     meta._aiEnabled = aiEnabled;
     meta._aiNeeded = needsAI;
 
+    if (!aiEnabled) {
+      console.log("[AI_DISABLED]", JSON.stringify({ _skipAI: !!body._skipAI, _test: !!body._test }));
+    } else if (!needsAI) {
+      console.log("[AI_NOT_NEEDED]", JSON.stringify({ intent: ctx.intent, rule: meta.selectedRule || meta.signalOverride || "none", msg: ctx.message.substring(0, 40) }));
+    }
+
     if (needsAI) {
       console.log("[AI_CALL]", JSON.stringify({ message: ctx.message.substring(0, 60), stage: ctx.fields.conversation_stage, intent: ctx.intent }));
       try {
@@ -458,5 +464,16 @@ export async function processChat(body = {}) {
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(200).json({ success: false, message: "Only POST." });
-  return res.status(200).json(await processChat(req.body || {}));
+  const body = req.body || {};
+  const result = await processChat(body);
+  
+  // Google Sheets loglama — fire and forget (response'u bekletmez)
+  try {
+    const { logConversationRow } = await import("../lib/sheetsLogger.js");
+    logConversationRow({ body, result }).catch(e => console.error("[SHEETS_LOG_ERROR]", e?.message || e));
+  } catch (e) {
+    console.error("[SHEETS_IMPORT_ERROR]", e?.message || e);
+  }
+  
+  return res.status(200).json(result);
 }
