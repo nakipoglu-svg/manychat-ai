@@ -93,7 +93,7 @@ export function extractSignals(ctx) {
   if (hasAny(norm, KW.back_photo_info)) signals.questions.push("back_photo_info");
 
   // Capability questions — kaç kişi / ikili resim ailesi
-  if (hasAny(norm, ["ikili resim","iki resim","iki kisi","iki kisinin","iki cocuk","iki çocuk","ikili foto","coklu foto","çoklu foto","birlestir","birleştir","tek yuze","tek yüze","ayni karede","aynı karede","kac kisi","kaç kişi","kac kisilik","kaç kişilik","kac yuz","kaç yüz","kac resim","kaç resim","kac foto","kaç foto","uc kisi","üç kişi","uclu","üçlü","3 kisi","4 kisi","5 kisi","dort kisi","dört kişi","bes kisi","beş kişi"])) {
+  if (hasAny(norm, ["ikili resim","iki resim","iki kisi","iki kisinin","iki cocuk","iki çocuk","ikili foto","coklu foto","çoklu foto","birlestir","birleştir","tek yuze","tek yüze","ayni karede","aynı karede","kac kisi","kaç kişi","kac kisilik","kaç kişilik","kac yuz","kaç yüz","kac resim","kaç resim","kac foto","kaç foto","uc kisi","üç kişi","uclu","üçlü","3 kisi","4 kisi","5 kisi","dort kisi","dört kişi","bes kisi","beş kişi","bir arada","ikisini bir","beraber olsun","ikisini birlikte","iki cocugum","iki çocuğum","iki oglum","iki oğlum","iki kizim","iki kızım","iki tane cocug","ikisini istiyorum","ikisini bu sekilde","ikisini bu şekilde"])) {
     signals.questions.push("capability_multi_photo");
   }
 

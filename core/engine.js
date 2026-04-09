@@ -324,11 +324,13 @@ export async function processChat(body = {}) {
     }
 
     // ═══ 8. AI REPLY INTERPRETER ═══
-    // Deterministic cevap yoksa VEYA low-confidence ise AI'ye sor
     const aiEnabled = !body._skipAI && !body._test;
     const needsAI = aiEnabled && shouldUseAI(ctx, signals, { reply: finalReply, meta });
+    meta._aiEnabled = aiEnabled;
+    meta._aiNeeded = needsAI;
 
     if (needsAI) {
+      console.log("[AI_CALL]", JSON.stringify({ message: ctx.message.substring(0, 60), stage: ctx.fields.conversation_stage, intent: ctx.intent }));
       try {
         const aiPromise = getAIReply(ctx, signals, filledSlots, currentMissing);
         const timeoutPromise = new Promise((_, rej) => setTimeout(() => rej(new Error("ai_timeout")), 4000));
@@ -337,7 +339,6 @@ export async function processChat(body = {}) {
         if (aiResult && aiResult.reply && aiResult.confidence >= 0.7) {
           const guarded = applyPolicyGuard(aiResult, filledSlots, currentMissing);
           if (guarded) {
-            // AI cevabını kullan — ama next_action'ı policy engine kontrol eder
             let aiReplyText = guarded.reply;
             aiReplyText = appendNextAction(aiReplyText, guarded.next_action, derived.derivedState, currentMissing);
             
@@ -352,10 +353,14 @@ export async function processChat(body = {}) {
             meta.replySource = "ai_reply";
             meta._aiReply = guarded;
             if (guarded._tokenUsage) meta._tokenUsage = guarded._tokenUsage;
+            console.log("[AI_USED]", JSON.stringify({ label: guarded.intent_label, confidence: guarded.confidence, tokens: guarded._tokenUsage?.total_tokens || 0 }));
           }
+        } else if (aiResult) {
+          console.log("[AI_LOW_CONF]", JSON.stringify({ confidence: aiResult.confidence, label: aiResult.intent_label }));
         }
       } catch (e) {
         meta._aiReplyError = e?.message || "unknown";
+        console.log("[AI_ERROR]", e?.message || "unknown");
       }
     }
 
@@ -421,6 +426,13 @@ export async function processChat(body = {}) {
     };
 
     output._tokenUsage = meta._tokenUsage || null;
+    output._aiStatus = {
+      enabled: meta._aiEnabled || false,
+      needed: meta._aiNeeded || false,
+      used: meta.replySource === "ai_reply",
+      error: meta._aiReplyError || null,
+      tokens: meta._tokenUsage?.total_tokens || 0,
+    };
 
     return output;
 

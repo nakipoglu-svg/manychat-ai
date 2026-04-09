@@ -12,7 +12,7 @@ export function preHandlers(ctx, state, nextStage) {
   const stage = state.conversation_stage || "";
 
   // ═══ ARKA YAZI TALEBİ (sadece lazer — ataç'ta arka yazı yok) ═══
-  const isBackTextQuestion = hasAny(norm, ["olur mu","olurmu","oluyor mu","yazilir mi","yazılır mı","yapilir mi","yapılır mı","ne yazalim","ne yazılır","ne yazılıyor","genelde","yazabilir mi","yazabilir miyiz","yazabiliriz","eklenebilir","ekleniyor mu","yazdirilir","yazdırılır","sigar mi","sığar mı","ne yazilir","ne yazdirabilir"]);
+  const isBackTextQuestion = hasAny(norm, ["olur mu","olurmu","oluyor mu","yazilir mi","yazılır mı","yapilir mi","yapılır mı","ne yazalim","ne yazılır","ne yazılıyor","genelde","yazabilir mi","yazabilir miyiz","yazabiliriz","eklenebilir","ekleniyor mu","yazdirilir","yazdırılır","sigar mi","sığar mı","ne yazilir","ne yazdirabilir","yazamiyor","yazilmiyor","yazılmıyor","yazilamiyor","yazılamıyor"]);
   if (ctx.product !== PRODUCT.ATAC && hasAny(norm, ["arkasina","arkasına","arkaya","arka kisma","arka kısma","arka tarafina","arka tarafına"]) && hasAny(norm, ["yaz","yazalim","yazılsın","yazsın","ekle"])) {
     if (isBackTextQuestion) {
       // Soru → bilgi ver, state değiştirme

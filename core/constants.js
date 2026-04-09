@@ -335,6 +335,8 @@ export const KW = {
     "arkasina yazi olur mu", "arkasına yazı olur mu",
     "arkasina yazi yazabilir", "arkasına yazı yazabilir",
     "arkasina yazı yazabiliyor", "arkasına yazı yazabiliyor",
+    "arkasina yazi yazamiyor", "arkasına yazı yazamıyor",
+    "arkasina yazi yaziliyor mu", "arkasına yazı yazılıyor mu",
     "arka yuzune yazi oluyor mu", "arka yüzüne yazı oluyor mu",
     "arkaya yazi yaziliyor mu", "arkaya yazı yazılıyor mu",
     "arka tarafa yazi oluyor mu", "arka tarafa yazi olur mu",

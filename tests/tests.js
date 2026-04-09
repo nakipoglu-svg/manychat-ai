@@ -796,7 +796,7 @@ const tests = [
   { id: "LT11", name: "Alibeykoy kargo", input: body("Alibeyköydeyim ben", lazer({ conversation_stage: "waiting_photo" })), expectReplyNotIncludes: "ekibimize iletiyorum" },
   { id: "LT13", name: "PTT kargo gonderi", input: body("PTT kargo ile gönderim varmı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "PTT" },
   { id: "LT17", name: "Cok tatli w_address", input: body("Çok tatlı duruyor 🥰", lazerWaitingAddress()), expectReplyIncludes: "tesekkur" },
-  { id: "LT18", name: "Arkali onlu fiyat fark yok", input: body("İki çocuğum var arkalı önlü ne kadar olur", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "fark" },
+  { id: "LT18", name: "Arkali onlu capability", input: body("İki çocuğum var arkalı önlü ne kadar olur", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "birden fazla" },
   { id: "LT19", name: "3 resim ayni kare", input: body("İyi günler 3 resim aynı karede oluyor mu acaba", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "evet" },
   { id: "LT22", name: "5 kisi tek yuze", input: body("5 kişi tek yüze olur mu", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "evet" },
   { id: "LT26", name: "Yapay zeka ile mi", input: body("Yapay zeka ile mi yapıyorsunuz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "yapay zeka kullanmiyoruz" },
