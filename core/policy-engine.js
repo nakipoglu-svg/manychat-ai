@@ -4,7 +4,7 @@
 // State ve reply aynı yerden beslenir, asla kopuk çalışmaz
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-import { PRODUCT, STAGE, TEXT, REPLY_CLASS, PRICE } from "./constants.js";
+import { PRODUCT, STAGE, TEXT, REPLY_CLASS, PRICE, SUPPORT_REASON } from "./constants.js";
 import { truthy } from "./normalize.js";
 
 /**
@@ -42,7 +42,7 @@ export function policyDecision(ctx, signals, derivedState, missingSlots) {
   }
 
   // ═══ UNDECIDED in waiting_back_text ═══
-  if (isUndecided && stage === STAGE.WAITING_BACK_TEXT) {
+  if (isUndecided && stage === STAGE.WAITING_PAYMENT) {
     return {
       text: "Genelde isim, tarih, kısa bir not veya özel bir söz yazılıyor efendim 😊 Karar verdiğinizde buradan iletebilirsiniz. İstemezseniz 'yok' yazabilirsiniz.",
       reply_class: REPLY_CLASS.FIXED_INFO,
@@ -53,6 +53,15 @@ export function policyDecision(ctx, signals, derivedState, missingSlots) {
 
   // ═══ COMPLAINT: "verdim ya" / "gönderdim ya" ═══
   if (hasComplaints && !hasConfirmations) {
+    // "Cevap vermiyorsunuz" tipi şikayetler → operasyonel (eksik listesi değil)
+    if (signals.complaints.includes("no_response") || signals.complaints.includes("frustration_no_response")) {
+      return {
+        text: "Çok özür dileriz efendim 😊 Hemen ekibimize iletiyorum, en kısa sürede dönüş sağlanacaktır.",
+        reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED,
+        support_mode_reason: SUPPORT_REASON.OPERATIONAL,
+        _policy: "complaint_no_response",
+      };
+    }
     return buildComplaintResponse(signals, derivedState, missingSlots, stage);
   }
 
@@ -120,8 +129,6 @@ function buildPaymentPlusQuestion(signals, state, missingSlots) {
       }
     } else if (nextMissing.includes("photo")) {
       answer += " Fotoğrafınızı buradan iletebilirsiniz.";
-    } else if (nextMissing.includes("back_text")) {
-      answer += " Arka yüze yazı eklemek ister misiniz?";
     }
   }
 

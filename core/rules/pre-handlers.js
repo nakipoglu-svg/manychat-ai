@@ -47,11 +47,16 @@ export function preHandlers(ctx, state, nextStage) {
       /bana\s+\d{3}\s+(?:yap|gonder|gönder|ver|birak|bırak|sat)/i.test(norm)) {
     return R("Fiyatlarımız sabit olup değişiklik yapılamamaktadır efendim 😊");
   }
-  if (/\d+\s*(tl|lira)/i.test(raw) && hasAny(norm, ["dimi","di mi","degil mi","değil mi","dogrumu","doğrumu"])) {
+  if (/\d+\s*(tl|lira)/i.test(raw) && hasAny(norm, ["dimi","di mi","demi","de mi","degil mi","değil mi","dogrumu","doğrumu","miydi","miydi","midir","mudur"])) {
     if (state.product === PRODUCT.LAZER) return R("Resimli lazer kolye: EFT / havale 599 TL, kapıda ödeme 649 TL'dir efendim 😊");
     if (state.product === PRODUCT.ATAC) return R("Harfli ataç kolye: EFT / havale 499 TL, kapıda ödeme 549 TL'dir efendim 😊");
+    return R("Resimli lazer kolye: EFT / havale 599 TL, kapıda ödeme 649 TL'dir efendim 😊");
   }
-  if (hasAny(norm, ["cok pahali","çok pahalı","pahali","pahalıymış","pahalıymıs","pahaliymiş","indirim yap","indirim olur mu","indirim var mi","indirim varmi"])) {
+  // Pazarlık — "olmaz mı", "düz hesap", "kaça yaparsınız", "son fiyat ne olur", "indirin", "indirimli"
+  if (hasAny(norm, ["olmaz mi","olmaz mı","duz hesap","düz hesap","kaca yaparsiniz","kaça yaparsınız","kaca olur","kaça olur","son fiyat ne olur","son fiyat nedir","indirin","indirimli olur","indirimli yapar"])) {
+    return R("Fiyatlarımız sabit olup değişiklik yapılamamaktadır efendim 😊");
+  }
+  if (hasAny(norm, ["cok pahali","çok pahalı","pahali","pahalıymış","pahalıymıs","pahaliymiş","indirim yap","indirim olur mu","indirim var mi","indirim varmi","indirim sagliyor","indirim sağlıyor","toplu siparis","toplu sipariş","toplu alim","toplu alım"])) {
     return R("Çoklu alımlarda indirimimiz bulunmaktadır efendim 😊 Kaç adet düşünüyorsunuz?");
   }
 
@@ -64,8 +69,22 @@ export function preHandlers(ctx, state, nextStage) {
   }
 
   // Ödeme yaptım
-  if (hasAny(norm, ["hesaptan at","hesaptan yat","ucreti attim","ücreti attım","parayi gonderdim","parayı gönderdim","odemeyi yaptim","ödemeyi yaptım","parayı attim","parayı attım","odeme yaptim","ödeme yaptım","eft attim","havale yaptim","kontrol eder","kontrol ederm"])) {
+  if (hasAny(norm, ["hesaptan at","hesaptan yat","ucreti attim","ücreti attım","parayi gonderdim","parayı gönderdim","odemeyi yaptim","ödemeyi yaptım","parayı attim","parayı attım","odeme yaptim","ödeme yaptım","eft attim","havale yaptim","kontrol eder","kontrol ederm","dekont gonderdim","dekont gönderdim","dekont attim","dekont attım"])) {
     return OP("Tabi efendim, ekibimiz kontrol edip size dönüş sağlayacaktır 😊");
+  }
+
+  // Sitem / complaint / "yazdım zaten" / "neden tekrar"
+  if (hasAny(norm, ["adresi yazdim zaten","adresi yazdım zaten","numarayi attim","numarayı attım","yazdim zaten","yazdım zaten","verdim zaten","gonderdim zaten","gönderdim zaten","yukarda var","yukarida var","yukarıda var"])) {
+    return R("Özür dileriz efendim 😊 Bilgilerinizi kontrol ediyorum. Eksik bir bilgi varsa sizi bilgilendireceğim.");
+  }
+  if (hasAny(norm, ["neden cevap vermiyorsunuz","niye cevap vermiyorsunuz","neden cevap vermiyor","cevap vermiyorsunuz","cevap alamiyorum","donus yapmiyorsunuz","dönüş yapmıyorsunuz"])) {
+    return OP("Çok özür dileriz efendim 😊 Hemen ekibimize iletiyorum, en kısa sürede dönüş sağlanacaktır.");
+  }
+  if (hasAny(norm, ["yeter artik","yeter artık","yeter ya","biktim","bıktım","sinirlendim","cildirdim","çıldırdım","kac kere yazdim","kaç kere yazdım"])) {
+    return OP("Çok özür dileriz efendim 😔 Hemen ekibimize iletiyorum.");
+  }
+  if (hasAny(norm, ["niye ayni seyi","niye aynı şeyi","neden ayni seyi","neden aynı şeyi","neden tekrar","niye tekrar"])) {
+    return R("Özür dileriz efendim 😊 Bilgilerinizi kontrol ediyorum.");
   }
 
   // Çoklu foto / birleştirme (Fix #15)
@@ -81,7 +100,7 @@ export function preHandlers(ctx, state, nextStage) {
   // Bunları kabul et, not al, akışı devam ettir (seller'a atma)
   if (hasAny(norm, ["sonsuzluk isareti","sonsuzluk işareti","sonsuzluk","infinity","kalp isareti","kalp işareti","kalp ekle","yildiz isareti","yıldız işareti","yildiz ekle","yıldız ekle","ay yildiz","ay yıldız","kelebek","melek","pati","kuyruklu yildiz"])) {
     const extra = stage === STAGE.WAITING_PHOTO ? " Fotoğrafı buradan gönderebilirsiniz efendim." :
-                  stage === STAGE.WAITING_BACK_TEXT ? "" :
+                  stage === STAGE.WAITING_PAYMENT ? "" :
                   stage === STAGE.WAITING_PAYMENT ? " Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim?" :
                   stage === STAGE.WAITING_ADDRESS ? " Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz?" : "";
     return FP("Tabi efendim, not aldım 😊 Ekibimiz tasarıma ekleyecektir." + extra);
@@ -118,7 +137,7 @@ export function preHandlers(ctx, state, nextStage) {
 
   // Gümüş yap / metal
   if (hasAny(norm, ["gumus yap","gümüş yap","gumus model","gümüş model","gumus olsun","gümüş olsun"])) return R("Efendim gümüş kaplama çelik modelimiz bulunmaktadır 😊");
-  if (norm === "metal" || norm === "metali ne" || norm === "malzemesi" || hasAny(norm, ["metal cinsi","metalin cinsi"])) return R("14 ayar altın kaplama paslanmaz çeliktir efendim 😊 Kararma, solma yapmaz.");
+  if (norm === "metal" || norm === "metali ne" || norm === "malzemesi" || norm === "metal mi" || hasAny(norm, ["metal cinsi","metalin cinsi","metal nedir"])) return R("14 ayar altın kaplama paslanmaz çeliktir efendim 😊 Kararma, solma yapmaz.");
 
   // Yapım süreci / yapay zeka
   if (hasAny(norm, ["yapim asamasi","yapım aşaması","yapim asamaniz","yapım aşamanız","surec nasil","süreç nasıl","nasil yapiliyor","nasıl yapılıyor","yapim sureci","yapım süreci"])) {

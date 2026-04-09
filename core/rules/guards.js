@@ -35,13 +35,19 @@ export function guards(ctx, state, nextStage) {
     // Pass-through intents (rule chain'e bırak)
     if ([INTENT.CANCEL, INTENT.NEW_ORDER, INTENT.ORDER_START].includes(intent)) return null;
     if (["trust","material_question","price","location","chain_question","shipping_price","payment_info_question","photo_sent_confirmation","back_text_info","back_photo_info","back_photo_price","back_text_examples"].includes(intent)) return null;
-    if (intent === INTENT.PAYMENT) return null; // post-completion payment handler'a
+    if (intent === INTENT.PAYMENT) return null;
+    // Yeni sipariş sinyalleri — completed'da yeni akış başlatabilir
+    if (hasAny(norm, ["arkadaslar da alacak","arkadaşlar da alacak","bir tane daha","ikinci siparis","ek siparis","ek sipariş","bir kolye daha","ayni adreste bir tane"])) {
+      return R("Tabi efendim 😊 Yeni sipariş için ekibimiz size yardımcı olacaktır.", REPLY_CLASS.SELLER_REQUIRED, SUPPORT_REASON.SELLER);
+    }
 
     // Pre-handler patterns: completed'da da cevap verilmeli (bilgi soruları)
     if (hasAny(norm, ["aksesuar","pembe kalp","nazar boncugu","nazar boncuğu","kalp var mi","kalp var mı"])) return null;
     if (hasAny(norm, ["erkek icin","erkek için","erkek uygun","babam icin","babam için"])) return null;
     if (hasAny(norm, ["renk secenek","renk seceneg","hangi renk","ne renk var","kac renk","kaç renk"])) return null;
     if (hasAny(norm, ["birlestir","birleştir","birlestirme","birleştirme","tek yuze","tek yüze"])) return null;
+    // SMS / kargo bilgi soruları → side-questions'a bırak
+    if (hasAny(norm, ["sms","mesaj gelir","bilgi gelir","haber verir","takip","kargo mesaj","kargo bilgi"])) return null;
     // İade completed'da → seller'a (müşteri gerçekten iade istiyor olabilir)
     // Adres değişimi completed'da → seller'a
 

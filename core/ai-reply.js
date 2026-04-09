@@ -184,7 +184,10 @@ export async function getAIReply(ctx, signals, filledSlots, missingSlots) {
   const baseUrl = process.env.DEEPSEEK_BASE_URL || process.env.OPENAI_BASE_URL || "https://api.deepseek.com/v1";
   const model = process.env.AI_REPLY_MODEL || process.env.DEEPSEEK_MODEL || "deepseek-chat";
 
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.log("[AI_SKIP] No API key found. Set DEEPSEEK_API_KEY env variable.");
+    return null;
+  }
 
   const topic = detectTopic(ctx, signals);
   const knowledge = buildMiniKnowledge(topic, ctx.product);
@@ -218,7 +221,10 @@ export async function getAIReply(ctx, signals, filledSlots, missingSlots) {
       }),
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.log("[AI_HTTP_ERROR]", JSON.stringify({ status: response.status, statusText: response.statusText }));
+      return null;
+    }
 
     const data = await response.json();
 
@@ -256,6 +262,7 @@ export async function getAIReply(ctx, signals, filledSlots, missingSlots) {
       } : null,
     };
   } catch (err) {
+    console.log("[AI_FETCH_ERROR]", err?.message || String(err));
     return null; // AI fail → deterministic devam eder
   }
 }

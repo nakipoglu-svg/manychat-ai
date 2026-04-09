@@ -357,6 +357,8 @@ export async function processChat(body = {}) {
           }
         } else if (aiResult) {
           console.log("[AI_LOW_CONF]", JSON.stringify({ confidence: aiResult.confidence, label: aiResult.intent_label }));
+        } else {
+          console.log("[AI_NULL] AI returned null — check DEEPSEEK_API_KEY env variable");
         }
       } catch (e) {
         meta._aiReplyError = e?.message || "unknown";
@@ -422,7 +424,7 @@ export async function processChat(body = {}) {
       letters: ctx.extracted.letters || "",
       name: ctx.extracted.hasName ? ctx.message : "",
       addressText: ctx.extracted.hasAddress ? ctx.message : "",
-      backText: (ctx.intent === "back_text" && ctx.fields.conversation_stage === "waiting_back_text") ? ctx.message : "",
+      backText: (ctx.intent === "back_text" && ctx.fields.conversation_stage === "waiting_payment") ? ctx.message : "",
     };
 
     output._tokenUsage = meta._tokenUsage || null;

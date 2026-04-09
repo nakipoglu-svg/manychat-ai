@@ -149,6 +149,7 @@ export const KW = {
     "tesekkur", "teşekkür", "tesekkurler", "teşekkürler", "tsk", "tşk", "tesekurler", "teşekürler",
     "tesekur", "teşekür",
     "sagolun", "sağolun", "saol", "sağol",
+    "sag olun", "sağ olun", "sag ol", "sağ ol",
     "allah razi olsun", "allah razı olsun",
     "kolay gelsin",
     "emeginize saglik", "emeğinize sağlık", "ellerinize saglik", "ellerinize sağlık",
@@ -190,6 +191,8 @@ export const KW = {
     "kargo parasi", "kargo parasI", "kargo parası",
     "eve teslim", "kargo var mi", "kargo varmı", "kargo varmi",
     "fiyata dahil mi", "fiyata dahil",
+    "ekstra ucret", "ekstra ücret", "ekstra ucret var mi", "ekstra ücret var mı",
+    "ek ucret var mi", "ek ücret var mı", "ek ucret", "ek ücret",
   ],
 
   shipping: [
@@ -203,6 +206,8 @@ export const KW = {
     "ne kadar surede", "ne kadar sürede", "ne kadar sure", "ne kadar süre",
     "ne zaman elimde", "ne zaman elime", "elimde olur",
     "elime ulasir", "elime ulaşır",
+    "kac is gunu", "kaç iş günü", "kac is gununde", "kaç iş gününde",
+    "sms gelir", "mesaj gelir", "bilgi gelir", "haber verir",
   ],
 
   trust: [
@@ -226,6 +231,7 @@ export const KW = {
     "paslanmaz mi", "paslanmaz mı", "paslanmaz demi", "paslanmaz demı",
     "malzeme ne", "malzemesi ne",
     "ne malzeme", "hangi malzeme",
+    "gunluk kullanim", "günlük kullanım", "gunluk kullanima", "günlük kullanıma",
   ],
 
   payment: [
@@ -262,7 +268,7 @@ export const KW = {
     "cerceve boyut", "çerçeve boyut", "madalyon boyut",
     "olcusu nedir", "ölçüsü nedir", "olcusu ne", "ölçüsü ne",
     "zincir kisalt", "zincir kısalt", "kisaltma", "kısaltma", "kisaltilabilir", "kısaltılabilir", "kisaltabilir", "kısaltabilir",
-    "zincir uzat", "uzatma", "uzatilabilir", "uzatılabilir", "uzatabilir", "daha uzun zincir",
+    "zincir uzat", "uzatma", "uzatilabilir", "uzatılabilir", "uzatabilir", "daha uzun zincir", "uzun zincir",
     "70 cm", "70cm",
   ],
 

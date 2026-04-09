@@ -197,8 +197,14 @@ export function looksLikeName(raw = "", norm = "", stage = "") {
 export function parsePaymentFromMessage(norm, existing = "") {
   if (hasAny(norm, ["kredi karti", "kredi kartı", "kartla", "kart ile"])) return existing || "";
   
-  // INFO QUESTION GUARD: "fark nedir", "arasındaki fark", "nasıl oluyor" → payment SELECTION değil
-  if (hasAny(norm, ["fark nedir","arasindaki fark","arasındaki fark","farki ne","farkı ne","hangisi nasil","hangisi nasıl","nasil oluyor","nasıl oluyor","ne demek","ne anlama","ne kadar","nekadar","kac tl","kaç tl","kac lira","kaç lira","fiyati ne","fiyatı ne","ucret ne","ücret ne"])) return existing || "";
+  // INFO QUESTION GUARD: "fark nedir", "nasıl oluyor", "ne kadar" → payment SELECTION değil
+  // AMA: seçim fiili varsa ("olsun", "seçeyim", "olur") → commit izni ver
+  const hasSelectionVerb = hasAny(norm, ["olsun","seceyim","seçeyim","istiyorum","sectim","seçtim","olur","yapalim","yapalım","yapacagim","yapacağım"]);
+  const isInfoQuestion = hasAny(norm, ["fark nedir","arasindaki fark","arasındaki fark","farki ne","farkı ne","hangisi nasil","hangisi nasıl","nasil oluyor","nasıl oluyor","ne demek","ne anlama","ne kadar","nekadar","kac tl","kaç tl","kac lira","kaç lira","fiyati ne","fiyatı ne","ucret ne","ücret ne"]);
+  const isPriceConfirmation = hasAny(norm, ["degil mi","değil mi","dimi","di mi","demi","de mi","miydi","midir","mudur"]);
+  
+  if (isInfoQuestion && !hasSelectionVerb) return existing || "";
+  if (isPriceConfirmation && !hasSelectionVerb) return existing || "";
   
   // Negation detection: "kapıda değil" → kapıda'yı reddet
   const negatesKapida = hasAny(norm, ["kapida degil","kapıda değil","kapida istemiyorum","kapıda istemiyorum","kapida olmaz","kapıda olmaz"]);

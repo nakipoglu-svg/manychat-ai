@@ -50,7 +50,7 @@ export function flowPayment(ctx, state, nextStage) {
   }
 
   // Lazer back_text beklerken
-  if (product === PRODUCT.LAZER && nextStage === STAGE.WAITING_BACK_TEXT) {
+  if (product === PRODUCT.LAZER && nextStage === STAGE.WAITING_PAYMENT) {
     return R("Ödeme aşamasına geçmeden önce arka yüz için yazı isteyip istemediğinizi iletebilir misiniz? İstemiyorsanız 'yok' yazabilirsiniz 😊");
   }
 

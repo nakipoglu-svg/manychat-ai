@@ -47,8 +47,10 @@ export function detectIntent(ctx) {
   // Post-sale
   if (hasAny(norm, KW.post_sale)) {
     const isShort = norm === "gelmedi" || norm === "ulasmadi";
-    if (isShort && stage && stage !== STAGE.ORDER_COMPLETED) {
-      // Aktif akışta kısa post-sale → general'e düşsün
+    // "ne zaman hazır" aktif sipariş akışında → shipping sorusu, post-sale değil
+    const isGenericTiming = hasAny(norm, ["ne zaman hazir","ne zaman hazır"]) && !hasAny(norm, ["kolyem","siparisim","siparişim","urunum","ürünüm"]);
+    if ((isShort || isGenericTiming) && stage && stage !== STAGE.ORDER_COMPLETED) {
+      // shipping'e veya general'e bırak
     } else {
       return INTENT.POST_SALE;
     }
@@ -58,7 +60,7 @@ export function detectIntent(ctx) {
   if (hasAny(norm, KW.new_order)) return INTENT.NEW_ORDER;
 
   // ── Back text stage-specific ──
-  if (stage === STAGE.WAITING_BACK_TEXT) {
+  if (stage === STAGE.WAITING_PAYMENT) {
     if (hasAny(norm, [
       "olur mu bu fotograf","olur mu bu foto","sizce bu fotograf olur mu",
       "bu fotograf olur mu","bu foto olur mu","fotograf uygun mu","foto uygun mu",
@@ -95,7 +97,7 @@ export function detectIntent(ctx) {
       const textWithoutUrl = raw.replace(/https?:\/\/\S+/g, "").trim();
       const hasText = textWithoutUrl.length > 2;
       if (!hasText) {
-        if (stage === STAGE.WAITING_BACK_TEXT) return INTENT.BACK_PHOTO_UPLOAD;
+        if (stage === STAGE.WAITING_PAYMENT) return INTENT.BACK_PHOTO_UPLOAD;
         return INTENT.PHOTO;
       }
       if (hasAny(norm, [
@@ -105,7 +107,7 @@ export function detectIntent(ctx) {
         "aynisından istiyorum","aynısından istiyorum",
         "model bu olcak","model bu olacak",
       ])) return INTENT.PRODUCT_IMAGE_REF;
-      if (stage === STAGE.WAITING_BACK_TEXT) return INTENT.BACK_PHOTO_UPLOAD;
+      if (stage === STAGE.WAITING_PAYMENT) return INTENT.BACK_PHOTO_UPLOAD;
       return INTENT.PHOTO;
     }
     if (product === PRODUCT.ATAC) return INTENT.PHOTO;
@@ -186,7 +188,7 @@ export function detectIntent(ctx) {
   // ═══ KATMAN 2: FLOW-AWARE INTENT'LER ═══
 
   // waiting_back_text: kısa mesajlar arka yazı olarak yorumlanır
-  if (stage === STAGE.WAITING_BACK_TEXT) {
+  if (stage === STAGE.WAITING_PAYMENT) {
     // Kısa onay mesajları arka yazı DEĞİL — "tamamdır" demek "arka yazı istiyorum" demek
     const CONFIRM_NOT_BACKTEXT = ["tamam","tamamdir","tmm","tmmm","olur","peki","evet","ok","he","hee","tm"];
     const isJustConfirm = raw.length <= 15 && (CONFIRM_NOT_BACKTEXT.includes(norm) || norm === "tamam dir");
@@ -263,7 +265,7 @@ export function detectIntent(ctx) {
   // ═══ KATMAN 3: ENTITY-BASED INTENT'LER ═══
 
   // Şubeden teslim
-  if (hasAny(norm, ["subeden alacagim","şubeden alacağım","subeden alma","şubeden alma","subeden teslim","şubeden teslim","magazadan alacagim","mağazadan alacağım"])) { candidate("store_pickup", 0.9); ctx._intentCandidates = _candidates; return INTENT.STORE_PICKUP; }
+  if (hasAny(norm, ["subeden alacagim","şubeden alacağım","subeden alma","şubeden alma","subeden teslim","şubeden teslim","magazadan alacagim","mağazadan alacağım","elden teslim","elden alabilir","elden alacagim","elden alacağım","gelip alabilir","gelip alabilirim","kendim alabilir","kendim teslim"])) { candidate("store_pickup", 0.9); ctx._intentCandidates = _candidates; return INTENT.STORE_PICKUP; }
 
   // Adres — negative signal: soru cümlesi ile lokasyon soruyorsa adres değil
   if (extracted.hasAddress && ["waiting_address", ""].includes(stage) && !negativeSignals.suppress_address) {

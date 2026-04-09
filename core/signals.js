@@ -42,7 +42,7 @@ export function extractSignals(ctx) {
   if (extracted.letters) signals.slot_updates.letters = extracted.letters;
 
   // Back text content detection (sadece w_back_text'te ve gerçek içerikse)
-  if (stage === STAGE.WAITING_BACK_TEXT && raw.length > 0 && raw.length <= 80) {
+  if (stage === STAGE.WAITING_PAYMENT && raw.length > 0 && raw.length <= 80) {
     const CONFIRM_WORDS = ["tamam","tamamdir","tmm","tmmm","olur","peki","evet","ok","he","hee","tm"];
     const isJustConfirm = CONFIRM_WORDS.includes(norm) || norm === "tamam dir";
     const isUndecided = hasAny(norm, ["bilemedim","karar veremedim","ne yazsak","ne yazalim","ne yazsak ki","dusuneyim","düşüneyim","emin degilim","emin değilim","bilmiyorum","kararsizim","kararsızım","kararsiz kaldim","kararsız kaldım","bir sey dusunemedim","bir şey düşünemedim","sonra soylesem","sonra söylesem","aklima gelmiyor","aklıma gelmiyor","karar veremedim","henuz dusunmedim","henüz düşünmedim"]);

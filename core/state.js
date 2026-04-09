@@ -159,7 +159,7 @@ export function deriveState(initialState, ctx) {
   // Kritik stage'lerde düşük confidence intent geldi diye stage sıçramasın
   // AMA: ürün değişimi, ödeme seçimi, iptal gibi meşru geçişler freeze edilmemeli
   const currentStage = initialState.conversation_stage;
-  const FREEZE_STAGES = new Set(["waiting_payment", "waiting_address", "waiting_back_text"]);
+  const FREEZE_STAGES = new Set(["waiting_payment", "waiting_address", "waiting_payment"]);
   const hasProductSwitch = previousProduct && product && previousProduct !== product;
   const hasPaymentChange = !!patch.payment_method;
   const hasAddressChange = !!patch.address_status;

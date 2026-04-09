@@ -39,7 +39,7 @@ export function sideQuestions(ctx, state) {
   if (intent === INTENT.TRUST) {
     if (hasAny(norm, ["kaplama","kaplamasi atar","kaplaması atar"])) return R("14 ayar altın kaplama çeliktir, kaplama atmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.");
     if (hasAny(norm, ["paslanmaz demi","paslanmaz demı","paslanmaz mi","paslanmaz mı"])) return R("Evet efendim, 14 ayar altın kaplama paslanmaz çeliktir 😊 Kararma, solma veya paslanma yapmaz.");
-    if (hasAny(norm, ["kararma","kararir","solar","solma","paslan","karar ma","soluyor","renk bozul","karariyormu","kararıyormu","kararirmi","kararırmi","karaa","renk atma","renk atar","renk atması","silinme","resim silin","rengi gidiyor","rengi gider","rengi aciyor","rengi açıyor"])) return R("14 ayar altın kaplama çeliktir, kararma solma yapmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.");
+    if (hasAny(norm, ["kararma","kararir","solar","solma","paslan","karar ma","soluyor","renk bozul","karariyormu","kararıyormu","kararirmi","kararırmi","karaa","renk atma","renk atar","renk atması","silinme","resim silin","rengi gidiyor","rengi gider","rengi aciyor","rengi açıyor"])) return R("14 ayar altın kaplama çeliktir, kararma solma paslanma yapmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.");
     if (hasAny(norm, ["suya dayanikli","dusta","duşta","deniz","ter ","havuz"])) return R("Denizde, havuzda veya duşta gönül rahatlığıyla kullanabilirsiniz efendim 😊 Uzun ömürlü ve dayanıklıdır.");
     if (hasAny(norm, ["sure","süre","ne kadar sure","ne kadar süre","kac yil","kaç yıl","kac sene","kaç sene","yillik","yıllık","omur boyu","ömür boyu","mesela 1","mesela bir"])) return R("Garanti veriyoruz efendim 😊 Kararma, solma veya kaplama kaynaklı bir durumda ürün değişimi sağlıyoruz. Ömür boyu kullanılabilir.");
     if (norm.includes("garanti")) return R("Garanti veriyoruz efendim 😊 Kararma, solma veya kaplama kaynaklı bir durumda ürün değişimi sağlıyoruz.");
@@ -107,7 +107,7 @@ export function sideQuestions(ctx, state) {
   }
 
   // Back text (outside flow)
-  if (intent === INTENT.BACK_TEXT && state.conversation_stage !== STAGE.WAITING_BACK_TEXT) {
+  if (intent === INTENT.BACK_TEXT && state.conversation_stage !== STAGE.WAITING_PAYMENT) {
     return R("Evet efendim 😊 Resimli lazer kolyede arka yüzüne yazı veya istenirse ikinci bir fotoğraf eklenebiliyor.");
   }
   if (intent === INTENT.PAYMENT_INFO) {

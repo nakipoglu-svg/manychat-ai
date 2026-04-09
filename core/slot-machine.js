@@ -127,7 +127,7 @@ export function applyEarlySlotMemory(slots, stage, signals, extracted) {
   }
 
   // waiting_photo veya waiting_back_text'te ödeme seçildi → kaydet
-  if ((stage === STAGE.WAITING_PHOTO || stage === STAGE.WAITING_BACK_TEXT) && 
+  if ((stage === STAGE.WAITING_PHOTO || stage === STAGE.WAITING_PAYMENT) && 
       (extracted.payment || signals.slot_updates?.payment_method)) {
     const pay = extracted.payment || signals.slot_updates.payment_method;
     if (slots.payment_method.status === "missing") {
