@@ -415,7 +415,18 @@ export default async function handler(req, res) {
     let cf = {};
     if (lid) {
       const lr = await kApi("GET", "/api/v4/leads/" + lid);
-      if (lr.s === 200) cf = readFields(lr.d);
+      if (lr.s === 200) {
+        cf = readFields(lr.d);
+        // DEBUG: Raw custom fields from Kommo
+        const rawCF = lr.d?.custom_fields_values;
+        console.log("[WH_CF_RAW]", JSON.stringify({
+          lid,
+          hasFields: !!rawCF,
+          fieldCount: rawCF?.length || 0,
+          fields: (rawCF || []).slice(0, 5).map(f => ({ id: f.field_id, name: f.field_name, val: f.values?.[0]?.value })),
+          parsed: { product: cf.ilgilenilen_urun, stage: cf.conversation_stage, cancel: cf.cancel_reason?.substring(0, 30) },
+        }));
+      }
     }
 
     // ══════════════════════════════════════════════════════════
