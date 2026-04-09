@@ -41,21 +41,19 @@ export function sideQuestions(ctx, state) {
     if (hasAny(norm, ["paslanmaz demi","paslanmaz demı","paslanmaz mi","paslanmaz mı"])) return R("Evet efendim, 14 ayar altın kaplama paslanmaz çeliktir 😊 Kararma, solma veya paslanma yapmaz.");
     if (hasAny(norm, ["kararma","kararir","solar","solma","paslan","karar ma","soluyor","renk bozul","karariyormu","kararıyormu","kararirmi","kararırmi","karaa","renk atma","renk atar","renk atması","silinme","resim silin","rengi gidiyor","rengi gider","rengi aciyor","rengi açıyor"])) return R("14 ayar altın kaplama çeliktir, kararma solma yapmaz efendim 😊 Günlük kullanımda rahatlıkla kullanabilirsiniz.");
     if (hasAny(norm, ["suya dayanikli","dusta","duşta","deniz","ter ","havuz"])) return R("Denizde, havuzda veya duşta gönül rahatlığıyla kullanabilirsiniz efendim 😊 Uzun ömürlü ve dayanıklıdır.");
+    if (hasAny(norm, ["sure","süre","ne kadar sure","ne kadar süre","kac yil","kaç yıl","kac sene","kaç sene","yillik","yıllık","omur boyu","ömür boyu","mesela 1","mesela bir"])) return R("Garanti veriyoruz efendim 😊 Kararma, solma veya kaplama kaynaklı bir durumda ürün değişimi sağlıyoruz. Ömür boyu kullanılabilir.");
     if (norm.includes("garanti")) return R("Garanti veriyoruz efendim 😊 Kararma, solma veya kaplama kaynaklı bir durumda ürün değişimi sağlıyoruz.");
     return R("Güvenle sipariş verebilirsiniz efendim 😊");
   }
 
-  // Back side info
+  // Back side info — müşteri açtığında cevapla, proaktif sunma
   if ([INTENT.BACK_TEXT_INFO, INTENT.BACK_PHOTO_INFO, INTENT.BACK_PHOTO_PRICE].includes(intent)) {
     if (ap === PRODUCT.ATAC) return R("Bu özellik resimli lazer kolye için geçerlidir efendim 😊");
-    if (intent === INTENT.BACK_PHOTO_PRICE) return R("Ek ücret olmuyor efendim 😊");
+    if (intent === INTENT.BACK_PHOTO_PRICE) return R("Ücret farkı olmadan yapılabiliyor efendim 😊");
     if (intent === INTENT.BACK_PHOTO_INFO) {
-      let extra = "";
-      if (state.conversation_stage === STAGE.WAITING_PAYMENT) extra = " Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim?";
-      else if (state.conversation_stage === STAGE.WAITING_ADDRESS) extra = " Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz efendim?";
-      return R("Evet efendim 😊 Ön yüze bir fotoğraf, arka yüze de ikinci bir fotoğraf ekleyebiliyoruz. Ek ücret de olmuyor." + extra);
+      return R("Evet efendim 😊 Arka tarafa da fotoğraf basabiliyoruz, ücret farkı olmadan yapılabiliyor. İsterseniz ikinci fotoğrafı da buradan iletebilirsiniz.");
     }
-    if (intent === INTENT.BACK_TEXT_INFO) return R("Evet efendim 😊 Resimli lazer kolyede arka yüzüne yazı veya istenirse ikinci bir fotoğraf eklenebiliyor.");
+    if (intent === INTENT.BACK_TEXT_INFO) return R("Evet efendim 😊 Arka tarafa ücretsiz bir şekilde yazı ekleyebiliyoruz. İsterseniz ne yazılmasını istediğinizi buradan iletebilirsiniz.");
   }
 
   // Photo question
@@ -112,7 +110,10 @@ export function sideQuestions(ctx, state) {
   if (intent === INTENT.BACK_TEXT && state.conversation_stage !== STAGE.WAITING_BACK_TEXT) {
     return R("Evet efendim 😊 Resimli lazer kolyede arka yüzüne yazı veya istenirse ikinci bir fotoğraf eklenebiliyor.");
   }
-  if (intent === INTENT.PAYMENT_INFO) return R("Kapıda ödeme ile ürün elinize ulaştığında kurye ye nakit olarak ödeme yaparsınız efendim 😊 Kapıda ödemede sadece nakit geçerlidir, kredi kartı kullanılamamaktadır.");
+  if (intent === INTENT.PAYMENT_INFO) {
+    if (hasAny(norm, ["iban","hesap numara","hesap bilgi"])) return R(`Tabi efendim 😊\n\n${TEXT.EFT_INFO}`);
+    return R("Kapıda ödeme ile ürün elinize ulaştığında kurye ye nakit olarak ödeme yaparsınız efendim 😊 Kapıda ödemede sadece nakit geçerlidir, kredi kartı kullanılamamaktadır.");
+  }
   if (intent === INTENT.PHOTO_SENT_CONFIRM) return R("Fotoğrafınız ulaştı efendim, ekibimiz kontrol edip dönüş sağlayacaktır 😊", REPLY_CLASS.FLOW_PROGRESS);
 
   return null;

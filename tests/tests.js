@@ -5,6 +5,7 @@ console.log("🔥 TEST BAŞLADI (1000+ test)");
 function body(message, state = {}) {
   return {
     message,
+    _test: true, // AI classifier'ı test ortamında devre dışı bırak
     ilgilenilen_urun: state.ilgilenilen_urun || "",
     user_product: state.user_product || state.ilgilenilen_urun || "",
     conversation_stage: state.conversation_stage || "",
@@ -20,6 +21,8 @@ function body(message, state = {}) {
     support_mode: state.support_mode || "",
     siparis_alindi: state.siparis_alindi || "",
     cancel_reason: state.cancel_reason || "",
+    last_intent: state.last_intent || "",
+    ai_reply: state.ai_reply || "",
   };
 }
 
@@ -40,7 +43,7 @@ const tests = [
   // GRUP 1: CORE FLOW
   { id: "T01", name: "Lazer seçimi", input: body("resimli lazer kolye"), expect: { ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo" } },
   { id: "T02", name: "Lazer fiyat 599", input: body("lazer istiyorum"), expect: { ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo" }, expectReplyIncludes: "599" },
-  { id: "T03", name: "Foto URL → photo=1", input: body("https://lookaside.fbsbx.com/photo123.jpg", lazer({ conversation_stage: "waiting_photo" })), expect: { photo_received: "1", conversation_stage: "waiting_back_text" } },
+  { id: "T03", name: "Foto URL → photo=1", input: body("https://lookaside.fbsbx.com/photo123.jpg", lazer({ conversation_stage: "waiting_photo" })), expect: { photo_received: "1", conversation_stage: "waiting_payment" } },
   { id: "T04", name: "yok → skipped", input: body("yok", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "skipped", conversation_stage: "waiting_payment" } },
   { id: "T05", name: "istemiyorum → skipped", input: body("istemiyorum", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "skipped", conversation_stage: "waiting_payment" } },
   { id: "T06", name: "EFT → waiting_address", input: body("eft", lazerWaitingPayment()), expect: { payment_method: "eft_havale", conversation_stage: "waiting_address" } },
@@ -113,7 +116,7 @@ const tests = [
   { id: "MS13", name: "Yok fallback yok", input: body("yok", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "skipped", conversation_stage: "waiting_payment" }, expectReplyNotIncludes: "ekibimize iletiyorum" },
   { id: "MS14", name: "Arka yazı fallback yok", input: body("canım ailem", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "received", conversation_stage: "waiting_payment" }, expectReplyNotIncludes: "ekibimize iletiyorum" },
   { id: "MS15", name: "Harf fallback yok", input: body("ABC", atac({ conversation_stage: "waiting_letters" })), expect: { letters_received: "1", conversation_stage: "waiting_payment" }, expectReplyNotIncludes: "ekibimize iletiyorum" },
-  { id: "MS18", name: "Foto URL fallback yok", input: body("https://lookaside.fbsbx.com/photo123.jpg", lazer({ conversation_stage: "waiting_photo" })), expect: { photo_received: "1", conversation_stage: "waiting_back_text" }, expectReplyNotIncludes: "ekibimize iletiyorum" },
+  { id: "MS18", name: "Foto URL fallback yok", input: body("https://lookaside.fbsbx.com/photo123.jpg", lazer({ conversation_stage: "waiting_photo" })), expect: { photo_received: "1", conversation_stage: "waiting_payment" }, expectReplyNotIncludes: "ekibimize iletiyorum" },
   { id: "MS21", name: "Side: w_photo + konum", input: body("neredesiniz", lazer({ conversation_stage: "waiting_photo" })), expect: { conversation_stage: "waiting_photo", ilgilenilen_urun: "lazer" }, expectReplyIncludes: "istanbul" },
   { id: "MS41", name: "Switch: lazer→atac photo reset", input: body("ataç kolye istiyorum", lazer({ conversation_stage: "waiting_photo" })), expect: { ilgilenilen_urun: "atac", conversation_stage: "waiting_letters", photo_received: "" } },
   { id: "MS48", name: "Cross: lazerde atac fiyat switch yok", input: body("ataç kolye fiyatı ne kadar", lazer({ conversation_stage: "waiting_photo" })), expect: { ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo" } },
@@ -206,7 +209,7 @@ const tests = [
   // GRUP 21: BACK FOTO FIX
   { id: "AF01", name: "back_text=received foto → arka yazı sormamalı", input: body("https://lookaside.fbsbx.com/backphoto.jpg", lazer({ photo_received: "1", back_text_status: "received", conversation_stage: "waiting_payment" })), expectReplyNotIncludes: "arka yuzune yazi eklemek" },
   { id: "AF03", name: "back_text=received + payment yok → ödeme", input: body("https://lookaside.fbsbx.com/backphoto.jpg", lazer({ photo_received: "1", back_text_status: "received", conversation_stage: "waiting_payment" })), expectReplyIncludes: "odeme" },
-  { id: "AF05", name: "İlk foto → arka yazı sormalı", input: body("https://lookaside.fbsbx.com/photo1.jpg", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "arka yuzune yazi" },
+  { id: "AF05", name: "İlk foto → ödeme sormalı", input: body("https://lookaside.fbsbx.com/photo1.jpg", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "odeme" },
 
   // GRUP 22: LOG BUG FIX
   { id: "LB01", name: "Başınız sağolsun → taziye geri dönmemeli", input: body("Başınız sağolsun", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expectReplyNotIncludes: "basiniz sag olsun" },
@@ -289,10 +292,10 @@ const tests = [
   { id: "R10", name: "Urun degisiminde photo sifir", input: body("ataç kolye istiyorum", lazer({ photo_received: "1", back_text_status: "skipped", conversation_stage: "waiting_payment" })), expect: { photo_received: "" } },
   { id: "R14", name: "Niyet cumlesi photo yok", input: body("fotoğrafı gönderiyorum", lazer({ conversation_stage: "waiting_photo" })), expect: { photo_received: "" } },
   { id: "R17", name: ".jpeg URL photo=1", input: body("https://example.com/foto.jpeg", lazer({ conversation_stage: "waiting_photo" })), expect: { photo_received: "1" } },
-  { id: "R19", name: "Bu foto olur mu stage dur", input: body("bu foto olur mu", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { photo_received: "1", conversation_stage: "waiting_back_text" } },
+  { id: "R19", name: "Bu foto olur mu stage dur", input: body("bu foto olur mu", lazer({ photo_received: "1", conversation_stage: "waiting_payment" })), expect: { photo_received: "1", conversation_stage: "waiting_payment" } },
   { id: "R20", name: "Arka yazi info set etmemeli", input: body("arkasına yazı oluyor mu", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "" } },
   { id: "R21", name: "w_back_text foto received", input: body("https://lookaside.fbsbx.com/backphoto.jpg", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "received" } },
-  { id: "R22", name: "Arka foto fiyat ek ucret", input: body("arkasına foto koyarsam fiyat ne olur", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expectReplyIncludes: "ek ucret" },
+  { id: "R22", name: "Arka foto fiyat ucret farki", input: body("arkasına foto koyarsam fiyat ne olur", lazer({ photo_received: "1", conversation_stage: "waiting_payment" })), expectReplyIncludes: "ucret" },
   { id: "R25", name: "Atac w_letters korunmali", input: body("devam", atac({ conversation_stage: "waiting_letters" })), expect: { conversation_stage: "waiting_letters" } },
   { id: "R26", name: "Atac letters yok eft stage dur", input: body("eft", atac({ conversation_stage: "waiting_letters" })), expect: { conversation_stage: "waiting_letters" } },
   { id: "R27", name: "Atac letters yok kapida dur", input: body("kapıda ödeme olsun", atac({ conversation_stage: "waiting_letters" })), expect: { conversation_stage: "waiting_letters" } },
@@ -709,7 +712,7 @@ const tests = [
   // MS eksikler (38 adet)
   { id: "MS08", name: "Arka yazi olur mu", input: body("arkasına yazı olur mu", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expectReplyNotIncludes: "ekibimize iletiyorum" },
   { id: "MS09", name: "Arka foto olur mu", input: body("arkasına foto olur mu", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expectReplyNotIncludes: "ekibimize iletiyorum" },
-  { id: "MS10", name: "Arka foto fiyat", input: body("arkasına foto koyarsam fiyat ne olur", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expectReplyIncludes: "ek ucret", expectReplyNotIncludes: "ekibimize iletiyorum" },
+  { id: "MS10", name: "Arka foto fiyat", input: body("arkasına foto koyarsam fiyat ne olur", lazer({ photo_received: "1", conversation_stage: "waiting_payment" })), expectReplyIncludes: "ucret", expectReplyNotIncludes: "ekibimize iletiyorum" },
   { id: "MS17", name: "Adres fallback yok", input: body("Kadıköy Moda Mah No:3", lazerWaitingAddress()), expect: { address_status: "address_only" }, expectReplyNotIncludes: "ekibimize iletiyorum" },
   { id: "MS23", name: "Side w_photo kargo", input: body("kaç günde gelir", lazer({ conversation_stage: "waiting_photo" })), expect: { conversation_stage: "waiting_photo", ilgilenilen_urun: "lazer" }, expectReplyIncludes: "is gunu" },
   { id: "MS24", name: "Side w_photo kargo ucreti", input: body("kargo ücreti var mı", lazer({ conversation_stage: "waiting_photo" })), expect: { conversation_stage: "waiting_photo", ilgilenilen_urun: "lazer" }, expectReplyIncludes: "dahil" },
@@ -1240,7 +1243,7 @@ const tests = [
   // ── GRUP 49: PHOTO URL VARIATIONS ──────────────────────────
 
   // amojo.kommo.com URL → photo detected
-  { id: "KT080", name: "Amojo kommo URL photo", input: body("https://amojo.kommo.com/v2/4c12aa12/attachments/photo.jpe", lazer({ conversation_stage: "waiting_photo" })), expect: { photo_received: "1", conversation_stage: "waiting_back_text" } },
+  { id: "KT080", name: "Amojo kommo URL photo", input: body("https://amojo.kommo.com/v2/4c12aa12/attachments/photo.jpe", lazer({ conversation_stage: "waiting_photo" })), expect: { photo_received: "1", conversation_stage: "waiting_payment" } },
 
   // .jpe extension URL
   { id: "KT081", name: "Jpe extension photo", input: body("https://amojo.kommo.com/v2/abc/attachments/image.jpe", lazer({ conversation_stage: "waiting_photo" })), expect: { photo_received: "1" } },
@@ -1394,7 +1397,7 @@ const tests = [
   // ── GRUP 57: KOMMO PHOTO URL PATTERNS ──────────────────────
 
   // lookaside.fbsbx.com with very long signature
-  { id: "KT126", name: "Long CDN URL photo", input: body("https://lookaside.fbsbx.com/ig_messaging_cdn/?asset_id=992283123463446&signature=Ab0DeqDUhrVYEAMATjbQzs5XmBWAejRWIYfZo57ORvmua7vmr38TfBeTZdcPhB0JZARh1oWO1xoBTO4dr1NTISByiWGBbsH-TPHJ9FnoGiV4ForRhT5Dr7DhGvpdMhPzZp-w4poegIi4GopFxLDt7gi1lx24EZFdcT9Bu-DsmrIxL36N07t8adKqRxiGmSXz8h3kP_GUustrUJGX4YOWCd1gtDxA", lazer({ conversation_stage: "waiting_photo" })), expect: { photo_received: "1", conversation_stage: "waiting_back_text" } },
+  { id: "KT126", name: "Long CDN URL photo", input: body("https://lookaside.fbsbx.com/ig_messaging_cdn/?asset_id=992283123463446&signature=Ab0DeqDUhrVYEAMATjbQzs5XmBWAejRWIYfZo57ORvmua7vmr38TfBeTZdcPhB0JZARh1oWO1xoBTO4dr1NTISByiWGBbsH-TPHJ9FnoGiV4ForRhT5Dr7DhGvpdMhPzZp-w4poegIi4GopFxLDt7gi1lx24EZFdcT9Bu-DsmrIxL36N07t8adKqRxiGmSXz8h3kP_GUustrUJGX4YOWCd1gtDxA", lazer({ conversation_stage: "waiting_photo" })), expect: { photo_received: "1", conversation_stage: "waiting_payment" } },
 
   // ── GRUP 58: IDEMPOTENCY (Aynı mesaj aynı state → aynı sonuç) ──
 
@@ -1451,7 +1454,7 @@ const tests = [
   { id: "KT158", name: "Tesekkur w_back_text not back_text", input: body("Teşekkür ederim çok sağolun", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expectReplyIncludes: "rica", expect: { back_text_status: "" } },
 
   // "Kararma yapıyor mu acaba" → w_back_text'te, side intent (trust)
-  { id: "KT159", name: "Kararma w_back_text trust", input: body("Kararma yapıyor mu acaba", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expectReplyIncludes: "kararma", expect: { conversation_stage: "waiting_back_text" } },
+  { id: "KT159", name: "Kararma w_payment trust", input: body("Kararma yapıyor mu acaba", lazer({ photo_received: "1", conversation_stage: "waiting_payment" })), expectReplyIncludes: "kararma", expect: { conversation_stage: "waiting_payment" } },
 
   // "2 fotoğrafında kullanılmasını istiyorum" → back_photo_info
   { id: "KT160", name: "2 foto kullanimasi w_back_text", input: body("2 fotoğrafında kullanılmasını ıstıyorum arka yüzüne", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expectReplyNotIncludes: "ekibimize iletiyorum" },
@@ -1848,6 +1851,143 @@ const tests = [
 
   // Hepsi doluyken hiçbirini sorma
   { id: "AR07", name: "hepsi dolu → tekrar yok", input: body("tamam", lazerCompleted()), expectReplyNotIncludes: "iletebilir misiniz" },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // v4 REGRESSION TESTS — 50 yeni test, 20 aile
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  // ── 1. PAYMENT + SIDE QUESTION ──
+  { id: "V401", name: "EFT + kargo ücreti sorusu", input: body("EFT seçeyim kargo ücreti var mı", lazerWaitingPayment()), expect: { payment_method: "eft_havale" }, expectReplyIncludes: "dahil" },
+  { id: "V402", name: "kapıda + güven sorusu", input: body("kapıda ödeme olsun kararır mı", lazerWaitingPayment()), expect: { payment_method: "kapida_odeme" }, expectReplyIncludes: "kararma" },
+  { id: "V403", name: "EFT + kargo süresi", input: body("eft ile ödeyeceğim ne zaman gelir", lazerWaitingPayment()), expect: { payment_method: "eft_havale" } },
+
+  // ── 2. BACK_TEXT QUESTION VS CONTENT ──
+  { id: "V404", name: "soru: arkaya ne yazılır", input: body("arkaya ne yazılır genelde?", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "" }, expectReplyNotIncludes: "odeme" },
+  { id: "V405", name: "içerik: Rüzgar Ayata", input: body("Rüzgar Ayata 02.03.2026", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "received" } },
+  { id: "V406", name: "soru: örnek verir misiniz", input: body("örnek verir misiniz?", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "" } },
+
+  // ── 3. UNDECIDED BACK_TEXT ──
+  { id: "V407", name: "bilemedim → undecided", input: body("bilemedim", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "" }, expectReplyIncludes: "isim" },
+  { id: "V408", name: "ne yazsak ki → undecided", input: body("ne yazsak ki", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "" } },
+  { id: "V409", name: "kararsız kaldım → undecided", input: body("kararsız kaldım", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "" } },
+
+  // ── 4. CAPABILITY MULTI PHOTO ──
+  { id: "V410", name: "ikili resim", input: body("ikili resim yapıyor musunuz", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "birden fazla" },
+  { id: "V411", name: "iki kişi tek kare", input: body("iki kişi aynı karede olabilir mi", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "birlestir" },
+
+  // ── 5. TRUST FOLLOW-UP MEMORY ──
+  { id: "V412", name: "trust sonrası süre sorusu", input: body("ne kadar süre", lazer({ conversation_stage: "waiting_photo", last_intent: "trust" })), expectReplyIncludes: "garanti" },
+  { id: "V413", name: "trust sonrası mesela sorusu", input: body("mesela 1 yıl mı", lazer({ conversation_stage: "waiting_photo", last_intent: "trust" })), expectReplyIncludes: "garanti" },
+
+  // ── 6. COMPLAINT ALREADY_SENT ──
+  { id: "V414", name: "verdim ya — hiç eksik yok", input: body("verdim ya hepsini", lazerCompleted()), expectReplyIncludes: "alinmistir" },
+  { id: "V415", name: "gönderdim ya — foto eksik", input: body("gönderdim ya", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "aldim" },
+  { id: "V416", name: "yazdım yukarıda — tüm dolu", input: body("yazdım yukarıda", lazerCompleted()), expectReplyIncludes: "alinmistir" },
+
+  // ── 7. ORDER STATUS CONFIRMATION ──
+  { id: "V417", name: "siparişim alındı mı — completed", input: body("siparişim alındı mı", lazerCompleted()), expectReplyIncludes: "alinmistir" },
+  { id: "V418", name: "sipariş tamam mı — foto eksik", input: body("sipariş tamam mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "fotograf" },
+
+  // ── 8. WHATSAPP PHOTO CLAIMED ──
+  // (sent_on_whatsapp/sent_photo_already signals need to be in norm — test via complaint keywords)
+  { id: "V419", name: "WhatsApp numarası sorusu", input: body("WhatsApp numaranız var mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "0534" },
+
+  // ── 9. RESTRICTED CONTENT STATE PRESERVATION ──
+  { id: "V420", name: "API restriction → state korunur", input: body("The message could not be displayed due to API restrictions", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { photo_received: "1", back_text_status: "" } },
+  { id: "V421", name: "dosya eki → state korunur", input: body("bir dosya eki gönderdi", lazerWaitingPayment()), expect: { payment_method: "" } },
+
+  // ── 10. PHONE IN WAITING_BACK_TEXT ──
+  { id: "V422", name: "telefon w_back_text'te → back_text DEĞİL", input: body("05551234567", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "" } },
+  { id: "V423", name: "telefon back_text olmamalı", input: body("05321112233", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "" } },
+
+  // ── 11. ADDRESS IN WAITING_BACK_TEXT ──
+  { id: "V424", name: "adres w_back_text'te → back_text DEĞİL", input: body("İstanbul Kadıköy Moda Mah Bahariye Cad No:5", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "" } },
+
+  // ── 12. EARLY BACK_TEXT MEMORY ──
+  // (Şu anki yapıda early memory slot-machine üzerinden çalışıyor ama CRM field'a yansıtma henüz limited)
+  { id: "V425", name: "w_photo'da ödeme seçimi → payment kaydedilir", input: body("eft olsun", lazer({ conversation_stage: "waiting_photo" })), expect: { ilgilenilen_urun: "lazer" }, expectReplyIncludes: "fotograf" },
+
+  // ── 13. CORRECTION PAYMENT SWITCH ──
+  { id: "V426", name: "kapıda değil eft olsun", input: body("kapıda değil eft olsun", lazerWaitingPayment({ payment_method: "kapida_odeme" })), expect: { payment_method: "eft_havale" } },
+  { id: "V427", name: "eft değil kapıda olsun", input: body("eft değil kapıda olsun", lazerWaitingPayment({ payment_method: "eft_havale" })), expect: { payment_method: "kapida_odeme" } },
+
+  // ── 14. CORRECTION PHOTO CHANGE ──
+  { id: "V428", name: "fotoğrafı değiştirebilir miyim", input: body("fotoğrafı değiştirebilir miyim", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expectReplyNotIncludes: "iletebilirsiniz efendim" },
+
+  // ── 15. CORRECTION BACK_TEXT CHANGE ──
+  { id: "V429", name: "arka yazıyı değiştirelim", input: body("arka yazıyı değiştirelim", lazer({ photo_received: "1", back_text_status: "received", conversation_stage: "waiting_payment" })), expectReplyNotIncludes: "hangisini tercih" },
+
+  // ── 16. ANTI-REPEAT FOR ALL SLOTS ──
+  { id: "V430", name: "foto dolu → tekrar sorma", input: body("tamam", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expectReplyNotIncludes: "fotografinizi buradan" },
+  { id: "V431", name: "payment dolu → tekrar sorma", input: body("tamam", lazer({ photo_received: "1", back_text_status: "skipped", payment_method: "eft_havale", conversation_stage: "waiting_address" })), expectReplyNotIncludes: "hangisini tercih" },
+  { id: "V432", name: "back_text dolu → tekrar sorma", input: body("devam edelim", lazer({ photo_received: "1", back_text_status: "received", conversation_stage: "waiting_payment" })), expectReplyNotIncludes: "arka yuze yazi" },
+
+  // ── 17. SELF-HEAL AFTER COMPLAINT ──
+  { id: "V433", name: "neden tekrar soruyorsunuz — eksik var", input: body("neden tekrar soruyorsunuz", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expectReplyIncludes: "ozur" },
+  { id: "V434", name: "hep aynı → human_support'ta devreye girmesin", input: body("Hep aynı şeyleri yazıyorsun", lazer({ conversation_stage: "human_support", order_status: "cancel_requested" })), expectReplyIncludes: "ekibimiz" },
+
+  // ── 18. ALIAS MAP ──
+  { id: "V435", name: "resimli kolye → lazer", input: body("resimli kolye istiyorum"), expect: { ilgilenilen_urun: "lazer" } },
+  { id: "V436", name: "isimli kolye → ataç", input: body("harfli kolye"), expect: { ilgilenilen_urun: "atac" } },
+  { id: "V437", name: "fotograflı kolye → lazer", input: body("fotoğraflı kolye"), expect: { ilgilenilen_urun: "lazer" } },
+
+  // ── 19. COMPLETED STAGE INFO QUESTIONS ──
+  { id: "V438", name: "completed'da kargo sorusu → cevap ver", input: body("kargo ne zaman gelir", lazerCompleted()), expectReplyIncludes: "is gunu" },
+  { id: "V439", name: "completed'da güven sorusu → cevap ver", input: body("kararır mı bu kolye", lazerCompleted()), expectReplyIncludes: "kararma" },
+  { id: "V440", name: "completed'da malzeme sorusu → cevap ver", input: body("çelik mi bu", lazerCompleted()), expectReplyIncludes: "celik" },
+
+  // ── 20. MIXED-MESSAGE MULTI-SIGNAL ──
+  { id: "V441", name: "EFT + kargo sorusu birlikte", input: body("O zaman ben eft'yi seçeyim kargo ücreti var mı", lazerWaitingPayment()), expect: { payment_method: "eft_havale" }, expectReplyIncludes: "dahil" },
+  { id: "V442", name: "kapıda + ne zaman gelir", input: body("kapıda ödeme ile devam edelim ne zaman gelir", lazerWaitingPayment()), expect: { payment_method: "kapida_odeme" } },
+
+  // ── BONUS: EDGE CASES ──
+  { id: "V443", name: "system msg → stage bozulmasın", input: body("reacted to your message", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "" } },
+  { id: "V444", name: "emoji → stage bozulmasın", input: body("❤️", lazer({ conversation_stage: "waiting_photo" })), expect: { ilgilenilen_urun: "lazer" } },
+  { id: "V445", name: "kısa onay w_photo", input: body("tamam", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "fotograf" },
+  { id: "V446", name: "kısa onay w_payment", input: body("olur", lazerWaitingPayment()), expectReplyIncludes: "eft" },
+  { id: "V447", name: "kısa onay w_address", input: body("tamam", lazerWaitingAddress()), expectReplyIncludes: "ad soyad" },
+  { id: "V448", name: "canım kızım Elvan → back_text content", input: body("Canım kızım Elvan", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "received" } },
+  { id: "V449", name: "Sonsuza kadar seninim → back_text content", input: body("Sonsuza kadar seninim", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "received" } },
+  { id: "V450", name: "config IBAN doğru", input: body("IBAN numaranız nedir", lazerWaitingPayment()), expectReplyIncludes: "TR34" },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // v4.1 PRODUCTION LOG REGRESSION — 25 test, 4 kök sorun
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  // ── A. CAPABILITY ENGINE: kaç kişi ailesi ──
+  { id: "PL01", name: "kaç kişi olur", input: body("Kac kisi olur", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "birden fazla" },
+  { id: "PL02", name: "kaç kişilik resim olur", input: body("Kac kisilik resim olabilir bir kolyede", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "birden fazla" },
+  { id: "PL03", name: "kaç kişi → fotoğraf gönderin DEĞİL", input: body("Kac kisi olur", lazer({ conversation_stage: "waiting_photo" })), expectReplyNotIncludes: "fotografinizi buradan iletebilirsiniz efendim" },
+  { id: "PL04", name: "iki kişi aynı karede olabilir mi", input: body("iki kişi aynı karede olabilir mi", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "birden fazla" },
+  { id: "PL05", name: "3 kişilik foto olur mu", input: body("3 kişilik foto olur mu", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "birden fazla" },
+
+  // ── B. BACK_TEXT QUESTION VS CONTENT ──
+  { id: "PL06", name: "arkasına ne yazdırıyorlar genelde → QUESTION", input: body("Arkasına ne yazdırıyorlar genelde", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "" } },
+  { id: "PL07", name: "isim ve tarih yazdırabilir miyiz → QUESTION", input: body("Arkasına isim ve tarih yazdırabilir miyiz sığar mı acaba", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "" } },
+  { id: "PL08", name: "genelde ne yazılıyor → QUESTION", input: body("genelde ne yazılıyor", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "" } },
+  { id: "PL09", name: "sığar mı → QUESTION", input: body("isim sığar mı", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "" } },
+  { id: "PL10", name: "Canım annem 15.03 → CONTENT", input: body("Canım annem 15.03", lazer({ photo_received: "1", conversation_stage: "waiting_back_text" })), expect: { back_text_status: "received" } },
+
+  // ── C. PAYMENT INFO VS SELECTION ──
+  { id: "PL11", name: "EFT kapıda fark nedir → info, slot commit YOK", input: body("EFT ile kapıda ödeme arasındaki fark nedir", lazerWaitingPayment()), expect: { payment_method: "" } },
+  { id: "PL12", name: "fark sorusu → kapıda seçmemeli", input: body("Yahu EFT ile kapıda ödeme arasındaki fark nedir", lazerWaitingPayment()), expect: { payment_method: "" } },
+  { id: "PL13", name: "EFT olsun → gerçek seçim", input: body("EFT olsun", lazerWaitingPayment()), expect: { payment_method: "eft_havale" } },
+  { id: "PL14", name: "kapıda ödeme seçiyorum → gerçek seçim", input: body("kapıda ödeme seçiyorum", lazerWaitingPayment()), expect: { payment_method: "kapida_odeme" } },
+  { id: "PL15", name: "nasıl oluyor kapıda → info, slot commit YOK", input: body("kapıda ödeme nasıl oluyor", lazerWaitingPayment()), expect: { payment_method: "" } },
+
+  // ── D. FRUSTRATION HARD STOP ──
+  { id: "PL16", name: "otomatik mesaj istemiyorum → insan devri", input: body("Otomatik mesaj istemiyorum", lazer({ conversation_stage: "waiting_photo" })), expect: { support_mode: "1" }, expectReplyIncludes: "ekibimiz" },
+  { id: "PL17", name: "aptal mısınız → insan devri", input: body("siz aptal mısınız", lazer({ conversation_stage: "waiting_photo" })), expect: { support_mode: "1" }, expectReplyIncludes: "ozur" },
+  { id: "PL18", name: "dalga geçiyorsunuz → insan devri", input: body("dalga mı geçiyorsunuz", lazer({ conversation_stage: "waiting_payment" })), expect: { support_mode: "1" } },
+  { id: "PL19", name: "dava ediyorum → insan devri", input: body("sizi dava ediyorum", lazer({ conversation_stage: "waiting_address" })), expect: { support_mode: "1" } },
+  { id: "PL20", name: "canlı destek istiyorum → insan devri", input: body("canlı destek bağlayın", lazer({ conversation_stage: "waiting_photo" })), expect: { support_mode: "1" } },
+  { id: "PL21", name: "ne bilgisi aldın → insan devri", input: body("Ne bilgisi aldın benden şimdi", lazer({ conversation_stage: "waiting_photo" })), expect: { support_mode: "1" } },
+  { id: "PL22", name: "frustration sonrası soru sormamalı", input: body("siz aptal mısınız", lazer({ conversation_stage: "waiting_photo" })), expectReplyNotIncludes: "fotografinizi" },
+  { id: "PL23", name: "frustration sonrası slot istememeli", input: body("dalga mı geçiyorsunuz", lazerWaitingPayment()), expectReplyNotIncludes: "hangisini tercih" },
+
+  // ── E. CROSS-CHECK: gümüş müdür hala çalışmalı ──
+  { id: "PL24", name: "gümüş müdür → malzeme cevabı (frustration DEĞİL)", input: body("kolye gümüş müdür"), expectReplyIncludes: "celik" },
+  { id: "PL25", name: "paslanmaz mı → trust cevabı (frustration DEĞİL)", input: body("paslanmaz mı bu", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "paslanmaz" },
 ];
 
 async function runTests() {

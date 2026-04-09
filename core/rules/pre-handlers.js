@@ -11,15 +11,18 @@ export function preHandlers(ctx, state, nextStage) {
   const raw = String(message || "").trim();
   const stage = state.conversation_stage || "";
 
-  // ═══ ARKA YAZI TALEBİ (her stage'de) ═══
-  // Müşteri "arkasına X yazın" diyorsa → not al, akışı devam ettir
-  // AMA: soru cümlelerini hariç tut ("arkasına yazı olur mu" = bilgi sorusu)
-  const isBackTextQuestion = hasAny(norm, ["olur mu","olurmu","oluyor mu","yazilir mi","yazılır mı","yapilir mi","yapılır mı","ne yazalim","ne yazılır","ne yazılıyor","genelde"]);
-  if (hasAny(norm, ["arkasina","arkasına","arkaya","arka kisma","arka kısma","arka tarafina","arka tarafına"]) && hasAny(norm, ["yaz","yazalim","yazılsın","yazsın","ekle"]) && !isBackTextQuestion) {
+  // ═══ ARKA YAZI TALEBİ (sadece lazer — ataç'ta arka yazı yok) ═══
+  const isBackTextQuestion = hasAny(norm, ["olur mu","olurmu","oluyor mu","yazilir mi","yazılır mı","yapilir mi","yapılır mı","ne yazalim","ne yazılır","ne yazılıyor","genelde","yazabilir mi","yazabilir miyiz","yazabiliriz","eklenebilir","ekleniyor mu","yazdirilir","yazdırılır","sigar mi","sığar mı","ne yazilir","ne yazdirabilir"]);
+  if (ctx.product !== PRODUCT.ATAC && hasAny(norm, ["arkasina","arkasına","arkaya","arka kisma","arka kısma","arka tarafina","arka tarafına"]) && hasAny(norm, ["yaz","yazalim","yazılsın","yazsın","ekle"])) {
+    if (isBackTextQuestion) {
+      // Soru → bilgi ver, state değiştirme
+      return FP("Evet efendim 😊 Arka tarafa ücretsiz bir şekilde yazı ekleyebiliyoruz. İsterseniz ne yazılmasını istediğinizi buradan iletebilirsiniz.");
+    }
+    // Net talep → yumuşak teyit
     const extra = stage === STAGE.WAITING_PAYMENT ? " Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim?" :
                   stage === STAGE.WAITING_ADDRESS ? " Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz?" :
                   stage === STAGE.WAITING_PHOTO ? " Fotoğrafınızı buradan iletebilirsiniz." : "";
-    return FP("Arka yazı notunuzu aldım efendim 😊" + extra);
+    return FP("Tamamdır efendim 😊" + extra);
   }
 
   // Fiyat pazarlık
@@ -48,7 +51,7 @@ export function preHandlers(ctx, state, nextStage) {
   }
 
   // Çoklu foto / birleştirme (Fix #15)
-  if (hasAny(norm, ["kac resim","kaç resim","kac foto","kaç foto","3 resim","uc resim","üç resim","3 foto","3 lu","3 lü","uclu","üçlü","4 lu","4 lü","5 li","5 kisi","5 kişi","tek kolyeye uc","tek kolyeye üç","tek yuze","tek yüze","ayni karede","aynı karede","birlestirip","birleştirip","birlestirme","birleştirme","birlestir","birleştir","ayri ayri yollasak","ayrı ayrı yollasak","ayri ayri atsak","ayrı ayrı atsak"])) {
+  if (hasAny(norm, ["kac resim","kaç resim","kac foto","kaç foto","3 resim","uc resim","üç resim","3 foto","3 lu","3 lü","uclu","üçlü","4 lu","4 lü","5 li","5 kisi","5 kişi","tek kolyeye uc","tek kolyeye üç","tek yuze","tek yüze","ayni karede","aynı karede","birlestirip","birleştirip","birlestirme","birleştirme","birlestir","birleştir","ayri ayri yollasak","ayrı ayrı yollasak","ayri ayri atsak","ayrı ayrı atsak","kac kisi","kaç kişi","kac kisilik","kaç kişilik","iki kisi","iki kisinin","iki cocuk","iki çocuk","kac yuz","kaç yüz","uc kisi","üç kişi","dort kisi","dört kişi","bes kisi","beş kişi","3 kisi","4 kisi"])) {
     if (hasAny(norm, ["ornek","örnek"])) return R("Tabi efendim, ekibimiz size örnek görselleri gönderecektir 😊", REPLY_CLASS.SELLER_REQUIRED, SUPPORT_REASON.SELLER);
     const extra = stage === STAGE.WAITING_PHOTO ? " Fotoğrafları buradan gönderebilirsiniz, ekibimiz düzenleyecektir." :
                   stage === STAGE.WAITING_PAYMENT ? " Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim?" :
@@ -108,7 +111,7 @@ export function preHandlers(ctx, state, nextStage) {
   }
 
   // WhatsApp
-  if (hasAny(norm, ["tel alab","telefon alab","whatsapp","numara alab","numaraniz","numaranız"])) return R(TEXT.WHATSAPP);
+  if (hasAny(norm, ["tel alab","telefon alab","whatsapp","numara alab"]) || (hasAny(norm, ["numaraniz","numaranız"]) && !hasAny(norm, ["iban","hesap","banka"]))) return R(TEXT.WHATSAPP);
 
   // Bitince paylaşır mısınız
   if (hasAny(norm, ["bitince paylas","bitince paylaş","hazir olunca paylas","hazır olunca paylaş","bitince atar","hazir olunca atar","hazır olunca atar","hazir olunca foto","hazır olunca foto","benimle paylas","benimle paylaş","gondermeden once","göndermeden önce"])) {

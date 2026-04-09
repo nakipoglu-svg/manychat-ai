@@ -197,6 +197,9 @@ export function looksLikeName(raw = "", norm = "", stage = "") {
 export function parsePaymentFromMessage(norm, existing = "") {
   if (hasAny(norm, ["kredi karti", "kredi kartı", "kartla", "kart ile"])) return existing || "";
   
+  // INFO QUESTION GUARD: "fark nedir", "arasındaki fark", "nasıl oluyor" → payment SELECTION değil
+  if (hasAny(norm, ["fark nedir","arasindaki fark","arasındaki fark","farki ne","farkı ne","hangisi nasil","hangisi nasıl","nasil oluyor","nasıl oluyor","ne demek","ne anlama"])) return existing || "";
+  
   // Negation detection: "kapıda değil" → kapıda'yı reddet
   const negatesKapida = hasAny(norm, ["kapida degil","kapıda değil","kapida istemiyorum","kapıda istemiyorum","kapida olmaz","kapıda olmaz"]);
   const negatesEft = hasAny(norm, ["eft degil","eft değil","eft istemiyorum","havale degil","havale değil","havale istemiyorum"]);

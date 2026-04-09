@@ -217,12 +217,20 @@ export function detectIntent(ctx) {
         "bulamadim","bulamadım","tapilir","yapilir",
         "arkali onlu","arkalı önlü","onlu arkali","önlü arkalı",
         "iki taraf","iki yuz","iki yüz",
+        "ne yazdiriyorlar","ne yazdırıyorlar","yazdiriyorlar","yazdırıyorlar",
+        "yazdirabilir","yazdırabilir","yazdirilir","yazdırılır",
+        "sigar mi","sığar mı","sigarmi","sığarmı",
+        "ne yazdiriliyor","ne yazdırılıyor",
+        "genelde","genellikle",
       ]);
 
     const hasIntentVerb = hasAny(norm, ["istiyorum","isterim","olsun","yapalim","yapın","yaparsaniz"]) && raw.length > 15
       && !hasAny(norm, ["yazilsin","yazılsın","yazsin","yazsın","yazarsaniz","yazarsanız","ekleyin","eklesin"]);
 
     if (raw && !blocked && !isQuestion && !hasIntentVerb && !isJustConfirm && !looksLikePhotoUrl(message) && raw.length <= 80) {
+      // ENTITY PRIORITY: telefon, adres, isim → back_text DEĞİL
+      if (extracted.phone) return INTENT.PHONE;
+      if (extracted.hasAddress) return INTENT.ADDRESS;
       return INTENT.BACK_TEXT;
     }
   }

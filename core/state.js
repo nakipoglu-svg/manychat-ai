@@ -202,7 +202,7 @@ function calcNextStage(s) {
   if (s.order_status === "cancel_requested") return STAGE.HUMAN_SUPPORT;
   if (s.product === PRODUCT.LAZER) {
     if (!truthy(s.photo_received)) return STAGE.WAITING_PHOTO;
-    if (!s.back_text_status) return STAGE.WAITING_BACK_TEXT;
+    // back_text artık zorunlu stage DEĞİL — müşteri isterse opsiyonel olarak verir
     if (!s.payment_method) return STAGE.WAITING_PAYMENT;
     if (s.address_status !== "received") return STAGE.WAITING_ADDRESS;
     return STAGE.ORDER_COMPLETED;
@@ -230,7 +230,7 @@ export function getMissingSlots(state) {
 
   if (product === PRODUCT.LAZER) {
     if (!truthy(state.photo_received)) missing.push("photo");
-    if (!state.back_text_status) missing.push("back_text");
+    // back_text artık eksik listesinde YOK — opsiyonel
   }
   if (product === PRODUCT.ATAC) {
     if (!truthy(state.letters_received)) missing.push("letters");

@@ -105,6 +105,20 @@ Context:
     });
     if (!res.ok) return TEXT.FALLBACK;
     const data = await res.json();
+    
+    // ═══ TOKEN USAGE LOGGING ═══
+    if (data?.usage) {
+      const u = data.usage;
+      console.log("[TOKEN]", JSON.stringify({
+        source: "model_fallback",
+        model: model,
+        prompt_tokens: u.prompt_tokens || 0,
+        completion_tokens: u.completion_tokens || 0,
+        total_tokens: u.total_tokens || 0,
+        ts: new Date().toISOString(),
+      }));
+    }
+    
     return data?.choices?.[0]?.message?.content || TEXT.FALLBACK;
   } catch {
     return TEXT.FALLBACK;

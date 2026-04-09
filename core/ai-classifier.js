@@ -168,19 +168,18 @@ export async function classifyMessage(message, stage, lastBotReply, filledSlots,
     const data = await response.json();
     
     // ═══ TOKEN USAGE LOGGING ═══
+    let tokenUsage = null;
     if (data?.usage) {
       const u = data.usage;
-      console.log(JSON.stringify({
-        _type: "token_usage",
+      tokenUsage = {
         source: "ai_classifier",
         model,
         prompt_tokens: u.prompt_tokens || 0,
         completion_tokens: u.completion_tokens || 0,
         total_tokens: u.total_tokens || 0,
-        cache_read_tokens: u.prompt_cache_read_tokens || 0,
-        cache_write_tokens: u.prompt_cache_write_tokens || 0,
         ts: new Date().toISOString(),
-      }));
+      };
+      console.log("[TOKEN]", JSON.stringify(tokenUsage));
     }
     
     const text = data?.choices?.[0]?.message?.content || "";
@@ -193,6 +192,7 @@ export async function classifyMessage(message, stage, lastBotReply, filledSlots,
       label: parsed.label || LABELS.GENERAL,
       confidence: parsed.confidence || 0,
       topic: parsed.topic || null,
+      _tokenUsage: tokenUsage,
     };
   } catch (err) {
     return { label: LABELS.GENERAL, confidence: 0, topic: null, error: err?.message || "parse_error" };

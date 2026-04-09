@@ -6,6 +6,24 @@ const R = (t, c = REPLY_CLASS.FLOW_PROGRESS, r = SUPPORT_REASON.NONE) => ({ text
 const OP = (t) => R(t, REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_REASON.OPERATIONAL);
 
 export function guards(ctx, state, nextStage) {
+  // ═══ FRUSTRATION HARD STOP ═══
+  // Müşteri sinirli / anti-bot / tehdit → flow'u durdur, insan devrine geç
+  const { norm } = ctx;
+  if (hasAny(norm, [
+    "otomatik mesaj istemiyorum","otomatik mesaj istemi","robot musunuz","robotmusunuz",
+    "aptal misiniz","aptalmisiniz","siz aptal","salak misiniz","salakmisiniz",
+    "dalga geciyor","dalga geçiyor","dalga mi geciyorsunuz","dalga mı geçiyorsunuz",
+    "dava ediyorum","dava ederim","dava acacagim","dava açacağım","sikayet edecegim","şikayet edeceğim",
+    "ne bilgisi aldin","ne bilgisi aldın","ne bilgisi aldim","ne bilgisi aldım",
+    "cildirticaksiniz","çıldırtacaksınız","cildirtiyorsunuz","çıldırtıyorsunuz",
+    "sizi sikayet","sizi şikayet","sikayetciyim","şikayetçiyim",
+    "rezalet","rezilsiniz","kepaze","sacmalik","saçmalık",
+    "insan baglayın","insan bağlayın","gercek insan","gerçek insan","canli destek","canlı destek",
+    "yetkili baglayın","yetkili bağlayın","mudur baglayın","müdür bağlayın","mudur konusturun","müdür konuşturun","amiriniz","mudur ile","müdür ile",
+  ])) {
+    return OP("Çok özür dileriz efendim, ekibimize hemen yönlendiriyorum 😊");
+  }
+
   // ═══ ORDER COMPLETED GUARD ═══
   const isComp = state.order_status === "completed" || truthy(state.siparis_alindi);
   const wasComp = ctx.fields.conversation_stage === STAGE.ORDER_COMPLETED || state.conversation_stage === STAGE.ORDER_COMPLETED;

@@ -45,12 +45,17 @@ export function extractSignals(ctx) {
   if (stage === STAGE.WAITING_BACK_TEXT && raw.length > 0 && raw.length <= 80) {
     const CONFIRM_WORDS = ["tamam","tamamdir","tmm","tmmm","olur","peki","evet","ok","he","hee","tm"];
     const isJustConfirm = CONFIRM_WORDS.includes(norm) || norm === "tamam dir";
-    const isUndecided = hasAny(norm, ["bilemedim","karar veremedim","ne yazsak","dusuneyim","düşüneyim","emin degilim","emin değilim","bilmiyorum","kararsizim","kararsızım"]);
+    const isUndecided = hasAny(norm, ["bilemedim","karar veremedim","ne yazsak","ne yazalim","ne yazsak ki","dusuneyim","düşüneyim","emin degilim","emin değilim","bilmiyorum","kararsizim","kararsızım","kararsiz kaldim","kararsız kaldım","bir sey dusunemedim","bir şey düşünemedim","sonra soylesem","sonra söylesem","aklima gelmiyor","aklıma gelmiyor","karar veremedim","henuz dusunmedim","henüz düşünmedim"]);
     const isQuestion = /[?]/.test(raw) || hasAny(norm, [
       "ne yazilir","ne yazılır","ne yaziyorsunuz","ne yazılıyor","ne yazabiliriz","ne yazilabilir",
       "genelde ne","neler var","var mi","var mı","hangi charm","hangi aksesuar","hangi seceneg",
       "olur mu","olurmu","yapilir mi","yapılır mı","nasil","nasıl","acaba","nedir",
       "ne gibi","ne tarz","ornek","örnek","arkali onlu","arkalı önlü",
+      "ne yazdiriyorlar","ne yazdırıyorlar","yazdiriyorlar","yazdırıyorlar",
+      "yazdirabilir","yazdırabilir","yazdirilir","yazdırılır",
+      "sigar mi","sığar mı","sigarmi","sığarmı",
+      "ne yazdiriliyor","ne yazdırılıyor",
+      "genelde","genellikle",
     ]);
     const isBlocked = hasAny(norm, [
       ...KW.smalltalk, ...KW.cancel, ...KW.payment, ...KW.shipping,
@@ -64,6 +69,12 @@ export function extractSignals(ctx) {
       signals.ack = true;
     } else if (isQuestion || isBlocked) {
       // soru veya başka intent — back_text DEĞİL
+    } else if (extracted.phone) {
+      // ENTITY PRIORITY: telefon numarası back_text DEĞİL
+      signals.slot_updates.phone = extracted.phone;
+    } else if (extracted.hasAddress) {
+      // ENTITY PRIORITY: adres back_text DEĞİL
+      signals.slot_updates.address = true;
     } else {
       signals.slot_updates.back_text = raw; // gerçek arka yazı içeriği
     }
@@ -81,8 +92,8 @@ export function extractSignals(ctx) {
   if (hasAny(norm, KW.back_text_info)) signals.questions.push("back_text_info");
   if (hasAny(norm, KW.back_photo_info)) signals.questions.push("back_photo_info");
 
-  // Capability questions
-  if (hasAny(norm, ["ikili resim","iki resim","iki kisi","iki çocuk","ikili foto","coklu foto","çoklu foto","birlestir","birleştir","tek yuze","tek yüze","ayni karede","aynı karede"])) {
+  // Capability questions — kaç kişi / ikili resim ailesi
+  if (hasAny(norm, ["ikili resim","iki resim","iki kisi","iki kisinin","iki cocuk","iki çocuk","ikili foto","coklu foto","çoklu foto","birlestir","birleştir","tek yuze","tek yüze","ayni karede","aynı karede","kac kisi","kaç kişi","kac kisilik","kaç kişilik","kac yuz","kaç yüz","kac resim","kaç resim","kac foto","kaç foto","uc kisi","üç kişi","uclu","üçlü","3 kisi","4 kisi","5 kisi","dort kisi","dört kişi","bes kisi","beş kişi"])) {
     signals.questions.push("capability_multi_photo");
   }
 
@@ -97,11 +108,24 @@ export function extractSignals(ctx) {
   }
 
   // ═══ COMPLAINTS ═══
-  if (hasAny(norm, ["verdim ya","yazdim ya","soyledim ya","gonderdim ya","attim ya","yolladim ya","belirttim","zaten verdim","zaten yazdim","zaten soyledim"])) {
+  if (hasAny(norm, ["verdim ya","yazdim ya","soyledim ya","gonderdim ya","attim ya","yolladim ya","belirttim","zaten verdim","zaten yazdim","zaten soyledim","hepsini verdim","bilgi verdim","yukarida yazdim","yazdim yukarida"])) {
     signals.complaints.push("already_sent");
   }
   if (hasAny(norm, ["cevap vermiyorsunuz","cevap alamiyorum","donus yapmiyorsunuz","neden cevap yok"])) {
     signals.complaints.push("no_response");
+  }
+  // WhatsApp'tan gönderme iddiası
+  if (hasAny(norm, ["whatsapptan gonderdim","whatsapp tan gonderdim","whatsaptan gonderdim","whatsapptan attim","whatsapp gonderdim","whatsapp a gonderdim","whatsapp uzerinden","whatsapp tan attim"])) {
+    signals.complaints.push("sent_on_whatsapp");
+  }
+  // Foto gönderme iddiası (URL yok ama claim var)
+  if (hasAny(norm, ["fotografi gonderdim","foto gonderdim","resmi gonderdim","foto attim","resim attim","gonderdim fotografi","tamamdir fotografi gonderdim","gonderdim size fotografi","fotoyu gonderdim","fotolari gonderdim","gonderdim ya fotografi"]) && !extracted.photoLink) {
+    signals.complaints.push("sent_photo_already");
+  }
+  // "Aldınız mı" tarzı onay sorusu
+  if (hasAny(norm, ["aldiniz mi","aldinizmi","ulasti mi","ulastimi","gordunuz mu","gordunuzmu","geldi mi","geldimi"])) {
+    if (hasAny(norm, ["foto","resim","fotograf"])) signals.confirmations.push("photo_received_check");
+    else signals.confirmations.push("info_received_check");
   }
 
   // ═══ CONFIRMATIONS ═══
@@ -120,7 +144,9 @@ export function extractSignals(ctx) {
 
   // ═══ TOPIC HINT ═══
   const lastIntent = fields?.last_intent || "";
-  if (signals.questions.includes("trust") || lastIntent === "trust" && hasAny(norm, ["sure","süre","garanti","kac yil","mesela","ne kadar"])) {
+  // Trust follow-up: "ne kadar süre" → trust devam (shipping'e kaymaz)
+  if (signals.questions.includes("trust") || 
+      (lastIntent === "trust" && hasAny(norm, ["sure","süre","garanti","kac yil","kaç yıl","mesela","ne kadar","kac sene","kaç sene","yillik","yıllık","omur boyu","ömür boyu","1 yil","2 yil","3 yil","5 yil","peki","eger","eğer","olursa","durumda","o zaman"]))) {
     signals.topic_hint = "trust";
   } else if (signals.questions.includes("shipping") || signals.questions.includes("shipping_price")) {
     signals.topic_hint = "shipping";
@@ -128,10 +154,15 @@ export function extractSignals(ctx) {
     signals.topic_hint = "price";
   } else if (signals.slot_updates.payment_method) {
     signals.topic_hint = "payment";
-  } else if (signals.slot_updates.back_text || signals.questions.includes("back_text_info")) {
+  } else if (signals.slot_updates.back_text || signals.questions.includes("back_text_info") || signals.questions.includes("back_photo_info")) {
     signals.topic_hint = "back_text";
   } else if (signals.slot_updates.photo || signals.questions.includes("photo_question")) {
     signals.topic_hint = "photo";
+  }
+  // Back text follow-up: last_intent back_text_info iken "başka ne var", "hangi" gibi sorular
+  if (!signals.topic_hint && (lastIntent === "back_text_info" || lastIntent === "back_text_examples") && 
+      hasAny(norm, ["baska","başka","hangi","ne gibi","neler","var mi","var mı","ornek","örnek","charm","aksesuar"])) {
+    signals.topic_hint = "back_text";
   }
 
   return signals;
