@@ -81,7 +81,7 @@ export const TEXT = {
 
   SHIPPING_TIME: "Siparişler 1 gün içinde hazırlanıp PTT Kargo'ya verilir efendim 😊 İstanbul içi 1-2 iş günü, İstanbul dışı 2-3 iş günü içinde teslim edilir. Kargoya verildiğinde size otomatik SMS gelecektir 📦",
 
-  WHATSAPP: "WhatsApp iletişim numaramız: 0534 073 60 09 😊",
+  WHATSAPP: "WhatsApp iletişim numaramız: 0505 471 35 45 😊",
 };
 
 // ─── INTENT NAMES ───────────────────────────────────────────

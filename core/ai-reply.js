@@ -148,7 +148,7 @@ KURALLAR:
 - Malzeme: 14 ayar altın kaplama paslanmaz çelik. Kararma solma yapmaz.
 - Arka yazı: Ücretsiz. Müşteri isterse isim, tarih, kısa not yazılabilir.
 - Arka fotoğraf: Ücret farkı olmadan yapılabilir.
-- WhatsApp: 0534 073 60 09
+- WhatsApp: 0505 471 35 45
 - Konum: İstanbul Eminönü
 
 YASAK:

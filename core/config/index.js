@@ -7,8 +7,8 @@
 export const CONFIG = {
   // ─── İLETİŞİM ───────────────────────────────────────────
   contact: {
-    whatsapp: "0534 073 60 09",
-    whatsapp_full: "WhatsApp iletişim numaramız: 0534 073 60 09 😊",
+    whatsapp: "0505 471 35 45",
+    whatsapp_full: "WhatsApp iletişim numaramız: 0505 471 35 45 😊",
     location: "İstanbul Eminönü",
     location_detail: "Satışlarımız online üzerinden yapılmaktadır, Türkiye'nin her yerine kargo ile gönderim yapıyoruz.",
   },

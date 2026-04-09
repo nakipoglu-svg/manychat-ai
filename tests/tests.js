@@ -261,7 +261,7 @@ const tests = [
   { id: "BF09", name: "Çok pahalı → çoklu alım", input: body("Çok pahalı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "coklu" },
   { id: "BF11", name: "Çıplak URL → photo", input: body("https://lookaside.fbsbx.com/photo.jpg", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "photo", photo_received: "1" } },
   { id: "BF12", name: "URL + bu model → product_image_ref", input: body("https://lookaside.fbsbx.com/photo.jpg bu model olsun", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "product_image_reference" } },
-  { id: "BF19", name: "Tel alabilir miyim → WhatsApp", input: body("Tel alabilir miyim", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "0534" },
+  { id: "BF19", name: "Tel alabilir miyim → WhatsApp", input: body("Tel alabilir miyim", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "0505" },
   { id: "BF22", name: "Bitince paylaşırsanız", input: body("Bitince benimle paylaşırsanız sevinirim", lazerCompleted()), expectReplyIncludes: "paylasiyoruz" },
   { id: "BF29", name: "Dönüş yapacağım → bekliyoruz", input: body("Tamam birkaç gün içinde dönüş yapacağım", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "bekliyoruz" },
   { id: "BF31", name: "Cross: ataç fiyatı lazer'da → 499", input: body("Harfli ataç kolyenin fiyatı nedir", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "499" },
@@ -274,7 +274,7 @@ const tests = [
   { id: "LT23", name: "Bundan olacak → not aldım", input: body("Bundan olacak", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "not aldim" },
   { id: "LT25", name: "Değişiklik olmaz dimi → grafiker", input: body("Resimde de herhangi bir değişiklik olmaz dimi", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "grafiker" },
   { id: "LT40", name: "600 TL olur mu → sabit", input: body("600 TL olur mu", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "sabit" },
-  { id: "LT43", name: "Tel → WhatsApp", input: body("Tel alabilir miyim", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "0534" },
+  { id: "LT43", name: "Tel → WhatsApp", input: body("Tel alabilir miyim", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "0505" },
 
   // PROD LOG REGRESSION (subset)
   { id: "PL017", name: "Completed teşekkür", input: body("Teşekkür ederim", lazerCompleted()), expectReplyIncludes: "rica" },
@@ -592,7 +592,7 @@ const tests = [
   { id: "BF30", name: "Tekrar donecegim bekliyoruz", input: body("Tekrar döneceğim teşekkürler", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "bekliyoruz" },
   { id: "BF32", name: "Cross resimli 599", input: body("Resimli lazer kolye fiyatı nedir", atac({ conversation_stage: "waiting_letters" })), expectReplyIncludes: "599" },
   { id: "BF34", name: "Nakit kapida", input: body("Nakit", lazerWaitingPayment()), expect: { payment_method: "kapida_odeme" } },
-  { id: "BF38", name: "Merhaba WhatsApp degil", input: body("Merhaba", lazer({ conversation_stage: "waiting_photo" })), expectReplyNotIncludes: "0534" },
+  { id: "BF38", name: "Merhaba WhatsApp degil", input: body("Merhaba", lazer({ conversation_stage: "waiting_photo" })), expectReplyNotIncludes: "0505" },
   { id: "BF39", name: "Tamam pazarlik degil", input: body("Tamam", lazer({ conversation_stage: "waiting_photo" })), expectReplyNotIncludes: "sabit" },
   { id: "BF41", name: "Gumus olsun celik", input: body("Gümüş olsun lütfen", lazerWaitingPayment()), expectReplyIncludes: "celik" },
   { id: "BF45", name: "Fotograflar silinir mi ekibimiz", input: body("Fotograflar silinir mi", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
@@ -1890,7 +1890,7 @@ const tests = [
 
   // ── 8. WHATSAPP PHOTO CLAIMED ──
   // (sent_on_whatsapp/sent_photo_already signals need to be in norm — test via complaint keywords)
-  { id: "V419", name: "WhatsApp numarası sorusu", input: body("WhatsApp numaranız var mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "0534" },
+  { id: "V419", name: "WhatsApp numarası sorusu", input: body("WhatsApp numaranız var mı", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "0505" },
 
   // ── 9. RESTRICTED CONTENT STATE PRESERVATION ──
   { id: "V420", name: "API restriction → state korunur", input: body("The message could not be displayed due to API restrictions", lazer({ photo_received: "1", conversation_stage: "waiting_payment" })), expect: { photo_received: "1", back_text_status: "" } },
