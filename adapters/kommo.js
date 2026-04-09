@@ -166,7 +166,10 @@ async function updateFields(leadId, fields) {
   for (const [n, v] of Object.entries(fields)) {
     if (FID[n] && v !== undefined) cfv.push({ field_id: FID[n], values: [{ value: String(v) }] });
   }
-  if (cfv.length > 0) return kApi("PATCH", "/api/v4/leads/" + leadId, { custom_fields_values: cfv });
+  if (cfv.length > 0) {
+    console.log("[WH_PATCH]", JSON.stringify({ leadId, fieldCount: cfv.length, fields: cfv.slice(0, 5).map(f => ({ id: f.field_id, val: String(f.values[0].value).substring(0, 30) })) }));
+    return kApi("PATCH", "/api/v4/leads/" + leadId, { custom_fields_values: cfv });
+  }
 }
 
 async function triggerBot(botId, leadId) {
@@ -532,12 +535,27 @@ export default async function handler(req, res) {
     }
 
     // ── Normal flow: core engine ──
+    // DEBUG: Kommo'dan gelen tüm field'ları logla
+    console.log("[WH_FIELDS]", JSON.stringify({
+      lid,
+      msg: effectiveText.substring(0, 50),
+      product: cf.ilgilenilen_urun || "",
+      stage: cf.conversation_stage || "",
+      payment: cf.payment_method || "",
+      photo: cf.photo_received || "",
+      order: cf.order_status || "",
+      addr: cf.address_status || "",
+      phone: cf.phone_received || "",
+      lock: cf.context_lock || "",
+      back_text: cf.back_text_status || "",
+    }));
+
     const result = await processChat({
       message: effectiveText, ...cf, entry_product: cf.ilgilenilen_urun || "",
     });
 
     console.log("[WH] Reply:", (result.ai_reply || "").slice(0, 80));
-    console.log("[WH] Stage:", cf.conversation_stage, "→", result.conversation_stage, "| Intent:", result.last_intent);
+    console.log("[WH] Stage:", cf.conversation_stage, "→", result.conversation_stage, "| Intent:", result.last_intent, "| Product:", cf.ilgilenilen_urun, "→", result.ilgilenilen_urun);
 
     if (!lid) return res.status(200).json({ success: true, ai_reply: result.ai_reply || "" });
 
