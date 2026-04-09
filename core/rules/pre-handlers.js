@@ -25,12 +25,26 @@ export function preHandlers(ctx, state, nextStage) {
     return FP("Tamamdır efendim 😊" + extra);
   }
 
-  // Fiyat pazarlık
+  // Fiyat pazarlık — rakam + TL/lira + pazarlık fiili
   if (/\d+\s*(tl|lira)/i.test(raw) && hasAny(norm, ["olur mu","olurmu","yapar misiniz","yaparmisiniz","yap","son fiyat","indirim"])) {
     return R("Fiyatlarımız sabit olup değişiklik yapılamamaktadır efendim 😊");
   }
-  // Rakam + pazarlık fiili (TL olmadan da yakala)
-  if (/\d{3}/.test(raw) && hasAny(norm, ["anlasalim","anlaşalım","anlas","yapalim","yapalım","verelim","versem","gondersenize","göndersen","gondersenize","siz bana","bana yapin"])) {
+  // Rakam + pazarlık fiili (TL olmadan — "600 olur mu", "500 e bırak", "550 yaparsan alayım")
+  if (/\d{3}/.test(raw) && hasAny(norm, [
+    "anlasalim","anlaşalım","anlas","yapalim","yapalım","verelim","versem",
+    "gondersenize","göndersen","siz bana","bana yapin","bana yapın",
+    "olur mu","olurmu","yapar mi","yapar mı","yaparsan","yaparsaniz",
+    "birak","bırak","birakir","bırakır","birakin","bırakın",
+    "yapin","yapın","yapsan","yapsaniz","yapsanız",
+    "alayim","alayım","alirim","alırım",
+    "atsaniz","atsanız","gondersem","göndersem","versem",
+    "son fiyat","indirim",
+  ])) {
+    return R("Fiyatlarımız sabit olup değişiklik yapılamamaktadır efendim 😊");
+  }
+  // Rakam + "e/a" + fiil pattern ("400 e gönder", "bana 450 yap", "500 e ver")
+  if (/\d{3}\s*(?:e|a|ye|ya|den|dan)\s+(?:gonder|gönder|yap|ver|birak|bırak|sat|at)/i.test(norm) ||
+      /bana\s+\d{3}\s+(?:yap|gonder|gönder|ver|birak|bırak|sat)/i.test(norm)) {
     return R("Fiyatlarımız sabit olup değişiklik yapılamamaktadır efendim 😊");
   }
   if (/\d+\s*(tl|lira)/i.test(raw) && hasAny(norm, ["dimi","di mi","degil mi","değil mi","dogrumu","doğrumu"])) {
