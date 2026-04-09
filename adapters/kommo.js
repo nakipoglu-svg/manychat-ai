@@ -333,17 +333,15 @@ export default async function handler(req, res) {
         if (/fotograf.*(ald|geldi|ulast|tamam)|fotonu.*(ald|gordu)|resmi.*(ald|gordu)|fotografi kontrol/i.test(outNorm) ||
             /gorsel.*(ald|geldi)|fotografiniz.*ald|resminiz.*ald/i.test(outNorm)) {
           const curCf = await readLeadFields(lid);
-          if (curCf.conversation_stage === "waiting_photo" || !curCf.back_text_status) {
-            stateUpdates = { photo_received: "1", conversation_stage: "waiting_back_text" };
+          if (curCf.conversation_stage === "waiting_photo") {
+            stateUpdates = { photo_received: "1", conversation_stage: "waiting_payment" };
           }
         }
 
-        // Arka yazı alındı / sipariş ilerleme sinyalleri
+        // Arka yazı alındı sinyalleri
         if (/arka.*ald|yazi.*ald|not.*ald|yaziniz.*ald/i.test(outNorm)) {
-          const curCf = await readLeadFields(lid);
-          if (curCf.conversation_stage === "waiting_back_text") {
-            stateUpdates = { back_text_status: "received", conversation_stage: "waiting_payment" };
-          }
+          stateUpdates = stateUpdates || {};
+          stateUpdates.back_text_status = "received";
         }
 
         // Ödeme alındı sinyalleri
