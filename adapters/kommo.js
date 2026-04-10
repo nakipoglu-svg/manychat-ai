@@ -265,12 +265,50 @@ export default async function handler(req, res) {
     }
 
     // ── Kommo webhook format ──
-    const msgText = d["message[add][0][text]"] || "";
-    const msgType = d["message[add][0][type]"] || "";
-    const msgId = d["message[add][0][id]"] || "";
-    const msgCreatedAt = parseInt(d["message[add][0][created_at]"] || "0", 10);
-    const attachType = d["message[add][0][attachment][type]"] || "";
-    const attachLink = d["message[add][0][attachment][link]"] || "";
+    // Kommo mesajları farklı formatlarda gönderebilir:
+    // 1. message[add][0][text] — standart chat mesajı
+    // 2. unsorted[add/update][0][source_data][data][0][text] — sıralanmamış mesaj
+    
+    let msgText = d["message[add][0][text]"] || "";
+    let msgType = d["message[add][0][type]"] || "";
+    let msgId = d["message[add][0][id]"] || "";
+    let msgCreatedAt = parseInt(d["message[add][0][created_at]"] || "0", 10);
+    let attachType = d["message[add][0][attachment][type]"] || "";
+    let attachLink = d["message[add][0][attachment][link]"] || "";
+
+    // ── Fallback: unsorted event'lerden mesaj çıkar ──
+    if (!msgId && !msgText) {
+      const unsortedText = d["unsorted[add][0][source_data][data][0][text]"] || 
+                           d["unsorted[update][0][source_data][data][0][text]"] || "";
+      const unsortedDate = d["unsorted[add][0][source_data][data][0][date]"] || 
+                           d["unsorted[update][0][source_data][data][0][date]"] || "";
+      const unsortedId = d["unsorted[add][0][source_data][data][0][id]"] || 
+                         d["unsorted[update][0][source_data][data][0][id]"] || "";
+      const unsortedContactId = d["unsorted[add][0][source_data][client][id]"] || 
+                                d["unsorted[update][0][source_data][client][id]"] || "";
+      const unsortedChatId = d["unsorted[add][0][source_data][origin][chat_id]"] || 
+                             d["unsorted[update][0][source_data][origin][chat_id]"] || "";
+      const unsortedLeadId = d["unsorted[update][0][data][leads][0][id]"] || 
+                             d["unsorted[add][0][data][leads][0][id]"] || "";
+      
+      if (unsortedText) {
+        msgText = unsortedText;
+        msgId = unsortedId || `unsorted_${Date.now()}`;
+        msgCreatedAt = unsortedDate ? parseInt(unsortedDate, 10) : Math.floor(Date.now() / 1000);
+        msgType = "incoming";
+        // unsorted'dan gelen contact/lead bilgilerini de kaydet
+        if (unsortedContactId && !d["message[add][0][contact_id]"]) {
+          d["message[add][0][contact_id]"] = unsortedContactId;
+        }
+        if (unsortedChatId) {
+          d["message[add][0][chat_id]"] = unsortedChatId;
+        }
+        if (unsortedLeadId) {
+          d["message[add][0][element_id]"] = unsortedLeadId;
+        }
+        console.log("[WH] UNSORTED-MSG: extracted text from unsorted event:", msgText.slice(0, 80), "contactId:", unsortedContactId, "leadId:", unsortedLeadId);
+      }
+    }
 
     // ══ EVENT TYPE DETECTION ═════════════════════════════════
     // Kommo field-change, salesbot, system webhook'ları da gönderiyor.
@@ -296,9 +334,10 @@ export default async function handler(req, res) {
     // ═════════════════════════════════════════════════════════
 
     // ══ STALE MESSAGE GUARD ══════════════════════════════════
+    // Kommo webhook bazen geç gönderir — 1 saatten eski mesajları atla
     if (msgCreatedAt > 0) {
       const ageSeconds = Math.floor(Date.now() / 1000) - msgCreatedAt;
-      if (ageSeconds > 300) {
+      if (ageSeconds > 3600) {
         console.log("[WH] STALE: msg is", ageSeconds, "s old, skip. id:", msgId.slice(0, 20));
         return res.status(200).json({ ok: true, skipped: true, reason: "stale_message", age: ageSeconds });
       }
