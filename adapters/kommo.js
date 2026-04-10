@@ -377,6 +377,31 @@ export default async function handler(req, res) {
           if (stateUpdates.conversation_stage) {
             await movePipelineStage(lid, stateUpdates.conversation_stage, true);
           }
+          
+          // Sipariş tamamlandıysa Operations'a da gönder
+          if (stateUpdates.order_status === "completed" || stateUpdates.conversation_stage === "order_completed") {
+            const curCf = await readLeadFields(lid);
+            const orderId = `open_${lid}_${curCf.ilgilenilen_urun || "unknown"}`;
+            try {
+              const ORDER_WEBHOOK_URL = process.env.GOOGLE_ORDER_WEBHOOK_URL || "";
+              if (ORDER_WEBHOOK_URL) {
+                await fetch(ORDER_WEBHOOK_URL, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    type: "order_operation",
+                    data: {
+                      order_id: orderId,
+                      final_status: "confirmed",
+                      finalized_at: new Date().toISOString(),
+                      decision_source: "seller",
+                    },
+                  }),
+                });
+                console.log("[WH] SELLER-SYNC: order_operation sent for", orderId);
+              }
+            } catch (e) { console.error("[WH] SELLER-SYNC ops error:", e.message); }
+          }
         }
       }
       // ═══════════════════════════════════════════════════════════
@@ -748,7 +773,7 @@ async function safeOrderSync(msgText, leadId, result, cf, contactName) {
       customer_id: customerId,
       instagram_username: contactName || "",
       customer_name: contactName || "",
-      dm_link: customerId ? `https://nakipoglu.kommo.com/leads/detail/${customerId}` : "",
+      dm_link: contactName ? `https://ig.me/m/${contactName}` : (customerId ? `https://nakipoglu.kommo.com/leads/detail/${customerId}` : ""),
       // Cumulative: hem yeni extracted hem de önceki CRM field'ları birleştir
       recipient_name: ext.name || cf.recipient_name || "",
       phone: ext.phone || "",
@@ -792,7 +817,7 @@ async function safeOrderSync(msgText, leadId, result, cf, contactName) {
           finalized_at: new Date().toISOString(),
           instagram_username: contactName || "",
           customer_name: contactName || "",
-          dm_link: customerId ? `https://nakipoglu.kommo.com/leads/detail/${customerId}` : "",
+          dm_link: contactName ? `https://ig.me/m/${contactName}` : (customerId ? `https://nakipoglu.kommo.com/leads/detail/${customerId}` : ""),
           recipient_name: ext.name || cf.recipient_name || "",
           phone: ext.phone || "",
           full_address: ext.addressText || "",

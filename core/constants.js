@@ -175,7 +175,7 @@ export const KW = {
     "allah sabir versin", "allah sabır versin",
   ],
 
-  location: ["yeriniz nerede", "yeriniz neresi", "yeriniz nerde", "neredesiniz", "konum", "magaza", "mağaza", "eminonu", "eminönü", "subeniz", "şubeniz", "subesi", "şubesi"],
+  location: ["yeriniz nerede", "yeriniz neresi", "yeriniz nerde", "neredesiniz", "nereniz", "nereniz nerde", "neresiniz", "konum", "magaza", "mağaza", "eminonu", "eminönü", "subeniz", "şubeniz", "subesi", "şubesi"],
 
   shipping_price: [
     "kargo ucreti", "kargo ücreti", "kargo ucreti ne kadar", "kargo ücreti ne kadar",

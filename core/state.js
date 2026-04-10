@@ -94,10 +94,11 @@ export function deriveState(initialState, ctx) {
   }
 
   // Back text
-  // Signal-aware: undecided mesajları back_text olarak kaydetme
+  // Signal-aware: undecided mesajları ve SORU mesajlarını back_text olarak kaydetme
   const signalUndecided = ctx.signals?.undecided || false;
   const signalIsQuestion = (ctx.signals?.questions?.length || 0) > 0;
-  if (intent === INTENT.BACK_TEXT && !signalUndecided && !signalIsQuestion) {
+  const isBackTextQuestion = /yaziyor mu|yazıyor mu|yazilir mi|yazılır mı|yapilir mi|yapılır mı|olur mu|olurmu|oluyor mu|yazabilir|yazamiyor|yazilmiyor|var mi|varmi|genelde|ne yazilir/.test(ctx.norm || "");
+  if (intent === INTENT.BACK_TEXT && !signalUndecided && !signalIsQuestion && !isBackTextQuestion) {
     patch.back_text_status = "received"; _confidence.back_text = "high"; _source.back_text = "explicit";
   }
   if (intent === INTENT.BACK_TEXT_SKIP) { patch.back_text_status = "skipped"; _confidence.back_text = "high"; _source.back_text = "explicit"; }
