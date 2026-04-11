@@ -9,8 +9,5 @@
     { "src": "/api/test-chat", "dest": "/api/test-chat.js" },
     { "src": "/api/fix-old-links", "dest": "/api/fix-old-links.js" },
     { "src": "/api/operator-sync", "dest": "/api/operator-sync.js" }
-  ],
-  "crons": [
-    { "path": "/api/operator-sync", "schedule": "*/2 * * * *" }
   ]
 }
