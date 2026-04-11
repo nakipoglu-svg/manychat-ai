@@ -790,6 +790,83 @@ export default async function handler(req, res) {
           parsed: { product: cf.ilgilenilen_urun, stage: cf.conversation_stage, cancel: cf.cancel_reason?.substring(0, 30) },
         }));
       }
+
+      // ═══ INLINE OPERATOR SYNC ═══
+      // Müşteri mesajı geldiğinde, önce operatörün son mesajlarını kontrol et
+      // Operatör "siparişiniz alınmıştır" gibi bir şey yazmışsa state'i güncelle
+      if (cf.conversation_stage && cf.order_status !== "completed") {
+        try {
+          const talksR = await kApi("GET", `/api/v4/talks?filter[entity_id]=${lid}&filter[entity_type]=leads&limit=1`);
+          if (talksR.s === 200 && talksR.d?._embedded?.talks?.[0]) {
+            const talkId = talksR.d._embedded.talks[0].id;
+            const msgsR = await kApi("GET", `/api/v4/talks/${talkId}/messages?limit=5&order=desc`);
+            
+            if (msgsR.s === 200 && msgsR.d?._embedded?.messages) {
+              // Dedup: opSync watermark
+              const wmParts = (cf.cancel_reason || "").split(":opSync:");
+              const lastOpMsgId = wmParts.length > 1 ? wmParts[1] : "";
+              
+              for (const m of msgsR.d._embedded.messages) {
+                const isOperator = (m.author?.type === "user" || m.created_by > 0) && m.author?.type !== "bot" && m.author?.type !== "contact";
+                const content = m.text || m.message || "";
+                const mId = String(m.id || "");
+                
+                if (!isOperator || !content || content.length < 5) continue;
+                if (mId && mId === lastOpMsgId) break;
+                
+                const outNorm = content.toLowerCase()
+                  .replace(/İ/g, "i").replace(/ç/g, "c").replace(/ğ/g, "g")
+                  .replace(/ı/g, "i").replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u");
+                
+                let opUpdates = null;
+                
+                // Sipariş tamamlandı
+                if (/siparis.*(olustur|tamamlan|alindi|alinmis|onaylan|hazirlan|aldik|olusturduk|aliyorum|onayliyorum)|kargoya.*(veril|cik)/i.test(outNorm) ||
+                    /siparis.*(aldi|oldu|tamam)|siparisiniz.*(aldi|oldu|olustur|onay|hazir)/i.test(outNorm)) {
+                  opUpdates = { order_status: "completed", conversation_stage: "order_completed", siparis_alindi: "1" };
+                }
+                // Fotoğraf alındı
+                else if (/fotograf.*(ald|geldi|ulast|tamam)|gorsel.*(ald|geldi)|fotografiniz.*ald/i.test(outNorm)) {
+                  if (cf.conversation_stage === "waiting_photo") {
+                    opUpdates = { photo_received: "1", conversation_stage: "waiting_payment" };
+                  }
+                }
+                // Ödeme alındı
+                else if (/odeme.*(ald|geldi|gordu|kontrol)|eft.*(geldi|ald)|havale.*(geldi|ald)|dekont.*(ald|gordu)/i.test(outNorm)) {
+                  if (cf.conversation_stage === "waiting_payment") {
+                    opUpdates = { payment_method: cf.payment_method || "eft_havale", conversation_stage: "waiting_address" };
+                  }
+                }
+                // Adres alındı
+                else if (/adres.*(ald|tamam|not)|bilgiler.*(ald|tamam)/i.test(outNorm)) {
+                  if (cf.conversation_stage === "waiting_address") {
+                    opUpdates = { address_status: "received", conversation_stage: "order_completed", order_status: "completed", siparis_alindi: "1" };
+                  }
+                }
+                
+                if (opUpdates) {
+                  console.log("[WH] OPERATOR-SYNC-INLINE:", JSON.stringify(opUpdates), "msg:", content.substring(0, 40));
+                  await updateFields(lid, opUpdates);
+                  // cf'yi güncelle — engine doğru state ile çalışsın
+                  Object.assign(cf, opUpdates);
+                  // Dedup watermark
+                  const newWm = (wmParts[0] || "") + ":opSync:" + mId;
+                  await updateFields(lid, { cancel_reason: newWm });
+                  cf.cancel_reason = newWm;
+                  // Pipeline taşı
+                  if (opUpdates.conversation_stage) {
+                    await movePipelineStage(lid, opUpdates.conversation_stage, true, cf.payment_method, "", opUpdates.order_status || cf.order_status);
+                  }
+                }
+                break;
+              }
+            }
+          }
+        } catch (e) {
+          console.error("[WH] OPERATOR-SYNC-INLINE error:", e.message);
+        }
+      }
+      // ═══ END INLINE OPERATOR SYNC ═══
     }
 
     // ══════════════════════════════════════════════════════════
