@@ -484,6 +484,12 @@ export const KW = {
     "siparisim yola cikti mi", "siparişim yola çıktı mı",
     "ne zaman hazir olur", "ne zaman hazır olur",
     "siparis ne zaman gelir", "sipariş ne zaman gelir",
+    "siparisimin durumunu", "siparişimin durumunu",
+    "siparisim durumu", "siparişim durumu",
+    "koymamissiniz", "koymamışsınız", "koymadigi", "koymadığı", "koymadin", "koymadın",
+    "yapilmamis", "yapılmamış", "yapmamissiniz", "yapmamışsınız",
+    "hatali urun", "hatalı ürün", "hatali yapilmis", "hatalı yapılmış",
+    "yenisi gonderilecek", "yenisi gönderilecek",
   ],
 
   new_order: [

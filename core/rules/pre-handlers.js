@@ -14,6 +14,11 @@ export function preHandlers(ctx, state, nextStage) {
   // ═══ POST_SALE / CANCEL → pre-handlers bypass, side-questions'a düşsün ═══
   if (intent === "post_sale" || intent === "cancel_order") return null;
 
+  // ═══ FRUSTRATION / SİTEM — müşteri sinirlenmiş, menü gösterme! ═══
+  if (hasAny(norm, ["okumuyorsunuz","okumuyor","anlamiyorsunuz","anlamıyorsunuz","dalga mi geciyorsunuz","dalga mı geçiyorsunuz","dalga geciyorsunuz","dalga geçiyorsunuz","cevap vermiyorsunuz","cevap vermiyor","aptal misiniz","aptal mısınız","robot musunuz","robot musun","otomatik mesaj istemiyorum","kendiniz cevap","bot musunuz","bot musun","soruma cevap","ne bicim","ne biçim","nasil bir isletme","nasıl bir işletme"])) {
+    return { text: "Çok özür dileriz efendim, sizi dinliyorum. Size nasıl yardımcı olabilirim? 😊", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
+  }
+
   // ═══ ÜRÜN KAPSAMI DIŞI — bileklik, yüzük, anahtarlık vb. ═══
   if (hasAny(norm, ["bileklik","bilezik","yuzuk","yüzük","anahtarlik","anahtarlık","kupe","küpe","piercing","saat","broş","bros","toka","kemer","cuzdan","cüzdan","bileklik isim","kunye","künye"])) {
     // Müşteri satılmayan ürün soruyor
