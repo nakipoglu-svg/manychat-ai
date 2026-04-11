@@ -307,6 +307,114 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, ai_reply: result.ai_reply || "", fields: result });
     }
 
+    // ── SELLER SYNC — Salesbot #5 tetikleyicisi ──
+    // Salesbot "Mesaj görüldü" trigger'ından gelir, lead_id + source ile
+    if (d.source === "seller_sync" && d.lead_id) {
+      console.log("[WH] SELLER-SYNC-BOT: received for lead", d.lead_id);
+      const lid = String(d.lead_id);
+      
+      // Kommo API'den son mesajları çek
+      try {
+        const notesR = await kApi("GET", `/api/v4/leads/${lid}/notes?limit=5&order=desc`);
+        let sellerMsg = d.message_text || "";
+        
+        if (!sellerMsg && notesR.s === 200 && notesR.d?._embedded?.notes) {
+          for (const note of notesR.d._embedded.notes) {
+            // Outgoing mesaj bul (note_type: common veya 4)
+            if (note.params?.text && note.note_type !== "incoming_message") {
+              sellerMsg = note.params.text;
+              break;
+            }
+          }
+        }
+        
+        if (!sellerMsg) {
+          // Talk'tan son mesajı dene
+          const talkR = await kApi("GET", `/api/v4/talks?filter[entity_id]=${lid}&filter[entity_type]=leads&limit=1`);
+          if (talkR.s === 200 && talkR.d?._embedded?.talks?.[0]) {
+            const talkId = talkR.d._embedded.talks[0].id;
+            const msgsR = await kApi("GET", `/api/v4/talks/${talkId}/messages?limit=3&order=desc`);
+            if (msgsR.s === 200 && msgsR.d?._embedded?.messages) {
+              for (const m of msgsR.d._embedded.messages) {
+                if (m.author?.type === "user" && m.text) {
+                  sellerMsg = m.text;
+                  break;
+                }
+              }
+            }
+          }
+        }
+        
+        console.log("[WH] SELLER-SYNC-BOT: msg=", (sellerMsg || "").substring(0, 60));
+        
+        if (sellerMsg) {
+          // Outgoing olarak işle
+          const outNorm = sellerMsg.toLowerCase()
+            .replace(/İ/g, "i").replace(/ç/g, "c").replace(/ğ/g, "g")
+            .replace(/ı/g, "i").replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u");
+          
+          let stateUpdates = null;
+          const curCf = await readLeadFields(lid);
+          
+          // Fotoğraf alındı
+          if (/fotograf.*(ald|geldi|ulast|tamam)|fotonu.*(ald|gordu)|resmi.*(ald|gordu)|fotografi kontrol/i.test(outNorm) ||
+              /gorsel.*(ald|geldi)|fotografiniz.*ald|resminiz.*ald/i.test(outNorm)) {
+            if (curCf.conversation_stage === "waiting_photo") {
+              stateUpdates = { photo_received: "1", conversation_stage: "waiting_payment" };
+            }
+          }
+          
+          // Arka yazı alındı
+          if (/arka.*ald|yazi.*ald|not.*ald|yaziniz.*ald/i.test(outNorm)) {
+            stateUpdates = stateUpdates || {};
+            stateUpdates.back_text_status = "received";
+          }
+          
+          // Ödeme alındı
+          if (/odeme.*(ald|geldi|gordu|kontrol)|eft.*(geldi|ald)|havale.*(geldi|ald)|dekont.*(ald|gordu)/i.test(outNorm)) {
+            if (curCf.conversation_stage === "waiting_payment" || !curCf.payment_method) {
+              stateUpdates = stateUpdates || {};
+              stateUpdates.payment_method = curCf.payment_method || "eft_havale";
+              if (curCf.address_status !== "received") stateUpdates.conversation_stage = "waiting_address";
+            }
+          }
+          
+          // Sipariş tamamlandı
+          if (/siparis.*(olustur|tamamlan|alindi|alinmis|onaylan|hazirlan|aldik|olusturduk|aliyorum|onayliyorum)|kargoya.*(veril|cik)/i.test(outNorm) ||
+              /siparis.*(aldi|oldu|tamam)|siparisiniz.*(aldi|oldu|olustur|onay|hazir)/i.test(outNorm)) {
+            stateUpdates = { order_status: "completed", conversation_stage: "order_completed", siparis_alindi: "1" };
+          }
+          
+          // Adres alındı
+          if (/adres.*(ald|tamam|not)|bilgiler.*(ald|tamam)|tesekk.*bilgi/i.test(outNorm)) {
+            if (curCf.conversation_stage === "waiting_address") {
+              stateUpdates = stateUpdates || {};
+              stateUpdates.address_status = "received";
+              if (curCf.phone_received === "1") {
+                stateUpdates.conversation_stage = "order_completed";
+                stateUpdates.order_status = "completed";
+                stateUpdates.siparis_alindi = "1";
+              }
+            }
+          }
+          
+          if (stateUpdates) {
+            console.log("[WH] SELLER-SYNC-BOT: updating", JSON.stringify(stateUpdates));
+            await updateFields(lid, stateUpdates);
+            if (stateUpdates.conversation_stage) {
+              await movePipelineStage(lid, stateUpdates.conversation_stage, true, curCf.payment_method, "", stateUpdates.order_status || curCf.order_status);
+            }
+            return res.status(200).json({ ok: true, seller_sync: true, updates: stateUpdates });
+          }
+        }
+        
+        return res.status(200).json({ ok: true, seller_sync: true, no_match: true, msg: (sellerMsg || "").substring(0, 40) });
+      } catch (e) {
+        console.error("[WH] SELLER-SYNC-BOT error:", e.message);
+        return res.status(200).json({ ok: false, error: e.message });
+      }
+    }
+
     // ── Kommo webhook format ──
     // Kommo mesajları farklı formatlarda gönderebilir:
     // 1. message[add][0][text] — standart chat mesajı
