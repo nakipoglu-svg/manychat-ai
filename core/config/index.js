@@ -56,7 +56,7 @@ export const CONFIG = {
     max_chain_cm: 70,
     plaka_cm: 3,
     colors: ["altın kaplama (gold)", "gümüş kaplama", "mat çelik"],
-    accessories: ["pembe kalp", "lacivert kalp", "nazar boncuğu"],
+    accessories: ["pembe kalp", "siyah kalp", "nazar boncuğu"],
   },
 
   // ─── IBAN TEMPLATESİ ───────────────────────────────────

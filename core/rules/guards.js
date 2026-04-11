@@ -38,7 +38,7 @@ export function guards(ctx, state, nextStage) {
     if (intent === INTENT.PAYMENT) return null;
     // Yeni sipariş sinyalleri — completed'da yeni akış başlatabilir
     if (hasAny(norm, ["arkadaslar da alacak","arkadaşlar da alacak","bir tane daha","ikinci siparis","ek siparis","ek sipariş","bir kolye daha","ayni adreste bir tane"])) {
-      return R("Tabi efendim 😊 Yeni sipariş için ekibimiz size yardımcı olacaktır.", REPLY_CLASS.SELLER_REQUIRED, SUPPORT_REASON.SELLER);
+      return { text: "Tabi efendim 😊 Hangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye", reply_class: REPLY_CLASS.MENU, support_mode_reason: "" };
     }
 
     // Pre-handler patterns: completed'da da cevap verilmeli (bilgi soruları)
@@ -53,7 +53,7 @@ export function guards(ctx, state, nextStage) {
 
     // Ürün keyword → yeni sipariş yönlendir
     if (hasAny(norm, ["resimli","lazer","atac","ataç","harfli"])) {
-      return R("Tabi efendim 😊 Yeni sipariş için ekibimiz size yardımcı olacaktır.", REPLY_CLASS.SELLER_REQUIRED, SUPPORT_REASON.SELLER);
+      return { text: "Tabi efendim 😊 Hangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye", reply_class: REPLY_CLASS.MENU, support_mode_reason: "" };
     }
 
     // Smalltalk — operasyonel talep içeriyorsa engelle

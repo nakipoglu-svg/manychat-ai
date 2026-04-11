@@ -115,7 +115,7 @@ export function preHandlers(ctx, state, nextStage) {
   // Çoklu foto / birleştirme (Fix #15)
   if (hasAny(norm, ["kac resim","kaç resim","kac foto","kaç foto","3 resim","uc resim","üç resim","3 foto","3 lu","3 lü","uclu","üçlü","4 lu","4 lü","5 li","5 kisi","5 kişi","tek kolyeye uc","tek kolyeye üç","tek yuze","tek yüze","ayni karede","aynı karede","birlestirip","birleştirip","birlestirme","birleştirme","birlestir","birleştir","ayri ayri yollasak","ayrı ayrı yollasak","ayri ayri atsak","ayrı ayrı atsak","kac kisi","kaç kişi","kac kisilik","kaç kişilik","iki kisi","iki kisinin","iki cocuk","iki çocuk","kac yuz","kaç yüz","uc kisi","üç kişi","dort kisi","dört kişi","bes kisi","beş kişi","3 kisi","4 kisi"])) {
     if (hasAny(norm, ["ornek","örnek"])) return R("Örnek çalışmalarımızı buradan inceleyebilirsiniz efendim 😊\n\n📸 Örnek ürünler: instagram.com/stories/highlights/18391039714130558/\n📦 Sizden gelenler: instagram.com/stories/highlights/18079575341155587/");
-    const extra = stage === STAGE.WAITING_PHOTO ? " Fotoğrafları buradan gönderebilirsiniz, ekibimiz düzenleyecektir." :
+    const extra = stage === STAGE.WAITING_PHOTO ? " Fotoğrafları buradan gönderebilirsiniz 😊" :
                   stage === STAGE.WAITING_PAYMENT ? " Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim?" :
                   stage === STAGE.WAITING_ADDRESS ? " Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz?" : "";
     return FP("Evet efendim, tek yüze birden fazla fotoğraf koyabiliyoruz 😊 Profesyonelce birleştirip tek tasarım haline getiriyoruz." + extra);
@@ -158,7 +158,7 @@ export function preHandlers(ctx, state, nextStage) {
   // Erkek (Fix #16)
   if (hasAny(norm, ["erkek icin","erkek için","erkek uygun","erkek takabilir","erkek takar","babam icin","babam için","esim icin","eşim için","oglum icin","oğlum için","erkek model"])) {
     if (hasAny(norm, ["zincir"])) return R("Tabi efendim, erkek için 50 cm gümüş zincirimiz mevcut 😊");
-    return R("Tabi efendim, erkekler için de uygun 😊 Ona göre zincir göndeririz. Gümüş kaplama erkek için önerilmektedir.");
+    return R("Tabi efendim, erkek için 50 cm gümüş zincirimiz mevcut 😊");
   }
 
   // Gümüş yap / metal
@@ -167,10 +167,10 @@ export function preHandlers(ctx, state, nextStage) {
 
   // Yapım süreci / yapay zeka
   if (hasAny(norm, ["yapim asamasi","yapım aşaması","yapim asamaniz","yapım aşamanız","surec nasil","süreç nasıl","nasil yapiliyor","nasıl yapılıyor","yapim sureci","yapım süreci"])) {
-    return R("Önce sizden fotoğraf alıyoruz, grafikerimiz düzenledikten sonra size gönderiyoruz. Onayınızın ardından üretime geçiyoruz, kargoya vermeden önce de son halini paylaşıyoruz efendim 😊");
+    return R("Fotoğrafınızı alıyoruz, lazer kazıma yöntemiyle kolyeye işliyoruz ve kargo ile gönderiyoruz efendim 😊");
   }
   if (hasAny(norm, ["degisiklik olmaz","değişiklik olmaz","resimde degisiklik","resimde değişiklik","fotoda degisiklik","fotoda değişiklik","yapay zeka","ai ile"])) {
-    return R("Gönderdiğiniz fotoğrafları grafikerimiz lazer baskıya uygun hale getiriyor efendim 😊 Göz ile görülür bir değişiklik yapılmıyor, yapay zeka kullanmıyoruz.");
+    return R("Fotoğraflarınız lazer baskıya uygun hale getirilir efendim 😊 Göz ile görülür bir değişiklik yapılmıyor.");
   }
 
   // WhatsApp

@@ -64,7 +64,7 @@ export function sideQuestions(ctx, state) {
       if (hasAny(norm, ["vesikalik","vesikalık","selfie","ne tur","ne tür","ne cesit","ne çeşit","nasil bir fotograf","nasıl bir fotoğraf"])) {
         return R("Vesikalık olmasına gerek yok efendim 😊 İstediğiniz fotoğrafı buradan gönderebilirsiniz, ekibimiz kontrol edecektir.");
       }
-      return R("Buradan direkt gönderebilirsiniz efendim 😊 Siz gönderin, biz hemen kontrol edelim.");
+      return R("Buradan direkt gönderebilirsiniz efendim 😊");
     }
     return null;
   }
@@ -118,7 +118,7 @@ export function sideQuestions(ctx, state) {
     if (hasAny(norm, ["iban","hesap numara","hesap bilgi"])) return R(`Tabi efendim 😊\n\n${TEXT.EFT_INFO}`);
     return R("Kapıda ödeme ile ürün elinize ulaştığında kurye ye nakit olarak ödeme yaparsınız efendim 😊 Kapıda ödemede sadece nakit geçerlidir, kredi kartı kullanılamamaktadır.");
   }
-  if (intent === INTENT.PHOTO_SENT_CONFIRM) return R("Fotoğrafınız ulaştı efendim, ekibimiz kontrol edip dönüş sağlayacaktır 😊", REPLY_CLASS.FLOW_PROGRESS);
+  if (intent === INTENT.PHOTO_SENT_CONFIRM) return R("Fotoğrafınız ulaştı efendim 😊", REPLY_CLASS.FLOW_PROGRESS);
 
   // ═══ EK KONULAR (knowledge gap'lerden eklendi) ═══
 

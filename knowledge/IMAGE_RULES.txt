@@ -225,11 +225,10 @@ AKSESUAR
 ────────────────────────────
 
 Pembe kalp
+Siyah kalp
 Nazar boncuğu
 
 Müşteri sorarsa söylenir
-
-Siyah kalp DENMEZ
 
 ────────────────────────────
 ZİNCİR
