@@ -6,6 +6,7 @@
   "routes": [
     { "src": "/api/kommo-webhook", "dest": "/api/kommo-webhook.js" },
     { "src": "/api/chat", "dest": "/api/chat.js" },
-    { "src": "/api/test-chat", "dest": "/api/test-chat.js" }
+    { "src": "/api/test-chat", "dest": "/api/test-chat.js" },
+    { "src": "/api/fix-old-links", "dest": "/api/fix-old-links.js" }
   ]
 }
