@@ -818,25 +818,42 @@ async function safeOrderSync(msgText, leadId, result, cf, contactName) {
   const isCancelled = result.order_status === "cancel_requested" || result.conversation_stage === "human_support";
   const hadPreviousData = !!(cf.ilgilenilen_urun || cf.photo_received || cf.payment_method || cf.address_status);
 
-  // Operation type: Apps Script'in INSERT/UPDATE kararı için
-  // "create" = ilk kez sipariş oluşturuluyor
-  // "update" = mevcut sipariş güncelleniyor
-  // "complete" = sipariş tamamlandı
-  const operation = isCompleted ? "complete" : hadPreviousData ? "update" : "create";
+  // ═══ SADECE ÖNEMLİ STATE DEĞİŞİKLİKLERİNDE GÖNDER ═══
+  // Her mesajda değil, sadece sipariş ilerlemesinde
+  const hasNewProduct = product && product !== cf.ilgilenilen_urun;
+  const hasNewPhoto = result.photo_received && !cf.photo_received;
+  const hasNewPayment = result.payment_method && result.payment_method !== cf.payment_method;
+  const hasNewAddress = result.address_status === "received" && cf.address_status !== "received";
+  const hasNewLetters = result.letters_received && !cf.letters_received;
+  const justCompleted = isCompleted && cf.order_status !== "completed";
+  const justCancelled = isCancelled && cf.order_status !== "cancel_requested";
 
-  // Orders_Raw Apps Script header formatına tam uyumlu payload
+  const hasMeaningfulChange = hasNewProduct || hasNewPhoto || hasNewPayment || hasNewAddress || hasNewLetters || justCompleted || justCancelled;
+
+  if (!hasMeaningfulChange) {
+    return; // Yan soru, smalltalk vb. → Google Sheets'e gönderme
+  }
+
+  // Türkiye saati (UTC+3)
+  const trDate = () => {
+    const d = new Date();
+    d.setHours(d.getHours() + 3);
+    return d.toISOString();
+  };
+
+  const operation = justCompleted ? "complete" : hadPreviousData ? "update" : "create";
+
   const payload = {
     type: "order_raw",
-    operation,  // ← Apps Script buna bakarak UPDATE/INSERT kararı verecek
+    operation,
     data: {
       order_id: orderId,
-      created_at: operation === "create" ? new Date().toISOString() : "",
-      updated_at: new Date().toISOString(),
+      created_at: operation === "create" ? trDate() : "",
+      updated_at: trDate(),
       customer_id: customerId,
       instagram_username: contactName || "",
       customer_name: contactName || "",
       dm_link: contactName ? `https://ig.me/m/${contactName}` : (customerId ? `https://nakipoglu.kommo.com/leads/detail/${customerId}` : ""),
-      // Cumulative: hem yeni extracted hem de önceki CRM field'ları birleştir
       recipient_name: ext.name || cf.recipient_name || "",
       phone: ext.phone || "",
       full_address: ext.addressText || "",
@@ -850,10 +867,9 @@ async function safeOrderSync(msgText, leadId, result, cf, contactName) {
       letters_value: ext.letters || "",
       order_status: result.order_status || "",
       confirmation_source: "bot",
-      confirmed_at: isCompleted ? new Date().toISOString() : "",
+      confirmed_at: justCompleted ? trDate() : "",
       confidence_score: calculateConfidence(result),
       last_message: msgText,
-      // Yeni: stage + intent bilgisi (operations dashboard için)
       conversation_stage: result.conversation_stage || "",
       last_intent: result.last_intent || "",
       reply_class: result.reply_class || "",
@@ -869,14 +885,14 @@ async function safeOrderSync(msgText, leadId, result, cf, contactName) {
     });
     console.log("[WH] OrderSync:", operation, "orderId:", orderId.slice(0, 30), "status:", resp.status);
 
-    // ═══ Sipariş tamamlandıysa veya iptal edildiyse Operations sayfasına da gönder ═══
-    if (isCompleted || isCancelled) {
+    // Sipariş tamamlandıysa veya iptal edildiyse Operations sayfasına da gönder
+    if (justCompleted || justCancelled) {
       const opsPayload = {
         type: "order_operation",
         data: {
           order_id: orderId,
-          final_status: isCancelled ? "cancelled" : "confirmed",
-          finalized_at: new Date().toISOString(),
+          final_status: justCancelled ? "cancelled" : "confirmed",
+          finalized_at: trDate(),
           instagram_username: contactName || "",
           customer_name: contactName || "",
           dm_link: contactName ? `https://ig.me/m/${contactName}` : (customerId ? `https://nakipoglu.kommo.com/leads/detail/${customerId}` : ""),
@@ -898,7 +914,7 @@ async function safeOrderSync(msgText, leadId, result, cf, contactName) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(opsPayload),
         });
-        console.log("[WH] OpsSync: confirmed", orderId.slice(0, 30));
+        console.log("[WH] OpsSync:", justCancelled ? "cancelled" : "confirmed", orderId.slice(0, 30));
       } catch (oe) { console.error("[WH] Ops sync error:", oe.message); }
     }
   } catch (e) { console.error("[WH] Order sync error:", e.message); }
