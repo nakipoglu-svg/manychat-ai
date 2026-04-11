@@ -41,5 +41,7 @@ export function menuCheck(ctx, state) {
 
   // Normal menü kontrolü (ilk mesaj değil ama ürün hala yok)
   if (!MENU_INTENTS.has(ctx.intent)) return null;
+  // "İkisinin fiyatı" gibi her iki ürünü soran mesajlar → price rule'a bırak
+  if (ctx.intent === INTENT.PRICE && /ikisinin|ikisininde|ikisi de|ikiside|her ikisi|hepsinin|ikisini|tum urun|tüm ürün|hepsi|ikisinde/i.test(ctx.norm)) return null;
   return { text: TEXT.MAIN_MENU, reply_class: REPLY_CLASS.MENU, support_mode_reason: "" };
 }

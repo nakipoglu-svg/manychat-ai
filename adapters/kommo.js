@@ -18,17 +18,20 @@ const MENU_BOT_ID = 72073;
 
 const PIPELINE_ID = 13481231;
 const STAGE_MAP = {
-  "":                    104000639,  // Gelen Talepler
-  "waiting_product":     104000639,  // Gelen Talepler
-  "waiting_photo":       104000647,  // Fotoğraf Bekleniyor
-  "waiting_letters":     104000647,  // Harf Bekleniyor (aynı kolon)
-  "waiting_back_text":   104000651,  // Arka Yazı Bekleniyor
-  "waiting_payment":     104000655,  // Ödeme Seçimi Bekleniyor
+  "":                    104000639,  // Yeni Müşteri
+  "waiting_product":     104000639,  // Yeni Müşteri
+  "waiting_photo":       104000647,  // Foto/Harf Bekleniyor
+  "waiting_letters":     104000647,  // Foto/Harf Bekleniyor (aynı kolon)
+  "waiting_payment":     104000655,  // Ödeme Bekleniyor
   "waiting_address":     104000659,  // Adres Bekleniyor
   "order_completed":     104106243,  // Sipariş Tamamlandı
-  "human_support":       104106247,  // İnsan Desteği
+  "human_support":       104333019,  // İptal / İade (iptal isteyenler buraya)
 };
-const STAGE_PRODUCT_SELECTED = 104000643;  // Ürün Seçildi
+// Ürün Seçildi aşaması kaldırıldı — ürün seçildiğinde direkt foto/harf'e geçiyor
+// Destek aşaması: support_mode=1 ama iptal değilse buraya
+const STAGE_DESTEK = 104106247;       // Destek
+const STAGE_IPTAL = 104333019;        // İptal / İade
+const STAGE_KARGOLANDI = 104333015;   // Kargolandı (manuel kullanım)
 
 // Ödeme yöntemine göre ek pipeline aşamaları (varsa)
 // Not: Kommo'da bu aşamalar yoksa oluşturulmalı veya mevcut ID'ler güncellenmelidir
@@ -184,15 +187,19 @@ async function triggerBot(botId, leadId) {
   return kApi("POST", `/api/v4/bots/${botId}/run`, { entity_id: Number(leadId), entity_type: "leads" });
 }
 
-async function movePipelineStage(leadId, stage, hasProduct, paymentMethod) {
+async function movePipelineStage(leadId, stage, hasProduct, paymentMethod, supportMode, orderStatus) {
   let target = STAGE_MAP[stage];
-  if (!target && hasProduct) target = STAGE_PRODUCT_SELECTED;
-  if (!target) return;
-
-  // Ödeme-aware pipeline: EFT seçildi ama adres bekleniyor → özel stage
-  if (stage === "waiting_address" && paymentMethod === "eft_havale" && PAYMENT_STAGE_MAP["eft_waiting"]) {
-    target = PAYMENT_STAGE_MAP["eft_waiting"];
+  
+  // İptal / İade: order_status cancel_requested → İptal aşamasına
+  if (orderStatus === "cancel_requested" || stage === "human_support") {
+    target = STAGE_IPTAL;
   }
+  // Destek: support_mode=1 ama iptal değilse → Destek aşamasına
+  else if (supportMode === "1" && orderStatus !== "cancel_requested") {
+    target = STAGE_DESTEK;
+  }
+
+  if (!target) return;
 
   try {
     await kApi("PATCH", "/api/v4/leads/" + leadId, { pipeline_id: PIPELINE_ID, status_id: target });
@@ -629,16 +636,32 @@ export default async function handler(req, res) {
     // ═════════════════════════════════════════════════════════
 
     // ── First message → trigger menu bot ──
+    // ── İlk mesaj: Salesbot #3 (görsel menü) + engine fallback ──
     if (isFirstMessage(cf, effectiveText)) {
-      console.log("[WH] First message → menu bot");
+      console.log("[WH] First message → Salesbot #3 trigger");
       if (lid) {
+        // Salesbot #3'ü tetikle — görsel menü gösterecek
         await triggerBot(MENU_BOT_ID, lid);
         await updateFields(lid, {
-          context_lock: "",
           cancel_reason: buildWatermark(msgCreatedAt, msgId, cf.cancel_reason),
         });
+
+        // 5 saniye bekle — Salesbot'un çalışmasını bekle
+        await new Promise(r => setTimeout(r, 5000));
+
+        // Salesbot çalıştı mı kontrol et
+        const checkCf = await readLeadFields(lid);
+        if (checkCf.menu_gosterildi === "evet" || checkCf.ilgilenilen_urun) {
+          // Salesbot çalışmış — engine'e gerek yok
+          console.log("[WH] First message → Salesbot OK, skip engine");
+          await updateFields(lid, { context_lock: "" });
+          return res.status(200).json({ ok: true, handled_by: "menu_bot" });
+        }
+
+        // Salesbot çalışmadı — engine fallback
+        console.log("[WH] First message → Salesbot FAILED, engine fallback");
+        // Aşağıya devam — engine çalışacak
       }
-      return res.status(200).json({ ok: true, handled_by: "menu_bot" });
     }
 
     // ── Normal flow: core engine ──
@@ -712,7 +735,7 @@ export default async function handler(req, res) {
     }
 
     // Adım 4: Pipeline stage (arka planda)
-    await movePipelineStage(lid, result.conversation_stage || "", !!result.ilgilenilen_urun, result.payment_method || "");
+    await movePipelineStage(lid, result.conversation_stage || "", !!result.ilgilenilen_urun, result.payment_method || "", result.support_mode || "", result.order_status || "");
 
     // ── Logging + Order Sync (arka plan) ──
     try {

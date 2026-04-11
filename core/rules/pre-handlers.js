@@ -11,6 +11,16 @@ export function preHandlers(ctx, state, nextStage) {
   const raw = String(message || "").trim();
   const stage = state.conversation_stage || "";
 
+  // ═══ POST_SALE / CANCEL → pre-handlers bypass, side-questions'a düşsün ═══
+  if (intent === "post_sale" || intent === "cancel_order") return null;
+
+  // ═══ FOTO GELDİ AMA ÜRÜN SEÇİLMEMİŞ → OTOMATİK LAZER ═══
+  if (intent === "photo" && !ctx.product && !state.product) {
+    // Foto gönderen müşteri %99 lazer istiyor, otomatik lazer seç
+    ctx.product = PRODUCT.LAZER;
+    return FP("Fotoğrafınız ulaştı efendim 😊 Resimli lazer kolye olarak devam ediyoruz.\n\nSiparişiniz bu fotoğraf üzerinden hazırlanacaktır. Farklı bir görsel kullanmak isterseniz belirtebilirsiniz.\n\nÖdeme tercihiniz EFT / Havale mi, kapıda ödeme mi olacak efendim?");
+  }
+
   // ═══ ACK ENGINE — Kısa onay mesajları state-aware yönetimi ═══
   if (intent === "ack") {
     // WAITING_PRODUCT: müşteri "evet" derse menü göster
@@ -150,8 +160,8 @@ export function preHandlers(ctx, state, nextStage) {
     return R("Kişiye özel üretildiği için keyfi iade yapılmamaktadır efendim 😊 Fotoğrafın seçimi müşterinin sorumluluğundadır. Kalite kaynaklı sorunlarda ise ürün değiştirilir.");
   }
 
-  // Renk seçenekleri sorusu (Fix #10)
-  if (hasAny(norm, ["renk secenek","renk seceneg","hangi renk","renk cesit","renk cesid","renkler neler","ne renk var","renk var mi","renk var mı","kac renk","kaç renk"])) {
+  // Renk seçenekleri sorusu — "renk atma" ve "solma" kararma demek, renk seçeneği değil
+  if (hasAny(norm, ["renk secenek","renk seceneg","renk cesit","renk cesid","renkler neler","ne renk var","renk var mi","renk var mı","kac renk","kaç renk"]) && !hasAny(norm, ["renk atma","renk atar","solma","kararma","paslan"])) {
     return R("Altın kaplama (gold) ve gümüş kaplama seçeneğimiz mevcut efendim 😊 Ayrıca mat çelik (saf çelik) de bulunmaktadır. Hepsinde fiyat aynıdır.");
   }
 

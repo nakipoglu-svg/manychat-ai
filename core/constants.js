@@ -132,7 +132,7 @@ export const INTENT = {
 // ─── KEYWORDS ───────────────────────────────────────────────
 export const KW = {
   product_lazer: [
-    "resimli", "fotografli", "foto", "fotolu", "lazer",
+    "resimli", "resmli", "resimii", "resımlı", "fotografli", "foto", "fotolu", "lazer",
     "resim kolye", "foto kolye", "fotografli kolye", "fotoğraflı kolye",
     "resimli kolye", "resimli lazer", "resimli madalyon", "resimli olan",
   ],
@@ -444,6 +444,15 @@ export const KW = {
     "niye cevap vermiyor", "cevap vermiyorsunuz",
     "ulasami", "ulaşamı",
     "bakar misiniz", "bakar mısınız",
+    "siparisim geldi ama", "siparişim geldi ama",
+    "yanlis geldi", "yanlış geldi", "yanlis gonderilmis", "yanlış gönderilmiş",
+    "sari geldi", "sarı geldi", "gumus istemiştim", "gümüş istemiştim",
+    "renk yanlis", "renk yanlış", "yanlis renk", "yanlış renk",
+    "istedigim gibi degil", "istediğim gibi değil",
+    "hatali geldi", "hatalı geldi", "hatali urun", "hatalı ürün",
+    "kirik geldi", "kırık geldi", "kirilan", "kırılan",
+    "kopuk geldi", "kopmuş", "kopmus",
+    "eksik geldi", "eksik gonderilmis", "eksik gönderilmiş",
   ],
 
   new_order: [

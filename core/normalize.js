@@ -188,8 +188,18 @@ export function looksLikeName(raw = "", norm = "", stage = "") {
 
   // Tek kelime isim: sadece büyük harfle başlıyor ve 4+ karakter ise kabul et
   if (parts.length === 1) {
+    // Anlamsız tekrar eden karakter filtreleme (Yesss, Gtttttt, Jjjjkk, Aaaa)
+    if (/(.)\1{2,}/.test(raw)) return false;
+    // Bilinen anlamsız kelimeler
+    const GIBBERISH = ["yesss","yess","gtttt","jjjj","helloo","hello","baby","makaroni","makaronii","naber","nope","lol","haha","hahaha","hehe","hmm","hmmm","oooo","aaaa","evet","hayir","hayır","yok","var","lan","abi","abla","kanka","reis","bro","hey","heyy"];
+    if (GIBBERISH.some(g => n.startsWith(g) || n === g)) return false;
+    // Sadece sesli harf veya sessiz harf → isim değil
+    if (/^[aeıioöuü]+$/i.test(raw) || /^[bcçdfgğhjklmnprsştvyz]+$/i.test(raw)) return false;
     return /^[A-ZÇĞİÖŞÜ]/.test(raw) && raw.length >= 4;
   }
+
+  // İki kelime ama ikisi de kısa ve anlamsız → isim değil (örn: "He ya", "Ok tm")
+  if (parts.length === 2 && parts.every(p => p.length <= 3)) return false;
 
   return true;
 }

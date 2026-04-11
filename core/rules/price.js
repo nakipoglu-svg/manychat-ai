@@ -12,8 +12,14 @@ export function priceRule(ctx, state) {
   if (state.product === PRODUCT.LAZER && hasAny(norm, ["atac","ataç","harfli"])) return R("Harfli ataç kolye: EFT / havale 499 TL, kapıda ödeme 549 TL'dir efendim 😊 3 harfe kadar standarttır, her ek harf +50 TL'dir.");
   if (state.product === PRODUCT.ATAC && hasAny(norm, ["resimli","lazer","fotografli"])) return R("Resimli lazer kolye: EFT / havale 599 TL, kapıda ödeme 649 TL'dir efendim 😊");
 
-  // Ürün yok → menü
-  if (!state.product) return { text: "Hemen yardımcı olayım efendim 😊\nHangi ürün için fiyat istersiniz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye", reply_class: REPLY_CLASS.MENU, support_mode_reason: "" };
+  // Ürün yok → ikisinin fiyatını birlikte sor veya menü
+  if (!state.product) {
+    // "ikisinin", "her ikisi", "hepsinin", "ikisi de" → her iki fiyatı ver
+    if (hasAny(norm, ["ikisinin","ikisininde","ikisinin de","ikisi de","ikisinde","her ikisi","hepsinin","ikisini","tum urunler","tüm ürünler","hepsi"])) {
+      return R("Resimli lazer kolye: EFT / havale 599 TL, kapıda ödeme 649 TL\nHarfli ataç kolye: EFT / havale 499 TL, kapıda ödeme 549 TL'dir efendim 😊\n\nSiparişe devam etmek isterseniz hangi modeli tercih ettiğinizi belirtebilirsiniz.");
+    }
+    return { text: "Hemen yardımcı olayım efendim 😊\nHangi ürün için fiyat istersiniz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye", reply_class: REPLY_CLASS.MENU, support_mode_reason: "" };
+  }
 
   if (state.product === PRODUCT.LAZER) {
     const m = norm.match(/(\d+)\s*(tane|adet|tanesini|adedini)/);

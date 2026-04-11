@@ -106,7 +106,9 @@ export function applyTopicOverride(intent, activeTopic, norm) {
     // Açıkça shipping keyword varsa override yapma
     if (hasAny(norm, ["kargo","teslimat","ptt","gonderim","gönderi"])) return intent;
     // Açıkça price keyword varsa override yapma  
-    if (hasAny(norm, ["fiyat","ucret","tl","lira","para"])) return intent;
+    if (hasAny(norm, ["fiyat","ucret","ücret","tl","lira","para","ne kadar","nekadar","kac tl","kaç tl","kac lira","kaç lira"])) return intent;
+    // Ürün adı geçiyorsa → ürün sorusu, trust değil
+    if (hasAny(norm, ["atac","ataç","lazer","resimli","harfli","kolye"])) return intent;
     return "trust";
   }
 

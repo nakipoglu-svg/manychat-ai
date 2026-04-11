@@ -132,6 +132,17 @@ export function detectIntent(ctx) {
         "bu tarz","bu tip","bu tasarim","bu tasarım",
         "aynisından istiyorum","aynısından istiyorum",
         "model bu olcak","model bu olacak",
+        "boyle istiyorum","böyle istiyorum",
+        "boyle yapabilir","böyle yapabilir",
+        "boyle olsun","böyle olsun",
+        "bunu yapabilir misiniz",
+        "bu yapilabilir","bu yapılabilir",
+        "bu nasil olur","bu nasıl olur",
+        "bu var mi","bu var mı",
+        "ayni bundan","aynı bundan","ayni bu","aynı bu",
+        "boyle bir sey","böyle bir şey",
+        "bu tarzda","bu tipte","bu stilde",
+        "tam boyle","tam böyle",
       ])) return INTENT.PRODUCT_IMAGE_REF;
       if (stage === STAGE.WAITING_PAYMENT) return INTENT.BACK_PHOTO_UPLOAD;
       return INTENT.PHOTO;

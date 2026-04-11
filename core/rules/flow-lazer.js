@@ -23,19 +23,19 @@ export function flowLazer(ctx, state, nextStage) {
   }
 
   // ═══ FOTOĞRAF GELDİ ═══
-  // Tüm fotoğraflar kabul edilir. Direkt ödemeye geçilir.
+  // Tüm fotoğraflar kabul edilir. Bildirim yap, ödemeye geç.
   if (intent === INTENT.PHOTO) {
     if (state.order_status === "completed" || nextStage === STAGE.ORDER_COMPLETED) {
       return SEL("Sipariş bilgileri tamamlandığı için fotoğraf değişikliği talebinizi ekibimize yönlendirelim efendim 😊");
     }
-    // Foto alındı → direkt ödeme adımına geç
+    const fotoMsg = "Fotoğrafınız ulaştı efendim 😊 Siparişiniz bu fotoğraf üzerinden hazırlanacaktır. Farklı bir görsel kullanmak isterseniz belirtebilirsiniz.";
     if (!state.payment_method) {
-      return R("Fotoğrafınız ulaştı efendim 😊 Uygun olmayan durumlarda ekibimiz dönüş sağlayacaktır.\n\nÖdeme tercihiniz EFT / Havale mi, kapıda ödeme mi olacak efendim?");
+      return R(fotoMsg + "\n\nÖdeme tercihiniz EFT / Havale mi, kapıda ödeme mi olacak efendim?");
     }
     if (state.address_status !== "received") {
-      return R(`Fotoğrafınız ulaştı efendim 😊 Uygun olmayan durumlarda ekibimiz dönüş sağlayacaktır.\n\n${TEXT.ORDER_DETAILS}`);
+      return R(`${fotoMsg}\n\n${TEXT.ORDER_DETAILS}`);
     }
-    return R("Fotoğrafınız ulaştı efendim 😊 Uygun olmayan durumlarda ekibimiz dönüş sağlayacaktır.");
+    return R(fotoMsg);
   }
 
   // ═══ ARKA YAZI — MÜŞTERİ KENDİ VERDİ ═══

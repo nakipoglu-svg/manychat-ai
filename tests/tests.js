@@ -1249,7 +1249,7 @@ const tests = [
   { id: "KT081", name: "Jpe extension photo", input: body("https://amojo.kommo.com/v2/abc/attachments/image.jpe", lazer({ conversation_stage: "waiting_photo" })), expect: { photo_received: "1" } },
 
   // CDN URL → photo in waiting_product → "model seçin" menü
-  { id: "KT082", name: "Photo URL w_product menu", input: body("https://lookaside.fbsbx.com/photo.jpg"), expectReplyIncludes: "hangi" },
+  { id: "KT082", name: "Photo URL w_product auto lazer", input: body("https://lookaside.fbsbx.com/photo.jpg"), expectReplyIncludes: "lazer kolye" },
 
   // Photo in completed → operational
   { id: "KT083", name: "Photo URL completed operational", input: body("https://lookaside.fbsbx.com/newphoto.jpg", lazerCompleted()), expectReplyIncludes: "ekibimiz" },
