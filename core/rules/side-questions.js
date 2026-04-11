@@ -116,5 +116,32 @@ export function sideQuestions(ctx, state) {
   }
   if (intent === INTENT.PHOTO_SENT_CONFIRM) return R("Fotoğrafınız ulaştı efendim, ekibimiz kontrol edip dönüş sağlayacaktır 😊", REPLY_CLASS.FLOW_PROGRESS);
 
+  // ═══ EK KONULAR (knowledge gap'lerden eklendi) ═══
+
+  // İnternet sitesi sorusu
+  if (hasAny(norm, ["internet site","web site","siteniz","sitenize"])) {
+    if (hasAny(norm, ["acilmiyor","açılmıyor","erisil","erişil","hata","neden","niye"])) {
+      return R("Şu an yapım aşamasındadır efendim, satışlarımızı Instagram üzerinden gerçekleştiriyoruz 😊");
+    }
+    return R("Satışlarımızı doğrudan Instagram üzerinden gerçekleştiriyoruz efendim 😊");
+  }
+
+  // Link ile ödeme
+  if (hasAny(norm, ["link ile odeme","link ile ödeme","online odeme","online ödeme","link odeme","link ödeme"])) {
+    return R("Link ile ödeme seçeneğimiz bulunmamaktadır efendim, EFT / havale veya kapıda ödeme seçeneklerimiz mevcuttur 😊");
+  }
+
+  // Kolye ucu ayrı satış
+  if (hasAny(norm, ["sadece kolye ucu","kolye ucu ayri","kolye ucunu al","kendi zincirime","kolye ucu olarak"])) {
+    return R("Ürünlerimiz zinciri ile birlikte sunulmaktadır efendim 😊");
+  }
+
+  // Elden teslim / mağazadan alma
+  if (hasAny(norm, ["elden teslim","gelip al","gelip teslim","dukkan","dükkana gel","magazadan al","mağazadan al","kendim al","yerinden al"])) {
+    if (!hasAny(norm, ["kargo","ptt"])) {
+      return R("Siparişlerimiz kargo ile gönderilmektedir efendim, elden teslim bulunmamaktadır 😊");
+    }
+  }
+
   return null;
 }
