@@ -15,7 +15,7 @@ export function preHandlers(ctx, state, nextStage) {
   if (intent === "post_sale" || intent === "cancel_order") return null;
 
   // ═══ FRUSTRATION / SİTEM — müşteri sinirlenmiş, menü gösterme! ═══
-  if (hasAny(norm, ["okumuyorsunuz","okumuyor","anlamiyorsunuz","anlamıyorsunuz","dalga mi geciyorsunuz","dalga mı geçiyorsunuz","dalga geciyorsunuz","dalga geçiyorsunuz","cevap vermiyorsunuz","cevap vermiyor","aptal misiniz","aptal mısınız","robot musunuz","robot musun","otomatik mesaj istemiyorum","kendiniz cevap","bot musunuz","bot musun","soruma cevap","ne bicim","ne biçim","nasil bir isletme","nasıl bir işletme"])) {
+  if (hasAny(norm, ["okumuyorsunuz","okumuyor","anlamiyorsunuz","anlamıyorsunuz","dalga mi geciyorsunuz","dalga mı geçiyorsunuz","dalga geciyorsunuz","dalga geçiyorsunuz","cevap vermiyorsunuz","cevap vermiyor","aptal misiniz","aptal mısınız","robot musunuz","robot musun","otomatik mesaj istemiyorum","kendiniz cevap","bot musunuz","bot musun","soruma cevap","ne bicim","ne biçim","nasil bir isletme","nasıl bir işletme","bakacak misiniz","bakacak mısınız","artik yeter","artık yeter","sorunlu musunuz","sorunlu musun","bilgisayar cevap","bilgisayar veriyor","yapacaginiz ise","yapacağınız işe","baslarim","başlarım","ne bu ya","aloooo","alooo"])) {
     return { text: "Çok özür dileriz efendim, sizi dinliyorum. Size nasıl yardımcı olabilirim? 😊", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
   }
 

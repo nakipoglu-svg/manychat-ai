@@ -339,6 +339,7 @@ export const KW = {
     "buradan gondereyim", "buradan göndereyim",
     "buradan mi gonderecegim", "buradan mı göndereceğim",
     "vesikalik mi", "vesikalık mı", "vesikalik olmali mi", "vesikalık olmalı mı",
+    "vesikalikmi", "vesikalıkmı", "vesikalikmi olmasi", "vesikalıkmı olması",
     "nasil bir fotograf", "nasıl bir fotoğraf", "ne tur fotograf", "ne tür fotoğraf",
     "hangi fotograf", "ne cesit", "ne çeşit", "selfie mi",
     "fotograf nasil olmali", "fotoğraf nasıl olmalı", "foto nasil olmali", "foto nasıl olmalı",
@@ -644,6 +645,12 @@ export const NOT_A_NAME = [
   "dedim", "dedi", "diyor", "diyorum",
   "hayir", "hayır", "istemiyorum",
   "tamamdir", "tamamdır", "anladim", "anladım",
+  "acaba", "birsey", "birşey", "esimin", "eşimin", "resminimi", "resmimi",
+  "yaptirsam", "yaptırsam", "sorabilir", "sorunlu",
+  "bilgisayar", "robot", "otomatik", "mesaj",
+  "kontrol", "bakacak", "bakamiyor", "bakamıyor",
+  "cevap", "neden", "niye",
+  "evlilik", "numaram", "numaraniz", "numaranız",
 ];
 
 // ─── TURKEY CITIES ──────────────────────────────────────────

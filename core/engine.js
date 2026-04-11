@@ -317,6 +317,8 @@ export async function processChat(body = {}) {
     const needsAI = aiEnabled && shouldUseAI(ctx, signals, { reply: finalReply, meta });
     meta._aiEnabled = aiEnabled;
     meta._aiNeeded = needsAI;
+    // EARLY LOG — Vercel truncation'dan önce görmek için
+    console.log("[AI_ROUTE]", needsAI ? "→AI" : "→DET", ctx.intent, ctx.message.substring(0, 30));
 
     if (!aiEnabled && !body._test) {
       console.log("[AI_DISABLED]", JSON.stringify({ _skipAI: !!body._skipAI }));
