@@ -63,62 +63,86 @@ function buildMiniKnowledge(topic, product) {
 // Deterministic kesin sonuç verdiyse AI'ye gitme
 
 export function shouldUseAI(ctx, signals, arbitrationResult) {
-  // System message → kesin, AI'ye gitme
+  // ═══ DETERMINISTIC'TE KALACAKLAR — AI'ye gitmeyecek ═══
+
+  // System message → kesin deterministic
   if (signals.system_message) return false;
-  // Cancel → kesin
+  // Cancel → deterministic (handoff)
   if (ctx.intent === "cancel_order") return false;
-  // Phone detected → kesin
+  // Slot commits → kesin deterministic (AI bunları bozabilir)
   if (signals.slot_updates?.phone) return false;
-  // Address detected → kesin
   if (signals.slot_updates?.address) return false;
-  // Photo URL → kesin
   if (signals.slot_updates?.photo) return false;
-  // Payment selection with verb → kesin
+  if (signals.slot_updates?.letters) return false;
+  // Payment selection with verb → kesin deterministic
   if (signals.slot_updates?.payment_method) {
-    const hasVerb = /seceyim|seçeyim|olsun|istiyorum|sectim|seçtim|seciyorum|seçiyorum/.test(ctx.norm || "");
+    const hasVerb = /seceyim|seçeyim|olsun|istiyorum|sectim|seçtim|seciyorum|seçiyorum|yapacagim|yapacağım|yapicam|yapıcam/.test(ctx.norm || "");
     if (hasVerb) return false;
   }
-  // Letters (ataç) → kesin
-  if (signals.slot_updates?.letters) return false;
-  // Price/bargaining → deterministic (AI fiyat kırabilir, pazarlığı kabul edebilir)
-  if (ctx.intent === "price" || ctx.intent === "shipping_price") return false;
+  // Price → deterministic (AI fiyat kırabilir, pazarlığı kabul edebilir)
+  if (ctx.intent === "price") return false;
+  // Shipping price → deterministic (sabit bilgi: kargo dahil)
+  if (ctx.intent === "shipping_price") return false;
+  // Pazarlık → deterministic
   if (/\d{3}/.test(ctx.message || "") && /tl|lira|olur mu|yapar|indirim|anlasalim|anlaşalım/i.test(ctx.norm || "")) return false;
+  // ACK (kısa onay) → deterministic
+  if (ctx.intent === "ack") return false;
+  // Payment confirmation (dekont attım) → deterministic
+  if (ctx.intent === "payment_confirmation") return false;
+  // Name detection → deterministic
+  if (ctx.intent === "name_only") return false;
+  // Phone detection → deterministic
+  if (ctx.intent === "phone") return false;
+  // Address detection → deterministic
+  if (ctx.intent === "address") return false;
+  // Product entry (lazer kolye / ataç kolye seçimi) → deterministic
+  if (arbitrationResult?.meta?.selectedRule === "product-entry") return false;
+  // Photo received → deterministic
+  if (ctx.intent === "photo" && signals.slot_updates?.photo) return false;
+  // Order start commit → deterministic
+  if (ctx.intent === "order_start" && arbitrationResult?.reply?.reply_class === "product_entry") return false;
 
-  // ═══ AI'YE GİDECEK DURUMLAR ═══
+  // ═══ AI'YE GİDECEK DURUMLAR — conversational her şey ═══
 
-  // Arbitration cevap verdi ama low-confidence (catch-all veya fallback)
-  const lowConfidenceRules = new Set(["catch-all", "smalltalk", null]);
-  if (lowConfidenceRules.has(arbitrationResult?.meta?.selectedRule)) return true;
-
-  // Fallback'e düştü → AI lazım
-  if (!arbitrationResult?.reply?.text || arbitrationResult.meta?.replySource === "model_fallback") return true;
-
-  // Frustration sinyali var → AI daha iyi ton verebilir
-  if (signals.complaints?.includes("frustration")) return true;
-
-  // Undecided → AI daha doğal cevap verir
-  if (signals.undecided) return true;
-
-  // Back text ile ilgili herhangi bir durum
+  // Material / trust soruları
+  if (ctx.intent === "material_question" || ctx.intent === "trust") return true;
+  // Chain / zincir soruları
+  if (ctx.intent === "chain_question" || ctx.intent === "chain") return true;
+  // Photo question (nasıl foto, vesikalık mı)
+  if (ctx.intent === "photo_question") return true;
+  // Back text / back photo soruları
   if (ctx.intent === "back_text" || ctx.intent === "back_text_info" ||
       ctx.intent === "back_photo_info" || ctx.intent === "back_text_examples") return true;
-
+  // Payment info (taksit var mı, EFT/kapıda farkı)
+  if (ctx.intent === "payment_info_question") return true;
+  // Example request
+  if (ctx.intent === "example_request") return true;
+  // Post-sale
+  if (ctx.intent === "post_sale") return true;
+  // Location
+  if (ctx.intent === "location") return true;
+  // Shipping (kargo kaç gün)
+  if (ctx.intent === "shipping") return true;
+  // Frustration / complaint
+  if (signals.complaints?.length > 0) return true;
+  // Undecided → AI daha doğal cevap verir
+  if (signals.undecided) return true;
   // Capability sorusu
   if (signals.questions?.includes("capability_multi_photo")) return true;
-
-  // Payment info (selection değil)
-  if (ctx.intent === "payment_info_question") return true;
-
-  // General intent + aktif stage → muhtemelen belirsiz mesaj
-  if (ctx.intent === "general" && ctx.fields?.conversation_stage) return true;
-
-  // Complaint
-  if (signals.complaints?.length > 0) return true;
-
-  // Greeting → AI daha doğal
+  // Smalltalk → AI daha doğal
   if (ctx.intent === "smalltalk") return true;
+  // General intent → muhtemelen belirsiz mesaj, AI cevaplasın
+  if (ctx.intent === "general") return true;
+  // Detail request
+  if (ctx.intent === "detail_request") return true;
+  // Order start (intent ama commit değil)
+  if (ctx.intent === "order_start") return true;
 
-  return false;
+  // Fallback: arbitration cevap veremediyse → AI
+  if (!arbitrationResult?.reply?.text) return true;
+
+  // Diğer tüm durumlar → yine AI'ye gönder (güvenli taraf)
+  return true;
 }
 
 // ─── DETECT TOPIC ──────────────────────────────────────────

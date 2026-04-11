@@ -61,8 +61,11 @@ export function sideQuestions(ctx, state) {
     if (ap === PRODUCT.ATAC) return R("Ataç kolyede fotoğraf gerekmiyor efendim 😊 İsterseniz harfleri yazabilirsiniz.");
     if (ap === PRODUCT.LAZER) {
       // Vesikalık / fotoğraf türü sorusu
-      if (hasAny(norm, ["vesikalik","vesikalık","selfie","ne tur","ne tür","ne cesit","ne çeşit","nasil bir fotograf","nasıl bir fotoğraf"])) {
+      if (hasAny(norm, ["vesikalik","vesikalık","selfie","selfi","ne tur","ne tür","ne cesit","ne çeşit","nasil bir fotograf","nasıl bir fotoğraf","net mi olmali","net mi olmalı"])) {
         return R("Vesikalık olmasına gerek yok efendim 😊 İstediğiniz fotoğrafı buradan gönderebilirsiniz, ekibimiz kontrol edecektir.");
+      }
+      if (hasAny(norm, ["eski foto","eski fotoğraf","bulanik","bulanık","net degil","net değil"])) {
+        return R("Eski veya biraz bulanık fotoğraf da olabilir efendim 😊 Mümkün olduğunca net bir fotoğraf göndermeniz yeterlidir.");
       }
       return R("Buradan direkt gönderebilirsiniz efendim 😊");
     }
@@ -94,6 +97,14 @@ export function sideQuestions(ctx, state) {
 
   // Post-sale
   if (intent === INTENT.POST_SALE) return OP("Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊");
+
+  // Payment info (taksit, fark, kapıda kredi kartı)
+  if (intent === INTENT.PAYMENT_INFO) {
+    if (hasAny(norm, ["taksit","taksitle"])) return R("Maalesef taksit seçeneğimiz bulunmuyor efendim 😊 EFT / Havale ile 599 TL veya kapıda ödeme ile 649 TL şeklinde ilerleyebiliriz.");
+    if (hasAny(norm, ["fark","farki","farkı","arasindaki","arasındaki"])) return R("EFT / Havale ile 599 TL, kapıda ödeme ile 649 TL'dir efendim 😊 Kapıda ödemede sadece nakit geçerlidir, kredi kartı kullanılamamaktadır.");
+    if (hasAny(norm, ["kredi karti","kredi kartı","sadece nakit"])) return R("Kapıda ödemede sadece nakit geçerlidir efendim 😊 Kredi kartı kullanılamamaktadır.");
+    return R("EFT / Havale ile 599 TL, kapıda ödeme ile 649 TL'dir efendim 😊 Kapıda ödemede sadece nakit geçerlidir.");
+  }
 
   // New order
   if (intent === INTENT.NEW_ORDER) return { text: "Tabi efendim 😊 Hangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye", reply_class: REPLY_CLASS.MENU, support_mode_reason: "" };

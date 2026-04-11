@@ -14,6 +14,15 @@ export function preHandlers(ctx, state, nextStage) {
   // ═══ POST_SALE / CANCEL → pre-handlers bypass, side-questions'a düşsün ═══
   if (intent === "post_sale" || intent === "cancel_order") return null;
 
+  // ═══ ÜRÜN KAPSAMI DIŞI — bileklik, yüzük, anahtarlık vb. ═══
+  if (hasAny(norm, ["bileklik","bilezik","yuzuk","yüzük","anahtarlik","anahtarlık","kupe","küpe","piercing","saat","broş","bros","toka","kemer","cuzdan","cüzdan","bileklik isim","kunye","künye"])) {
+    // Müşteri satılmayan ürün soruyor
+    if (hasAny(norm, ["kunye","künye"])) {
+      return R("Şu an künye modelimiz bulunmuyor efendim 😊 Resimli lazer kolye ve harfli ataç kolye modellerimiz mevcut. Yardımcı olabilir miyim?");
+    }
+    return R("Şu an sadece kolye modellerimiz mevcut efendim 😊 Resimli lazer kolye ve harfli ataç kolye yapıyoruz. Bu modeller hakkında bilgi almak ister misiniz?");
+  }
+
   // ═══ FOTO GELDİ AMA ÜRÜN SEÇİLMEMİŞ → OTOMATİK LAZER ═══
   if (intent === "photo" && !ctx.product && !state.product) {
     // Foto gönderen müşteri %99 lazer istiyor, otomatik lazer seç

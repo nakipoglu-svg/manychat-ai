@@ -1362,7 +1362,7 @@ const tests = [
   { id: "KT114", name: "Tek hane 1 w_photo", input: body("1", lazer({ conversation_stage: "waiting_photo" })), expect: { conversation_stage: "waiting_photo" } },
 
   // "Kolye değil de bileklik" → menü
-  { id: "KT115", name: "Kolye degil bileklik menu", input: body("Kolye değil de bileklik"), expectReplyIncludes: "hangi" },
+  { id: "KT115", name: "Kolye degil bileklik out-of-scope", input: body("Kolye değil de bileklik"), expectReplyIncludes: "kolye model" },
 
   // "Evet resimli" → product selection
   { id: "KT116", name: "Evet resimli product", input: body("Evet resimli"), expect: { ilgilenilen_urun: "lazer" } },
@@ -1481,7 +1481,7 @@ const tests = [
   // No product, no menu_shown → menu
   { id: "KT166", name: "Kolye ilk mesaj menu", input: body("Kolye"), expectReplyIncludes: "hangi" },
   { id: "KT167", name: "Yaptirmak istiyorum ilk menu", input: body("Yaptırmak istiyorum"), expectReplyIncludes: "hangi" },
-  { id: "KT168", name: "Ortadaki kalpli yuzuk ilk menu", input: body("Ortadaki ve kalpli yüzük ne kadar"), expectReplyIncludes: "hangi" },
+  { id: "KT168", name: "Ortadaki kalpli yuzuk out-of-scope", input: body("Ortadaki ve kalpli yüzük ne kadar"), expectReplyIncludes: "kolye model" },
   { id: "KT169", name: "Oglumun sacı kolye menu", input: body("Oglumun sacı uzun kestirip kolye yaptırmak istiyorum"), expectReplyIncludes: "hangi" },
   { id: "KT170", name: "Zarf kolye menu", input: body("Zarf kolye"), expectReplyIncludes: "hangi" },
 

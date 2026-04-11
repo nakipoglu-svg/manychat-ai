@@ -186,7 +186,7 @@ export const KW = {
     "sonra yazsam olur mu", "sonra yazarim size", "sonra yazarım size",
   ],
 
-  location: ["yeriniz nerede", "yeriniz neresi", "yeriniz nerde", "neredesiniz", "nereniz", "nereniz nerde", "neresiniz", "konum", "magaza", "mağaza", "eminonu", "eminönü", "subeniz", "şubeniz", "subesi", "şubesi"],
+  location: ["yeriniz nerede", "yeriniz neresi", "yeriniz nerde", "neredesiniz", "nereniz", "nereniz nerde", "neresiniz", "konum", "magaza", "mağaza", "eminonu", "eminönü", "subeniz", "şubeniz", "subesi", "şubesi", "istanbulda misiniz", "istanbulda mısınız", "hangi sehir", "hangi şehir", "hangi il", "fiziksel magaza", "fiziksel mağaza", "dukkan", "dükkan", "gelip alabilir", "elden teslim"],
 
   shipping_price: [
     "kargo ucreti", "kargo ücreti", "kargo ucreti ne kadar", "kargo ücreti ne kadar",
@@ -204,6 +204,8 @@ export const KW = {
     "fiyata dahil mi", "fiyata dahil",
     "ekstra ucret", "ekstra ücret", "ekstra ucret var mi", "ekstra ücret var mı",
     "ek ucret var mi", "ek ücret var mı", "ek ucret", "ek ücret",
+    "kargo bedava mi", "kargo bedava mı", "bedava kargo", "ucretsiz kargo", "ücretsiz kargo",
+    "ayruca kargo", "ayrıca kargo",
   ],
 
   shipping: [
@@ -243,6 +245,14 @@ export const KW = {
     "malzeme ne", "malzemesi ne",
     "ne malzeme", "hangi malzeme",
     "gunluk kullanim", "günlük kullanım", "gunluk kullanima", "günlük kullanıma",
+    "bozulur mu", "bozulurmu", "bozulma yapar", "zamanla bozul",
+    "kaliteli mi", "kalitelimi", "kaliteli midir", "kalitesiz",
+    "garanti suresi", "garanti süresi", "ne kadar garanti", "garanti ne kadar",
+    "garantisi varmi", "garantisi var mı",
+    "dayanikli mi", "dayanıklı mı", "dayaniyor mu", "dayanıyor mu",
+    "uzun sure dayanir", "uzun süre dayanır",
+    "parfum sikil", "parfüm sıkıl", "parfum zarar", "parfüm zarar",
+    "ne kadar sure", "ne kadar süre",
   ],
 
   payment: [
@@ -258,9 +268,10 @@ export const KW = {
     "odeme", "ödeme",
     "iban", "dekont", "aciklama", "açıklama",
     "kredi karti", "kredi kartı", "kartla", "kart ile",
+    "taksit", "taksitle",
   ],
 
-  price: ["fiyat", "fıyat", "fiat", "fyat", "ne kadar", "nekadar", "ucret", "ücret", "kac tl", "kaç tl", "kac lira", "kaç lira"],
+  price: ["fiyat", "fıyat", "fiat", "fyat", "ne kadar", "nekadar", "ucret", "ücret", "kac tl", "kaç tl", "kac lira", "kaç lira", "kac para", "kaç para", "kaca yapiyorsunuz", "kaça yapıyorsunuz", "parasi ne", "parası ne"],
 
   chain: [
     "zincir model", "zincir degisiyor mu", "zincir değişiyor mu",
@@ -274,6 +285,8 @@ export const KW = {
     "boyu ne kadar", "boyutu ne kadar", "boyutu nedir", "kac cm", "kaç cm",
     "kac santim", "kaç santım", "kac santım", "kaç santim",
     "zincir dahil", "zincir dayil",
+    "kisa zincir", "kısa zincir", "ince zincir", "kalin zincir", "kalın zincir",
+    "zincir degisir", "zincir değişir",
     "plaka boyut", "plaka olcu", "plaka ölçü", "plakanin olcu", "plakanın ölçü",
     "yuvarlak plaka", "yuvarlak bolum", "yuvarlak bölüm",
     "cerceve boyut", "çerçeve boyut", "madalyon boyut",
@@ -281,6 +294,8 @@ export const KW = {
     "zincir kisalt", "zincir kısalt", "kisaltma", "kısaltma", "kisaltilabilir", "kısaltılabilir", "kisaltabilir", "kısaltabilir",
     "zincir uzat", "uzatma", "uzatilabilir", "uzatılabilir", "uzatabilir", "daha uzun zincir", "uzun zincir",
     "70 cm", "70cm",
+    "zincir secebilir", "zincir seçebilir", "zincir secme", "zincir seçme",
+    "zinciri secebilir", "zinciri seçebilir", "zinciri secme", "zinciri seçme",
   ],
 
   order_start: [
@@ -333,6 +348,10 @@ export const KW = {
     "bu olur mu", "bu olurmu", "bu foto olur mu", "bu fotograf olur mu",
     "resimleri buradan mi atiyorum", "resmi buradan mi gondericez",
     "tekli fotograf mi", "tekli mi olmali",
+    "eski fotograf olur mu", "eski fotoğraf olur mu", "eski foto olur mu",
+    "bulanik foto olur mu", "bulanık foto olur mu", "bulanik fotograf", "bulanık fotoğraf",
+    "net olmasi lazim mi", "net olması lazım mı", "net mi olmali", "net mi olmalı",
+    "selfi ceksem", "selfi çeksem", "selfie olur mu",
   ],
 
   back_photo_price: [
@@ -370,6 +389,10 @@ export const KW = {
     "arkasina ne yazalim", "arkasına ne yazalım",
     "o zaman arkasina", "o zaman arkasına",
     "arka yazi ne olsun", "arka yazı ne olsun",
+    "arka yuze ne yazilir", "arka yüze ne yazılır",
+    "arka tarafa isim yazilir", "arka tarafa isim yazılır",
+    "arkasina isim yazilir", "arkasına isim yazılır",
+    "arka yuz", "arka yüz",
   ],
 
   back_photo_info: [
@@ -409,6 +432,8 @@ export const KW = {
     "iki kisinin resmi", "iki kişinin resmi",
     "iki kisi olur mu", "iki kişi olur mu",
     "iki resmi birlestir", "iki resmi birleştir",
+    "kac kisi olur", "kaç kişi olur", "kac kisilik", "kaç kişilik",
+    "kac kisi sigar", "kaç kişi sığar",
   ],
 
   back_text_skip: [
@@ -453,6 +478,12 @@ export const KW = {
     "kirik geldi", "kırık geldi", "kirilan", "kırılan",
     "kopuk geldi", "kopmuş", "kopmus",
     "eksik geldi", "eksik gonderilmis", "eksik gönderilmiş",
+    "siparisim ne oldu", "siparişim ne oldu",
+    "kargom nerede", "kargom nerde",
+    "memnun degilim", "memnun değilim",
+    "siparisim yola cikti mi", "siparişim yola çıktı mı",
+    "ne zaman hazir olur", "ne zaman hazır olur",
+    "siparis ne zaman gelir", "sipariş ne zaman gelir",
   ],
 
   new_order: [
@@ -469,6 +500,13 @@ export const KW = {
     "ornek atar misiniz", "örnek atar mısınız",
     "ornek gonderir misiniz", "örnek gönderir misiniz",
     "ornek foto", "örnek foto",
+    "ornek var mi", "örnek var mı", "ornekler var mi", "örnekler var mı",
+    "yapilmis ornek", "yapılmış örnek",
+    "nasil cikiyor", "nasıl çıkıyor",
+    "daha once yaptiklariniz", "daha önce yaptıklarınız",
+    "yaptiginiz urunler", "yaptığınız ürünler",
+    "ornek gorseller", "örnek görseller",
+    "ornek calisma", "örnek çalışma",
   ],
 
   detail_request: ["detay", "detaylar", "bilgi alabilir", "bilgi istiyorum", "bilgi verir misiniz"],
@@ -494,6 +532,22 @@ export const KW = {
     "gercek altin mi", "gerçek altın mı",
     "som altin", "som altın",
     "925 gumus", "925 gümüş",
+    "altin degil mi", "altın değil mi", "altindan mi", "altından mı",
+    "altin midir", "altın mıdır", "altin mi degil", "altın mı değil",
+    "zincir altin mi", "zincir altın mı", "zincir gumus mu", "zincir gümüş mü",
+    "zincir celik mi", "zincir çelik mi",
+    "kolye altin mi", "kolye altın mı",
+    "plaka altin mi", "plaka altın mı",
+    "neden altin", "neden altın", "niye altin", "niye altın",
+    "ne malzemeden", "neyden yapiliyor", "neyden yapılıyor",
+    "hangi malzeme", "hangi materyal",
+    "kaplama mi", "kaplama mı", "kaplamasini", "kaplamasını",
+    "dusta takilir", "duşta takılır", "dusta cikarilir", "duşta çıkarılır",
+    "denize girerken", "denizde takilir", "denizde takılır",
+    "havuzda takilir", "havuzda takılır",
+    "parfum etkiler", "parfüm etkiler", "parfum zarar", "parfüm zarar",
+    "ne tur metal", "ne tür metal", "madeni ne", "madeni nedir",
+    "neden yapiliyor", "neden yapılıyor", "neyle yapiliyor", "neyle yapılıyor",
   ],
 
   payment_confirmation: [

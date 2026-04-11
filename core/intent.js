@@ -165,7 +165,10 @@ export function detectIntent(ctx) {
 
   // Kargo
   if (hasAny(norm, KW.shipping)) {
-    if (hasAny(norm, ["donus yapicam","dönüş yapıcam","donus yapacagim","dönüş yapacağım","tekrar donecegim","tekrar döneceğim","daha sonra donecegim","icinde donecegim","içinde döneceğim","icinde donus","içinde dönüş"])) {
+    // "garanti" keyword'ü varsa → trust (kargo değil)
+    if (hasAny(norm, ["garanti","garantisi","kararma","solma","bozul","kalite"])) {
+      // trust'a düşsün
+    } else if (hasAny(norm, ["donus yapicam","dönüş yapıcam","donus yapacagim","dönüş yapacağım","tekrar donecegim","tekrar döneceğim","daha sonra donecegim","icinde donecegim","içinde döneceğim","icinde donus","içinde dönüş"])) {
       // Müşteri "ben döneceğim" diyor → kargo değil
     } else {
       return INTENT.SHIPPING;
@@ -183,7 +186,10 @@ export function detectIntent(ctx) {
 
   // Ödeme
   if (hasAny(norm, KW.payment)) {
-    if (hasAny(norm, ["nedir","ne demek","ne anlama","nasil oluyor","nasıl oluyor"])) return INTENT.PAYMENT_INFO;
+    if (hasAny(norm, ["nedir","ne demek","ne anlama","nasil oluyor","nasıl oluyor"]) && !hasAny(norm, ["iban"])) return INTENT.PAYMENT_INFO;
+    if (hasAny(norm, ["taksit","taksitle"])) return INTENT.PAYMENT_INFO;
+    if (hasAny(norm, ["fark","farki","farkı","arasindaki","arasındaki"])) return INTENT.PAYMENT_INFO;
+    if (hasAny(norm, ["sadece nakit","nakit mi","kredi karti olur","kredi kartı olur","kredi karti gecer","kredi kartı geçer"])) return INTENT.PAYMENT_INFO;
     if (hasAny(norm, ["ne kadar","kac tl","kac lira","fiyat","ucret"])) {
       if (!hasAny(norm, ["yapacagim","yapacağım","olsun","istiyorum","yapicam","yapıcam","seciyorum","seçiyorum"])) return INTENT.PRICE;
     }
