@@ -2,9 +2,8 @@
 // Çalıştırmak için: GET https://manychat-ai.vercel.app/api/fix-old-links
 // Tek seferlik çalıştır, sonra sil.
 
-const KOMMO_TOKEN = process.env.KOMMO_API_TOKEN;
-const KOMMO_DOMAIN = process.env.KOMMO_DOMAIN || "nakipoglu";
-const API = `https://${KOMMO_DOMAIN}.kommo.com`;
+const KOMMO_TOKEN = process.env.KOMMO_TOKEN;
+const API = process.env.KOMMO_API_BASE || "https://nakipoglu.kommo.com";
 const HDR = { "Authorization": `Bearer ${KOMMO_TOKEN}`, "Content-Type": "application/json" };
 const ORDER_WEBHOOK_URL = process.env.GOOGLE_ORDER_WEBHOOK_URL || "";
 
