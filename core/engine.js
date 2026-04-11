@@ -129,6 +129,16 @@ function buildOutput(ctx, reply, committedState, meta) {
     orderStatus = "started";
   }
 
+  // ═══ GLOBAL COMPLETED GUARD ═══
+  // order_status=completed ise stage ASLA geriye gitmez
+  // waiting_photo, waiting_payment, waiting_address, waiting_letters → YASAK
+  if (orderStatus === "completed" || siparisAlindi === "1") {
+    const BACKWARD_STAGES = [STAGE.WAITING_PHOTO, STAGE.WAITING_PAYMENT, STAGE.WAITING_ADDRESS, STAGE.WAITING_LETTERS, STAGE.WAITING_BACK_TEXT, STAGE.WAITING_PRODUCT];
+    if (BACKWARD_STAGES.includes(conversationStage)) {
+      conversationStage = STAGE.ORDER_COMPLETED;
+    }
+  }
+
   if (s._nextStage === STAGE.HUMAN_SUPPORT || orderStatus === "cancel_requested") {
     conversationStage = STAGE.HUMAN_SUPPORT; orderStatus = "cancel_requested";
     supportMode = "1"; supportReason = supportReason || SUPPORT_REASON.CANCEL;

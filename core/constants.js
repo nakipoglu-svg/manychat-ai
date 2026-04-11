@@ -29,6 +29,7 @@ export const REPLY_CLASS = {
   MENU:                  "menu",
   PRODUCT_ENTRY:         "product_entry",
   ORDER_COMPLETE:        "order_complete",
+  PHOTO_REFERENCE:       "photo_reference_confirmed",
 };
 
 // ─── SUPPORT MODE REASON ────────────────────────────────────
@@ -120,6 +121,8 @@ export const INTENT = {
   // ACK & confirmation intents
   ACK: "ack",
   PAYMENT_CONFIRMATION: "payment_confirmation",
+  PHOTO_REFERENCE: "photo_reference",
+  PHOTO_CHANGE: "photo_change_request",
   // Meta intents
   SMALLTALK: "smalltalk",
   POST_SALE: "post_sale",
@@ -435,6 +438,13 @@ export const KW = {
     "iki resmi birlestir", "iki resmi birleştir",
     "kac kisi olur", "kaç kişi olur", "kac kisilik", "kaç kişilik",
     "kac kisi sigar", "kaç kişi sığar",
+    "kac resim koyabilir", "kaç resim koyabilir",
+    "kac foto koyabilir", "kaç foto koyabilir",
+    "kac resim olur", "kaç resim olur",
+    "kac foto olur", "kaç foto olur",
+    "en fazla kac resim", "en fazla kaç resim",
+    "en fazla kac foto", "en fazla kaç foto",
+    "tek resim mi", "tek foto mu",
   ],
 
   back_text_skip: [
@@ -595,7 +605,7 @@ export const NOT_A_NAME = [
   "resimli", "fotografli", "fotolu", "lazer", "kolye", "atac", "ataç", "harfli",
   "celik mi", "çelik mi", "celikmi", "çelikmi", "paslanmaz",
   "madalyon", "nazar", "boncuk", "boncuklu",
-  "begendim", "beğendim", "begendik", "beğendik", "guzel", "güzel",
+  "begendim", "beğendim", "begendik", "beğendik", "cok guzel", "çok güzel", "ne guzel", "ne güzel",
   "saglik", "sağlık", "elinize", "ellerinize", "emeginize", "emeğinize",
   "bayildim", "bayıldım", "harika", "super", "süper", "mukemmel", "mükemmel",
   "siparis", "sipariş", "kargo", "teslimat",
@@ -651,6 +661,16 @@ export const NOT_A_NAME = [
   "kontrol", "bakacak", "bakamiyor", "bakamıyor",
   "cevap", "neden", "niye",
   "evlilik", "numaram", "numaraniz", "numaranız",
+  "yanlis", "yanlış", "yazinmis", "yazılmış", "yazilmis",
+  "bayrama", "bayram", "yetismez", "yetişmez",
+  "bayiltmis", "bayıltmış", "bayiltmisti", "bayıltmıştı",
+  "onemli", "önemli", "degil", "değil",
+  "liked", "message", "shared", "story",
+  "inşallah", "insallah", "maşallah", "masallah",
+  "razı", "razi", "olsun",
+  "atim", "atım", "hocam",
+  "olum", "ölüm", "tarihi",
+  "canim", "canım", "babam", "annem", "abim", "ablam",
 ];
 
 // ─── TURKEY CITIES ──────────────────────────────────────────

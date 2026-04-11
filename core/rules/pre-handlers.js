@@ -122,6 +122,11 @@ export function preHandlers(ctx, state, nextStage) {
     return OP("Tabi efendim, ekibimiz kontrol edip size dönüş sağlayacaktır 😊");
   }
 
+  // "Aynı adres" referansı — sistem önceki adresi bilmiyor, operatöre yönlendir
+  if (hasAny(norm, ["ayni adres","aynı adres","ayni adrese","aynı adrese","ayni yere","aynı yere","ayni bilgi","aynı bilgi","onceki adres","önceki adres","onceki siparisle ayni","önceki siparişle aynı","daha once verdim","daha önce verdim","daha once yazdim","daha önce yazdım"])) {
+    return OP("Ekibimize iletiyorum, önceki adres bilgilerinizi kontrol edip hemen dönüş sağlıyorum efendim 😊");
+  }
+
   // Sitem / complaint / "yazdım zaten" / "neden tekrar"
   if (hasAny(norm, ["adresi yazdim zaten","adresi yazdım zaten","numarayi attim","numarayı attım","yazdim zaten","yazdım zaten","verdim zaten","gonderdim zaten","gönderdim zaten","yukarda var","yukarida var","yukarıda var"])) {
     return R("Özür dileriz efendim 😊 Bilgilerinizi kontrol ediyorum. Eksik bir bilgi varsa sizi bilgilendireceğim.");

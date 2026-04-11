@@ -48,27 +48,79 @@ export function detectIntent(ctx) {
     return INTENT.PAYMENT_CONFIRMATION;
   }
 
-  // ACK — kısa onay mesajları (evet, tamam, olur, peki, bu olsun, bundan olacak)
-  // State-aware: engine tarafında aktif süreç varsa devam eder, yoksa sadece onay cevabı verir
+  // ACK — kısa onay mesajları (evet, tamam, olur, peki)
+  // NOT: "bu olsun" artık burada DEĞİL — reference resolver'da context-aware handle ediliyor
   const ACK_WORDS = ["evet","tamam","tamamdir","tamamdır","tmm","tmmm","olur","peki","ok","he","hee","tm",
     "tamam dir","anladim","anladım","dogru","doğru","aynen","tabi","tabii"];
-  const ACK_PHRASES = ["bu olsun","bu olacak"];
   const isShortAck = raw.length <= 15 && ACK_WORDS.includes(norm);
-  const isPhraseAck = raw.length <= 20 && ACK_PHRASES.some(p => norm.includes(p)) && !looksLikePhotoUrl(message);
   const isEmojiAck = raw.length <= 4 && /^[^\w\s]+$/.test(raw);
 
-  if (isShortAck || isPhraseAck || isEmojiAck) {
-    // ACK mesajları back_text stage'indeyse back_text olarak DEĞİL, ACK olarak işlenmeli
-    // Ama eğer waiting_back_text stage'indeyse ve mesaj gerçek bir isim/tarih/yazı gibi görünüyorsa → back_text
-    // Kısa onaylar (tamam, evet vb.) kesinlikle back_text değil
+  if (isShortAck || isEmojiAck) {
     ctx._intentCandidates = [{ intent: "ack", score: 0.9 }];
     return INTENT.ACK;
+  }
+
+  // ═══ REFERENCE RESOLVER — "bu olsun", "bundan", "üstteki" ═══
+  // Context-aware: stage + son aksiyona göre foto mu model mu karar verir
+  const REFERENCE_PHRASES = ["bu olsun","bu olacak","bundan","bundan olsun","bundan olacak",
+    "bunu yapın","bunu yap","bunu istiyorum","sundan istiyorum","şundan istiyorum",
+    "üstteki","ustteki","son attigim","son attığım","ilk attigim","ilk attığım",
+    "bir onceki","bir önceki","ikinci foto","digeri","diğeri","ilkini yapin","ilkini yapın"];
+  const isReference = raw.length <= 40 && REFERENCE_PHRASES.some(p => norm.includes(p));
+
+  if (isReference) {
+    // SCORING: foto mu model mu?
+    let photoScore = 0;
+    let productScore = 0;
+
+    // Stage-based scoring
+    if (stage === STAGE.WAITING_PHOTO) photoScore += 3;
+    if (stage === STAGE.WAITING_PRODUCT || !stage) productScore += 3;
+    if (stage === STAGE.WAITING_PAYMENT || stage === STAGE.WAITING_BACK_TEXT) photoScore += 2;
+
+    // Product set mi?
+    if (product) photoScore += 1;
+    if (!product) productScore += 2;
+
+    // Last intent based
+    const lastIntent = ctx.fields?.last_intent || "";
+    if (["photo","photo_question","photo_suitability_question","back_photo_info"].includes(lastIntent)) photoScore += 2;
+    if (["price","order_start","detail_request","general"].includes(lastIntent)) productScore += 2;
+
+    // "üstteki/son attığım" → daha çok foto referansı
+    if (/üstteki|ustteki|son att|ilk att|bir önce|bir once|ikinci foto/i.test(norm)) photoScore += 2;
+
+    console.log("[REF_RESOLVE]", JSON.stringify({ msg: norm.substring(0, 30), photoScore, productScore, stage, lastIntent }));
+
+    if (photoScore > productScore) {
+      // Foto referansı — "bu fotoğraf olsun", "son attığım olsun"
+      ctx._intentCandidates = [{ intent: "photo_reference", score: 0.8 }];
+      return INTENT.PHOTO_REFERENCE;
+    } else if (productScore > photoScore) {
+      // Model referansı — "bu modelden istiyorum"
+      ctx._intentCandidates = [{ intent: "product_reference", score: 0.8 }];
+      return INTENT.PRODUCT_IMAGE_REF;
+    } else {
+      // Belirsiz — stage'e göre default
+      ctx._intentCandidates = [{ intent: "ambiguous_reference", score: 0.5 }];
+      return INTENT.ACK;
+    }
   }
 
   // ═══ KATMAN 1: KESİN KEYWORD INTENT'LER ═══
 
   // İptal — her zaman en yüksek öncelik
   if (hasAny(norm, KW.cancel)) return INTENT.CANCEL;
+
+  // Photo change request — "başka resim bakayım", "fotoğrafı değiştireyim"
+  if (hasAny(norm, ["baska resim","başka resim","baska foto","başka foto",
+    "farklı foto","farkli foto","farklı resim","farkli resim",
+    "degistireyim","değiştireyim","degistirebilir","değiştirebilir",
+    "yeni foto","yeni resim","baska fotograf","başka fotoğraf",
+    "begenmedim","beğenmedim","hosuma gitmedi","hoşuma gitmedi",
+    "tekrar foto","tekrar resim","foto degistir","foto değiştir"])) {
+    return INTENT.PHOTO_CHANGE;
+  }
 
   // Post-sale
   if (hasAny(norm, KW.post_sale)) {
@@ -85,15 +137,23 @@ export function detectIntent(ctx) {
   // Yeni sipariş
   if (hasAny(norm, KW.new_order)) return INTENT.NEW_ORDER;
 
-  // ── Back text stage-specific ──
-  if (stage === STAGE.WAITING_PAYMENT) {
+  // ── Photo suitability — waiting_photo ve waiting_payment'ta ──
+  // NOT: URL içeren mesajlar buraya düşmemeli — onlar foto gönderimi
+  if ((stage === STAGE.WAITING_PHOTO || stage === STAGE.WAITING_PAYMENT || stage === STAGE.WAITING_BACK_TEXT) && !looksLikePhotoUrl(message)) {
     if (hasAny(norm, [
       "olur mu bu fotograf","olur mu bu foto","sizce bu fotograf olur mu",
       "bu fotograf olur mu","bu foto olur mu","fotograf uygun mu","foto uygun mu",
       "uygun mudur","bu olur mu","bu olurmu","boyle olur mu","böyle olur mu",
       "bu uygun mu","bu uygunmu","mesela boyle","mesela böyle",
       "bu fotograf uygun","bu fotoğraf uygun",
+      "net cikar mi","net çıkar mı","net olur mu","net olurmu",
+      "karanlik mi","karanlık mı","bulanik mi","bulanık mı",
+      "goruntu iyi mi","görüntü iyi mi","kalite nasil","kalite nasıl",
     ])) return INTENT.PHOTO_SUITABILITY;
+  }
+
+  // ── Back text stage-specific (sadece waiting_payment) ──
+  if (stage === STAGE.WAITING_PAYMENT) {
 
     if (hasAny(norm, [
       "gonderdim ya zaten","gönderdim ya zaten",

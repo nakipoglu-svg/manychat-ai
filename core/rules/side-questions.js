@@ -112,6 +112,16 @@ export function sideQuestions(ctx, state) {
   // Example
   if (intent === INTENT.EXAMPLE_REQUEST) return R("Örnek çalışmalarımızı buradan inceleyebilirsiniz efendim 😊\n\n📸 Örnek ürünler: instagram.com/stories/highlights/18391039714130558/\n📦 Sizden gelenler: instagram.com/stories/highlights/18079575341155587/");
 
+  // Photo reference — "son attığım olsun", "ilk attığım", "üstteki"
+  if (intent === INTENT.PHOTO_REFERENCE) {
+    return R("Tabi efendim 😊 Belirttiğiniz fotoğrafı kullanacağız.", REPLY_CLASS.PHOTO_REFERENCE);
+  }
+
+  // Photo change — "başka resim bakayım", "değiştireyim"
+  if (intent === INTENT.PHOTO_CHANGE) {
+    return R("Tabi efendim 😊 Yeni fotoğrafınızı buradan gönderebilirsiniz.");
+  }
+
   // Detail
   if (intent === INTENT.DETAIL_REQUEST) {
     if (state.conversation_stage === STAGE.WAITING_ADDRESS) return R("Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz efendim? 😊", REPLY_CLASS.FLOW_PROGRESS);

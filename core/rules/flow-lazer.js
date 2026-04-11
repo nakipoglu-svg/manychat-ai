@@ -11,7 +11,7 @@ export function flowLazer(ctx, state, nextStage) {
   if (ctx.product !== PRODUCT.LAZER) return null;
   const { intent } = ctx;
 
-  if (intent === INTENT.PHOTO_SUITABILITY) return R("Fotoğrafınızı buradan iletebilirsiniz efendim 😊");
+  if (intent === INTENT.PHOTO_SUITABILITY) return R("Gönderdiğiniz fotoğrafı kontrol edip size bilgi verelim efendim 😊");
 
   if (intent === INTENT.BACK_PHOTO_SENT) return R("Fotoğrafınız alındı efendim 😊");
   
