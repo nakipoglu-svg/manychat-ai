@@ -318,8 +318,8 @@ export async function processChat(body = {}) {
     meta._aiEnabled = aiEnabled;
     meta._aiNeeded = needsAI;
 
-    if (!aiEnabled) {
-      console.log("[AI_DISABLED]", JSON.stringify({ _skipAI: !!body._skipAI, _test: !!body._test }));
+    if (!aiEnabled && !body._test) {
+      console.log("[AI_DISABLED]", JSON.stringify({ _skipAI: !!body._skipAI }));
     } else if (!needsAI) {
       console.log("[AI_NOT_NEEDED]", JSON.stringify({ intent: ctx.intent, rule: meta.selectedRule || meta.signalOverride || "none", msg: ctx.message.substring(0, 40) }));
     }
