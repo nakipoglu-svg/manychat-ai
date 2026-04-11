@@ -97,12 +97,12 @@ export function guards(ctx, state, nextStage) {
 
     // "Verdim ya" / "Yazdım yukarıda" → sipariş tamamlandıysa onay ver
     if (hasAny(norm, ["verdim","verdim ya","yazdim","yazdım","yukarida","yukarıda","gonderdim","gönderdim","zaten verdim","bilgi verdim","hepsini verdim","soyledim","söyledim","belirttim"])) {
-      return R("Bilgileriniz alınmıştır efendim 😊 Siparişiniz ekibimize iletilmiştir, en kısa sürede hazırlanacaktır.", REPLY_CLASS.FIXED_INFO);
+      return R("Bilgileriniz alınmıştır efendim 😊 Siparişiniz ekibimize iletilmiştir, en kısa sürede hazırlanacaktır.", REPLY_CLASS.ORDER_COMPLETE);
     }
 
     // "Siparişim alındı mı" / "Sipariş tamam mı" → onay ver
     if (hasAny(norm, ["siparis alindi mi","siparişim alındı mı","siparis alindi","siparişim alındı","siparis tamam mi","siparişim tamam mı","siparis onaylandi","siparişim onaylandı","siparisim","siparişim"])) {
-      return R("Evet efendim, siparişiniz alınmıştır 😊 Ekibimiz en kısa sürede ürününüzü hazırlayacaktır.", REPLY_CLASS.FIXED_INFO);
+      return R("Evet efendim, siparişiniz alınmıştır 😊 Ekibimiz en kısa sürede ürününüzü hazırlayacaktır.", REPLY_CLASS.ORDER_COMPLETE);
     }
 
     // Bekliyorum

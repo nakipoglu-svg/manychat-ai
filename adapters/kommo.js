@@ -470,7 +470,121 @@ export default async function handler(req, res) {
     const hasAttachment = !!(attachType && attachLink);
     
     if (!msgId && !hasText && !hasAttachment) {
-      // Gerçekten non-message mı yoksa bilinmeyen payload mı? Logla.
+      // ═══ OPERATOR MESSAGE SYNC — talk[update] event'lerini yakala ═══
+      const talkEntityId = d["talk[update][0][entity_id]"] || d["talk[add][0][entity_id]"] || "";
+      const talkEntityType = d["talk[update][0][entity_type]"] || d["talk[add][0][entity_type]"] || "";
+      
+      if (talkEntityId && talkEntityType === "leads") {
+        const lid = String(talkEntityId);
+        const talkId = d["talk[update][0][talk_id]"] || d["talk[add][0][talk_id]"] || "";
+        
+        if (talkId) {
+          try {
+            // Son 5 mesajı çek
+            const chatR = await kApi("GET", `/api/v4/talks/${talkId}/messages?limit=5&order=desc`);
+            
+            if (chatR.s === 200 && chatR.d?._embedded?.messages) {
+              const curCf = await readLeadFields(lid);
+              
+              // Dedup: son işlenen operatör mesaj ID'si cancel_reason watermark'ta tutulur
+              // Format: "wm:timestamp:msgId" — msgId kısmından son işlenen seller msg ID çıkarılır
+              const lastProcessedWm = curCf.cancel_reason || "";
+              const lastProcessedParts = lastProcessedWm.split(":");
+              const lastProcessedMsgId = lastProcessedParts.length >= 3 ? lastProcessedParts[2] : "";
+              
+              // Son 5 mesajdan ilk işlenmemiş outgoing mesajı bul
+              let sellerMsg = "";
+              let sellerMsgId = "";
+              
+              for (const m of chatR.d._embedded.messages) {
+                // Sadece outgoing (operatör) mesajları
+                const isOutgoing = m.author?.type === "user" || m.direction === "out" || m.created_by > 0;
+                const isBot = m.author?.type === "bot" || m.author?.type === "system";
+                const content = m.text || m.message || "";
+                const mId = String(m.id || m.message_id || "");
+                
+                // Bot mesajı → atla (bot kendi state'ini zaten yönetiyor)
+                if (isBot) continue;
+                // Müşteri mesajı → atla
+                if (!isOutgoing) continue;
+                // Boş mesaj → atla
+                if (!content || content.length < 3) continue;
+                // Zaten işlenmiş → atla
+                if (mId && mId === lastProcessedMsgId) break;
+                
+                sellerMsg = content;
+                sellerMsgId = mId;
+                break; // En son outgoing mesajı bulduk
+              }
+              
+              if (sellerMsg && sellerMsgId) {
+                console.log("[WH] OPERATOR-MSG:", sellerMsg.substring(0, 60), "lead:", lid, "msgId:", sellerMsgId);
+                
+                const outNorm = sellerMsg.toLowerCase()
+                  .replace(/İ/g, "i").replace(/ç/g, "c").replace(/ğ/g, "g")
+                  .replace(/ı/g, "i").replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u");
+                
+                let stateUpdates = null;
+                
+                // Fotoğraf alındı
+                if (/fotograf.*(ald|geldi|ulast|tamam)|fotonu.*(ald|gordu)|resmi.*(ald|gordu)|fotografi kontrol/i.test(outNorm) ||
+                    /gorsel.*(ald|geldi)|fotografiniz.*ald|resminiz.*ald/i.test(outNorm)) {
+                  if (curCf.conversation_stage === "waiting_photo") {
+                    stateUpdates = { photo_received: "1", conversation_stage: "waiting_payment" };
+                  }
+                }
+                
+                // Arka yazı alındı
+                if (/arka.*ald|yazi.*ald|not.*ald|yaziniz.*ald/i.test(outNorm)) {
+                  stateUpdates = stateUpdates || {};
+                  stateUpdates.back_text_status = "received";
+                }
+                
+                // Ödeme alındı
+                if (/odeme.*(ald|geldi|gordu|kontrol)|eft.*(geldi|ald)|havale.*(geldi|ald)|dekont.*(ald|gordu)/i.test(outNorm)) {
+                  if (curCf.conversation_stage === "waiting_payment" || !curCf.payment_method) {
+                    stateUpdates = stateUpdates || {};
+                    stateUpdates.payment_method = curCf.payment_method || "eft_havale";
+                    if (curCf.address_status !== "received") stateUpdates.conversation_stage = "waiting_address";
+                  }
+                }
+                
+                // Sipariş tamamlandı — ZORLA KAPAT, slot eksikliğine bakma
+                if (/siparis.*(olustur|tamamlan|alindi|alinmis|onaylan|hazirlan|aldik|olusturduk|aliyorum|onayliyorum)|kargoya.*(veril|cik)/i.test(outNorm) ||
+                    /siparis.*(aldi|oldu|tamam)|siparisiniz.*(aldi|oldu|olustur|onay|hazir)/i.test(outNorm)) {
+                  stateUpdates = { order_status: "completed", conversation_stage: "order_completed", siparis_alindi: "1" };
+                }
+                
+                // Adres alındı
+                if (/adres.*(ald|tamam|not)|bilgiler.*(ald|tamam)|tesekk.*bilgi/i.test(outNorm)) {
+                  if (curCf.conversation_stage === "waiting_address") {
+                    stateUpdates = stateUpdates || {};
+                    stateUpdates.address_status = "received";
+                    if (curCf.phone_received === "1") {
+                      stateUpdates.conversation_stage = "order_completed";
+                      stateUpdates.order_status = "completed";
+                      stateUpdates.siparis_alindi = "1";
+                    }
+                  }
+                }
+                
+                if (stateUpdates) {
+                  console.log("[WH] OPERATOR-SYNC:", JSON.stringify(stateUpdates));
+                  await updateFields(lid, stateUpdates);
+                  if (stateUpdates.conversation_stage) {
+                    await movePipelineStage(lid, stateUpdates.conversation_stage, true, curCf.payment_method, "", stateUpdates.order_status || curCf.order_status);
+                  }
+                  return res.status(200).json({ ok: true, operator_sync: true, updates: stateUpdates });
+                }
+              }
+            }
+          } catch (e) {
+            console.error("[WH] OPERATOR-SYNC error:", e.message);
+          }
+        }
+      }
+      // ═══════════════════════════════════════════════════════════
+      
       const bodyKeys = Object.keys(d).slice(0, 30).join(", ");
       console.log("[WH] NON-MSG: no msgId/text/attach. keys:", bodyKeys);
       return res.status(200).json({ ok: true, skipped: true, reason: "non_message_event" });

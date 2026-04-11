@@ -121,6 +121,10 @@ function buildOutput(ctx, reply, committedState, meta) {
   if (s._nextStage === STAGE.ORDER_COMPLETED) {
     orderStatus = "completed"; siparisAlindi = "1";
     replyClass = replyClass || REPLY_CLASS.ORDER_COMPLETE;
+  } else if (replyClass === REPLY_CLASS.ORDER_COMPLETE) {
+    // Bot sipariş tamamlama cevabı verdi — eksik slot olsa bile state'i kapat
+    conversationStage = STAGE.ORDER_COMPLETED;
+    orderStatus = "completed"; siparisAlindi = "1";
   } else if (!orderStatus && s.product) {
     orderStatus = "started";
   }
