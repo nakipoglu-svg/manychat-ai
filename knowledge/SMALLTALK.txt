@@ -36,7 +36,7 @@ Bu tür durumlarda gereksiz uzun açıklama yapma.
 
 ÖRNEK / FOTOĞRAF İSTEĞİ
 Müşteri "örnek atabilir misiniz", "örnek görebilir miyim" gibi sorarsa:
-"Tabi efendim, hemen atalım size örnekleri 😊"
+"Örnek çalışmalarımızı öne çıkanlar kısmından inceleyebilirsiniz efendim 😊"
 şeklinde cevap ver.
 Konu satıcıya bırakılır.
 

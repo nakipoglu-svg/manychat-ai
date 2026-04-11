@@ -114,7 +114,7 @@ export function preHandlers(ctx, state, nextStage) {
 
   // Çoklu foto / birleştirme (Fix #15)
   if (hasAny(norm, ["kac resim","kaç resim","kac foto","kaç foto","3 resim","uc resim","üç resim","3 foto","3 lu","3 lü","uclu","üçlü","4 lu","4 lü","5 li","5 kisi","5 kişi","tek kolyeye uc","tek kolyeye üç","tek yuze","tek yüze","ayni karede","aynı karede","birlestirip","birleştirip","birlestirme","birleştirme","birlestir","birleştir","ayri ayri yollasak","ayrı ayrı yollasak","ayri ayri atsak","ayrı ayrı atsak","kac kisi","kaç kişi","kac kisilik","kaç kişilik","iki kisi","iki kisinin","iki cocuk","iki çocuk","kac yuz","kaç yüz","uc kisi","üç kişi","dort kisi","dört kişi","bes kisi","beş kişi","3 kisi","4 kisi"])) {
-    if (hasAny(norm, ["ornek","örnek"])) return R("Tabi efendim, ekibimiz size örnek görselleri gönderecektir 😊", REPLY_CLASS.SELLER_REQUIRED, SUPPORT_REASON.SELLER);
+    if (hasAny(norm, ["ornek","örnek"])) return R("Örnek çalışmalarımızı buradan inceleyebilirsiniz efendim 😊\n\n📸 Örnek ürünler: instagram.com/stories/highlights/18391039714130558/\n📦 Sizden gelenler: instagram.com/stories/highlights/18079575341155587/");
     const extra = stage === STAGE.WAITING_PHOTO ? " Fotoğrafları buradan gönderebilirsiniz, ekibimiz düzenleyecektir." :
                   stage === STAGE.WAITING_PAYMENT ? " Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim?" :
                   stage === STAGE.WAITING_ADDRESS ? " Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz?" : "";
@@ -131,16 +131,17 @@ export function preHandlers(ctx, state, nextStage) {
     return FP("Tabi efendim, not aldım 😊 Ekibimiz tasarıma ekleyecektir." + extra);
   }
 
-  // Farklı zincir modeli → seller'a (bunu bot yapamaz) — sadece lazer'da
+  // Farklı zincir modeli → STANDART ZİNCİR (satıcıya bırakma YOK)
   if (ctx.product !== PRODUCT.ATAC && hasAny(norm, ["farkli zincir","farklı zincir","italyan zincir","kral zincir","gurmet zincir","halat zincir","bismark zincir","zincir model degistir","zincir model değiştir"])) {
-    return R("Zincir modeli ile ilgili detay için ekibimize görsel üzerinden net bilgi verelim 😊", REPLY_CLASS.SELLER_REQUIRED, SUPPORT_REASON.SELLER);
+    return R("Standart zincirimiz ile gönderiyoruz efendim 😊");
   }
 
-  // Aksesuar (Fix #6)
-  if (hasAny(norm, ["aksesuar","pembe kalp","siyah kalp","lacivert kalp","nazar boncugu","nazar boncuğu","kalp var mi","kalp var mı","hangi kalp","kalp renk","kalp seceneg","kalp seçeneg"])) {
+  // Aksesuar
+  if (hasAny(norm, ["aksesuar","pembe kalp","siyah kalp","nazar boncugu","nazar boncuğu","kalp var mi","kalp var mı","hangi kalp","kalp renk","kalp seceneg","kalp seçeneg"])) {
     if (hasAny(norm, ["nazar boncugu","nazar boncuğu"]) && !hasAny(norm, ["kalp","aksesuar"])) return R("Nazar boncuğumuz mevcut efendim 😊 Hepsi fiyata dahildir, ek ücret yok.");
-    if (hasAny(norm, ["pembe kalp"]) && !hasAny(norm, ["siyah","lacivert","nazar","aksesuar"])) return R("Pembe kalbimiz mevcut efendim 😊 Hepsi fiyata dahildir.");
-    return R("Pembe kalp, lacivert kalp ve nazar boncuğu seçeneklerimiz mevcut efendim 😊 Hepsi fiyata dahildir, ek ücret yok.");
+    if (hasAny(norm, ["pembe kalp"]) && !hasAny(norm, ["siyah","nazar","aksesuar"])) return R("Pembe kalbimiz mevcut efendim 😊 Hepsi fiyata dahildir.");
+    if (hasAny(norm, ["siyah kalp"]) && !hasAny(norm, ["pembe","nazar","aksesuar"])) return R("Siyah kalbimiz mevcut efendim 😊 Hepsi fiyata dahildir.");
+    return R("Pembe kalp, siyah kalp ve nazar boncuğu seçeneklerimiz mevcut efendim 😊 Hepsi fiyata dahildir, ek ücret yok.");
   }
 
   // İade / değişim (Fix #7)

@@ -11,7 +11,7 @@ export function flowLazer(ctx, state, nextStage) {
   if (ctx.product !== PRODUCT.LAZER) return null;
   const { intent } = ctx;
 
-  if (intent === INTENT.PHOTO_SUITABILITY) return R("Fotoğrafınızı buradan iletebilirsiniz efendim 😊 Fotoğrafınızda bir sorun olursa ekibimiz size bilgi verecektir.");
+  if (intent === INTENT.PHOTO_SUITABILITY) return R("Fotoğrafınızı buradan iletebilirsiniz efendim 😊");
 
   if (intent === INTENT.BACK_PHOTO_SENT) return R("Fotoğrafınız alındı efendim 😊");
   
@@ -23,19 +23,19 @@ export function flowLazer(ctx, state, nextStage) {
   }
 
   // ═══ FOTOĞRAF GELDİ ═══
-  // Arka yüz opsiyonu SORULMAYACAK. Direkt ödemeye geçilecek.
+  // Tüm fotoğraflar kabul edilir. Direkt ödemeye geçilir.
   if (intent === INTENT.PHOTO) {
     if (state.order_status === "completed" || nextStage === STAGE.ORDER_COMPLETED) {
       return SEL("Sipariş bilgileri tamamlandığı için fotoğraf değişikliği talebinizi ekibimize yönlendirelim efendim 😊");
     }
     // Foto alındı → direkt ödeme adımına geç
     if (!state.payment_method) {
-      return R("Fotoğrafınız alındı efendim 😊 Şimdi ödeme tercihinizi iletebilir misiniz? EFT / Havale veya kapıda ödeme şeklinde ilerleyebiliriz.");
+      return R("Fotoğrafınız ulaştı efendim 😊 Uygun olmayan durumlarda ekibimiz dönüş sağlayacaktır.\n\nÖdeme tercihiniz EFT / Havale mi, kapıda ödeme mi olacak efendim?");
     }
     if (state.address_status !== "received") {
-      return R(`Fotoğrafınız alındı efendim 😊\n\n${TEXT.ORDER_DETAILS}`);
+      return R(`Fotoğrafınız ulaştı efendim 😊 Uygun olmayan durumlarda ekibimiz dönüş sağlayacaktır.\n\n${TEXT.ORDER_DETAILS}`);
     }
-    return R("Fotoğrafınız alındı efendim 😊");
+    return R("Fotoğrafınız ulaştı efendim 😊 Uygun olmayan durumlarda ekibimiz dönüş sağlayacaktır.");
   }
 
   // ═══ ARKA YAZI — MÜŞTERİ KENDİ VERDİ ═══

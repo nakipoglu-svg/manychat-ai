@@ -73,11 +73,15 @@ export function sideQuestions(ctx, state) {
   if (intent === INTENT.CHAIN) {
     if (hasAny(norm, ["boyutu ne kadar","plaka boyut","plaka kac cm","plaka olcu","plaka ölçü","plakanin olcu","plakanın ölçü","yuvarlak plaka","yuvarlak bolum","yuvarlak bölüm","yuvarlak kism","yuvarlak kısm","cerceve boyut","çerçeve boyut","madalyon boyut","olcusu nedir","ölçüsü nedir","olcusu ne","ölçüsü ne"])) return R("Ürün plaka boyutu 3 cm'dir efendim 😊");
     if (hasAny(norm, ["zincir dahil","zincir dayil"])) return R("Evet efendim, zincir dahildir 😊");
-    if (hasAny(norm, ["kisalt","kısalt","kisalir","kısalır","kisaltma","kısaltma"])) return R("Zinciri kısaltma seçeneği bulunmamaktadır efendim 😊");
-    if (hasAny(norm, ["uzat","uzatma","uzatilir","uzatılır","uzatabilir","70 cm","70cm","daha uzun"])) return R("Zinciri 70 cm'ye kadar uzatabiliyoruz efendim 😊 Uzatma için +50 TL ek ücret alınmaktadır.");
+    if (hasAny(norm, ["kisalt","kısalt","kisalir","kısalır","kisaltma","kısaltma","kisa zincir","kısa zincir","kisa istiyorum","kısa istiyorum"])) return R("Tabi efendim, kısa zincir gönderelim 😊");
+    if (hasAny(norm, ["uzat","uzatma","uzatilir","uzatılır","uzatabilir","70 cm","70cm","daha uzun"])) {
+      if (ap === PRODUCT.ATAC) return R("Zinciri 70 cm'ye kadar uzatabiliyoruz efendim 😊 Uzatma için +50 TL ek ücret alınmaktadır.");
+      return R("Lazer kolyede zincir uzatma bulunmamaktadır efendim 😊");
+    }
     if (ap === PRODUCT.LAZER) {
-      if (hasAny(norm, ["zincir boyu","zincir uzunlugu","zincir uzunluğu","uzunlugu ne kadar","uzunluğu ne kadar","uzunlugu nekadar","uzunluğu nekadar","zincir kac cm","zincir kaç cm","zincir kisalir","zincir kısalır","boyu ne kadar","kac santim","kaç santım","kac santım","kolye boyu","kac cm","kaç cm","zincir ne kadar","zincirin boyu","zincirin uzunlugu","zincirin uzunluğu"])) return R("Zincir fiyata dahildir, uzunluğu standart olarak 60 cm'dir efendim 😊 İsterseniz 70 cm'ye kadar uzatılabilir (+50 TL).");
-      return SEL("Zincir modeliyle ilgili detay için ekibimize görsel üzerinden net bilgi verelim 😊");
+      if (hasAny(norm, ["zincir boyu","zincir uzunlugu","zincir uzunluğu","uzunlugu ne kadar","uzunluğu ne kadar","uzunlugu nekadar","uzunluğu nekadar","zincir kac cm","zincir kaç cm","zincir kisalir","zincir kısalır","boyu ne kadar","kac santim","kaç santım","kac santım","kolye boyu","kac cm","kaç cm","zincir ne kadar","zincirin boyu","zincirin uzunlugu","zincirin uzunluğu"])) return R("Standart zincirimiz 60 cm'dir, fiyata dahildir efendim 😊");
+      if (hasAny(norm, ["model","modeli","seceneg","seçenek","cesit","çeşit","ince","kalin","kalın","burgulu","halat"])) return R("Standart zincirimiz ile gönderiyoruz efendim 😊");
+      return R("Standart zincirimiz ile gönderiyoruz efendim 😊");
     }
     if (ap === PRODUCT.ATAC) {
       if (hasAny(norm, ["zincir boyu","zincir uzunlugu","zincir uzunluğu","uzunlugu ne kadar","uzunluğu ne kadar","zincir kac cm","zincir kaç cm","boyu ne kadar","zincir ne kadar"])) return R("Standart zincir 50 cm'dir, fiyata dahildir efendim 😊");
@@ -85,17 +89,17 @@ export function sideQuestions(ctx, state) {
     }
     if (hasAny(norm, ["zincir boyu","zincir uzunlugu","zincir uzunluğu","uzunlugu ne kadar","uzunluğu ne kadar","zincir kac cm","zincir kaç cm","boyu ne kadar","boyutu nedir","kac cm","kaç cm","kac santim","kaç santım"])) return R("Resimli lazer kolyede zincir 60 cm, ataç kolyede 50 cm'dir efendim 😊");
     if (hasAny(norm, ["zincir ne kadar"])) return R("Zincir fiyata dahildir efendim 😊 Resimli lazer kolyede 60 cm, ataç kolyede 50 cm standart zincir gelir.");
-    return R("Resimli lazer kolyede zincir 60 cm, ataç kolyede 50 cm'dir efendim 😊");
+    return R("Standart zincirimiz ile gönderiyoruz efendim 😊");
   }
 
   // Post-sale
   if (intent === INTENT.POST_SALE) return OP("Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊");
 
   // New order
-  if (intent === INTENT.NEW_ORDER) return SEL("Tabi efendim 😊 Yeni sipariş için ekibimiz size yardımcı olacaktır.");
+  if (intent === INTENT.NEW_ORDER) return { text: "Tabi efendim 😊 Hangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye", reply_class: REPLY_CLASS.MENU, support_mode_reason: "" };
 
   // Example
-  if (intent === INTENT.EXAMPLE_REQUEST) return SEL("Tabi efendim, hemen atalım size örnekleri 😊");
+  if (intent === INTENT.EXAMPLE_REQUEST) return R("Örnek çalışmalarımızı buradan inceleyebilirsiniz efendim 😊\n\n📸 Örnek ürünler: instagram.com/stories/highlights/18391039714130558/\n📦 Sizden gelenler: instagram.com/stories/highlights/18079575341155587/");
 
   // Detail
   if (intent === INTENT.DETAIL_REQUEST) {

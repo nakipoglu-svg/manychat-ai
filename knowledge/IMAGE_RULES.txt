@@ -87,7 +87,7 @@ gibi ifadeler kullanılmaz.
 
 Bunun yerine:
 "Kontrol edelim efendim 😊"
-"İnceleyip size döneceğiz efendim 😊"
+"Fotoğrafınız ulaştı efendim 😊"
 
 ────────────────────────────
 KESİN HÜKÜM VERME YASAĞI
@@ -187,7 +187,7 @@ FOTOĞRAF DEĞERLENDİRME
 
 Fotoğraf geldiyse:
 
-"Fotoğrafınız ulaştı 😊 İnceleyip size döneceğiz."
+"Fotoğrafınız ulaştı efendim 😊 Uygun olmayan durumlarda ekibimiz dönüş sağlayacaktır."
 
 TEKRAR FOTO İSTENMEZ
 
