@@ -39,6 +39,32 @@ export function detectIntent(ctx) {
     suppress_address: /[?]/.test(raw) && hasAny(norm, ["magaza","mağaza","nerede","konum","sube","şube"]),
   };
 
+  // ═══ KATMAN 0.5: ACK & PAYMENT CONFIRMATION ═══
+
+  // Payment confirmation — "ücreti attım", "ödeme yaptım" gibi mesajlar
+  // Bu mesajlar pricing'e düşmemeli, ödeme bildirimi olarak ele alınmalı
+  if (hasAny(norm, KW.payment_confirmation)) {
+    ctx._intentCandidates = [{ intent: "payment_confirmation", score: 0.95 }];
+    return INTENT.PAYMENT_CONFIRMATION;
+  }
+
+  // ACK — kısa onay mesajları (evet, tamam, olur, peki, bu olsun, bundan olacak)
+  // State-aware: engine tarafında aktif süreç varsa devam eder, yoksa sadece onay cevabı verir
+  const ACK_WORDS = ["evet","tamam","tamamdir","tamamdır","tmm","tmmm","olur","peki","ok","he","hee","tm",
+    "tamam dir","anladim","anladım","dogru","doğru","aynen","tabi","tabii"];
+  const ACK_PHRASES = ["bu olsun","bundan olacak","bunu istiyorum","bu olacak","bunu yapalim","bunu yapalım"];
+  const isShortAck = raw.length <= 15 && ACK_WORDS.includes(norm);
+  const isPhraseAck = ACK_PHRASES.some(p => norm.includes(p));
+  const isEmojiAck = raw.length <= 4 && /^[^\w\s]+$/.test(raw);
+
+  if (isShortAck || isPhraseAck || isEmojiAck) {
+    // ACK mesajları back_text stage'indeyse back_text olarak DEĞİL, ACK olarak işlenmeli
+    // Ama eğer waiting_back_text stage'indeyse ve mesaj gerçek bir isim/tarih/yazı gibi görünüyorsa → back_text
+    // Kısa onaylar (tamam, evet vb.) kesinlikle back_text değil
+    ctx._intentCandidates = [{ intent: "ack", score: 0.9 }];
+    return INTENT.ACK;
+  }
+
   // ═══ KATMAN 1: KESİN KEYWORD INTENT'LER ═══
 
   // İptal — her zaman en yüksek öncelik

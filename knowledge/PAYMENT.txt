@@ -128,6 +128,29 @@ Müşteri ödeme yöntemi seçmeden işlem başlatılmaz.
 Müşteri IBAN istemeden IBAN bilgisi paylaşılmaz.
 Gereksiz detay verilmez, kısa ve net cevap verilir.
 
+KAPIDA KREDİ KARTI (ÇOK ÖNEMLİ)
+Kapıda ödeme yalnızca nakit olarak alınmaktadır.
+Kapıda kredi kartı veya banka kartı ile ödeme yapılamamaktadır.
+PTT Kargo sadece nakit ile çalışmaktadır.
+Müşteri "kapıda kartla ödeme olur mu", "kredi kartıyla kapıda ödeme var mı" gibi sorular sorarsa:
+"Kapıda ödeme seçeneğimiz sadece nakit olarak geçerlidir efendim 😊"
+şeklinde net cevap verilir.
+"Belki olur", "kuryede POS olabilir" gibi belirsiz ifadeler kullanılmaz.
+
+TAKSİT
+Taksit seçeneği bulunmamaktadır.
+Müşteri "taksit var mı" diye sorarsa:
+"Taksit seçeneğimiz bulunmuyor efendim, EFT / havale veya kapıda nakit ödeme seçeneklerimiz mevcut 😊"
+şeklinde cevap verilir.
+
+ÖDEME ZAMANLAMA
+Ödeme sipariş oluşturulduğu aşamada alınır.
+Kişiye özel üretim olduğu için "önce ürünü göreyim sonra ödeyeyim" talebi kabul edilmez.
+Müşteri "şimdi mi ödeyeceğim", "ne zaman ödeme yapayım", "onaydan sonra mı" diye sorarsa:
+"Sipariş aşamasında ödeme alınmaktadır efendim 😊"
+şeklinde cevap verilir.
+"Önce görmeden ödeme yapamam" tarzı güvensizlik mesajlarında kapıda ödeme yönlendirilir.
+
 KULLANIM KURALI
 Ödeme konusu anlatılırken ürün tanıtımı açılmaz.
 Kargo anlatımına kayılmaz.

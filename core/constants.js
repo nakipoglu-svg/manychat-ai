@@ -117,6 +117,9 @@ export const INTENT = {
   PHOTO_SENT_CONFIRM: "photo_sent_confirmation",
   PAYMENT_INFO: "payment_info_question",
   STORE_PICKUP: "store_pickup",
+  // ACK & confirmation intents
+  ACK: "ack",
+  PAYMENT_CONFIRMATION: "payment_confirmation",
   // Meta intents
   SMALLTALK: "smalltalk",
   POST_SALE: "post_sale",
@@ -469,6 +472,32 @@ export const KW = {
     "celik mi gumus mu", "çelik mi gümüş mü",
     "alerji", "alerjim", "alerjik",
     "suya dayanikli", "suya dayanıklı",
+    "hassas cilt", "cildim hassas",
+    "altin kaplama mi", "altın kaplama mı",
+    "gercek altin mi", "gerçek altın mı",
+    "som altin", "som altın",
+    "925 gumus", "925 gümüş",
+  ],
+
+  payment_confirmation: [
+    "ucreti attim", "ücreti attım",
+    "eft attim", "eft attım",
+    "havale gonderdim", "havale gönderdim",
+    "odeme yaptim", "ödeme yaptım",
+    "parayi gonderdim", "parayı gönderdim",
+    "parayi yolladim", "parayı yolladım",
+    "havale attim", "havale attım",
+    "gonderdim parayi", "gönderdim parayı",
+    "kontrol eder misiniz", "kontrol edebilir misiniz",
+    "dekont atiyorum", "dekont atıyorum",
+    "dekont gonderiyorum", "dekont gönderiyor",
+    "gonderdim ucreti", "gönderdim ücreti",
+    "attim parayi", "attım parayı",
+    "attim ucreti", "attım ücreti",
+    "yaptim odemeyi", "yaptım ödemeyi",
+    "odedim", "ödedim",
+    "fast gonderdim", "fast gönderdim",
+    "fast attim", "fast attım",
   ],
 };
 

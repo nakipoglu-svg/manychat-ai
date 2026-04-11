@@ -49,7 +49,7 @@ SİPARİŞ AKIŞI GÜVENLİĞİ
 - Müşteri adres yazmış olsa bile ödeme net değilse ödeme aşamasını koru.
 - Lazer akışı:
   - fotoğraf
-  - arka yüz tercihi
+  - müşteri isterse arka yüz (bot sormaz)
   - ödeme
   - adres
 - Ataç akışı:

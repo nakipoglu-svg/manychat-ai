@@ -7,9 +7,33 @@ const OP = (t) => R(t, REPLY_CLASS.OPERATIONAL_REQUIRED, SUPPORT_REASON.OPERATIO
 const FP = (t) => R(t, REPLY_CLASS.FLOW_PROGRESS);
 
 export function preHandlers(ctx, state, nextStage) {
-  const { norm, message } = ctx;
+  const { norm, message, intent } = ctx;
   const raw = String(message || "").trim();
   const stage = state.conversation_stage || "";
+
+  // ═══ ACK ENGINE — Kısa onay mesajları state-aware yönetimi ═══
+  if (intent === "ack") {
+    // WAITING_PRODUCT: müşteri "evet" derse menü göster
+    if (stage === STAGE.WAITING_PRODUCT) {
+      return { text: TEXT.MAIN_MENU, reply_class: REPLY_CLASS.MENU, support_mode_reason: "" };
+    }
+    // Aktif sipariş akışı varsa → flow devam etsin (null döndür, sıradaki rule halletsin)
+    const activeFlowStages = [
+      STAGE.WAITING_PHOTO, STAGE.WAITING_BACK_TEXT, STAGE.WAITING_PAYMENT,
+      STAGE.WAITING_ADDRESS, STAGE.WAITING_LETTERS,
+    ];
+    if (stage && activeFlowStages.includes(stage)) {
+      // Flow devam etsin — bu pre-handler cevap üretmez, flow rule'ları halletsin
+      return null;
+    }
+    // Süreç bitti veya aktif süreç yok → sadece kısa onay cevabı ver
+    return FP("Tabi efendim 😊");
+  }
+
+  // ═══ PAYMENT CONFIRMATION — "ücreti attım", "ödeme yaptım" ═══
+  if (intent === "payment_confirmation") {
+    return FP("Teşekkür ederiz efendim, ekibimiz kontrol edip size dönüş sağlayacaktır 😊");
+  }
 
   // ═══ ARKA YAZI TALEBİ (sadece lazer — ataç'ta arka yazı yok) ═══
   const isBackTextQuestion = hasAny(norm, ["olur mu","olurmu","oluyor mu","yazilir mi","yazılır mı","yapilir mi","yapılır mı","ne yazalim","ne yazılır","ne yazılıyor","genelde","yazabilir mi","yazabilir miyiz","yazabiliriz","eklenebilir","ekleniyor mu","yazdirilir","yazdırılır","sigar mi","sığar mı","ne yazilir","ne yazdirabilir","yazamiyor","yazilmiyor","yazılmıyor","yazilamiyor","yazılamıyor","yaziyor mu","yaziyor musunuz","yaziyorsunuz","yazıyorsunuz","yaziyor muyuz","var mi","varmi","var mı"]);
