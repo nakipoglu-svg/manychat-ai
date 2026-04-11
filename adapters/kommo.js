@@ -218,6 +218,7 @@ async function readLeadFields(leadId) {
 async function resolveLeadId(leadId, contactId) {
   let resolvedLead = leadId || "";
   let contactName = "";
+  let igUsername = "";
   
   if (contactId) {
     try {
@@ -227,13 +228,42 @@ async function resolveLeadId(leadId, contactId) {
           resolvedLead = String(r.d._embedded.leads[0].id);
         }
         contactName = r.d?.name || "";
+        
+        // Instagram username'i custom_fields_values'dan çek
+        const cfv = r.d?.custom_fields_values || [];
+        for (const f of cfv) {
+          const val = f?.values?.[0]?.value || "";
+          // Instagram username field'ı veya IM field'ı
+          if (val && (f.field_code === "IM" || f.field_name?.toLowerCase?.()?.includes?.("instagram") || f.field_name?.toLowerCase?.()?.includes?.("ig"))) {
+            igUsername = val.replace(/^@/, "");
+            break;
+          }
+        }
       }
     } catch (e) {
       console.error("[WH] Contact fetch error:", e.message);
     }
+    
+    // igUsername bulunamadıysa, Kommo chat API'den dene
+    if (!igUsername && contactId) {
+      try {
+        const chatR = await kApi("GET", "/api/v4/contacts/" + contactId + "/chats");
+        if (chatR.s === 200 && chatR.d?._embedded?.chats) {
+          for (const chat of chatR.d._embedded.chats) {
+            // Instagram chat'inin source_external_id'si genelde username olur
+            if (chat.source_external_id) {
+              igUsername = chat.source_external_id;
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        // Chat API yoksa devam et
+      }
+    }
   }
   
-  return { leadId: resolvedLead, contactName };
+  return { leadId: resolvedLead, contactName, igUsername };
 }
 
 // ─── FIRST MESSAGE DETECTION ────────────────────────────────
@@ -243,7 +273,6 @@ function isFirstMessage(cf, msgText) {
   if (cf.conversation_stage || cf.order_status) return false;
   // Watermark varsa daha önce mesaj işlenmiş demek
   if (cf.cancel_reason && cf.cancel_reason.startsWith("wm:")) return false;
-  if (/resimli|lazer|ata[cç]|harfli|fiyat|sipari[sş]|kolye|ücret|ne kadar/i.test(msgText.toLowerCase())) return false;
   return true;
 }
 
@@ -458,6 +487,7 @@ export default async function handler(req, res) {
 
     const leadId = d["message[add][0][element_id]"] || d["message[add][0][entity_id]"] || "";
     const contactId = d["message[add][0][contact_id]"] || "";
+    const chatId = d["message[add][0][chat_id]"] || "";
 
     console.log("[WH] MSG:", effectiveText.slice(0, 120), "lead:", leadId, "contact:", contactId, "type:", msgType);
 
@@ -513,7 +543,7 @@ export default async function handler(req, res) {
     }
 
     // ── Resolve lead + read fields ──
-    const { leadId: lid, contactName } = await resolveLeadId(leadId, contactId);
+    const { leadId: lid, contactName, igUsername } = await resolveLeadId(leadId, contactId);
     console.log("[WH] Resolved lid:", lid, "contactName:", contactName);
     let cf = {};
     if (lid) {
@@ -757,7 +787,7 @@ export default async function handler(req, res) {
           body: { message: effectiveText, lead_id: lid, contact_id: contactId, instagram_username: contactName || "" },
           result,
         }).catch(e => console.error("[WH] Log error:", e.message)),
-        safeOrderSync(effectiveText, lid, result, cf, contactName).catch(e => console.error("[WH] OrderSync error:", e.message)),
+        safeOrderSync(effectiveText, lid, result, cf, contactName, igUsername, chatId).catch(e => console.error("[WH] OrderSync error:", e.message)),
       ]);
     } catch (e) { console.error("[WH] Background tasks error:", e.message); }
 
@@ -806,7 +836,7 @@ function calculateConfidence(result) {
   return score;
 }
 
-async function safeOrderSync(msgText, leadId, result, cf, contactName) {
+async function safeOrderSync(msgText, leadId, result, cf, contactName, igUsername, chatId) {
   if (!ORDER_WEBHOOK_URL) return;
   const product = result.ilgilenilen_urun || "";
   const customerId = leadId || "";
@@ -851,9 +881,9 @@ async function safeOrderSync(msgText, leadId, result, cf, contactName) {
       created_at: operation === "create" ? trDate() : "",
       updated_at: trDate(),
       customer_id: customerId,
-      instagram_username: contactName || "",
+      instagram_username: igUsername || contactName || "",
       customer_name: contactName || "",
-      dm_link: contactName ? `https://ig.me/m/${contactName}` : (customerId ? `https://nakipoglu.kommo.com/leads/detail/${customerId}` : ""),
+      dm_link: chatId ? `https://www.instagram.com/direct/t/${chatId}/` : (igUsername ? `https://ig.me/m/${igUsername}` : ""),
       recipient_name: ext.name || cf.recipient_name || "",
       phone: ext.phone || "",
       full_address: ext.addressText || "",
@@ -893,9 +923,9 @@ async function safeOrderSync(msgText, leadId, result, cf, contactName) {
           order_id: orderId,
           final_status: justCancelled ? "cancelled" : "confirmed",
           finalized_at: trDate(),
-          instagram_username: contactName || "",
+          instagram_username: igUsername || contactName || "",
           customer_name: contactName || "",
-          dm_link: contactName ? `https://ig.me/m/${contactName}` : (customerId ? `https://nakipoglu.kommo.com/leads/detail/${customerId}` : ""),
+          dm_link: chatId ? `https://www.instagram.com/direct/t/${chatId}/` : (igUsername ? `https://ig.me/m/${igUsername}` : ""),
           recipient_name: ext.name || cf.recipient_name || "",
           phone: ext.phone || "",
           full_address: ext.addressText || "",
