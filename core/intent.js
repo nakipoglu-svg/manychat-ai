@@ -52,9 +52,9 @@ export function detectIntent(ctx) {
   // State-aware: engine tarafında aktif süreç varsa devam eder, yoksa sadece onay cevabı verir
   const ACK_WORDS = ["evet","tamam","tamamdir","tamamdır","tmm","tmmm","olur","peki","ok","he","hee","tm",
     "tamam dir","anladim","anladım","dogru","doğru","aynen","tabi","tabii"];
-  const ACK_PHRASES = ["bu olsun","bundan olacak","bunu istiyorum","bu olacak","bunu yapalim","bunu yapalım"];
+  const ACK_PHRASES = ["bu olsun","bu olacak"];
   const isShortAck = raw.length <= 15 && ACK_WORDS.includes(norm);
-  const isPhraseAck = ACK_PHRASES.some(p => norm.includes(p));
+  const isPhraseAck = raw.length <= 20 && ACK_PHRASES.some(p => norm.includes(p)) && !looksLikePhotoUrl(message);
   const isEmojiAck = raw.length <= 4 && /^[^\w\s]+$/.test(raw);
 
   if (isShortAck || isPhraseAck || isEmojiAck) {

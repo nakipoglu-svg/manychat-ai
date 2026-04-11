@@ -51,7 +51,12 @@ export function guards(ctx, state, nextStage) {
     // İade completed'da → seller'a (müşteri gerçekten iade istiyor olabilir)
     // Adres değişimi completed'da → seller'a
 
-    // Ürün keyword → yeni sipariş yönlendir
+    // Post-sale / operasyonel talepler — ürün keyword'ünden ÖNCE kontrol et
+    if (hasAny(norm, ["atacaktiniz","atacaktınız","gonderecektiniz","gönderecektiniz","hazirlanmis","hazırlanmış","hazir mi","hazır mı","hazir oldu","hazır oldu","siparis verdim","sipariş verdim","siparis vermistim","sipariş vermiştim","siparis etmistim","sipariş etmiştim","hatirlatma","hatırlatma","kunye","künye","lazerden","demistiniz","demiştiniz","soylediniz","söylediniz","soylemisiniz","söylemisiniz"])) {
+      return OP("Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊");
+    }
+
+    // Ürün keyword → yeni sipariş yönlendir (post-sale kontrolünden SONRA)
     if (hasAny(norm, ["resimli","lazer","atac","ataç","harfli"])) {
       return { text: "Tabi efendim 😊 Hangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye", reply_class: REPLY_CLASS.MENU, support_mode_reason: "" };
     }

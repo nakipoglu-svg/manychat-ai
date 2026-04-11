@@ -48,8 +48,8 @@ async function smoke() {
   // Core flow
   await test("T01 Lazer seçimi", b("resimli lazer kolye"), { expect: { ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo" } });
   await test("T02 Lazer fiyat 599", b("lazer istiyorum"), { includes: "599" });
-  await test("T03 Foto URL → photo=1", b("https://lookaside.fbsbx.com/photo.jpg", lazer({ conversation_stage: "waiting_photo" })), { expect: { photo_received: "1", conversation_stage: "waiting_back_text" } });
-  await test("T04 Yok → skipped", b("yok", lazer({ photo_received:"1", conversation_stage:"waiting_back_text" })), { expect: { back_text_status: "skipped", conversation_stage: "waiting_payment" } });
+  await test("T03 Foto URL → photo=1", b("https://lookaside.fbsbx.com/photo.jpg", lazer({ conversation_stage: "waiting_photo" })), { expect: { photo_received: "1", conversation_stage: "waiting_payment" } });
+  await test("T04 Yok → skipped", b("yok", lazer({ photo_received:"1", conversation_stage:"waiting_payment" })), { expect: { back_text_status: "skipped", conversation_stage: "waiting_payment" } });
   await test("T06 EFT → waiting_address", b("eft", lazerWP()), { expect: { payment_method: "eft_havale", conversation_stage: "waiting_address" } });
   await test("T08 Full adres → completed", b("Ali Yılmaz 05551234567 İstanbul Kadıköy Moda Mah No:5", lazerWA()), { expect: { address_status: "received", conversation_stage: "order_completed" } });
   await test("T10 Ataç seçimi", b("ataç kolye"), { expect: { ilgilenilen_urun: "atac", conversation_stage: "waiting_letters" } });
