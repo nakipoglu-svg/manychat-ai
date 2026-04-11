@@ -262,7 +262,7 @@ export function getFilledSlots(state) {
   filled.address = state.address_status === "received" || state.address_status === "address_only";
   filled.address_full = state.address_status === "received";
   filled.letters = truthy(state.letters_received);
-  filled.product = !!(state.product || state.ilgilenilen_urun);
+  filled.product = state.product || state.ilgilenilen_urun || "";
   return filled;
 }
 

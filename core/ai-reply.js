@@ -104,25 +104,21 @@ export function shouldUseAI(ctx, signals, arbitrationResult) {
 
   // ═══ AI'YE GİDECEK DURUMLAR — conversational her şey ═══
 
-  // Material / trust soruları
+  // ═══ BİLGİ SORULARI → AI (policy-locked) ═══
+  // AI geniş alanda çalışır ama fact-block ve final guard ile kontrol edilir
   if (ctx.intent === "material_question" || ctx.intent === "trust") return true;
-  // Chain / zincir soruları
   if (ctx.intent === "chain_question" || ctx.intent === "chain") return true;
-  // Photo question (nasıl foto, vesikalık mı)
   if (ctx.intent === "photo_question") return true;
-  // Back text / back photo soruları
   if (ctx.intent === "back_text" || ctx.intent === "back_text_info" ||
       ctx.intent === "back_photo_info" || ctx.intent === "back_text_examples") return true;
-  // Payment info (taksit var mı, EFT/kapıda farkı)
   if (ctx.intent === "payment_info_question") return true;
-  // Example request
   if (ctx.intent === "example_request") return true;
-  // Post-sale
   if (ctx.intent === "post_sale") return true;
-  // Location
   if (ctx.intent === "location") return true;
-  // Shipping (kargo kaç gün)
   if (ctx.intent === "shipping") return true;
+  // Photo reference/change — deterministic handler var, AI'ye gerek yok
+  if (ctx.intent === "photo_reference") return false;
+  if (ctx.intent === "photo_change_request") return false;
   // Frustration / complaint
   if (signals.complaints?.length > 0) return true;
   // Undecided → AI daha doğal cevap verir
@@ -162,75 +158,147 @@ function detectTopic(ctx, signals) {
 // ─── BUILD AI PROMPT ───────────────────────────────────────
 
 function buildPrompt(message, stage, product, filledSlots, missingSlots, lastBotReply, lastIntent, knowledge) {
-  return `Sen Yudum Jewels kuyumculuk markasının satış asistanısın. Müşteriye kısa, sıcak, doğal ve profesyonel cevap vereceksin.
+  // ═══ TOPIC FACT BLOCKS — intent'e göre dar bilgi ═══
+  const factBlocks = {
+    chain: product === "lazer" 
+      ? `ZİNCİR BİLGİSİ (LAZER):
+- Standart zincir: 60 cm (fiyata dahil)
+- Lazer kolyede zincir uzatma YOKTUR. "Uzatılabilir" ASLA deme.
+- Erkek için: 50 cm gümüş zincir mevcut (müşteri erkek derse söyle)
+- Tek zincir modeli var, seçenek sunma
+- Müşteri kısa isterse: "Tabi efendim, kısa zincir gönderelim"
+- 45 cm ASLA yazma. Standart 60 cm.`
+      : `ZİNCİR BİLGİSİ (ATAÇ):
+- Standart zincir: 50 cm
+- Uzatma: 70 cm'e kadar, +50 TL
+- Tek zincir modeli var`,
+    
+    material: `MATERYAL BİLGİSİ:
+- 14 ayar altın kaplama paslanmaz çelik
+- Kararma, solma yapmaz
+- Duşta, denizde kullanılabilir
+- Altın kaplama ve gümüş kaplama renk seçeneği var
+- Gerçek altın veya gümüş DEĞİLDİR`,
+    
+    shipping: `KARGO BİLGİSİ:
+- PTT Kargo ile gönderim, kargo ÜCRETSİZ
+- İstanbul: 1-2 iş günü
+- Diğer şehirler: 2-3 iş günü
+- Kesin tarih verme, "genellikle" kullan
+- "Yarın gelir", "bugün çıkar" gibi söz verme`,
+    
+    payment: `ÖDEME BİLGİSİ:
+- EFT/Havale veya kapıda ödeme
+- Kapıda ödeme SADECE NAKİT. Kredi kartı/banka kartı ile kapıda ödeme YOKTUR.
+- Taksit seçeneği YOKTUR
+- IBAN bilgisini sadece müşteri EFT seçip IBAN isterse ver. Aksi halde IBAN verme.`,
+    
+    trust: `GÜVEN BİLGİSİ:
+- Garanti: Kararma, solma, kaplama atma durumunda değişim yapılır
+- "Ne kadar süre garanti" sorusuna: Ürünlerimiz garantili olarak gönderilmektedir
+- Kapıda ödeme var (güven için)
+- Instagram'da müşteri yorumları/hikayeleri var`,
+    
+    photo: `FOTOĞRAF BİLGİSİ:
+- Vesikalık olmak zorunda değil, istediği fotoğrafı gönderebilir
+- Eski/bulanık foto da olabilir ama net olması tercih edilir
+- Tek kolyeye birden fazla fotoğraf yapılabilir (ücret farkı yok)
+- Ön yüze bir foto, arka yüze başka foto yapılabilir (ücret farkı yok)`,
+    
+    back_text: `ARKA YÜZ BİLGİSİ:
+- Arka yüze yazı veya fotoğraf eklenebilir, ÜCRETSİZ
+- İsim, tarih, kısa not, dua yazılabilir
+- Bot arka yazı sormaz, müşteri isterse yapar
+- "Genelde ne yazılır" sorusuna: isim, tarih, kısa dua gibi notlar`,
+  };
 
-CEVAP FORMATI:
-- Instagram DM'de okunacak. Satırları kısa tut.
-- EMOJI KULLANMA. Hiç emoji olmasın. Ne smiley ne kalp ne ok.
-- Çift satır atlama YAPMA. Tek satır atla.
-- Maksimum 2-3 kısa cümle. Uzun paragraf YAZMA.
-- Türkçe karakterleri doğru kullan: ğ, ü, ş, ı, ö, ç, İ.
-- "efendim" kelimesini kullan, sıcak ol.
+  // Intent'e göre fact block seç
+  const topicMap = {
+    chain_question: "chain", chain: "chain",
+    material_question: "material", trust: "trust",
+    shipping: "shipping", shipping_price: "shipping",
+    payment: "payment", payment_info_question: "payment", payment_confirmation: "payment",
+    photo_question: "photo", photo_suitability_question: "photo",
+    back_text_info: "back_text", back_text_examples: "back_text", back_photo_info: "photo",
+  };
+  
+  const topicKey = topicMap[lastIntent] || "";
+  const factBlock = factBlocks[topicKey] || "";
+  
+  // Hard-fact konularda full knowledge VERME — sadece fact block yeterli
+  // Bu knowledge bleed'i önler (45cm/60cm karışması gibi)
+  const hardFactTopics = ["chain", "material", "shipping", "payment", "trust"];
+  const useFullKnowledge = !hardFactTopics.includes(topicKey);
 
-SADECE BİR SONRAKİ ADIM SOR:
-- Birden fazla şey aynı anda sorma. Tek bir sonraki adım belirt.
-- Fotoğraf eksikse SADECE fotoğraf iste. Ödeme sorma.
-- Ödeme eksikse SADECE ödeme sor. Adres sorma.
-- Adres eksikse SADECE adres iste.
+  return `Sen Yudum Jewels kuyumculuk markasının Instagram satış asistanısın.
 
-ÖZEL DURUMLAR:
-- Müşteri "bundan istiyorum", "bu olsun", "bunu yapın" derse: "Tabi efendim" de ve sadece bir sonraki eksik adımı söyle.
-- Müşteri fotoğraf gönderdiğini söylüyorsa: "Fotoğrafınızı aldım efendim" de. "Bilgilerinizi aldım" DEME.
-- Müşteri video gönderdi diyorsa: "Tamamdır efendim, videonuz alınmıştır" de.
-- Müşteri konum/yer soruyorsa: "İstanbul Eminönü'ndeyiz efendim" de.
-- Arka yazı SORUSU gelirse bilgi ver ama back_text_status'u received YAPMA. Soru sormak içerik vermek değildir.
+═══ ANAYASA — İHLAL EDİLEMEZ KURALLAR ═══
 
-BİLGİLER:
-- Fiyat: Lazer kolye EFT 599 TL, kapıda 649 TL. Ataç kolye EFT 499 TL, kapıda 549 TL.
-- Kargo: PTT Kargo, ücretsiz, İstanbul 1-2 gün, diğer 2-3 gün.
-- Malzeme: 14 ayar altın kaplama paslanmaz çelik. Kararma solma yapmaz.
-- Arka yazı: Ücretsiz. İsim, tarih, kısa not yazılabilir.
-- Arka fotoğraf: Ücret farkı olmadan yapılabilir.
-- WhatsApp: 0505 471 35 45
-- Konum: İstanbul Eminönü
+1. BİLGİ UYDURMA YASAKTIR. Sadece aşağıdaki bilgileri kullan.
+2. Cevabın sonuna "fotoğrafınızı bekliyorum/gönderin" ASLA ekleme. Müşteri ne sorduysa SADECE onu cevapla.
+3. WhatsApp numarasını müşteri açıkça sormadıkça ASLA verme.
+4. Lazer kolyede zincir uzatma YOKTUR. "Uzatılabilir" deme.
+5. Zincir uzunluğu lazer için 60 cm. 45 cm ASLA yazma.
+6. Fiyat uydurma. Lazer: EFT 599, kapıda 649. Ataç: EFT 499, kapıda 549.
+7. Kapıda ödeme SADECE NAKİT. Kart ile kapıda ödeme yok.
+8. Maksimum 2 kısa cümle. Uzun cevap yazma.
+9. Cevabın sonuna tek bir 😊 emoji koy. Başka emoji kullanma.
+10. Sipariş tamamlandı deme, indirim yapma, fiyat kırma.
 
-YASAK:
-- Ödeme yöntemi SEÇME.
-- Telefon/adres/isim bilgisi KAYDETME kararı verme.
-- Sipariş tamamlandı DEME.
-- Fiyat UYDURMA. Fiyatlar SABİT.
-- İNDİRİM YAPMA, fiyat KIRMA.
-- should_commit_slot'u TRUE yapma. HER ZAMAN false olacak.
+═══ CEVAP KURALI ═══
+Müşteri yan soru sorduysa (materyal, zincir, kargo, güven, arka yazı, foto bilgisi):
+→ SADECE o soruyu cevapla
+→ Sonuna "fotoğraf gönderin" veya "ödeme yapın" gibi yönlendirme EKLEME
+→ Kısa ve net cevap ver, başka konu açma
 
-BAĞLAM:
-- Ürün: ${product || "belirlenmedi"}
-- Aşama: ${stage || "başlangıç"}
-- Dolu slotlar: ${JSON.stringify(filledSlots)}
-- Eksik slotlar: ${JSON.stringify(missingSlots)}
-- Son bot cevabı: "${(lastBotReply || "").substring(0, 120)}"
-- Son intent: ${lastIntent || "yok"}
+═══ FACT BLOCK ═══
+${factBlock || "Genel bilgi: Lazer kolye EFT 599, kapıda 649. Ataç kolye EFT 499, kapıda 549. Materyal: 14 ayar altın kaplama paslanmaz çelik. Kargo ücretsiz, PTT ile."}
 
-BİLGİ:
-${knowledge}
+═══ BAĞLAM ═══
+Ürün: ${product || "belirlenmedi"}
+Aşama: ${stage || "başlangıç"}
+Dolu: ${JSON.stringify(filledSlots)}
+Eksik: ${JSON.stringify(missingSlots)}
+Son bot: "${(lastBotReply || "").substring(0, 80)}"
+Son intent: ${lastIntent || "yok"}
 
-MÜŞTERİ MESAJI: "${message}"
+═══ BİLGİ DOSYASI ═══
+${useFullKnowledge ? knowledge : "(Bu konu için sadece yukarıdaki FACT BLOCK bilgilerini kullan.)"}
 
-SADECE JSON döndür:
-{"reply": "...", "intent_label": "...", "topic": "...", "should_commit_slot": false, "next_action": "none|ask_payment|ask_address|ask_photo|handoff", "confidence": 0.0-1.0}`;
+MÜŞTERİ: "${message}"
+
+═══ İKİ AŞAMALI CEVAP ═══
+Önce analiz et, sonra cevap yaz. Tek JSON döndür:
+
+{
+  "analysis": {
+    "intent": "chain_question|material|shipping|payment|photo|trust|smalltalk|general|...",
+    "topic": "chain|material|shipping|payment|photo|back_text|trust|general",
+    "risk_level": "low|medium|high",
+    "must_use_fact_block": true/false,
+    "should_add_next_step": false,
+    "reason": "müşteri zincir sordu, sadece zincir bilgisi ver"
+  },
+  "reply": "...",
+  "should_commit_slot": false,
+  "next_action": "none|ask_payment|ask_address|ask_photo|handoff",
+  "confidence": 0.0-1.0
+}
+
+KURALLAR:
+- risk_level "high" ise must_use_fact_block true olmalı
+- should_add_next_step false ise cevabın sonuna "fotoğraf gönderin" gibi yönlendirme EKLEME
+- Zincir, materyal, fiyat, ödeme, kargo konuları risk_level "high"
+- reply kısa olsun, maksimum 2 cümle
+- Cevabın sonuna 😊 koy`;
 }
 
 // ─── CALL AI ───────────────────────────────────────────────
 
 export async function getAIReply(ctx, signals, filledSlots, missingSlots) {
-  const apiKey = process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY;
-  const baseUrl = process.env.DEEPSEEK_BASE_URL || process.env.OPENAI_BASE_URL || "https://api.deepseek.com/v1";
-  const model = process.env.AI_REPLY_MODEL || process.env.DEEPSEEK_MODEL || "deepseek-chat";
-
-  if (!apiKey) {
-    console.log("[AI_SKIP] No API key found. Set DEEPSEEK_API_KEY env variable.");
-    return null;
-  }
-
+  // AI Provider selection: ANTHROPIC (Claude) veya DEEPSEEK/OPENAI
+  const provider = process.env.AI_PROVIDER || "deepseek"; // "anthropic" veya "deepseek"
+  
   const topic = detectTopic(ctx, signals);
   const knowledge = buildMiniKnowledge(topic, ctx.product);
 
@@ -241,66 +309,120 @@ export async function getAIReply(ctx, signals, filledSlots, missingSlots) {
     filledSlots,
     missingSlots,
     ctx.fields?.ai_reply || "",
-    ctx.fields?.last_intent || "",
+    ctx.intent || ctx.fields?.last_intent || "",  // Current intent öncelikli
     knowledge
   );
 
   try {
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.3,
-        max_tokens: 200,
-        messages: [
-          { role: "system", content: "Sen bir Türkçe satış asistanısın. SADECE JSON döndür." },
-          { role: "user", content: prompt },
-        ],
-      }),
-    });
+    let aiText = null;
+    let model = "";
+    let usage = {};
 
-    if (!response.ok) {
-      console.log("[AI_HTTP_ERROR]", JSON.stringify({ status: response.status, statusText: response.statusText }));
-      return null;
+    if (provider === "anthropic") {
+      // ═══ ANTHROPIC / CLAUDE API ═══
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) { console.log("[AI_SKIP] No ANTHROPIC_API_KEY found."); return null; }
+      
+      model = process.env.AI_REPLY_MODEL || "claude-sonnet-4-20250514";
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 200,
+          temperature: 0.3,
+          system: "Sen bir Türkçe satış asistanısın. SADECE JSON döndür.",
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+
+      if (!response.ok) {
+        console.log("[AI_HTTP_ERROR]", JSON.stringify({ status: response.status, provider: "anthropic" }));
+        return null;
+      }
+
+      const data = await response.json();
+      usage = { prompt_tokens: data.usage?.input_tokens || 0, completion_tokens: data.usage?.output_tokens || 0, total_tokens: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0) };
+      aiText = data.content?.[0]?.text || "";
+      
+    } else {
+      // ═══ DEEPSEEK / OPENAI COMPATIBLE API ═══
+      const apiKey = process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY;
+      const baseUrl = process.env.DEEPSEEK_BASE_URL || process.env.OPENAI_BASE_URL || "https://api.deepseek.com/v1";
+      model = process.env.AI_REPLY_MODEL || process.env.DEEPSEEK_MODEL || "deepseek-chat";
+
+      if (!apiKey) { console.log("[AI_SKIP] No API key found. Set DEEPSEEK_API_KEY env variable."); return null; }
+
+      const response = await fetch(`${baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.3,
+          max_tokens: 200,
+          messages: [
+            { role: "system", content: "Sen bir Türkçe satış asistanısın. SADECE JSON döndür." },
+            { role: "user", content: prompt },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        console.log("[AI_HTTP_ERROR]", JSON.stringify({ status: response.status, statusText: response.statusText }));
+        return null;
+      }
+
+      const data = await response.json();
+      usage = data.usage || {};
+      aiText = data.choices?.[0]?.message?.content || "";
     }
-
-    const data = await response.json();
 
     // Token logging
-    if (data?.usage) {
-      console.log("[TOKEN]", JSON.stringify({
-        source: "ai_reply",
-        model,
-        prompt_tokens: data.usage.prompt_tokens || 0,
-        completion_tokens: data.usage.completion_tokens || 0,
-        total_tokens: data.usage.total_tokens || 0,
-        ts: new Date().toISOString(),
-      }));
+    if (usage.prompt_tokens || usage.total_tokens) {
+      console.log("[TOKEN]", JSON.stringify({ source: "ai_reply", model, ...usage }));
     }
 
-    const text = data?.choices?.[0]?.message?.content || "";
+    // Bug fix: aiText kullan, data.choices değil (Anthropic'te choices yok)
+    const text = aiText || "";
     const clean = text.replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(clean);
+    
+    let parsed;
+    try {
+      parsed = JSON.parse(clean);
+    } catch (parseErr) {
+      // JSON parse fail — raw text'ten reply çıkarmaya çalış
+      console.log("[AI_PARSE_FAIL]", clean.substring(0, 100));
+      const replyMatch = clean.match(/"reply"\s*:\s*"([^"]+)"/);
+      if (replyMatch) {
+        parsed = { reply: replyMatch[1], should_commit_slot: false, next_action: "none", confidence: 0.5 };
+      } else {
+        return null;
+      }
+    }
 
     // GÜVENLIK: should_commit_slot her zaman false olmalı
     parsed.should_commit_slot = false;
 
     return {
       reply: parsed.reply || null,
-      intent_label: parsed.intent_label || "general",
-      topic: parsed.topic || topic,
+      intent_label: parsed.analysis?.intent || parsed.intent_label || "general",
+      topic: parsed.analysis?.topic || parsed.topic || topic,
+      analysis: parsed.analysis || null,
       should_commit_slot: false, // ZORUNLU false
       next_action: parsed.next_action || "none",
       confidence: parsed.confidence || 0,
-      _tokenUsage: data?.usage ? {
+      _tokenUsage: usage ? {
         source: "ai_reply", model,
-        prompt_tokens: data.usage.prompt_tokens || 0,
-        completion_tokens: data.usage.completion_tokens || 0,
-        total_tokens: data.usage.total_tokens || 0,
+        prompt_tokens: usage.prompt_tokens || 0,
+        completion_tokens: usage.completion_tokens || 0,
+        total_tokens: usage.total_tokens || 0,
       } : null,
     };
   } catch (err) {
@@ -328,7 +450,69 @@ export function applyPolicyGuard(aiResult, filledSlots, missingSlots) {
     aiResult.next_action = "none";
   }
 
-  // next_action'a göre reply'e ek yapma — bunu engine yapacak
+  // ═══ FINAL GUARD — Yasaklı bilgi kontrolü ═══
+  const lower = reply.toLowerCase();
+  
+  // Lazer'de zincir uzatma yok
+  if (/zincir.*(uzat|uzatıl|uzatabil)/i.test(reply) && filledSlots?.product === "lazer") {
+    console.log("[GUARD] BLOCKED: lazer zincir uzatma");
+    reply = reply.replace(/[^.]*zincir.*(uzat|uzatıl|uzatabil)[^.]*\./gi, "").trim();
+    if (!reply) reply = "Tabi efendim 😊";
+  }
+  
+  // Yanlış zincir uzunluğu (lazer 45cm)
+  if (/45\s*cm/i.test(reply)) {
+    console.log("[GUARD] FIXED: 45cm → 60cm");
+    reply = reply.replace(/45\s*cm/gi, "60 cm");
+  }
+  
+  // WhatsApp numarası müşteri sormadan verilmemeli
+  if (/whatsapp|wa\.me|505\s*471/i.test(lower)) {
+    console.log("[GUARD] BLOCKED: unsolicited WhatsApp");
+    reply = reply.replace(/[^.]*(?:whatsapp|wa\.me|takip için)[^.]*/gi, "").trim();
+    if (!reply) reply = "Tabi efendim 😊";
+  }
+  
+  // "Fotoğrafınızı bekliyorum/gönderebilirsiniz" — yan soru cevaplarında gereksiz
+  // Sadece reply'in son kısmında varsa kaldır
+  const fotoReminder = /[.,]?\s*(fotoğrafınızı|foto.*gönder|foto.*bekl|fotoğraf.*ilet|lazer kolye için fotoğrafınızı)[^.]*[.!]?\s*$/i;
+  if (fotoReminder.test(reply) && reply.length > 50) {
+    const cleaned = reply.replace(fotoReminder, "").trim();
+    if (cleaned.length > 10) {
+      console.log("[GUARD] TRIMMED: foto reminder removed");
+      reply = cleaned;
+      if (!reply.endsWith("😊") && !reply.endsWith(".") && !reply.endsWith("!")) reply += " 😊";
+    }
+  }
+  
+  // Uydurma fiyat kontrolü (dosyada olmayan fiyatlar)
+  const prices = reply.match(/(\d{3,4})\s*TL/g) || [];
+  const validPrices = new Set(["499","549","599","649","1000","1100","1400","1500","1750","2000"]);
+  for (const p of prices) {
+    const num = p.match(/(\d+)/)[1];
+    if (!validPrices.has(num) && !["50","300"].includes(num)) {
+      console.log("[GUARD] BLOCKED: invalid price", num);
+      // Fiyat cevabını tamamen güvenli versiyonla değiştir
+      if (filledSlots?.product === "lazer") {
+        reply = "EFT / Havale ile 599 TL, kapıda ödeme ile 649 TL'dir efendim 😊";
+      } else if (filledSlots?.product === "atac") {
+        reply = "EFT / Havale ile 499 TL, kapıda ödeme ile 549 TL'dir efendim 😊";
+      }
+      break;
+    }
+  }
 
+  aiResult.reply = reply;
+  
+  // Katman F — AI karar logu
+  if (aiResult.analysis) {
+    console.log("[AI_ANALYSIS]", JSON.stringify({
+      topic: aiResult.analysis?.topic,
+      risk: aiResult.analysis?.risk_level,
+      fact_block: aiResult.analysis?.must_use_fact_block,
+      next_step: aiResult.analysis?.should_add_next_step,
+    }));
+  }
+  
   return aiResult;
 }

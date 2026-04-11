@@ -11,7 +11,13 @@ export function flowPayment(ctx, state, nextStage) {
   const { norm, product } = ctx;
 
   // Kredi kartı → nakit uyarısı
-  if (hasAny(norm, ["kartla","kart ile","kredi karti","kredi kartı","banka karti","banka kartı"])) {
+  // "Kapıda kart" → kapıda ödeme olarak kabul et ama nakit olduğunu bildir
+  if (hasAny(norm, ["kapida kart","kapıda kart","kapida kartla","kapıda kartla"])) {
+    // payment_method zaten kapida_odeme olarak set edilmiş (normalize.js'te)
+    // Nakit bilgisini ver ve akışa devam et
+    return R("Kapıda ödeme sadece nakit olarak yapılmaktadır efendim 😊 PTT sadece nakitle çalışmaktadır. Kapıda nakit 649 TL'dir.");
+  }
+  if (hasAny(norm, ["kartla","kart ile","kredi karti","kredi kartı","banka karti","banka kartı"]) && !hasAny(norm, ["kapida","kapıda"])) {
     return FI("Kapıda ödemede sadece nakit geçerlidir efendim 😊 PTT sadece nakitle çalışmaktadır. EFT / Havale veya kapıda nakit ödeme ile ilerleyebiliriz.");
   }
 

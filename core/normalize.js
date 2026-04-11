@@ -260,7 +260,13 @@ export function looksLikeName(raw = "", norm = "", stage = "") {
 }
 
 export function parsePaymentFromMessage(norm, existing = "") {
-  if (hasAny(norm, ["kredi karti", "kredi kartı", "kartla", "kart ile"])) return existing || "";
+  // "Kapıda kart ile" → kapıda ödeme olarak al (kapıda sadece nakit ama müşteri bunu bilmeyebilir)
+  // Önce kapıda + kart combo kontrolü
+  if (hasAny(norm, ["kapida kart","kapıda kart","kapida kartla","kapıda kartla"])) return "kapida_odeme";
+  
+  // Saf kredi kartı (kapıda olmadan) → desteklenmiyor, boş dön
+  if (hasAny(norm, ["kredi karti", "kredi kartı"]) && !hasAny(norm, ["kapida","kapıda"])) return existing || "";
+  if (hasAny(norm, ["kartla", "kart ile"]) && !hasAny(norm, ["kapida","kapıda"])) return existing || "";
   
   // INFO QUESTION GUARD: "fark nedir", "nasıl oluyor", "ne kadar" → payment SELECTION değil
   // AMA: seçim fiili varsa ("olsun", "seçeyim", "olur") → commit izni ver
