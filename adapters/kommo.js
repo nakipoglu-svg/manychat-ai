@@ -29,7 +29,8 @@ const STAGE_MAP = {
 };
 // Ürün Seçildi aşaması kaldırıldı — ürün seçildiğinde direkt foto/harf'e geçiyor
 // Destek aşaması: support_mode=1 ama iptal değilse buraya
-const STAGE_DESTEK = 104106247;       // Destek
+const STAGE_DESTEK = 104106247;       // Destek (sipariş sonrası)
+const STAGE_ON_DESTEK = 104346083;    // Ön Destek (sipariş öncesi)
 const STAGE_IPTAL = 104333019;        // İptal / İade
 const STAGE_KARGOLANDI = 104333015;   // Kargolandı (manuel kullanım)
 
@@ -194,9 +195,15 @@ async function movePipelineStage(leadId, stage, hasProduct, paymentMethod, suppo
   if (orderStatus === "cancel_requested" || stage === "human_support") {
     target = STAGE_IPTAL;
   }
-  // Destek: support_mode=1 ama iptal değilse → Destek aşamasına
+  // Destek ayrımı: sipariş tamamlanmış mı?
   else if (supportMode === "1" && orderStatus !== "cancel_requested") {
-    target = STAGE_DESTEK;
+    if (orderStatus === "completed" || stage === "order_completed") {
+      // Sipariş sonrası destek
+      target = STAGE_DESTEK;
+    } else {
+      // Sipariş öncesi destek (henüz sipariş tamamlanmamış)
+      target = STAGE_ON_DESTEK;
+    }
   }
 
   if (!target) return;
@@ -429,7 +436,8 @@ export default async function handler(req, res) {
         }
 
         // Sipariş tamamlandı sinyalleri
-        if (/siparis.*(olustur|tamamlan|alindi|onaylan)|kargoya.*(veril|cik)/i.test(outNorm)) {
+        if (/siparis.*(olustur|tamamlan|alindi|alinmis|onaylan|hazirlan|aldik|olusturduk|aliyorum|onayliyorum)|kargoya.*(veril|cik)/i.test(outNorm) ||
+            /siparis.*(aldi|oldu|tamam)|siparisiniz.*(aldi|oldu|olustur|onay|hazir)/i.test(outNorm)) {
           stateUpdates = { order_status: "completed", conversation_stage: "order_completed", siparis_alindi: "1" };
         }
 

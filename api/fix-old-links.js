@@ -1,99 +1,49 @@
-// Bu dosyayı api/fix-old-links.js olarak ekle
-// Çalıştırmak için: GET https://manychat-ai.vercel.app/api/fix-old-links
-// Tek seferlik çalıştır, sonra sil.
-
-const KOMMO_TOKEN = process.env.KOMMO_TOKEN;
+const T = process.env.KOMMO_TOKEN || "";
 const API = process.env.KOMMO_API_BASE || "https://nakipoglu.kommo.com";
-const HDR = { "Authorization": `Bearer ${KOMMO_TOKEN}`, "Content-Type": "application/json" };
+const HDR = { "Authorization": `Bearer ${T}`, "Content-Type": "application/json" };
 const ORDER_WEBHOOK_URL = process.env.GOOGLE_ORDER_WEBHOOK_URL || "";
 
-async function kApi(method, path) {
-  const r = await fetch(API + path, { method, headers: HDR });
-  const t = await r.text();
-  try { return { s: r.status, d: JSON.parse(t) }; } catch { return { s: r.status, d: t }; }
+async function kGet(path) {
+  try {
+    const r = await fetch(API + path, { method: "GET", headers: HDR });
+    if (r.status === 200) return await r.json();
+    return { error: r.status };
+  } catch (e) {
+    return { error: e.message };
+  }
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "GET") return res.status(200).json({ error: "GET only" });
-  
-  try {
-    // Kommo'dan tüm aktif lead'leri çek
-    const results = [];
-    let page = 1;
-    let allLeads = [];
-    
-    while (page <= 10) { // Max 10 sayfa (250 lead)
-      const r = await kApi("GET", `/api/v4/leads?limit=25&page=${page}&with=contacts`);
-      if (r.s !== 200 || !r.d?._embedded?.leads) break;
-      allLeads = allLeads.concat(r.d._embedded.leads);
-      if (r.d._embedded.leads.length < 25) break;
-      page++;
-      await new Promise(r => setTimeout(r, 500)); // Rate limit
-    }
-    
-    console.log(`Found ${allLeads.length} leads`);
-    
-    for (const lead of allLeads) {
-      const leadId = lead.id;
-      const contactId = lead._embedded?.contacts?.[0]?.id;
-      
-      if (!contactId) continue;
-      
-      // Contact'ın chat bilgisini çek
-      try {
-        const talkR = await kApi("GET", `/api/v4/talks?filter[entity_id]=${leadId}&filter[entity_type]=leads`);
-        
-        let chatId = "";
-        if (talkR.s === 200 && talkR.d?._embedded?.talks) {
-          for (const talk of talkR.d._embedded.talks) {
-            if (talk.chat_id) {
-              chatId = String(talk.chat_id);
-              break;
-            }
-          }
-        }
-        
-        if (chatId) {
-          const dmLink = `https://www.instagram.com/direct/t/${chatId}/`;
-          results.push({
-            lead_id: leadId,
-            chat_id: chatId,
-            dm_link: dmLink,
-            contact_name: lead._embedded?.contacts?.[0]?.name || ""
-          });
-          
-          // Google Sheets'e güncelleme gönder
-          if (ORDER_WEBHOOK_URL) {
-            await fetch(ORDER_WEBHOOK_URL, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                type: "fix_dm_link",
-                operation: "update",
-                data: {
-                  order_id: `open_${leadId}_lazer`,
-                  customer_id: String(leadId),
-                  dm_link: dmLink
-                }
-              })
-            });
-          }
-        }
-        
-        await new Promise(r => setTimeout(r, 300)); // Rate limit
-      } catch (e) {
-        console.error(`Error for lead ${leadId}:`, e.message);
+  if (!T) return res.status(200).json({ error: "KOMMO_TOKEN yok" });
+
+  const leadsData = await kGet("/api/v4/leads?limit=10&with=contacts");
+  if (!leadsData?._embedded?.leads) {
+    return res.status(200).json({ error: "Lead bulunamadi", debug: JSON.stringify(leadsData).substring(0, 300) });
+  }
+
+  const leads = leadsData._embedded.leads;
+  const results = [];
+
+  for (const lead of leads.slice(0, 5)) {
+    const lid = lead.id;
+    const talkData = await kGet("/api/v4/talks?filter[entity_id]=" + lid + "&filter[entity_type]=leads");
+    let chatId = "";
+
+    if (talkData?._embedded?.talks) {
+      for (const talk of talkData._embedded.talks) {
+        if (talk.chat_id) { chatId = String(talk.chat_id); break; }
       }
     }
-    
-    return res.status(200).json({
-      success: true,
-      total_leads: allLeads.length,
-      fixed: results.length,
-      results: results.slice(0, 20) // İlk 20'yi göster
+
+    results.push({
+      lead_id: lid,
+      contact: lead._embedded?.contacts?.[0]?.name || "",
+      chat_id: chatId,
+      dm_link: chatId ? "https://www.instagram.com/direct/t/" + chatId + "/" : "no_chat_id"
     });
-    
-  } catch (e) {
-    return res.status(500).json({ error: e.message });
+
+    await new Promise(r => setTimeout(r, 200));
   }
+
+  return res.status(200).json({ success: true, total: leads.length, results });
 }
