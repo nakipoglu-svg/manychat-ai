@@ -23,7 +23,7 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
     "canli destek","canlı destek","yetkili baglayın","yetkili bağlayın",
   ])) {
     return {
-      text: "Çok özür dileriz efendim, sizi hemen bir insan temsilcimize yönlendiriyorum 😊",
+      text: "Çok özür dileriz efendim, ekibimize iletiyorum, sizi hemen bir insan temsilcimize yönlendiriyoruz 😊",
       source: "guard_frustration",
       reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED,
       support_mode_reason: SUPPORT_REASON.OPERATIONAL,

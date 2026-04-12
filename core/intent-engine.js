@@ -25,7 +25,18 @@ export function detectIntent(ctx) {
   if (extracted.phone && stage === STAGE.WAITING_ADDRESS) return "phone";
   if (stage === STAGE.WAITING_ADDRESS && extracted.hasAddress) return "address";
   if (stage === STAGE.WAITING_ADDRESS && extracted.hasName && raw.length < 40) return "name_only";
-  if (stage === STAGE.WAITING_LETTERS && extracted.letters) return "letters";
+  if (stage === STAGE.WAITING_LETTERS && extracted.letters) {
+    // Smalltalk/complaint/sensitivity/info soruları w_letters'da letters olarak algılanmasın
+    if (hasAny(norm, KW.smalltalk) || hasAny(norm, ["tesekkur","teşekkür","sagol","sağol","rica"])) return "smalltalk";
+    if (hasAny(norm, ["iptal","vazgec","vazgeç"])) return "cancel_order";
+    // Info soruları — keyword check
+    if (hasAny(norm, KW.trust) || hasAny(norm, ["guvenilir","güvenilir","guven","güven","dolandirici","dolandırıcı","nasil guven","nasıl güven"])) return "trust";
+    if (hasAny(norm, KW.location) || hasAny(norm, ["neredesiniz","nerede"])) return "location";
+    if (hasAny(norm, KW.shipping) || hasAny(norm, KW.shipping_price) || hasAny(norm, ["kargo","seffaf","şeffaf"])) return "shipping";
+    if (hasAny(norm, KW.chain) || hasAny(norm, ["italyan","halat","burgulu"])) return "chain_question";
+    if (hasAny(norm, KW.material_question)) return "material_question";
+    return "letters";
+  }
 
   // Payment commit
   const paymentVerb = /seceyim|seçeyim|olsun|istiyorum|sectim|seçtim|seciyorum|seçiyorum|yapacagim|yapacağım|yapicam|yapıcam|yapayim|yapayım|yapalim|yapalım/.test(norm);
