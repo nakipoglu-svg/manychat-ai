@@ -84,9 +84,9 @@ Context:
 - phone_received: ${ctx.fields.phone_received || ""}
   `.trim();
 
-  const apiKey = process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY;
-  const model = process.env.DEEPSEEK_MODEL || process.env.OPENAI_MODEL || "deepseek-chat";
-  const baseUrl = process.env.DEEPSEEK_BASE_URL || process.env.OPENAI_BASE_URL || "https://api.deepseek.com/v1";
+  const apiKey = process.env.OPENAI_API_KEY || process.env.DEEPSEEK_API_KEY;
+  const model = process.env.OPENAI_MODEL || process.env.DEEPSEEK_MODEL || "gpt-5-mini";
+  const baseUrl = process.env.OPENAI_BASE_URL || process.env.DEEPSEEK_BASE_URL || "https://api.openai.com/v1";
 
   if (!apiKey) return TEXT.FALLBACK;
 

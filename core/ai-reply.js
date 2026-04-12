@@ -300,7 +300,7 @@ KURALLAR:
 
 export async function getAIReply(ctx, signals, filledSlots, missingSlots) {
   // AI Provider selection: ANTHROPIC (Claude) veya DEEPSEEK/OPENAI
-  const provider = process.env.AI_PROVIDER || "deepseek"; // "anthropic" veya "deepseek"
+  const provider = process.env.AI_PROVIDER || "openai"; // "anthropic" veya "openai"
   
   const topic = detectTopic(ctx, signals);
   const knowledge = buildMiniKnowledge(topic, ctx.product);
@@ -354,11 +354,11 @@ export async function getAIReply(ctx, signals, filledSlots, missingSlots) {
       
     } else {
       // ═══ DEEPSEEK / OPENAI COMPATIBLE API ═══
-      const apiKey = process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY;
-      const baseUrl = process.env.DEEPSEEK_BASE_URL || process.env.OPENAI_BASE_URL || "https://api.deepseek.com/v1";
-      model = process.env.AI_REPLY_MODEL || process.env.DEEPSEEK_MODEL || "deepseek-chat";
+      const apiKey = process.env.OPENAI_API_KEY || process.env.DEEPSEEK_API_KEY;
+      const baseUrl = process.env.OPENAI_BASE_URL || process.env.DEEPSEEK_BASE_URL || "https://api.openai.com/v1";
+      model = process.env.AI_REPLY_MODEL || process.env.OPENAI_MODEL || process.env.DEEPSEEK_MODEL || "gpt-5-mini";
 
-      if (!apiKey) { console.log("[AI_SKIP] No API key found. Set DEEPSEEK_API_KEY env variable."); return null; }
+      if (!apiKey) { console.log("[AI_SKIP] No API key found. Set OPENAI_API_KEY env variable."); return null; }
 
       const response = await fetch(`${baseUrl}/chat/completions`, {
         method: "POST",
