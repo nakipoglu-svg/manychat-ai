@@ -507,8 +507,8 @@ Müşteri "kargoya vermeden görebilir miyim" diye sorarsa:
 Müşteri "örnek var mı", "daha önce yaptıklarınızdan görebilir miyim" diye sorarsa:
 "Örnek çalışmalarımızı öne çıkanlar kısmından inceleyebilirsiniz efendim 😊
 
-📸 Örnek ürünler: instagram.com/stories/highlights/18391039714130558/
-📦 Sizden gelenler: instagram.com/stories/highlights/18079575341155587/"
+📸 Örnek ürünler: https://www.instagram.com/stories/highlights/18084971893996144/
+📦 Sizden gelenler: https://www.instagram.com/stories/highlights/18079575341155587/"
 şeklinde cevap verilir.
 Satıcıya bırakılmaz.
 "Hemen atalım" gibi satıcı müdahalesi gerektiren cevap verilmez.

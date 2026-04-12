@@ -83,7 +83,7 @@ export function sideQuestions(ctx, state) {
     }
     if (ap === PRODUCT.LAZER) {
       if (hasAny(norm, ["zincir boyu","zincir uzunlugu","zincir uzunluğu","uzunlugu ne kadar","uzunluğu ne kadar","uzunlugu nekadar","uzunluğu nekadar","zincir kac cm","zincir kaç cm","zincir kisalir","zincir kısalır","boyu ne kadar","kac santim","kaç santım","kac santım","kolye boyu","kac cm","kaç cm","zincir ne kadar","zincirin boyu","zincirin uzunlugu","zincirin uzunluğu"])) return R("Standart zincirimiz 60 cm'dir, fiyata dahildir efendim 😊");
-      if (hasAny(norm, ["model","modeli","seceneg","seçenek","cesit","çeşit","ince","kalin","kalın","burgulu","halat"])) return R("Standart zincirimiz ile gönderiyoruz efendim 😊");
+      if (hasAny(norm, ["model","modeli","seceneg","seçenek","cesit","çeşit","ince","kalin","kalın","burgulu","halat","zincir hangisi","hangi zincir","zincirden var mi","zincirden var mı","bu zincir","zincir goster","zincir göster","zincir fotograf","zincir fotoğraf"])) return R("Standart zincirimiz ile gönderiyoruz efendim 😊 Örnek çalışmalarımızdan zinciri görebilirsiniz:\n\n📸 Örnek çalışmalar: https://www.instagram.com/stories/highlights/18084971893996144/\n📦 Sizden gelenler: https://www.instagram.com/stories/highlights/18079575341155587/");
       return R("Standart zincirimiz ile gönderiyoruz efendim 😊");
     }
     if (ap === PRODUCT.ATAC) {
@@ -109,8 +109,8 @@ export function sideQuestions(ctx, state) {
   // New order
   if (intent === INTENT.NEW_ORDER) return { text: "Tabi efendim 😊 Hangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye", reply_class: REPLY_CLASS.MENU, support_mode_reason: "" };
 
-  // Example
-  if (intent === INTENT.EXAMPLE_REQUEST) return R("Örnek çalışmalarımızı buradan inceleyebilirsiniz efendim 😊\n\n📸 Örnek ürünler: instagram.com/stories/highlights/18391039714130558/\n📦 Sizden gelenler: instagram.com/stories/highlights/18079575341155587/");
+  // Example — örnek çalışma, kutu, gümüş, arka yazı, zincir, kalp vs. her türlü görsel isteği
+  if (intent === INTENT.EXAMPLE_REQUEST) return R("Tabi efendim, buradan inceleyebilirsiniz 😊\n\n📸 Örnek çalışmalar: https://www.instagram.com/stories/highlights/18084971893996144/\n📦 Sizden gelenler: https://www.instagram.com/stories/highlights/18079575341155587/");
 
   // Photo reference — "son attığım olsun", "ilk attığım", "üstteki"
   if (intent === INTENT.PHOTO_REFERENCE) {

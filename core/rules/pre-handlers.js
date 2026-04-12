@@ -143,7 +143,7 @@ export function preHandlers(ctx, state, nextStage) {
 
   // Çoklu foto / birleştirme (Fix #15)
   if (hasAny(norm, ["kac resim","kaç resim","kac foto","kaç foto","3 resim","uc resim","üç resim","3 foto","3 lu","3 lü","uclu","üçlü","4 lu","4 lü","5 li","5 kisi","5 kişi","tek kolyeye uc","tek kolyeye üç","tek yuze","tek yüze","ayni karede","aynı karede","birlestirip","birleştirip","birlestirme","birleştirme","birlestir","birleştir","ayri ayri yollasak","ayrı ayrı yollasak","ayri ayri atsak","ayrı ayrı atsak","kac kisi","kaç kişi","kac kisilik","kaç kişilik","iki kisi","iki kisinin","iki cocuk","iki çocuk","kac yuz","kaç yüz","uc kisi","üç kişi","dort kisi","dört kişi","bes kisi","beş kişi","3 kisi","4 kisi"])) {
-    if (hasAny(norm, ["ornek","örnek"])) return R("Örnek çalışmalarımızı buradan inceleyebilirsiniz efendim 😊\n\n📸 Örnek ürünler: instagram.com/stories/highlights/18391039714130558/\n📦 Sizden gelenler: instagram.com/stories/highlights/18079575341155587/");
+    if (hasAny(norm, ["ornek","örnek"])) return R("Örnek çalışmalarımızı buradan inceleyebilirsiniz efendim 😊\n\n📸 Örnek ürünler: https://www.instagram.com/stories/highlights/18084971893996144/\n📦 Sizden gelenler: https://www.instagram.com/stories/highlights/18079575341155587/");
     const extra = stage === STAGE.WAITING_PHOTO ? " Fotoğrafları buradan gönderebilirsiniz 😊" :
                   stage === STAGE.WAITING_PAYMENT ? " Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim?" :
                   stage === STAGE.WAITING_ADDRESS ? " Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz?" : "";

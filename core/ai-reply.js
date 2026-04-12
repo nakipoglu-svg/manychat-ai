@@ -206,13 +206,24 @@ Tek zincir modeli vardır.`,
 - Vesikalık olmak zorunda değil, istediği fotoğrafı gönderebilir
 - Eski/bulanık foto da olabilir ama net olması tercih edilir
 - Tek kolyeye birden fazla fotoğraf yapılabilir (ücret farkı yok)
-- Ön yüze bir foto, arka yüze başka foto yapılabilir (ücret farkı yok)`,
+- Ön yüze bir foto, arka yüze başka foto yapılabilir (ücret farkı yok)
+- Müşteri örnek görmek isterse highlight linklerini ver:
+  📸 Örnek çalışmalar: https://www.instagram.com/stories/highlights/18084971893996144/
+  📦 Sizden gelenler: https://www.instagram.com/stories/highlights/18079575341155587/`,
     
     back_text: `ARKA YÜZ BİLGİSİ:
 - Arka yüze yazı veya fotoğraf eklenebilir, ÜCRETSİZ
 - İsim, tarih, kısa not, dua yazılabilir
 - Bot arka yazı sormaz, müşteri isterse yapar
-- "Genelde ne yazılır" sorusuna: isim, tarih, kısa dua gibi notlar`,
+- "Genelde ne yazılır" sorusuna: isim, tarih, kısa dua gibi notlar
+- Arka yüz örneği görmek isterse highlight linkini ver:
+  📸 Örnek çalışmalar: https://www.instagram.com/stories/highlights/18084971893996144/`,
+
+    example: `ÖRNEK ÇALIŞMALAR:
+- Müşteri örnek, kutu, gümüş plaka, arka yazı örneği, zincir görseli vb. isterse:
+  📸 Örnek çalışmalar: https://www.instagram.com/stories/highlights/18084971893996144/
+  📦 Sizden gelenler: https://www.instagram.com/stories/highlights/18079575341155587/
+- Bu linkleri mutlaka ver, başka link verme.`,
   };
 
   // Intent'e göre fact block seç
@@ -223,6 +234,7 @@ Tek zincir modeli vardır.`,
     payment: "payment", payment_info_question: "payment", payment_confirmation: "payment",
     photo_question: "photo", photo_suitability_question: "photo",
     back_text_info: "back_text", back_text_examples: "back_text", back_photo_info: "photo",
+    example_request: "example", detail_request: "example",
   };
   
   const topicKey = topicMap[lastIntent] || "";
@@ -301,21 +313,30 @@ KURALLAR:
 export async function getAIReply(ctx, signals, filledSlots, missingSlots) {
   // AI Provider selection: ANTHROPIC (Claude) veya OPENAI
   const provider = process.env.AI_PROVIDER || "openai"; // "anthropic" veya "openai"
-  console.log("[AI_VERSION] v6-gpt5mini provider=" + provider);
+  console.log("[AI_VERSION] v7-ai-first provider=" + provider);
   
   const topic = detectTopic(ctx, signals);
   const knowledge = buildMiniKnowledge(topic, ctx.product);
 
-  const prompt = buildPrompt(
+  let prompt = buildPrompt(
     ctx.message,
     ctx.fields?.conversation_stage || "",
     ctx.product || "",
     filledSlots,
     missingSlots,
     ctx.fields?.ai_reply || "",
-    ctx.intent || ctx.fields?.last_intent || "",  // Current intent öncelikli
+    ctx.intent || ctx.fields?.last_intent || "",
     knowledge
   );
+
+  // Mixed commit + complaint: AI'ye ek bağlam ver
+  if (ctx._commitInfo) {
+    prompt += `\n\n═══ ÖZEL DURUM: SLOT COMMIT + ŞİKAYET ═══
+Müşteri bilgi verirken aynı zamanda şikayet/sitem ediyor.
+Kaydedilen bilgiler: ${ctx._commitInfo.committed_slots.join(", ")}
+${ctx._commitInfo.instruction}
+Cevabında: şikayeti empatik karşıla, bilginin alındığını onayla, sonraki eksik adıma yönlendir.`;
+  }
 
   try {
     let aiText = null;

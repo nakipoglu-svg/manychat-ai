@@ -294,10 +294,10 @@ export async function processChat(body = {}) {
     const { reply: selectedReply, meta: arbMeta } = arbitrate(ctx, derived);
     Object.assign(meta, arbMeta);
 
-    // ═══ 7. REPLY SELECTION — HYBRID ═══
+    // ═══ 7. REPLY SELECTION — AI-FIRST HYBRID ═══
     let finalReply = selectedReply;
 
-    // 7a. Self-heal override
+    // 7a. Self-heal override (always deterministic)
     if (healResult && healResult.text) {
       finalReply = healResult;
       meta.signalOverride = healResult._policy || "self_heal";
@@ -326,28 +326,72 @@ export async function processChat(body = {}) {
       meta.signalOverride = "photo_received_check";
     }
 
-    // ═══ 8. AI REPLY INTERPRETER ═══
+    // ═══ 8. AI-FIRST REPLY — slot commit dışında her şeyi AI'ye sor ═══
     const aiEnabled = !body._skipAI && !body._test;
-    const needsAI = aiEnabled && shouldUseAI(ctx, signals, { reply: finalReply, meta });
+    
+    // Slot commit ve hard-deterministic intent'ler AI'ye GİTMEZ
+    const isSlotCommit = !!(
+      signals.system_message ||
+      ctx.intent === "cancel_order" ||
+      signals.slot_updates?.phone ||
+      signals.slot_updates?.address ||
+      signals.slot_updates?.photo ||
+      signals.slot_updates?.letters ||
+      (ctx.intent === "photo" && signals.slot_updates?.photo) ||
+      ctx.intent === "payment_confirmation" ||
+      ctx.intent === "name_only" ||
+      ctx.intent === "phone" ||
+      ctx.intent === "address" ||
+      ctx.intent === "photo_reference" ||
+      ctx.intent === "photo_change_request" ||
+      (ctx.intent === "order_start" && arbMeta?.selectedRule === "product-entry") ||
+      (signals.slot_updates?.payment_method && /seceyim|seçeyim|olsun|istiyorum|sectim|seçtim|seciyorum|seçiyorum|yapacagim|yapacağım|yapicam|yapıcam/.test(ctx.norm || ""))
+    );
+    
+    // Fiyat ve pazarlık da deterministic (AI fiyat kırabilir)
+    const isPriceIntent = !!(
+      ctx.intent === "price" ||
+      ctx.intent === "shipping_price" ||
+      ctx.intent === "ack" ||
+      (/\d{3}/.test(ctx.message || "") && /tl|lira|olur mu|yapar|indirim|anlasalim|anlaşalım/i.test(ctx.norm || ""))
+    );
+
+    // ═══ MIXED COMMIT + COMPLAINT DETECTION ═══
+    // Mesajda hem slot commit hem şikayet/düzeltme varsa:
+    // state deterministic kalır, ama cevabı AI kursun (daha empatik)
+    const hasComplaintTone = !!(
+      signals.complaints?.length > 0 ||
+      /zaten|hala|hâlâ|tekrar|yine|neden|niye|gormediniz|görmediniz|istemissiniz|istemişsiniz|sordunuz|atmistim|atmıştım|gonderdim|gönderdim.*ama|yazdim.*ama|yazdım.*ama/i.test(ctx.norm || "")
+    );
+    const hasCommitAndComplaint = isSlotCommit && hasComplaintTone && !signals.system_message && ctx.intent !== "cancel_order";
+
+    // AI'ye gidecek mi?
+    // - Normal: slot commit değilse ve fiyat değilse → AI
+    // - Mixed: slot commit + complaint → state deterministic KALIR, ama cevabı AI kursun
+    const shouldCallAI = aiEnabled && (!isSlotCommit || hasCommitAndComplaint) && !isPriceIntent && !meta.signalOverride;
+    
     meta._aiEnabled = aiEnabled;
-    meta._aiNeeded = needsAI;
-    // EARLY LOG — Vercel truncation'dan önce görmek için
-    console.log("[AI_ROUTE]", needsAI ? "→AI" : "→DET", ctx.intent, ctx.message.substring(0, 30));
+    meta._aiNeeded = shouldCallAI;
+    meta._mixedCommitComplaint = hasCommitAndComplaint;
+    console.log("[AI_ROUTE]", shouldCallAI ? (hasCommitAndComplaint ? "→AI_MIXED" : "→AI") : "→DET", ctx.intent, ctx.message.substring(0, 30));
 
-    if (!aiEnabled && !body._test) {
-      console.log("[AI_DISABLED]", JSON.stringify({ _skipAI: !!body._skipAI }));
-    } else if (!needsAI) {
-      console.log("[AI_NOT_NEEDED]", JSON.stringify({ intent: ctx.intent, rule: meta.selectedRule || meta.signalOverride || "none", msg: ctx.message.substring(0, 40) }));
-    }
-
-    if (needsAI) {
-      console.log("[AI_CALL]", JSON.stringify({ message: ctx.message.substring(0, 60), stage: ctx.fields.conversation_stage, intent: ctx.intent }));
+    if (shouldCallAI) {
+      // Mixed durumda AI promptuna ek bilgi ver
+      if (hasCommitAndComplaint) {
+        ctx._commitInfo = {
+          committed_slots: Object.keys(signals.slot_updates || {}),
+          complaint_detected: true,
+          instruction: "Slot başarıyla kaydedildi, tekrar isteme. Şikayeti kısa ve empatik karşıla, sonra bir sonraki eksik adıma yönlendir."
+        };
+      }
+      
+      console.log("[AI_CALL]", JSON.stringify({ message: ctx.message.substring(0, 60), stage: ctx.fields.conversation_stage, intent: ctx.intent, mixed: hasCommitAndComplaint }));
       try {
         const aiPromise = getAIReply(ctx, signals, filledSlots, currentMissing);
         const timeoutPromise = new Promise((_, rej) => setTimeout(() => rej(new Error("ai_timeout")), 25000));
         const aiResult = await Promise.race([aiPromise, timeoutPromise]);
 
-        if (aiResult && aiResult.reply && aiResult.confidence >= 0.7) {
+        if (aiResult && aiResult.reply && aiResult.confidence >= 0.6) {
           const guarded = applyPolicyGuard(aiResult, filledSlots, currentMissing);
           if (guarded) {
             let aiReplyText = guarded.reply;
@@ -361,20 +405,24 @@ export async function processChat(body = {}) {
             if (guarded.next_action === "handoff") {
               finalReply.reply_class = REPLY_CLASS.OPERATIONAL_REQUIRED;
             }
-            meta.replySource = "ai_reply";
+            meta.replySource = hasCommitAndComplaint ? "ai_mixed_commit" : "ai_reply";
             meta._aiReply = guarded;
             if (guarded._tokenUsage) meta._tokenUsage = guarded._tokenUsage;
-            console.log("[AI_USED]", JSON.stringify({ label: guarded.intent_label, confidence: guarded.confidence, tokens: guarded._tokenUsage?.total_tokens || 0 }));
+            console.log("[AI_USED]", JSON.stringify({ label: guarded.intent_label, confidence: guarded.confidence, tokens: guarded._tokenUsage?.total_tokens || 0, mixed: hasCommitAndComplaint }));
           }
         } else if (aiResult) {
           console.log("[AI_LOW_CONF]", JSON.stringify({ confidence: aiResult.confidence, label: aiResult.intent_label }));
         } else {
-          console.log("[AI_NULL] AI returned null — check DEEPSEEK_API_KEY env variable");
+          console.log("[AI_NULL] AI returned null, falling back to deterministic");
         }
       } catch (e) {
         meta._aiReplyError = e?.message || "unknown";
         console.log("[AI_ERROR]", e?.message || "unknown");
       }
+    } else if (!aiEnabled) {
+      console.log("[AI_DISABLED]", JSON.stringify({ _skipAI: !!body._skipAI }));
+    } else {
+      console.log("[AI_SKIP_REASON]", JSON.stringify({ isSlotCommit, isPriceIntent, signalOverride: !!meta.signalOverride, intent: ctx.intent }));
     }
 
     // ═══ 9. FINAL FALLBACK ═══
