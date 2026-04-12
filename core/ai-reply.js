@@ -161,17 +161,20 @@ function buildPrompt(message, stage, product, filledSlots, missingSlots, lastBot
   // ═══ TOPIC FACT BLOCKS — intent'e göre dar bilgi ═══
   const factBlocks = {
     chain: product === "lazer" 
-      ? `ZİNCİR BİLGİSİ (LAZER):
-- Standart zincir: 60 cm (fiyata dahil)
-- Lazer kolyede zincir uzatma YOKTUR. "Uzatılabilir" ASLA deme.
-- Erkek için: 50 cm gümüş zincir mevcut (müşteri erkek derse söyle)
-- Tek zincir modeli var, seçenek sunma
-- Müşteri kısa isterse: "Tabi efendim, kısa zincir gönderelim"
-- 45 cm ASLA yazma. Standart 60 cm.`
-      : `ZİNCİR BİLGİSİ (ATAÇ):
-- Standart zincir: 50 cm
-- Uzatma: 70 cm'e kadar, +50 TL
-- Tek zincir modeli var`,
+      ? `ZİNCİR BİLGİSİ (LAZER KOLYE):
+Standart zincir uzunluğu 60 cm'dir. Fiyata dahildir.
+Zincir uzatma YOKTUR. "Uzatılabilir", "daha uzun yapılabilir" gibi ifadeler YASAKTIR.
+Zincir model seçeneği YOKTUR. Tek tip standart zincir gönderilir.
+45 cm YAZMA. Doğru bilgi: 60 cm.
+
+ÖZEL DURUMLAR (SADECE müşteri sorarsa):
+- Müşteri "erkek için" derse → "Erkek için 50 cm gümüş zincirimiz mevcut efendim"
+- Müşteri "kısa zincir" isterse → "Tabi efendim, kısa zincir gönderelim"
+- Bu özel durumlar dışında HER ZAMAN 60 cm söyle.`
+      : `ZİNCİR BİLGİSİ (ATAÇ KOLYE):
+Standart zincir uzunluğu 50 cm'dir.
+Uzatma yapılabilir: maksimum 70 cm, +50 TL ek ücret.
+Tek zincir modeli vardır.`,
     
     material: `MATERYAL BİLGİSİ:
 - 14 ayar altın kaplama paslanmaz çelik
@@ -456,21 +459,29 @@ export function applyPolicyGuard(aiResult, filledSlots, missingSlots) {
   // Lazer'de zincir uzatma yok
   if (/zincir.*(uzat|uzatıl|uzatabil)/i.test(reply) && filledSlots?.product === "lazer") {
     console.log("[GUARD] BLOCKED: lazer zincir uzatma");
-    reply = reply.replace(/[^.]*zincir.*(uzat|uzatıl|uzatabil)[^.]*\./gi, "").trim();
-    if (!reply) reply = "Tabi efendim 😊";
+    // Cümleyi sil — noktalı veya noktasız
+    reply = reply.replace(/[^.]*zincir.*(uzat|uzatıl|uzatabil)[^.]*/gi, "").trim();
+    if (!reply || reply.length < 5) reply = "Lazer kolyede zincir uzatma bulunmamaktadır efendim 😊";
   }
   
-  // Yanlış zincir uzunluğu (lazer 45cm)
-  if (/45\s*cm/i.test(reply)) {
+  // Yanlış zincir uzunluğu (lazer 45cm) — sayı ve yazıyla
+  if (/45\s*cm|kırk\s*beş\s*sant/i.test(reply)) {
     console.log("[GUARD] FIXED: 45cm → 60cm");
-    reply = reply.replace(/45\s*cm/gi, "60 cm");
+    reply = reply.replace(/45\s*cm/gi, "60 cm").replace(/kırk\s*beş\s*sant[a-zıöüçşğ]*/gi, "60 cm");
+  }
+  
+  // "biraz daha uzun yapılabilir" — lazer'de uzatma yok
+  if (filledSlots?.product === "lazer" && /daha uzun|uzatabil|uzatıl|uzunlugu artir|uzunluğu artır/i.test(reply)) {
+    console.log("[GUARD] BLOCKED: lazer indirect uzatma");
+    reply = reply.replace(/[^.]*(?:daha uzun|uzatabil|uzatıl|uzunlugu artir|uzunluğu artır)[^.]*/gi, "").trim();
+    if (!reply || reply.length < 5) reply = "Lazer kolyede zincir uzatma bulunmamaktadır efendim 😊";
   }
   
   // WhatsApp numarası müşteri sormadan verilmemeli
-  if (/whatsapp|wa\.me|505\s*471/i.test(lower)) {
-    console.log("[GUARD] BLOCKED: unsolicited WhatsApp");
-    reply = reply.replace(/[^.]*(?:whatsapp|wa\.me|takip için)[^.]*/gi, "").trim();
-    if (!reply) reply = "Tabi efendim 😊";
+  if (/whatsapp|wa\.me|505\s*471|takip için|takip numaramız|iletişim hattımız/i.test(reply)) {
+    console.log("[GUARD] BLOCKED: unsolicited WhatsApp/contact");
+    reply = reply.replace(/[^.]*(?:whatsapp|wa\.me|takip için|takip numaramız|iletişim hattımız|505\s*471)[^.]*/gi, "").trim();
+    if (!reply || reply.length < 5) reply = "Tabi efendim 😊";
   }
   
   // "Fotoğrafınızı bekliyorum/gönderebilirsiniz" — yan soru cevaplarında gereksiz
