@@ -299,8 +299,9 @@ KURALLAR:
 // ─── CALL AI ───────────────────────────────────────────────
 
 export async function getAIReply(ctx, signals, filledSlots, missingSlots) {
-  // AI Provider selection: ANTHROPIC (Claude) veya DEEPSEEK/OPENAI
+  // AI Provider selection: ANTHROPIC (Claude) veya OPENAI
   const provider = process.env.AI_PROVIDER || "openai"; // "anthropic" veya "openai"
+  console.log("[AI_VERSION] v6-gpt5mini provider=" + provider);
   
   const topic = detectTopic(ctx, signals);
   const knowledge = buildMiniKnowledge(topic, ctx.product);
@@ -378,7 +379,8 @@ export async function getAIReply(ctx, signals, filledSlots, missingSlots) {
       });
 
       if (!response.ok) {
-        console.log("[AI_HTTP_ERROR]", JSON.stringify({ status: response.status, statusText: response.statusText }));
+        const errBody = await response.text().catch(() => "");
+        console.log("[AI_HTTP_ERROR]", JSON.stringify({ status: response.status, statusText: response.statusText, body: errBody.substring(0, 500) }));
         return null;
       }
 

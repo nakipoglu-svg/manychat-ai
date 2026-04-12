@@ -103,7 +103,11 @@ Context:
         messages: [{ role: "developer", content: systemPrompt }, { role: "user", content: userPrompt }],
       }),
     });
-    if (!res.ok) return TEXT.FALLBACK;
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => "");
+      console.log("[MODEL_HTTP_ERROR]", JSON.stringify({ status: res.status, body: errBody.substring(0, 500) }));
+      return TEXT.FALLBACK;
+    }
     const data = await res.json();
     
     // ═══ TOKEN USAGE LOGGING ═══
