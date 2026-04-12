@@ -2174,6 +2174,13 @@ const tests = [
   // ── LOG-MS: Completed / Smalltalk ──
   { id: "LOG_MS01", name: "teşekkür completed", input: body("Tamam teşekkür ederim", lazerCompleted()), expectReplyIncludes: "rica" },
   { id: "LOG_MS02", name: "eft kapıda fark", input: body("EFT ile kapıda ödeme arasındaki fark nedir", lazerWaitingPayment()), expectReplyIncludes: "nakit" },
+
+  // ═══ LOG-BASED REGRESSION: 12.04.2026 session ═══
+  // Aile: support_mode yapışkanlık — support_mode=1 normal akışı bloklamasın
+  { id: "LOG_SM01", name: "support_mode=1 + kapıda → payment kaydolmalı", input: body("Tamam o zaman ben kapıda", { ilgilenilen_urun: "atac", user_product: "atac", context_lock: "1", order_status: "started", conversation_stage: "waiting_payment", letters_received: "1", support_mode: "1" }), expect: { payment_method: "kapida_odeme" } },
+  { id: "LOG_SM02", name: "completed + support_mode=1 + teşekkür → rica ederiz", input: body("Tesekkurler", { ilgilenilen_urun: "atac", user_product: "atac", context_lock: "1", order_status: "completed", conversation_stage: "order_completed", payment_method: "eft_havale", address_status: "received", phone_received: "1", letters_received: "1", support_mode: "1", siparis_alindi: "1" }), expectReplyIncludes: "rica" },
+  // Aile: material standart — "gerçek altın değildir" her yerde
+  { id: "LOG_MAT01", name: "malzeme nedir → gerçek altın değildir", input: body("Ürünün malzeme nedir", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "gercek altin" },
 ];
 
 async function runTests() {

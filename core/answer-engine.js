@@ -180,10 +180,10 @@ function getDeterministicInfoResponse(intent, ctx) {
     if (hasAny(norm, ["suya dayanikli","dusta","duşta","deniz","havuz","yuzme","yüzme"])) return "Ürünlerimiz suya dayanıklıdır efendim 😊 Duşta, denizde, havuzda rahatlıkla kullanabilirsiniz. Kararma, solma yapmaz.";
     if (hasAny(norm, ["alerji","alerjim","alerjik","hassas cilt"])) return "Ürünlerimiz 14 ayar altın kaplama paslanmaz çelikten üretilmektedir efendim, alerji riski yoktur 😊";
     if (hasAny(norm, ["paslanmaz mi","paslanmaz mı","paslanir","paslanır"])) return "Evet efendim, 14 ayar altın kaplama paslanmaz çeliktir 😊 Kararma, solma yapmaz.";
-    if (hasAny(norm, ["metal","metali ne","malzemesi","metal mi","celik mi","çelik mi","metal cinsi","metalin cinsi"])) return "Ürünlerimiz 14 ayar altın kaplama paslanmaz çeliktir efendim 😊 Kararma, solma yapmaz.";
+    if (hasAny(norm, ["metal","metali ne","malzeme","malzemesi","metal mi","celik mi","çelik mi","metal cinsi","metalin cinsi"])) return "Ürünlerimiz 14 ayar altın kaplama paslanmaz çeliktir efendim 😊 Gerçek altın değildir, kaplamadır. Kararma, solma yapmaz.";
     if (hasAny(norm, ["kaplama atar","kaplama atma","kaplama cikar","kaplama çıkar"])) return "Kaplama atma yapmaz efendim 😊 14 ayar altın kaplama paslanmaz çelik kullanılmaktadır.";
     if (hasAny(norm, ["renk","gold","altin kaplama","altın kaplama","mat celik","mat çelik"])) return "Altın kaplama (gold), gümüş kaplama ve mat çelik seçeneğimiz mevcut efendim 😊";
-    return "Ürünlerimiz 14 ayar altın kaplama paslanmaz çeliktir efendim 😊 Kararma, solma yapmaz.";
+    return "Ürünlerimiz 14 ayar altın kaplama paslanmaz çeliktir efendim 😊 Gerçek altın değildir, kaplamadır. Kararma, solma yapmaz.";
   }
 
   // ── LOCATION ──
@@ -492,8 +492,8 @@ export async function generateAnswer(ctx) {
   const stage = ctx.fields?.conversation_stage || "";
   const isCompleted = ctx.fields?.order_status === "completed" || ctx.fields?.siparis_alindi === "1" || stage === "order_completed";
 
-  // HUMAN SUPPORT — operatöre yönlendirilmiş
-  if (stage === "human_support" || ctx.fields?.support_mode === "1") {
+  // HUMAN SUPPORT — sadece stage human_support ise
+  if (stage === "human_support") {
     const { norm } = ctx;
     // Bekliyorum/tamam/peki → sakin teyit
     if (hasAny(norm, ["bekliyorum","tamam","peki","anladim","anladım","tamamdir","tamamdır"])) return { text: "En kısa sürede dönüş sağlanacaktır efendim 😊", source: "human_support", reply_class: REPLY_CLASS.FIXED_INFO };
