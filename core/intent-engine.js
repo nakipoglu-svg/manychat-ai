@@ -159,6 +159,7 @@ export function detectIntent(ctx) {
       "materyal","celik","çelik","garanti","iade","iptal","taksit","eft","havale","kapida","kapıda",
       "adres","telefon","numara","whatsapp",
       "tamam","olur","peki","evet","hayir","hayır","yok","istemiyorum","gerek yok",
+      "gormek","görmek","gormeden","görmeden","gorsel","görsel","paylasir","paylaşır",
     ]);
     if (!isQuestion && !isBlocked && !isPhone && !isUndecided && !hasAny(norm, ACK_WORDS)) return "back_text";
   }

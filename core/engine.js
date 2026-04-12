@@ -126,7 +126,7 @@ export async function processChat(body = {}) {
       const st = ctx.fields.conversation_stage;
       if (st === STAGE.WAITING_PHOTO) reply.text = "Fotoğrafınızı buradan iletebilirsiniz efendim 😊";
       else if (st === STAGE.WAITING_PAYMENT) reply.text = "EFT / Havale veya kapıda ödeme seçeneklerimiz mevcuttur efendim 😊";
-      else if (st === STAGE.WAITING_ADDRESS) { reply.text = "Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz efendim? 😊"; }
+      else if (st === STAGE.WAITING_ADDRESS) { reply.text = "Ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim efendim 😊"; }
       else if (st === STAGE.WAITING_LETTERS) reply.text = "Yapılmasını istediğiniz harfleri yazabilirsiniz efendim 😊";
       else reply.text = TEXT.FALLBACK;
       meta.replySource = "fallback";

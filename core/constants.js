@@ -296,6 +296,7 @@ export const KW = {
     "cerceve boyut", "çerçeve boyut", "madalyon boyut",
     "olcusu nedir", "ölçüsü nedir", "olcusu ne", "ölçüsü ne",
     "zincir kisalt", "zincir kısalt", "kisaltma", "kısaltma", "kisaltilabilir", "kısaltılabilir", "kisaltabilir", "kısaltabilir",
+    "kisaltin", "kısaltın", "uzatin", "uzatın", "uzatilabilir", "uzatılabilir",
     "zincir uzat", "uzatma", "uzatilabilir", "uzatılabilir", "uzatabilir", "daha uzun zincir", "uzun zincir",
     "70 cm", "70cm",
     "zincir secebilir", "zincir seçebilir", "zincir secme", "zincir seçme",
