@@ -91,7 +91,7 @@ Context:
   if (!apiKey) return TEXT.FALLBACK;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), Number(process.env.MODEL_TIMEOUT_MS || 5000));
+  const timeout = setTimeout(() => controller.abort(), Number(process.env.MODEL_TIMEOUT_MS || 10000));
 
   try {
     const res = await fetch(`${baseUrl}/chat/completions`, {
@@ -99,7 +99,7 @@ Context:
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       signal: controller.signal,
       body: JSON.stringify({
-        model, max_completion_tokens: 150,
+        model,
         messages: [{ role: "developer", content: systemPrompt }, { role: "user", content: userPrompt }],
       }),
     });
