@@ -33,7 +33,7 @@ Resimli lazer kolyede hediye bileklik yoktur.
 Başka ürünlere bu hediye bilgisi taşınmaz.
 Böylece müşteri kolye ile birlikte bileklik de almış olur.
 Bileklik uzunluğu 20 cm'dir.
-Ataç formunda olduğu için küçük bilekler için kısaltılabilir.
+Bileklik kısaltma veya uzatma yapılmaz.
 Bu hediye ayrı ürün gibi anlatılmaz.
 Ayrı fiyat veya ayrı sipariş başlığı açılmaz.
 
@@ -166,3 +166,8 @@ Lazer kolyedeki zincir seçenekleri anlatılmaz.
 
 10. Müşteri erkek için olacak derse ürün tipi değişmiş gibi yorumlanmaz.
 Sadece kullanım amacı olarak değerlendirilir.
+
+11. Müşteri örnek görmek isterse, "nasıl duruyor", "görsel var mı", "örnek atar mısınız" derse highlight linklerine yönlendir:
+"Tabi efendim, buradan inceleyebilirsiniz 😊
+📸 Örnek çalışmalar: https://www.instagram.com/stories/highlights/18084971893996144/
+📦 Sizden gelenler: https://www.instagram.com/stories/highlights/18079575341155587/"

@@ -1,532 +1,150 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ENGINE v5 — Hybrid Orchestrator
-// Deterministic: slot commit, state, anti-repeat, cancel, system
-// AI Reply: conversational answers, capability, info, frustration
-// Policy guard: AI çıktısını denetler, slot commit engelenir
+// ENGINE v8 — 5 katmanlı temiz orkestratör
+// 1. Understand  2. State  3. Answer  4. Guard  5. Output
+// Tek karar noktası. Override zinciri yok.
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import {
-  REPLY_CLASS, SUPPORT_REASON, TEXT, STAGE,
+  REPLY_CLASS, SUPPORT_REASON, TEXT, STAGE, PRODUCT,
   EXPLICIT_SWITCH_PHRASES, KW,
 } from "./constants.js";
 import {
   normalizeText, unwrap, normalizeProduct, normalizeStage,
   normalizePayment, normalizeOrderStatus, normalizeBackText, normalizeAddress,
-  hasAny, truthy, cleanReply, getEntryProduct,
-  looksLikePhotoUrl, extractPhone, looksLikeAddress, looksLikeName,
-  parsePaymentFromMessage, detectProductFromText, extractLetters,
+  hasAny, truthy, cleanReply, getEntryProduct, detectProductFromText,
 } from "./normalize.js";
-import { detectIntent } from "./intent.js";
-import { extractSignals } from "./signals.js";
+import { detectIntent, extractEntities } from "./intent-engine.js";
 import { readInitialState, deriveState, commitPatch, getFilledSlots, getMissingSlots } from "./state.js";
-import { arbitrate } from "./arbitration.js";
-import { callModelFallback } from "./model.js";
-import { resolveActiveTopic, applyTopicOverride } from "./topic-memory.js";
-import { policyDecision } from "./policy-engine.js";
-import { selfHeal } from "./self-heal.js";
 import { buildSlotStates, applyEarlySlotMemory } from "./slot-machine.js";
-import { shouldUseAI, getAIReply, applyPolicyGuard } from "./ai-reply.js";
-
-// ─── BUILD CONTEXT ──────────────────────────────────────────
+import { generateAnswer } from "./answer-engine.js";
+import { guardReply } from "./guard-engine.js";
 
 function buildContext(body) {
   const message = unwrap(body.message || body.last_input_text || body.last_user_message || "");
   const norm = normalizeText(message);
-
   const fields = {
-    ilgilenilen_urun:    unwrap(body.ilgilenilen_urun),
-    user_product:        unwrap(body.user_product),
-    conversation_stage:  normalizeStage(unwrap(body.conversation_stage)),
-    photo_received:      unwrap(body.photo_received),
-    payment_method:      normalizePayment(unwrap(body.payment_method)),
-    menu_gosterildi:     unwrap(body.menu_gosterildi || body.menu_shown || body.menuShown),
-    ai_reply:            unwrap(body.ai_reply),
-    last_intent:         unwrap(body.last_intent),
-    order_status:        normalizeOrderStatus(unwrap(body.order_status)),
-    back_text_status:    normalizeBackText(unwrap(body.back_text_status)),
-    address_status:      normalizeAddress(unwrap(body.address_status)),
-    support_mode:        unwrap(body.support_mode),
-    support_mode_reason: unwrap(body.support_mode_reason),
-    reply_class:         unwrap(body.reply_class),
-    siparis_alindi:      unwrap(body.siparis_alindi),
-    cancel_reason:       unwrap(body.cancel_reason),
-    context_lock:        unwrap(body.context_lock),
-    letters_received:    unwrap(body.letters_received),
-    phone_received:      unwrap(body.phone_received),
+    ilgilenilen_urun: unwrap(body.ilgilenilen_urun), user_product: unwrap(body.user_product),
+    conversation_stage: normalizeStage(unwrap(body.conversation_stage)),
+    photo_received: unwrap(body.photo_received), payment_method: normalizePayment(unwrap(body.payment_method)),
+    menu_gosterildi: unwrap(body.menu_gosterildi || body.menu_shown || body.menuShown),
+    ai_reply: unwrap(body.ai_reply), last_intent: unwrap(body.last_intent),
+    order_status: normalizeOrderStatus(unwrap(body.order_status)),
+    back_text_status: normalizeBackText(unwrap(body.back_text_status)),
+    address_status: normalizeAddress(unwrap(body.address_status)),
+    support_mode: unwrap(body.support_mode), support_mode_reason: unwrap(body.support_mode_reason),
+    reply_class: unwrap(body.reply_class), siparis_alindi: unwrap(body.siparis_alindi),
+    cancel_reason: unwrap(body.cancel_reason), context_lock: unwrap(body.context_lock),
+    letters_received: unwrap(body.letters_received), phone_received: unwrap(body.phone_received),
   };
-
   const previousProduct = normalizeProduct(fields.ilgilenilen_urun || fields.user_product || "");
   const entryProduct = getEntryProduct(body);
   const explicitProduct = detectProductFromText(norm);
   let product = previousProduct || entryProduct || explicitProduct || "";
-
   if (previousProduct && explicitProduct && previousProduct !== explicitProduct) {
     const keep = !hasAny(norm, EXPLICIT_SWITCH_PHRASES) && (
-      hasAny(norm, KW.price) || hasAny(norm, KW.shipping_price) || hasAny(norm, KW.shipping) ||
-      hasAny(norm, KW.trust) || hasAny(norm, KW.photo_question) || hasAny(norm, KW.back_text_info) ||
-      hasAny(norm, KW.back_photo_info) || hasAny(norm, KW.back_photo_price) || hasAny(norm, KW.chain) ||
-      hasAny(norm, KW.payment) || hasAny(norm, KW.material_question)
+      hasAny(norm, KW.price) || hasAny(norm, KW.shipping) || hasAny(norm, KW.trust) ||
+      hasAny(norm, KW.chain) || hasAny(norm, KW.payment) || hasAny(norm, KW.material_question)
     );
     product = keep ? previousProduct : explicitProduct;
   }
-  if (!previousProduct && entryProduct && explicitProduct && entryProduct !== explicitProduct) {
-    product = hasAny(norm, EXPLICIT_SWITCH_PHRASES) ? explicitProduct : entryProduct;
-  }
-
-  const stage = fields.conversation_stage;
-  const isSystemMessage = hasAny(norm, ["the message could not be displayed","api restrictions","could not be displayed","dosya eki gonderdi","bir dosya eki gönderdi","started an audio call","missed an audio call","started a video chat","reacted to your message"]);
-  
-  const extracted = isSystemMessage ? {
-    phone: null, hasAddress: false, hasName: false, payment: null, photoLink: false, letters: null,
-  } : {
-    phone: extractPhone(message),
-    hasAddress: looksLikeAddress(norm, message, stage),
-    hasName: looksLikeName(message, norm, stage),
-    payment: parsePaymentFromMessage(norm, ""),
-    photoLink: looksLikePhotoUrl(message),
-    letters: extractLetters(message, norm, product, stage),
-  };
-
-  const intent = detectIntent({ message, norm, product, stage, extracted, fields });
+  const extracted = extractEntities(message, norm, product, fields.conversation_stage);
+  const intent = detectIntent({ message, norm, product, stage: fields.conversation_stage, extracted, fields });
   return { message, norm, product, previousProduct, intent, fields, extracted };
 }
 
-// ─── BUILD OUTPUT ───────────────────────────────────────────
-
-function buildOutput(ctx, reply, committedState, meta) {
+function buildOutput(ctx, reply, committed, meta) {
   const replyText = cleanReply(reply?.text || "") || TEXT.FALLBACK;
-  const menuShown = replyText === TEXT.MAIN_MENU || replyText.includes("Hangi model ile ilgileniyorsunuz?");
-
-  const s = committedState;
-  let conversationStage = s._nextStage || s.conversation_stage || ctx.fields.conversation_stage || "";
+  const s = committed;
+  let stage = s._nextStage || s.conversation_stage || ctx.fields.conversation_stage || "";
   let orderStatus = s.order_status || "";
   let siparisAlindi = s.siparis_alindi || "";
-  let menuGosterildi = s.menu_gosterildi || ctx.fields.menu_gosterildi || "";
+  let menuShown = s.menu_gosterildi || ctx.fields.menu_gosterildi || "";
   let supportMode = s.support_mode || "";
   let supportReason = s.support_mode_reason || "";
   let replyClass = reply?.reply_class || s.reply_class || "";
-
-  if (!replyText || replyText === TEXT.FALLBACK) {
-    supportMode = "1";
-    supportReason = reply?.support_mode_reason || SUPPORT_REASON.FALLBACK;
-    replyClass = replyClass || REPLY_CLASS.FALLBACK;
-  }
+  if (!replyText || replyText === TEXT.FALLBACK) { supportMode = "1"; supportReason = SUPPORT_REASON.FALLBACK; replyClass = REPLY_CLASS.FALLBACK; }
   if (reply?.support_mode_reason) { supportReason = reply.support_mode_reason; supportMode = "1"; }
-
-  if (menuShown) {
-    menuGosterildi = "evet";
-    if (!s.product) conversationStage = STAGE.WAITING_PRODUCT;
-  }
-
-  if (s._nextStage === STAGE.ORDER_COMPLETED) {
-    orderStatus = "completed"; siparisAlindi = "1";
-    replyClass = replyClass || REPLY_CLASS.ORDER_COMPLETE;
-  } else if (replyClass === REPLY_CLASS.ORDER_COMPLETE) {
-    // Bot sipariş tamamlama cevabı verdi — eksik slot olsa bile state'i kapat
-    conversationStage = STAGE.ORDER_COMPLETED;
-    orderStatus = "completed"; siparisAlindi = "1";
-  } else if (!orderStatus && s.product) {
-    orderStatus = "started";
-  }
-
-  // ═══ GLOBAL COMPLETED GUARD ═══
-  // order_status=completed ise stage ASLA geriye gitmez
-  // waiting_photo, waiting_payment, waiting_address, waiting_letters → YASAK
-  if (orderStatus === "completed" || siparisAlindi === "1") {
-    const BACKWARD_STAGES = [STAGE.WAITING_PHOTO, STAGE.WAITING_PAYMENT, STAGE.WAITING_ADDRESS, STAGE.WAITING_LETTERS, STAGE.WAITING_BACK_TEXT, STAGE.WAITING_PRODUCT];
-    if (BACKWARD_STAGES.includes(conversationStage)) {
-      conversationStage = STAGE.ORDER_COMPLETED;
-    }
-  }
-
-  if (s._nextStage === STAGE.HUMAN_SUPPORT || orderStatus === "cancel_requested") {
-    conversationStage = STAGE.HUMAN_SUPPORT; orderStatus = "cancel_requested";
-    supportMode = "1"; supportReason = supportReason || SUPPORT_REASON.CANCEL;
-    siparisAlindi = ""; replyClass = replyClass || REPLY_CLASS.FALLBACK;
-  }
-
+  if (replyText.includes("Hangi model ile ilgileniyorsunuz")) { menuShown = "evet"; if (!s.product) stage = STAGE.WAITING_PRODUCT; }
+  if (s._nextStage === STAGE.ORDER_COMPLETED) { orderStatus = "completed"; siparisAlindi = "1"; }
+  else if (!orderStatus && s.product) orderStatus = "started";
+  if ((orderStatus === "completed" || siparisAlindi === "1") && [STAGE.WAITING_PHOTO,STAGE.WAITING_PAYMENT,STAGE.WAITING_ADDRESS,STAGE.WAITING_LETTERS,STAGE.WAITING_PRODUCT].includes(stage)) stage = STAGE.ORDER_COMPLETED;
+  if (s._nextStage === STAGE.HUMAN_SUPPORT || orderStatus === "cancel_requested") { stage = STAGE.HUMAN_SUPPORT; orderStatus = "cancel_requested"; supportMode = "1"; }
   return {
-    success: true, ai_reply: replyText,
-    ilgilenilen_urun: s.product, user_product: s.product,
-    last_intent: ctx.intent, conversation_stage: conversationStage,
-    photo_received: s.photo_received || "", payment_method: s.payment_method || "",
-    menu_gosterildi: menuGosterildi, order_status: orderStatus,
+    success: true, ai_reply: replyText, ilgilenilen_urun: s.product, user_product: s.product,
+    last_intent: ctx.intent, conversation_stage: stage, photo_received: s.photo_received || "",
+    payment_method: s.payment_method || "", menu_gosterildi: menuShown, order_status: orderStatus,
     back_text_status: s.back_text_status || "", address_status: s.address_status || "",
-    support_mode: supportMode, support_mode_reason: supportReason,
-    reply_class: replyClass, siparis_alindi: siparisAlindi,
-    cancel_reason: s.cancel_reason || "", context_lock: s.context_lock || "",
+    support_mode: supportMode, support_mode_reason: supportReason, reply_class: replyClass,
+    siparis_alindi: siparisAlindi, cancel_reason: s.cancel_reason || "", context_lock: s.context_lock || "",
     letters_received: s.letters_received || "", phone_received: s.phone_received || "",
-    _meta: meta || {},
+    _meta: meta, _extracted: {
+      phone: ctx.extracted.phone || "",
+      photoUrl: ctx.extracted.photoLink ? (ctx.message.match(/https?:\/\/\S+/)?.[0] || "") : "",
+      letters: ctx.extracted.letters || "", name: ctx.extracted.hasName ? ctx.message : "",
+      addressText: ctx.extracted.hasAddress ? ctx.message : "",
+      backText: (ctx.intent === "back_text" && ctx.fields.conversation_stage === "waiting_payment") ? ctx.message : "",
+    },
   };
 }
 
-// ─── ANTI-REPEAT GUARD ─────────────────────────────────────
-
-function antiRepeatGuard(reply, derivedState, norm, intent) {
-  if (!reply || !reply.text) return { reply, fired: false };
-
-  if (/yanlis|yanlış|degistir|değiştir|duzelt|düzelt|degil|değil.*olsun|iptal.*ed|vazgec/.test((norm || "").toLowerCase())) {
-    return { reply, fired: false };
-  }
-
-  const INFO_INTENTS = new Set(["back_text_info","back_photo_info","back_photo_price","back_text_examples","photo_question","trust","material_question","shipping","shipping_price","chain_question","location","payment_info_question","photo_suitability_question"]);
-  // Flow progress intents: foto/ödeme/adres ALINDI cevapları "tekrar sorma" değil
-  const FLOW_INTENTS = new Set(["photo","back_photo_upload","payment","address","phone","name_only","letters","back_text","back_text_skip"]);
-  if (INFO_INTENTS.has(intent) || FLOW_INTENTS.has(intent)) return { reply, fired: false };
-
-  const filled = getFilledSlots(derivedState);
-  const rl = reply.text.toLowerCase().replace(/ı/g,"i").replace(/ş/g,"s").replace(/ç/g,"c").replace(/ö/g,"o").replace(/ü/g,"u").replace(/ğ/g,"g");
-  
-  let violation = null;
-  if (filled.photo && /fotograf.*gonder|fotograf.*ilet|resim.*gonder|fotografi.*buradan/i.test(rl) && !rl.includes("sorun olursa") && !rl.includes("aldik")) violation = "photo_already_received";
-  if (filled.back_text && /arka yuz.*yazi.*ister|arka yuze.*yazi|ne yazilmasini/i.test(rl) && !rl.includes("not aldim")) violation = "back_text_already_set";
-  if (filled.payment && /eft.*kapida.*tercih|odeme yontemi|hangisini tercih/i.test(rl)) violation = "payment_already_chosen";
-  if (filled.phone && /telefon numara.*ilet|cep telefon.*ilet|telefon.*paylasabilir/i.test(rl) && !rl.includes("aldim")) violation = "phone_already_received";
-  if (filled.address_full && /acik adres.*ilet|adresinizi.*ilet|adresinizi.*yazabilir/i.test(rl) && !rl.includes("aldim")) violation = "address_already_received";
-  
-  if (!violation) return { reply, fired: false };
-
-  const missing = getMissingSlots(derivedState);
-  let fixedReply;
-  if (missing.length === 0) {
-    fixedReply = derivedState.order_status === "completed"
-      ? { text: "Tabi efendim 😊", reply_class: REPLY_CLASS.FIXED_INFO, support_mode_reason: "" }
-      : { text: "Bilgileriniz alınmıştır efendim 😊 Ekibimiz en kısa sürede ürününüzü hazırlayacaktır.", reply_class: REPLY_CLASS.FLOW_PROGRESS, support_mode_reason: "" };
-  } else if (missing.length === 1) {
-    const m = { photo:"Fotoğrafınızı buradan iletebilirsiniz efendim 😊", payment:"Ödeme yönteminiz EFT / Havale mi, kapıda ödeme mi olacak efendim? 😊", phone:"Cep telefonu numaranızı iletebilir misiniz efendim? 📱", address:"Açık adresinizi iletebilir misiniz efendim? 📍", letters:"Yapılmasını istediğiniz harfleri yazabilirsiniz efendim 😊", product:"Hangi model ile ilgileniyorsunuz efendim? 😊" };
-    fixedReply = { text: m[missing[0]] || reply.text, reply_class: REPLY_CLASS.FLOW_PROGRESS, support_mode_reason: "" };
-  } else {
-    const parts = [];
-    if (missing.includes("phone")) parts.push("📱 Cep telefonu");
-    if (missing.includes("address")) parts.push("📍 Açık adres");
-    if (missing.includes("payment")) parts.push("💳 Ödeme yöntemi");
-    if (missing.includes("photo")) parts.push("📷 Fotoğraf");
-    fixedReply = parts.length > 0
-      ? { text: "Tabi efendim 😊 Şu bilgileriniz eksik:\n\n" + parts.join("\n"), reply_class: REPLY_CLASS.FLOW_PROGRESS, support_mode_reason: "" }
-      : reply;
-  }
-  return { reply: fixedReply, fired: true, violation, missing };
-}
-
-// ─── APPEND NEXT ACTION ─────────────────────────────────────
-// AI'nin next_action önerisine göre reply'e ek yap (policy engine kararı)
-
-function appendNextAction(replyText, nextAction, derivedState, missingSlots) {
-  // AI prompt zaten sonraki adım yönlendirmesini ekliyor.
-  // Burada tekrar eklemeye gerek yok — çift yönlendirme olur.
-  return replyText;
-}
-
-// ─── MAIN PROCESSOR ─────────────────────────────────────────
-
 export async function processChat(body = {}) {
   try {
-    // ═══ 1. CONTEXT ═══
     const ctx = buildContext(body);
-    const meta = {};
+    const meta = { replySource: "none" };
+    console.log("[V8]", JSON.stringify({ intent: ctx.intent, product: ctx.product, stage: ctx.fields.conversation_stage, msg: ctx.message.substring(0, 40) }));
 
-    // ═══ 1.5 STATE CONSISTENCY ═══
+    // State consistency
     const f = ctx.fields;
-    if (f.conversation_stage === "waiting_photo" && f.photo_received === "1") {
-      ctx.fields.conversation_stage = f.back_text_status ? "waiting_payment" : "waiting_payment";
-    }
-    if (f.conversation_stage === "waiting_payment" && f.payment_method && f.payment_method !== "") {
-      if (f.address_status !== "received") ctx.fields.conversation_stage = "waiting_address";
-      else ctx.fields.conversation_stage = "order_completed";
-    }
-    if (f.conversation_stage === "waiting_address" && f.address_status === "received" && f.phone_received === "1") {
-      ctx.fields.conversation_stage = "order_completed";
-    }
-    if (f.conversation_stage === "waiting_letters" && f.letters_received === "1") {
-      ctx.fields.conversation_stage = f.payment_method ? "waiting_address" : "waiting_payment";
-    }
+    if (f.conversation_stage === "waiting_photo" && f.photo_received === "1") f.conversation_stage = "waiting_payment";
+    if (f.conversation_stage === "waiting_payment" && f.payment_method) f.conversation_stage = f.address_status !== "received" ? "waiting_address" : "order_completed";
+    if (f.conversation_stage === "waiting_address" && f.address_status === "received" && f.phone_received === "1") f.conversation_stage = "order_completed";
+    if (f.conversation_stage === "waiting_letters" && f.letters_received === "1") f.conversation_stage = f.payment_method ? "waiting_address" : "waiting_payment";
 
-    // ═══ 2. SIGNALS ═══
-    const signals = extractSignals(ctx);
-    ctx.signals = signals;
-
-    if (!signals.system_message) {
-      if (signals.slot_updates.payment_method && !ctx.extracted.payment) {
-        ctx.extracted.payment = signals.slot_updates.payment_method;
-      }
-      if (signals.slot_updates.back_text && !ctx.extracted.backText) {
-        ctx.extracted.backText = signals.slot_updates.back_text;
-      }
-    }
-
-    // ═══ 3. TOPIC MEMORY ═══
-    const activeTopic = resolveActiveTopic(ctx, signals);
-    if (activeTopic) {
-      ctx._activeTopic = activeTopic;
-      const overriddenIntent = applyTopicOverride(ctx.intent, activeTopic, ctx.norm);
-      if (overriddenIntent !== ctx.intent) {
-        ctx._originalIntent = ctx.intent;
-        ctx.intent = overriddenIntent;
-        meta._topicOverride = activeTopic;
-      }
-    }
-
-    // ═══ 4. DERIVE STATE ═══
+    // State derive
     const initial = readInitialState(ctx.fields, ctx.product);
     const derived = deriveState(initial, ctx);
-
-    const slotStates = buildSlotStates(ctx.fields, signals, ctx.extracted, ctx.product);
-    const earlySlots = applyEarlySlotMemory(slotStates, ctx.fields.conversation_stage, signals, ctx.extracted);
-    if (earlySlots.payment_method_early && !derived.derivedState.payment_method) {
-      derived.derivedState.payment_method = earlySlots.payment_method_early;
-      derived.proposedPatch.payment_method = earlySlots.payment_method_early;
-    }
-    if (earlySlots.phone_early && derived.derivedState.phone_received !== "1") {
-      derived.derivedState.phone_received = "1";
-      derived.proposedPatch.phone_received = "1";
-    }
-
-    // ═══ 5. SELF-HEAL ═══
+    const slotStates = buildSlotStates(ctx.fields, { slot_updates: {} }, ctx.extracted, ctx.product);
+    const earlySlots = applyEarlySlotMemory(slotStates, ctx.fields.conversation_stage, { slot_updates: {} }, ctx.extracted);
+    if (earlySlots.payment_method_early && !derived.derivedState.payment_method) { derived.derivedState.payment_method = earlySlots.payment_method_early; derived.proposedPatch.payment_method = earlySlots.payment_method_early; }
+    if (earlySlots.phone_early && derived.derivedState.phone_received !== "1") { derived.derivedState.phone_received = "1"; derived.proposedPatch.phone_received = "1"; }
     const filledSlots = getFilledSlots(derived.derivedState);
-    const currentMissing = getMissingSlots(derived.derivedState);
-    const healResult = selfHeal(ctx, signals, filledSlots, currentMissing, ctx.fields.conversation_stage);
-    if (healResult && healResult.statePatches) {
-      Object.assign(derived.derivedState, healResult.statePatches);
-      Object.assign(derived.proposedPatch, healResult.statePatches);
+    const missingSlots = getMissingSlots(derived.derivedState);
+    ctx.filledSlots = filledSlots;
+    ctx.missingSlots = missingSlots;
+
+    // Answer (answer-engine handles ALL response decisions)
+    let reply = await generateAnswer(ctx);
+    meta.replySource = reply.source || "none";
+
+    // Fallback
+    if (!reply.text) {
+      const st = ctx.fields.conversation_stage;
+      if (st === STAGE.WAITING_PHOTO) reply.text = "Fotoğrafınızı buradan iletebilirsiniz efendim 😊";
+      else if (st === STAGE.WAITING_PAYMENT) reply.text = "EFT / Havale veya kapıda ödeme seçeneklerimiz mevcuttur efendim 😊";
+      else if (st === STAGE.WAITING_ADDRESS) { reply.text = "Ad soyad, cep telefonu ve açık adresinizi iletebilir misiniz efendim? 😊"; }
+      else if (st === STAGE.WAITING_LETTERS) reply.text = "Yapılmasını istediğiniz harfleri yazabilirsiniz efendim 😊";
+      else reply.text = TEXT.FALLBACK;
+      meta.replySource = "fallback";
     }
 
-    // ═══ 6. ARBITRATION (deterministic rule chain) ═══
-    const { reply: selectedReply, meta: arbMeta } = arbitrate(ctx, derived);
-    Object.assign(meta, arbMeta);
+    // Guard
+    reply = guardReply(reply, ctx, filledSlots, missingSlots);
 
-    // ═══ 7. REPLY SELECTION — AI-FIRST HYBRID ═══
-    let finalReply = selectedReply;
-
-    // 7a. Self-heal override (always deterministic)
-    if (healResult && healResult.text) {
-      finalReply = healResult;
-      meta.signalOverride = healResult._policy || "self_heal";
-    }
-
-    // 7b. Policy engine (multi-signal, frustration keyword, undecided, capability, complaint)
-    if (!meta.signalOverride) {
-      const policyResult = policyDecision(ctx, signals, derived.derivedState, currentMissing);
-      if (policyResult && policyResult.text) {
-        finalReply = policyResult;
-        meta.signalOverride = policyResult._policy || "policy_engine";
-      }
-    }
-
-    // 7c. WhatsApp / photo confirmation overrides
-    if (!meta.signalOverride && (signals.complaints.includes("sent_on_whatsapp") || signals.complaints.includes("sent_photo_already"))) {
-      if (!ctx.extracted.photoLink) {
-        finalReply = { text: "WhatsApp üzerinden ilettiyseniz kontrol edip dönüş sağlayalım efendim 😊 Dilerseniz buradan da iletebilirsiniz.", reply_class: REPLY_CLASS.FLOW_PROGRESS, support_mode_reason: "" };
-        meta.signalOverride = "whatsapp_photo_claim";
-      }
-    }
-    if (!meta.signalOverride && signals.confirmations.includes("photo_received_check")) {
-      finalReply = filledSlots.photo
-        ? { text: "Evet efendim, fotoğrafınız ulaştı 😊 Ekibimiz kontrol edip dönüş sağlayacaktır.", reply_class: REPLY_CLASS.FIXED_INFO, support_mode_reason: "" }
-        : { text: "Fotoğrafınızı henüz alamadık efendim 😊 Buradan iletebilirsiniz.", reply_class: REPLY_CLASS.FLOW_PROGRESS, support_mode_reason: "" };
-      meta.signalOverride = "photo_received_check";
-    }
-
-    // ═══ 8. AI-FIRST REPLY — slot commit dışında her şeyi AI'ye sor ═══
-    const aiEnabled = !body._skipAI && !body._test;
-    
-    // Slot commit ve hard-deterministic intent'ler AI'ye GİTMEZ
-    const isSlotCommit = !!(
-      signals.system_message ||
-      ctx.intent === "cancel_order" ||
-      signals.slot_updates?.phone ||
-      signals.slot_updates?.address ||
-      signals.slot_updates?.photo ||
-      signals.slot_updates?.letters ||
-      (ctx.intent === "photo" && signals.slot_updates?.photo) ||
-      ctx.intent === "payment_confirmation" ||
-      ctx.intent === "name_only" ||
-      ctx.intent === "phone" ||
-      ctx.intent === "address" ||
-      ctx.intent === "photo_reference" ||
-      ctx.intent === "photo_change_request" ||
-      (ctx.intent === "order_start" && arbMeta?.selectedRule === "product-entry") ||
-      (signals.slot_updates?.payment_method && /seceyim|seçeyim|olsun|istiyorum|sectim|seçtim|seciyorum|seçiyorum|yapacagim|yapacağım|yapicam|yapıcam/.test(ctx.norm || ""))
-    );
-    
-    // Fiyat ve pazarlık da deterministic (AI fiyat kırabilir)
-    const isPriceIntent = !!(
-      ctx.intent === "price" ||
-      ctx.intent === "shipping_price" ||
-      ctx.intent === "ack" ||
-      (/\d{3}/.test(ctx.message || "") && /tl|lira|olur mu|yapar|indirim|anlasalim|anlaşalım/i.test(ctx.norm || ""))
-    );
-
-    // ═══ MIXED COMMIT + COMPLAINT DETECTION ═══
-    // Mesajda hem slot commit hem şikayet/düzeltme varsa:
-    // state deterministic kalır, ama cevabı AI kursun (daha empatik)
-    const hasComplaintTone = !!(
-      signals.complaints?.length > 0 ||
-      /zaten|hala|hâlâ|tekrar|yine|neden|niye|gormediniz|görmediniz|istemissiniz|istemişsiniz|sordunuz|atmistim|atmıştım|gonderdim|gönderdim.*ama|yazdim.*ama|yazdım.*ama/i.test(ctx.norm || "")
-    );
-    const hasCommitAndComplaint = isSlotCommit && hasComplaintTone && !signals.system_message && ctx.intent !== "cancel_order";
-
-    // AI'ye gidecek mi?
-    // - Normal: slot commit değilse ve fiyat değilse → AI
-    // - Mixed: slot commit + complaint → state deterministic KALIR, ama cevabı AI kursun
-    const shouldCallAI = aiEnabled && (!isSlotCommit || hasCommitAndComplaint) && !isPriceIntent && !meta.signalOverride;
-    
-    meta._aiEnabled = aiEnabled;
-    meta._aiNeeded = shouldCallAI;
-    meta._mixedCommitComplaint = hasCommitAndComplaint;
-    console.log("[AI_ROUTE]", shouldCallAI ? (hasCommitAndComplaint ? "→AI_MIXED" : "→AI") : "→DET", ctx.intent, ctx.message.substring(0, 30));
-
-    if (shouldCallAI) {
-      // Mixed durumda AI promptuna ek bilgi ver
-      if (hasCommitAndComplaint) {
-        ctx._commitInfo = {
-          committed_slots: Object.keys(signals.slot_updates || {}),
-          complaint_detected: true,
-          instruction: "Slot başarıyla kaydedildi, tekrar isteme. Şikayeti kısa ve empatik karşıla, sonra bir sonraki eksik adıma yönlendir."
-        };
-      }
-      
-      console.log("[AI_CALL]", JSON.stringify({ message: ctx.message.substring(0, 60), stage: ctx.fields.conversation_stage, intent: ctx.intent, mixed: hasCommitAndComplaint }));
-      try {
-        const aiPromise = getAIReply(ctx, signals, filledSlots, currentMissing);
-        const timeoutPromise = new Promise((_, rej) => setTimeout(() => rej(new Error("ai_timeout")), 25000));
-        const aiResult = await Promise.race([aiPromise, timeoutPromise]);
-
-        if (aiResult && aiResult.reply && aiResult.confidence >= 0.6) {
-          const guarded = applyPolicyGuard(aiResult, filledSlots, currentMissing);
-          if (guarded) {
-            let aiReplyText = guarded.reply;
-            aiReplyText = appendNextAction(aiReplyText, guarded.next_action, derived.derivedState, currentMissing);
-            
-            finalReply = {
-              text: aiReplyText,
-              reply_class: REPLY_CLASS.FLOW_PROGRESS,
-              support_mode_reason: guarded.next_action === "handoff" ? SUPPORT_REASON.OPERATIONAL : "",
-            };
-            if (guarded.next_action === "handoff") {
-              finalReply.reply_class = REPLY_CLASS.OPERATIONAL_REQUIRED;
-            }
-            meta.replySource = hasCommitAndComplaint ? "ai_mixed_commit" : "ai_reply";
-            meta._aiReply = guarded;
-            if (guarded._tokenUsage) meta._tokenUsage = guarded._tokenUsage;
-            console.log("[AI_USED]", JSON.stringify({ label: guarded.intent_label, confidence: guarded.confidence, tokens: guarded._tokenUsage?.total_tokens || 0, mixed: hasCommitAndComplaint }));
-          }
-        } else if (aiResult) {
-          console.log("[AI_LOW_CONF]", JSON.stringify({ confidence: aiResult.confidence, label: aiResult.intent_label }));
-        } else {
-          console.log("[AI_NULL] AI returned null, falling back to deterministic");
-        }
-      } catch (e) {
-        meta._aiReplyError = e?.message || "unknown";
-        console.log("[AI_ERROR]", e?.message || "unknown");
-      }
-    } else if (!aiEnabled) {
-      console.log("[AI_DISABLED]", JSON.stringify({ _skipAI: !!body._skipAI }));
-    } else {
-      console.log("[AI_SKIP_REASON]", JSON.stringify({ isSlotCommit, isPriceIntent, signalOverride: !!meta.signalOverride, intent: ctx.intent }));
-    }
-
-    // ═══ 9. FINAL FALLBACK ═══
-    if (!finalReply || !finalReply.text) {
-      try {
-        const modelText = await callModelFallback(ctx);
-        finalReply = { text: cleanReply(modelText) || TEXT.FALLBACK, reply_class: REPLY_CLASS.FALLBACK, support_mode_reason: SUPPORT_REASON.NONE };
-        meta.replySource = "model_fallback";
-      } catch {
-        finalReply = { text: TEXT.FALLBACK, reply_class: REPLY_CLASS.FALLBACK, support_mode_reason: SUPPORT_REASON.FALLBACK };
-        meta.replySource = "model_error";
-      }
-    }
-
-    // ═══ 10. ANTI-REPEAT GUARD ═══
-    const guardResult = antiRepeatGuard(finalReply, derived.derivedState, ctx.norm, ctx.intent);
-    if (guardResult.fired) {
-      finalReply = guardResult.reply;
-      meta.antiRepeatFired = guardResult.violation;
-      meta.antiRepeatMissing = guardResult.missing;
-    }
-
-    // ═══ 11. COMMIT & OUTPUT ═══
-    const committed = commitPatch(derived, finalReply);
+    // Output
+    const committed = commitPatch(derived, reply);
     committed._nextStage = derived.nextStage;
-
-    const output = buildOutput(ctx, finalReply, committed, meta);
-
-    output._debug = {
-      state_before: ctx.fields.conversation_stage || "(none)",
-      state_after: output.conversation_stage || "(none)",
-      detected_intent: ctx.intent,
-      original_intent: ctx._originalIntent || null,
-      reply_source: meta.replySource || "deterministic",
-      selected_rule: meta.selectedRule || "none",
-      product: output.ilgilenilen_urun,
-      signal_override: meta.signalOverride || null,
-      topic_override: meta._topicOverride || null,
-      anti_repeat_fired: meta.antiRepeatFired || null,
-      ai_reply_used: meta.replySource === "ai_reply",
-      ai_reply_data: meta._aiReply || null,
-      ai_reply_error: meta._aiReplyError || null,
-      signals_summary: {
-        slots: Object.keys(signals.slot_updates || {}),
-        questions: signals.questions || [],
-        corrections: signals.corrections || [],
-        complaints: signals.complaints || [],
-        confirmations: signals.confirmations || [],
-        ack: signals.ack || false,
-        undecided: signals.undecided || false,
-        topic: signals.topic_hint || null,
-      },
-    };
-
-    output._extracted = {
-      phone: ctx.extracted.phone || "",
-      photoUrl: ctx.extracted.photoLink ? ctx.message.match(/https?:\/\/\S+/)?.[0] || "" : "",
-      letters: ctx.extracted.letters || "",
-      name: ctx.extracted.hasName ? ctx.message : "",
-      addressText: ctx.extracted.hasAddress ? ctx.message : "",
-      backText: (ctx.intent === "back_text" && ctx.fields.conversation_stage === "waiting_payment") ? ctx.message : "",
-    };
-
-    output._tokenUsage = meta._tokenUsage || null;
-    output._aiStatus = {
-      enabled: meta._aiEnabled || false,
-      needed: meta._aiNeeded || false,
-      used: meta.replySource === "ai_reply",
-      error: meta._aiReplyError || null,
-      tokens: meta._tokenUsage?.total_tokens || 0,
-    };
-
+    const output = buildOutput(ctx, reply, committed, meta);
+    output._debug = { intent: ctx.intent, source: meta.replySource, product: ctx.product };
     return output;
-
   } catch (error) {
-    console.error("engine error:", error?.message || error);
-    return {
-      success: true, ai_reply: TEXT.FALLBACK,
-      ilgilenilen_urun: "", user_product: "",
-      last_intent: "error", conversation_stage: "",
-      photo_received: "", payment_method: "",
-      menu_gosterildi: "", order_status: "",
-      back_text_status: "", address_status: "",
-      support_mode: "1", support_mode_reason: SUPPORT_REASON.FALLBACK,
-      reply_class: REPLY_CLASS.FALLBACK,
-      siparis_alindi: "", cancel_reason: "",
-      context_lock: "", letters_received: "",
-      phone_received: "", _meta: {},
-    };
+    console.error("[V8_ERROR]", error?.message || error);
+    return { success: true, ai_reply: TEXT.FALLBACK, ilgilenilen_urun: "", user_product: "", last_intent: "error", conversation_stage: "", photo_received: "", payment_method: "", menu_gosterildi: "", order_status: "", back_text_status: "", address_status: "", support_mode: "1", support_mode_reason: SUPPORT_REASON.FALLBACK, reply_class: REPLY_CLASS.FALLBACK, siparis_alindi: "", cancel_reason: "", context_lock: "", letters_received: "", phone_received: "", _meta: {} };
   }
 }
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(200).json({ success: false, message: "Only POST." });
-  const body = req.body || {};
-  const result = await processChat(body);
-  
-  // Google Sheets loglama — fire and forget (response'u bekletmez)
-  try {
-    const { logConversationRow } = await import("../lib/sheetsLogger.js");
-    logConversationRow({ body, result }).catch(e => console.error("[SHEETS_LOG_ERROR]", e?.message || e));
-  } catch (e) {
-    console.error("[SHEETS_IMPORT_ERROR]", e?.message || e);
-  }
-  
+  const result = await processChat(req.body || {});
+  try { const { logConversationRow } = await import("../lib/sheetsLogger.js"); logConversationRow({ body: req.body, result }).catch(() => {}); } catch {}
   return res.status(200).json(result);
 }

@@ -509,6 +509,11 @@ export const KW = {
     "tekrar siparis", "tekrar sipariş",
     "yeni siparis", "yeni sipariş",
     "bir siparis daha", "bir sipariş daha",
+    "arkadaslar da alacak", "arkadaşlar da alacak",
+    "bir kolye daha", "ayni adreste bir tane", "aynı adreste bir tane",
+    "bir tane daha yaptiracagim", "bir tane daha yaptıracağım",
+    "tekrar siparis verecegim", "tekrar sipariş vereceğim",
+    "ek siparis", "ek sipariş",
   ],
 
   example_request: [
@@ -603,6 +608,8 @@ export const KW = {
     "havuzda takilir", "havuzda takılır",
     "parfum etkiler", "parfüm etkiler", "parfum zarar", "parfüm zarar",
     "ne tur metal", "ne tür metal", "madeni ne", "madeni nedir",
+    "metal mi", "metalmi", "hangi metal", "metal cinsi", "metalin cinsi",
+    "metal",
     "neden yapiliyor", "neden yapılıyor", "neyle yapiliyor", "neyle yapılıyor",
   ],
 

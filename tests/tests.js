@@ -1741,8 +1741,8 @@ const tests = [
 
   // FIX #16: ERKEK ÜRÜN
   { id: "NF41", name: "erkek için → uygun", input: body("erkek için uygun mu", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "erkek" },
-  { id: "NF42", name: "erkek → gümüş", input: body("erkek için olacak", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "gumus" },
-  { id: "NF43", name: "erkek zincir → 50 cm", input: body("erkek için zincir boyu ne kadar", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "50" },
+  { id: "NF42", name: "erkek → uygun", input: body("erkek için olacak", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "erkek" },
+  { id: "NF43", name: "erkek zincir → 60 cm", input: body("erkek için zincir boyu ne kadar", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "60" },
   { id: "NF44", name: "babam için → erkek", input: body("babam için yaptırmak istiyorum", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "erkek" },
 
   // TRUST 14 AYAR

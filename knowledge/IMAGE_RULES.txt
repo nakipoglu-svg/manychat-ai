@@ -234,8 +234,7 @@ Müşteri sorarsa söylenir
 ZİNCİR
 ────────────────────────────
 
-Lazer: 60 cm
-Erkek: 50 cm
+Lazer: 60 cm (herkese aynı, erkek/kadın farkı yok)
 
 Ataç: 50 cm
 
