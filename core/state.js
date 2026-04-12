@@ -104,6 +104,22 @@ export function deriveState(initialState, ctx) {
   if (intent === INTENT.BACK_TEXT_SKIP) { patch.back_text_status = "skipped"; _confidence.back_text = "high"; _source.back_text = "explicit"; }
   if (intent === INTENT.BACK_PHOTO_UPLOAD) { patch.back_text_status = "received"; _confidence.back_text = "high"; _source.back_text = "photo_upload"; }
 
+  // Heuristic back_text: w_payment + photo var + back_text boş + general intent + kişisel mesaj
+  const currentStageForBT = initialState.conversation_stage;
+  const btEmpty = !initialState.back_text_status && !patch.back_text_status;
+  const photoReady = truthy(initialState.photo_received) || patch.photo_received === "1";
+  const isPersonalMessage = /canim|canım|seviyorum|annem|babam|ailem|seni cok|seni çok|hatira|hatıra|duam|allah|mekanim|mekanım|rahatla|huzurla|ozledim|özledim|sensiz|biricik|yavrum/.test(ctx.norm || "");
+  const msgTrimmed = (ctx.message || "").trim();
+  const msgLength = msgTrimmed.length;
+  const wordCount = msgTrimmed.split(/\s+/).length;
+  // Kısa isim/metin: 1-4 kelime, büyük harf başlangıçlı, soru işareti/ödeme/kargo/fiyat yok
+  const isShortNameLike = wordCount <= 4 && /^[A-ZÇĞİÖŞÜ]/.test(msgTrimmed) && !/\?|odeme|ödeme|kargo|fiyat|kaç|kac|nasil|nasıl|neden|nerede/.test(ctx.norm || "");
+  if (currentStageForBT === "waiting_payment" && photoReady && btEmpty && intent === INTENT.GENERAL) {
+    if (isPersonalMessage || isShortNameLike) {
+      patch.back_text_status = "received"; _confidence.back_text = "medium"; _source.back_text = "heuristic_personal";
+    }
+  }
+
   // ═══ PHONE (with correction mode) ═══
   if (extracted.phone) {
     const existingPhone = initialState.phone_received === "1";

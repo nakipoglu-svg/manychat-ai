@@ -17,10 +17,11 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
   // ═══ 1. FRUSTRATION HARD STOP ═══
   if (hasAny(ctx.norm, [
     "otomatik mesaj istemiyorum","robot musunuz","aptal misiniz","salak misiniz",
-    "dalga geciyor","dalga geçiyor","dava ediyorum","dava ederim",
+    "dalga geciyor","dalga geçiyor","geciyonuz","geçiyonuz","geciyorsunuz","geçiyorsunuz","dava ediyorum","dava ederim",
     "rezalet","rezilsiniz","sacmalik","saçmalık",
     "insan baglayın","insan bağlayın","gercek insan","gerçek insan",
     "canli destek","canlı destek","yetkili baglayın","yetkili bağlayın",
+    "ne bilgisi aldin","ne bilgisi aldın","ne bilgisi aldi","ne bilgisi aldı",
   ])) {
     return {
       text: "Çok özür dileriz efendim, ekibimize iletiyorum, sizi hemen bir insan temsilcimize yönlendiriyoruz 😊",

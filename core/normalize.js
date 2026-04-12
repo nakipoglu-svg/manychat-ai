@@ -310,6 +310,8 @@ export function extractLetters(raw, norm, product, stage) {
     "almak istiyorum","kac tane","kaç tane","hangi harf","hangi harfler",
     "harf mi","fiyat","ne kadar","olur mu","celik","çelik",
     "kararma","paslanmaz","malzeme",
+    "kapida","kapıda","odeme","ödeme","eft","havale","nakit",
+    "kargo","teslimat","adres","telefon",
   ])) return "";
   return raw;
 }
