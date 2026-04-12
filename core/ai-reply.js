@@ -369,7 +369,6 @@ export async function getAIReply(ctx, signals, filledSlots, missingSlots) {
         },
         body: JSON.stringify({
           model,
-          temperature: 0.3,
           max_completion_tokens: 200,
           messages: [
             { role: "developer", content: "Sen bir Türkçe satış asistanısın. SADECE JSON döndür." },
