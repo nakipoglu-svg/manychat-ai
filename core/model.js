@@ -100,6 +100,7 @@ Context:
       signal: controller.signal,
       body: JSON.stringify({
         model,
+        max_completion_tokens: 2000,
         messages: [{ role: "developer", content: systemPrompt }, { role: "user", content: userPrompt }],
       }),
     });

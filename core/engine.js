@@ -344,7 +344,7 @@ export async function processChat(body = {}) {
       console.log("[AI_CALL]", JSON.stringify({ message: ctx.message.substring(0, 60), stage: ctx.fields.conversation_stage, intent: ctx.intent }));
       try {
         const aiPromise = getAIReply(ctx, signals, filledSlots, currentMissing);
-        const timeoutPromise = new Promise((_, rej) => setTimeout(() => rej(new Error("ai_timeout")), 4000));
+        const timeoutPromise = new Promise((_, rej) => setTimeout(() => rej(new Error("ai_timeout")), 25000));
         const aiResult = await Promise.race([aiPromise, timeoutPromise]);
 
         if (aiResult && aiResult.reply && aiResult.confidence >= 0.7) {
