@@ -114,7 +114,7 @@ function getDeterministicInfoResponse(intent, ctx) {
     if (hasAny(norm, ["dahil","dahil mi"])) return "Evet efendim, zincir ve kargo fiyata dahildir 😊";
     if (effectiveProduct === "lazer") return `EFT / Havale ile ${PRICE.LAZER_EFT} TL, kapıda ödeme ile ${PRICE.LAZER_KAPIDA} TL'dir efendim 😊`;
     if (effectiveProduct === "atac") return `EFT / Havale ile ${PRICE.ATAC_EFT} TL, kapıda ödeme ile ${PRICE.ATAC_KAPIDA} TL'dir efendim 😊`;
-    return "Hangi model ile ilgileniyorsunuz efendim? 😊\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye";
+    return `Fiyatlarımız:\n\n📸 Resimli Lazer Kolye: EFT ${PRICE.LAZER_EFT} TL, kapıda ${PRICE.LAZER_KAPIDA} TL\n✨ Harfli Ataç Kolye: EFT ${PRICE.ATAC_EFT} TL, kapıda ${PRICE.ATAC_KAPIDA} TL\n\nHangi model ile ilgileniyorsunuz efendim? 😊`;
   }
 
   // ── MULTI ORDER ──
@@ -153,7 +153,7 @@ function getDeterministicInfoResponse(intent, ctx) {
   // ── CHAIN ──
   if (intent === "chain_question") {
     // Plaka ölçüsü sorusu chain'e düşebilir
-    if (hasAny(norm, ["plaka","olcu","ölçü","yuvarlak","boyut"])) return "Plaka boyutu yaklaşık 3 cm'dir efendim 😊";
+    if (hasAny(norm, ["plaka","olcu","ölçü","yuvarlak","boyut"]) && !hasAny(norm, ["zincir"])) return "Plaka boyutu yaklaşık 3 cm'dir efendim 😊";
     if (p === "lazer") {
       if (hasAny(norm, ["uzat","uzatma","uzatilir","uzatılır","daha uzun"])) return "Lazer kolyede zincir 60 cm standarttır, uzatma bulunmamaktadır efendim 😊";
       if (hasAny(norm, ["kisalt","kısalt","kisa zincir","kısa zincir"])) return "Lazer kolyede zincir 60 cm standarttır, kısaltma yapılmamaktadır efendim 😊";
@@ -231,9 +231,10 @@ function getDeterministicInfoResponse(intent, ctx) {
   if (hasAny(norm, ["arkaya yazdirmak","arkaya yazdırmak","arkaya yazdir","arkaya yazdır","arkasina yazdirmak","arkasına yazdırmak","arkaya da"]) && hasAny(norm, ["istiyorum","yazdirmak","yazdırmak","yazsin","yazsın","olsun","tarih","isim","dogum","doğum"])) {
     return "Tabi efendim, arka yüze yazdırıyoruz 😊 Ücretsizdir.";
   }
-  // Back text undecided — w_payment'ta "bilemedim" → arka yazı önerisi
-  if (hasAny(norm, ["bilemedim","kararsizim","kararsızım","bilemiyorum"]) && stage === STAGE.WAITING_PAYMENT && !ctx.fields?.back_text_status) {
-    return "Arka yüze genelde isim, tarih veya kısa bir not yazılıyor efendim 😊 İstemezseniz boş bırakabiliriz.";
+  // Back text undecided — w_payment'ta "bilemedim" → arka yazı önerisi (skipped dahil)
+  if (hasAny(norm, ["bilemedim","kararsizim","kararsızım","bilemiyorum"]) && stage === STAGE.WAITING_PAYMENT) {
+    if (hasAny(norm, ["yazilir","yazılır","yazilabilir","yazılabilir","ustlu","üstlü","altli","altlı"])) return "Arka yüze genelde isim, tarih veya kısa bir not yazılıyor efendim 😊 İstemezseniz boş bırakabiliriz.";
+    if (!ctx.fields?.back_text_status) return "Arka yüze genelde isim, tarih veya kısa bir not yazılıyor efendim 😊 İstemezseniz boş bırakabiliriz.";
   }
   // w_back_text stage'de bilgi sorusu (genelde/tarih/ne yazılır) → intent general'e düşebilir
   if (stage === STAGE.WAITING_BACK_TEXT || stage === "waiting_back_text") {

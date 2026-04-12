@@ -129,7 +129,7 @@ export function detectIntent(ctx) {
   }
 
   // ═══ 9. PHOTO REFERENCE / CHANGE (order_start'tan ÖNCE — "foto" keyword çakışması) ═══
-  if (hasAny(norm, ["bundan olacak","bundan olsun","son attigim","son attığım","ustteki","üstteki","ustteki olsun","üstteki olsun","bu olsun","bu foto olsun","bu resim olsun","bu model olsun","bu modelden olsun"])) return "photo_reference";
+  if (hasAny(norm, ["bundan olacak","bundan olsun","son attigim","son attığım","ustteki","üstteki","ustteki olsun","üstteki olsun","bu olsun","bu foto olsun","bu resim olsun","bu model olsun","bu modelden olsun","bu fotograf olacak","bu fotoğraf olacak","bu foto olacak","bu resim olacak"])) return "photo_reference";
   if (hasAny(norm, ["baska resim","başka resim","farkli foto","farklı foto","fotografi degistir","fotoğrafı değiştir","resim degistir","resim değiştir","baska foto","başka foto","degistireyim","değiştireyim","baska resim bakayim","başka resim bakayım","farkli foto atayim","farklı foto atayım","bu fotograf degil","bu fotoğraf değil","bu foto degil","bu foto değil","yanlis foto","yanlış foto","yanlis resim","yanlış resim","o fotograf degil","o fotoğraf değil"])) return "photo_change_request";
 
   // ═══ 10. PRODUCT FLOW ═══

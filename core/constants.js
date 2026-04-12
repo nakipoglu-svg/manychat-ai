@@ -292,6 +292,7 @@ export const KW = {
     "zincir degisir", "zincir değişir",
     "plaka boyut", "plaka olcu", "plaka ölçü", "plakanin olcu", "plakanın ölçü",
     "yuvarlak plaka", "yuvarlak bolum", "yuvarlak bölüm",
+    "zincir ne uzunluk", "zinciri ile beraber", "zincirle beraber", "zincir beraber",
     "cerceve boyut", "çerçeve boyut", "madalyon boyut",
     "olcusu nedir", "ölçüsü nedir", "olcusu ne", "ölçüsü ne",
     "zincir kisalt", "zincir kısalt", "kisaltma", "kısaltma", "kisaltilabilir", "kısaltılabilir", "kisaltabilir", "kısaltabilir",
