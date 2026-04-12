@@ -62,6 +62,11 @@ function buildOutput(ctx, reply, committed, meta) {
   let supportMode = s.support_mode || "";
   let supportReason = s.support_mode_reason || "";
   let replyClass = reply?.reply_class || s.reply_class || "";
+  // support_mode temizleme: reply operatör/fallback değilse ve stage human_support değilse temizle
+  if (supportMode === "1" && !reply?.support_mode_reason && stage !== STAGE.HUMAN_SUPPORT && replyText && replyText !== TEXT.FALLBACK) {
+    supportMode = "";
+    supportReason = "";
+  }
   if (!replyText || replyText === TEXT.FALLBACK) { supportMode = "1"; supportReason = SUPPORT_REASON.FALLBACK; replyClass = REPLY_CLASS.FALLBACK; }
   if (reply?.support_mode_reason) { supportReason = reply.support_mode_reason; supportMode = "1"; }
   if (replyText.includes("Hangi model ile ilgileniyorsunuz")) { menuShown = "evet"; if (!s.product) stage = STAGE.WAITING_PRODUCT; }

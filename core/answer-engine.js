@@ -39,9 +39,18 @@ function getSlotCommitResponse(intent, ctx) {
     else if (hasAny(norm, ["kararir","kararır","kararma","solma","paslan","bozulur"])) comboNote = "\n\nÜrünlerimiz 14 ayar altın kaplama paslanmaz çeliktir, kararma solma yapmaz 😊";
     else if (hasAny(norm, ["ne zaman","kac gun","kaç gün","ne kadar surede","ne kadar sürede"])) comboNote = "\n\nKargo İstanbul içi 1-2, diğer iller 2-3 iş günü 😊";
     
-    if (ctx.extracted?.payment === "eft_havale") return `EFT / havale ile ilerleyebiliriz efendim 😊\n${TEXT.EFT_INFO}\n\nÖdeme sonrası ad soyad, cep telefonu ve açık adresinizi iletebilirsiniz.${comboNote}`;
+    // Adres/tel zaten alınmışsa → sipariş teyidi
+    const addrDone = ctx.fields?.address_status === "received";
+    const phoneDone = ctx.fields?.phone_received === "1";
+    
+    if (ctx.extracted?.payment === "eft_havale") {
+      if (addrDone) return `EFT / havale ile ilerleyebiliriz efendim 😊\n${TEXT.EFT_INFO}${comboNote}`;
+      return `EFT / havale ile ilerleyebiliriz efendim 😊\n${TEXT.EFT_INFO}\n\nÖdeme sonrası ad soyad, cep telefonu ve açık adresinizi iletebilirsiniz.${comboNote}`;
+    }
     // Kapıda + kartla → nakit uyarısı
-    if (hasAny(norm, ["kart","kartla","kredi"])) return `Kapıda ödeme ile ilerleyebiliriz efendim 😊 Kapıda ödemede sadece nakit geçerlidir. Ad soyad, cep telefonu ve açık adresinizi iletebilirsiniz.${comboNote}`;
+    if (hasAny(norm, ["kart","kartla","kredi"])) return `Kapıda ödeme ile ilerleyebiliriz efendim 😊 Kapıda ödemede sadece nakit geçerlidir.${addrDone ? "" : " Ad soyad, cep telefonu ve açık adresinizi iletebilirsiniz."}${comboNote}`;
+    if (addrDone) return `Kapıda ödeme ile ilerleyebiliriz efendim 😊 Sadece nakit geçerlidir.${comboNote}`;
+    if (phoneDone) return `Kapıda ödeme ile ilerleyebiliriz efendim 😊 Sadece nakit geçerlidir. Açık adres bilgileriniz ile devam edelim.${comboNote}`;
     return `Kapıda ödeme ile ilerleyebiliriz efendim 😊 Sadece nakit geçerlidir. Ad soyad, cep telefonu ve açık adresinizi iletebilirsiniz.${comboNote}`;
   }
   if (intent === "payment_confirmation") {
@@ -217,6 +226,10 @@ function getDeterministicInfoResponse(intent, ctx) {
   if (hasAny(norm, ["arka yazi","arka yazı","arkaya ne yazil","arkaya ne yazıl","arkasina ne yazil","arkasına ne yazıl","arkaya ne yazdiri","arkaya ne yazdırı"]) && !hasAny(norm, ["istemiyorum","gerek yok","bos kalsin","boş kalsın"])) {
     if ((ctx.fields?.ilgilenilen_urun || ctx.product) === "atac") return "Bu modelde arka yüze yazı yapılmıyor efendim 😊 Resimli lazer kolyede arka yüze yazı eklenebilmektedir.";
     return "Tabi efendim, arka yüze yazı veya fotoğraf ekleyebiliyoruz 😊 Ücretsizdir.";
+  }
+  // "arkaya yazdırmak istiyorum" + içerik (tarih/isim) → back_text teyit + sonraki adım
+  if (hasAny(norm, ["arkaya yazdirmak","arkaya yazdırmak","arkaya yazdir","arkaya yazdır","arkasina yazdirmak","arkasına yazdırmak","arkaya da"]) && hasAny(norm, ["istiyorum","yazdirmak","yazdırmak","yazsin","yazsın","olsun","tarih","isim","dogum","doğum"])) {
+    return "Tabi efendim, arka yüze yazdırıyoruz 😊 Ücretsizdir.";
   }
   // Back text undecided — w_payment'ta "bilemedim" → arka yazı önerisi
   if (hasAny(norm, ["bilemedim","kararsizim","kararsızım","bilemiyorum"]) && stage === STAGE.WAITING_PAYMENT && !ctx.fields?.back_text_status) {
@@ -450,7 +463,7 @@ function getProductFlowResponse(intent, ctx) {
   if (intent === "new_order") return TEXT.MAIN_MENU;
   if (intent === "cancel_order") return "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊";
   if (intent === "photo_reference") return "Tabi efendim 😊 Belirttiğiniz fotoğrafı kullanacağız.";
-  if (intent === "photo_change_request") return "Tabi efendim, yeni fotoğrafı buradan iletebilirsiniz 😊";
+  if (intent === "photo_change_request") return "Tabi efendim, değiştirmek istediğiniz görseli buradan paylaşabilirsiniz 😊";
 
   // Ataç foto/back_text block
   if (p === "atac" && hasAny(norm, ["fotograf","fotoğraf","resim","foto atsam"]) && !hasAny(norm, ["ornek","örnek"])) return "Bu modelde fotoğraf kullanılmıyor efendim, sadece harf ile hazırlanıyor 😊";

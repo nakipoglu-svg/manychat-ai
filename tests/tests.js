@@ -2181,6 +2181,14 @@ const tests = [
   { id: "LOG_SM02", name: "completed + support_mode=1 + teşekkür → rica ederiz", input: body("Tesekkurler", { ilgilenilen_urun: "atac", user_product: "atac", context_lock: "1", order_status: "completed", conversation_stage: "order_completed", payment_method: "eft_havale", address_status: "received", phone_received: "1", letters_received: "1", support_mode: "1", siparis_alindi: "1" }), expectReplyIncludes: "rica" },
   // Aile: material standart — "gerçek altın değildir" her yerde
   { id: "LOG_MAT01", name: "malzeme nedir → gerçek altın değildir", input: body("Ürünün malzeme nedir", lazer({ conversation_stage: "waiting_photo" })), expectReplyIncludes: "gercek altin" },
+  // Aile: support_mode temizleme — normal mesajda sm temizlenmeli
+  { id: "LOG_SM03", name: "support_mode=1 + normal mesaj → sm temizlenmeli", input: body("Tmm", lazer({ conversation_stage: "waiting_photo", support_mode: "1" })), expect: { support_mode: "" } },
+  // Aile: back_text_info — arkasına tarih sorusu
+  { id: "LOG_BT05", name: "arkasına tarih atıyor musunuz → back_text_info", input: body("Kolyenin arkasına tarih atıyor musunuz", lazer({ conversation_stage: "waiting_photo" })), expect: { last_intent: "back_text_info" } },
+  // Aile: photo_change — bu fotoğraf değil
+  { id: "LOG_PC01", name: "bu fotoğraf değil → photo_change_request", input: body("Bu fotoğraf değil", lazer({ conversation_stage: "waiting_payment", photo_received: "1", back_text_status: "skipped" })), expect: { last_intent: "photo_change_request" }, expectReplyIncludes: "degistirmek" },
+  // Aile: arkaya yazdırmak — skipped override
+  { id: "LOG_BT06", name: "arkaya yazdırmak skipped → received override", input: body("Arkaya da oğlumun doğum tarihi yazdırmak istiyorum", lazer({ conversation_stage: "waiting_payment", photo_received: "1", back_text_status: "skipped" })), expect: { back_text_status: "received" }, expectReplyIncludes: "arka" },
 ];
 
 async function runTests() {

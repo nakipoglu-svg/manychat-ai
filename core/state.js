@@ -107,15 +107,19 @@ export function deriveState(initialState, ctx) {
   // Heuristic back_text: w_payment + photo var + back_text boş + general intent + kişisel mesaj
   const currentStageForBT = initialState.conversation_stage;
   const btEmpty = !initialState.back_text_status && !patch.back_text_status;
+  const btSkipped = initialState.back_text_status === "skipped";
   const photoReady = truthy(initialState.photo_received) || patch.photo_received === "1";
   const isPersonalMessage = /canim|canım|seviyorum|annem|babam|ailem|seni cok|seni çok|hatira|hatıra|duam|allah|mekanim|mekanım|rahatla|huzurla|ozledim|özledim|sensiz|biricik|yavrum/.test(ctx.norm || "");
+  // "arkaya yazdırmak istiyorum" — back_text skipped bile olsa override
+  const isBackTextRequest = /arkaya.*yazdirmak|arkaya.*yazdır|arkaya da.*tarih|arkaya da.*isim|arkasina.*yazdirmak|arkasına.*yazdır/.test(ctx.norm || "");
   const msgTrimmed = (ctx.message || "").trim();
   const msgLength = msgTrimmed.length;
   const wordCount = msgTrimmed.split(/\s+/).length;
-  // Kısa isim/metin: 1-4 kelime, büyük harf başlangıçlı, soru işareti/ödeme/kargo/fiyat yok
   const isShortNameLike = wordCount <= 4 && /^[A-ZÇĞİÖŞÜ]/.test(msgTrimmed) && !/\?|odeme|ödeme|kargo|fiyat|kaç|kac|nasil|nasıl|neden|nerede/.test(ctx.norm || "");
-  if (currentStageForBT === "waiting_payment" && photoReady && btEmpty && intent === INTENT.GENERAL) {
-    if (isPersonalMessage || isShortNameLike) {
+  if (currentStageForBT === "waiting_payment" && photoReady && intent === INTENT.GENERAL) {
+    if (isBackTextRequest) {
+      patch.back_text_status = "received"; _confidence.back_text = "high"; _source.back_text = "explicit_request";
+    } else if (btEmpty && (isPersonalMessage || isShortNameLike)) {
       patch.back_text_status = "received"; _confidence.back_text = "medium"; _source.back_text = "heuristic_personal";
     }
   }

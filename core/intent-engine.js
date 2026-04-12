@@ -42,9 +42,10 @@ export function detectIntent(ctx) {
 
   // Payment commit
   const paymentVerb = /seceyim|seçeyim|olsun|istiyorum|sectim|seçtim|seciyorum|seçiyorum|yapacagim|yapacağım|yapicam|yapıcam|yapayim|yapayım|yapalim|yapalım/.test(norm);
-  if (extracted.payment && paymentVerb) return "payment";
-  // Payment confirmation (dekont, ödeme yaptım)
+  // Payment confirmation (dekont, ödeme yaptım) — payment commit'ten ÖNCE
   if (hasAny(norm, ["dekont attim","dekont attım","dekont gonderdim","dekont gönderdim","eft attim","eft attım","eft gonderdim","eft gönderdim","havale gonderdim","havale gönderdim","havale attim","havale attım","odeme yaptim","ödeme yaptım","odemeyi yaptim","ödemeyi yaptım","odeme gonderdim","ödeme gönderdim","hesaba attim","hesaba attım","ekran goruntusu","ekran görüntüsü","dekont atayim","dekont atayım","ucreti attim","ücreti attım"])) return "payment_confirmation";
+  // Payment commit: verb varsa her yerde, w_payment'ta verb olmadan da kabul et
+  if (extracted.payment && (paymentVerb || stage === STAGE.WAITING_PAYMENT)) return "payment";
 
   // ═══ 2. SENSITIVITY ═══
   if (hasAny(norm, ["vefat","kaybettik","kaybettim","rahmetli","merhum","babami kaybettim","babamı kaybettim","annemi kaybettim","esimi kaybettim","eşimi kaybettim","vefat etti","annem vefat","babam vefat","hayatini kaybetti","hayatını kaybetti","olum yildonumu","ölüm yıldönümü"])) return "sensitivity";
@@ -96,6 +97,8 @@ export function detectIntent(ctx) {
     else return "payment_info_question";
   }
   if (hasAny(norm, KW.back_text_info)) return "back_text_info";
+  // Ek back_text_info: "arkasına" + soru kalıbı (tarih/isim/yazı atiyor mu vs)
+  if (hasAny(norm, ["arkasina"]) && hasAny(norm, ["atiyor","atıyor","yaziyor","yazıyor","olur mu","oluyor mu","yapiliyor","yapılıyor","yazilir","yazılır","eklenebilir","yazabilir","koyabiliyor"])) return "back_text_info";
   // Kişi/resim sayısı soruları → photo_question (back_photo_info'dan ÖNCE)
   if (hasAny(norm, ["kac kisi","kaç kişi","kac kisilik","kaç kişilik","iki kisi","iki kişi","2 kisi","2 kişi","birden fazla kisi","birden fazla kişi","ikisini","3 kisi","3 kişi","5 kisi","5 kişi","aile foto","3 kisilik","3 kişilik"])) return "photo_question";
   if (hasAny(norm, ["ikili resim","ikili foto","ayni kare","aynı kare","tek kare","yan yana"])) return "photo_question";
@@ -127,7 +130,7 @@ export function detectIntent(ctx) {
 
   // ═══ 9. PHOTO REFERENCE / CHANGE (order_start'tan ÖNCE — "foto" keyword çakışması) ═══
   if (hasAny(norm, ["bundan olacak","bundan olsun","son attigim","son attığım","ustteki","üstteki","ustteki olsun","üstteki olsun","bu olsun","bu foto olsun","bu resim olsun","bu model olsun","bu modelden olsun"])) return "photo_reference";
-  if (hasAny(norm, ["baska resim","başka resim","farkli foto","farklı foto","fotografi degistir","fotoğrafı değiştir","resim degistir","resim değiştir","baska foto","başka foto","degistireyim","değiştireyim","baska resim bakayim","başka resim bakayım","farkli foto atayim","farklı foto atayım"])) return "photo_change_request";
+  if (hasAny(norm, ["baska resim","başka resim","farkli foto","farklı foto","fotografi degistir","fotoğrafı değiştir","resim degistir","resim değiştir","baska foto","başka foto","degistireyim","değiştireyim","baska resim bakayim","başka resim bakayım","farkli foto atayim","farklı foto atayım","bu fotograf degil","bu fotoğraf değil","bu foto degil","bu foto değil","yanlis foto","yanlış foto","yanlis resim","yanlış resim","o fotograf degil","o fotoğraf değil"])) return "photo_change_request";
 
   // ═══ 10. PRODUCT FLOW ═══
   if (raw.length <= 30 && (hasAny(norm, KW.product_lazer) || hasAny(norm, KW.product_atac))) return "order_start";
