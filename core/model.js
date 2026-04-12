@@ -99,8 +99,8 @@ Context:
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       signal: controller.signal,
       body: JSON.stringify({
-        model, temperature: 0.2, max_tokens: 150,
-        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
+        model, temperature: 0.2, max_completion_tokens: 150,
+        messages: [{ role: "developer", content: systemPrompt }, { role: "user", content: userPrompt }],
       }),
     });
     if (!res.ok) return TEXT.FALLBACK;
