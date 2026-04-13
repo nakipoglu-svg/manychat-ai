@@ -100,7 +100,7 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
   // Dolu slot'u tekrar sorma
   const norm_text = text.toLowerCase().replace(/[ıİ]/g,"i").replace(/[şŞ]/g,"s").replace(/[çÇ]/g,"c").replace(/[öÖ]/g,"o").replace(/[üÜ]/g,"u").replace(/[ğĞ]/g,"g");
   if (filledSlots?.photo && /fotograf.*gonder|fotograf.*ilet|resim.*gonder/i.test(norm_text)) {
-    if (!/aldik|ulasti|ulastı/i.test(norm_text)) {
+    if (!/aldik|ulasti|ulastı|odeme|ödeme/i.test(norm_text)) {
       console.log("[GUARD] ANTI-REPEAT: photo already received");
       text = "Tabi efendim 😊";
     }

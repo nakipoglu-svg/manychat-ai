@@ -54,12 +54,12 @@ export function detectIntent(ctx) {
   if (hasAny(norm, ["otomatik mesaj istemiyorum","robot musunuz","aptal misiniz","salak misiniz","dalga geciyor","dalga geçiyor","dava ediyorum","dava ederim","rezalet","rezilsiniz","insan baglayın","insan bağlayın","gercek insan","gerçek insan","canli destek","canlı destek","yetkili baglayın","yetkili bağlayın","ne bilgisi aldin","ne bilgisi aldın","dalga mi geciyorsunuz","dalga mı geçiyorsunuz"])) return "frustration";
 
   // ═══ 4. COMPLAINT / CLAIM ═══
-  if (hasAny(norm, ["verdim ya","yazdim ya","yazdım ya","soyledim ya","söyledim ya","yazdim zaten","yazdım zaten","verdim zaten","attim zaten","attım zaten","gonderdim zaten","gönderdim zaten","adresimi yazdim","adresimi yazdım","hepsini verdim","bilgi verdim","belirttim","belirtmistim","belirtmiştim","daha once yazdim","daha önce yazdım","niye ayni seyi","niye aynı şeyi","neden tekrar","yine mi","yeter artik","yeter artık","yanlis anladiniz","yanlış anladınız","cevap vermiyorsunuz","cevap alamiyorum","neden cevap","ayni seyi sorma","aynı şeyi sorma","tekrar sorma"])) return "complaint";
+  if (hasAny(norm, ["verdim ya","yazdim ya","yazdım ya","soyledim ya","söyledim ya","yazdim zaten","yazdım zaten","verdim zaten","attim zaten","attım zaten","gonderdim zaten","gönderdim zaten","adresimi yazdim","adresimi yazdım","hepsini verdim","bilgi verdim","belirttim","belirtmistim","belirtmiştim","daha once yazdim","daha önce yazdım","niye ayni seyi","niye aynı şeyi","neden tekrar","yine mi","yeter artik","yeter artık","yanlis anladiniz","yanlış anladınız","cevap vermiyorsunuz","cevap alamiyorum","neden cevap","ayni seyi sorma","aynı şeyi sorma","tekrar sorma","cevap yok mu","cevap yok","cevap yokmu"])) return "complaint";
 
   // ═══ 5. "GÖNDERDİM" CLAIM (stage-aware) ═══
   // "üstteki olsun" / "bu olsun" → reference, claim değil
   if (hasAny(norm, ["ustteki olsun","üstteki olsun","bundan olsun","bundan olacak","bu model olsun","bu modelden olsun"])) return "photo_reference";
-  if (hasAny(norm, ["gonderdim","gönderdim","attim","attım","yolladim","yolladım","yukarida","yukarıda","ustte","üstte","demin attim","daha once gonderdim","daha önce gönderdim","biraz once attim","biraz önce attım","resim yukarida","resim yukarıda","yazdim","yazdım"])) {
+  if (hasAny(norm, ["gonderdim","gönderdim","attim","attım","yolladim","yolladım","yukarida","yukarıda","ustte","üstte","demin attim","daha once gonderdim","daha önce gönderdim","biraz once attim","biraz önce attım","resim yukarida","resim yukarıda","yazdim","yazdım","gondermistim","göndermistim","gondermiştim","göndermistim","yukarda","yukarda var","ustunde","üstünde","atmistim","atmıştım"])) {
     // "yazdım zaten" / "verdim ya" complaint'e düşmeli — complaint layer daha önce yakalamış olmalı
     if (stage === STAGE.WAITING_PHOTO) return "photo_claim";
     if (stage === STAGE.WAITING_ADDRESS) return "address_claim";
@@ -83,7 +83,7 @@ export function detectIntent(ctx) {
   if (hasAny(norm, KW.trust)) return "trust";
   if (hasAny(norm, KW.location)) return "location";
   // Şubeden teslim
-  if (hasAny(norm, ["subeden alacag","şubeden alacağ","subeden teslim","şubeden teslim","elden alacag","elden alacağ","gelip alacag","gelip alacağ","dukkanin","dükkânın","dukkandan","dükkandan","magazadan","mağazadan"])) return "store_pickup";
+  if (hasAny(norm, ["subeden alacag","şubeden alacağ","subeden teslim","şubeden teslim","elden alacag","elden alacağ","gelip alacag","gelip alacağ","dukkanin","dükkânın","dukkandan","dükkandan","magazadan","mağazadan","subeden alma","şubeden alma","elden alma","gelip alma","yerinden alma"])) return "store_pickup";
   if (hasAny(norm, KW.photo_question)) return "photo_question";
   if (hasAny(norm, KW.example_request)) return "example_request";
   if (hasAny(norm, ["iban","hesap no","hesap numarasi","hesap numarası","eft bilgi","havale bilgi"])) {
@@ -98,13 +98,13 @@ export function detectIntent(ctx) {
   }
   if (hasAny(norm, KW.back_text_info)) return "back_text_info";
   // Ek back_text_info: "arkasına" + soru kalıbı (tarih/isim/yazı atiyor mu vs)
-  if (hasAny(norm, ["arkasina"]) && hasAny(norm, ["atiyor","atıyor","yaziyor","yazıyor","olur mu","oluyor mu","yapiliyor","yapılıyor","yazilir","yazılır","eklenebilir","yazabilir","koyabiliyor"])) return "back_text_info";
+  if (hasAny(norm, ["arkasina","arka kismina","arka kısmına","arka yuze","arka yüze"]) && hasAny(norm, ["atiyor","atıyor","yaziyor","yazıyor","olur mu","oluyor mu","yapiliyor","yapılıyor","yazilir","yazılır","eklenebilir","yazabilir","koyabiliyor","yazdir","yazdır","olabilir"])) return "back_text_info";
   // Kişi/resim sayısı soruları → photo_question (back_photo_info'dan ÖNCE)
   if (hasAny(norm, ["kac kisi","kaç kişi","kac kisilik","kaç kişilik","iki kisi","iki kişi","2 kisi","2 kişi","birden fazla kisi","birden fazla kişi","ikisini","3 kisi","3 kişi","5 kisi","5 kişi","aile foto","3 kisilik","3 kişilik"])) return "photo_question";
   if (hasAny(norm, ["ikili resim","ikili foto","ayni kare","aynı kare","tek kare","yan yana"])) return "photo_question";
   if (hasAny(norm, ["kac resim koyabil","kaç resim koyabil","kac fotograf koyabil","kaç fotoğraf koyabil","3 lu yapiy","3 lü yapıy","3lu yapiy","3lü yapıy"])) return "photo_question";
   if (hasAny(norm, KW.back_photo_info)) return "back_photo_info";
-  if (hasAny(norm, KW.back_text_skip)) return "back_text_skip";
+  if (hasAny(norm, KW.back_text_skip) && !norm.includes("zincir")) return "back_text_skip";
 
   // Multi-order
   if (hasAny(norm, ["2 tane","iki tane","3 tane","uc tane","üç tane","4 tane","dort tane","dört tane","5 tane","bes tane","beş tane","2li","2'li","3lu","3'lü","uclu","üçlü","toplu alim","toplu alım","iki kolye","2 kolye","3 kolye","4 kolye","5 kolye","ikisinin fiyati","ikisinin fiyatı","toplu siparis","toplu sipariş","coklu alim","çoklu alım","2 urun","2 ürün","3 urun","3 ürün","3 adet","4 adet","5 adet","20 adet"])) return "multi_order";
@@ -133,6 +133,8 @@ export function detectIntent(ctx) {
   if (hasAny(norm, ["baska resim","başka resim","farkli foto","farklı foto","fotografi degistir","fotoğrafı değiştir","resim degistir","resim değiştir","baska foto","başka foto","degistireyim","değiştireyim","baska resim bakayim","başka resim bakayım","farkli foto atayim","farklı foto atayım","bu fotograf degil","bu fotoğraf değil","bu foto degil","bu foto değil","yanlis foto","yanlış foto","yanlis resim","yanlış resim","o fotograf degil","o fotoğraf değil"])) return "photo_change_request";
 
   // ═══ 10. PRODUCT FLOW ═══
+  // "atacaktınız" hatırlatma → order_start değil
+  if (hasAny(norm, ["atacaktiniz","atacaktınız","atacaksiniz","atacaksınız","atacaginizi","atacağınızı","atacaktiniz ama","gorsel atacak","görsel atacak","resim atacak","foto atacak"])) return "general";
   if (raw.length <= 30 && (hasAny(norm, KW.product_lazer) || hasAny(norm, KW.product_atac))) return "order_start";
   if (hasAny(norm, KW.order_start)) {
     if (hasAny(norm, ["ama suan degil","ama henuz degil","ama simdi degil","dusunuyorum","düşünüyorum"])) return "general";
