@@ -63,7 +63,37 @@ function getSlotCommitResponse(intent, ctx) {
     if (isComp) return "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊";
     return "Teşekkür ederiz efendim 😊 Ekibimiz ödemenizi kontrol edip size dönüş sağlayacaktır.";
   }
-  if (intent === "back_text") return null;
+  // ── back_text_content: müşteri içerik verdi ──
+  if (intent === "back_text_content") {
+    const st = ctx.fields?.conversation_stage || "";
+    if (st === STAGE.WAITING_PAYMENT) return "Tabi efendim, arka yazı notu aldım 😊";
+    if (st === STAGE.WAITING_ADDRESS) return "Tabi efendim, arka yazı notu aldım 😊 Açık adres bilgileriniz ile devam edelim.";
+    if (st === STAGE.ORDER_COMPLETED || st === "order_completed") return "Tabi efendim, arka yazı notu aldım 😊";
+    // waiting_photo veya diğer stage'ler
+    return "Tabi efendim, arka yazı notu aldım 😊";
+  }
+  // ── back_text_question: yapılabilir mi soruları ──
+  if (intent === "back_text_question") {
+    // Ataç bağlamında arka yazı sorusu → lazer'e yönlendir
+    const product = ctx.previousProduct || ctx.product || ctx.fields?.ilgilenilen_urun || "";
+    if (product === "atac") return "Ataç kolyede arka yazı bulunmamaktadır efendim 😊 Arka yüze yazı veya fotoğraf için resimli lazer kolye tercih edebilirsiniz.";
+    const st = ctx.fields?.conversation_stage || "";
+    if (st === STAGE.WAITING_PAYMENT) return "Tabi efendim, arka yüze yazı yazıyoruz 😊 Ücretsizdir.";
+    if (st === STAGE.WAITING_ADDRESS) return "Tabi efendim, arka yüze isim, tarih veya kısa bir not yazabiliyoruz 😊 Ücretsizdir. Açık adres bilgileriniz ile devam edelim.";
+    return "Tabi efendim, arka yüze isim, tarih, kısa not veya dua yazabiliyoruz 😊 Ücretsizdir.";
+  }
+  // ── back_text_fit_question: sığma soruları ──
+  if (intent === "back_text_fit_question") {
+    return "Tabi efendim, sığdırırız 😊 Arka yüzde 4 satıra kadar alan var, gerekirse biz düzenliyoruz.";
+  }
+  // ── back_text (legacy compat) ──
+  if (intent === "back_text") {
+    const st = ctx.fields?.conversation_stage || "";
+    if (st === STAGE.WAITING_PAYMENT) return "Tabi efendim, arka yazı notu aldım 😊 Ödeme tercihinizi belirtebilir misiniz? EFT / Havale veya kapıda ödeme.";
+    if (st === STAGE.WAITING_ADDRESS) return "Tabi efendim, arka yazı notu aldım 😊 Açık adres bilgileriniz ile devam edelim.";
+    if (st === STAGE.ORDER_COMPLETED || st === "order_completed") return "Tabi efendim, arka yazı notu aldım 😊";
+    return null;
+  }
   if (intent === "back_text_skip") {
     const st = ctx.fields?.conversation_stage || "";
     if (st === STAGE.WAITING_ADDRESS) {
@@ -83,13 +113,14 @@ function getSlotCommitResponse(intent, ctx) {
   if (["phone","address","name_only"].includes(intent)) {
     const st = ctx.fields?.conversation_stage || "";
     if (st === STAGE.WAITING_ADDRESS) {
-      const hasPhone = ctx.fields?.phone_received === "1" || intent === "phone";
-      const hasAddr = ctx.fields?.address_status === "address_only" || intent === "address";
+      const hasPhone = ctx.fields?.phone_received === "1" || intent === "phone" || ctx.extracted?.phone;
+      const hasAddr = ctx.fields?.address_status === "address_only" || intent === "address" || ctx.extracted?.hasAddress;
       // Her ikisi de tamam → sipariş teyidi
       if (hasAddr && hasPhone) return "Bilgilerinizi aldım efendim 😊 Siparişiniz oluşturulmuştur, en kısa sürede hazırlanacaktır.";
-      if (hasAddr && !hasPhone) return "Bilgilerinizi aldım efendim 😊 Cep telefonu numaranızı da yazabilir misiniz?";
-      if (hasPhone && !hasAddr) return "Bilgilerinizi aldım efendim 😊 Açık adres bilginiz ile devam edelim.";
-      if (intent === "name_only") return "Bilgilerinizi aldım efendim 😊";
+      if (hasAddr && !hasPhone) return "Adres bilginizi aldım efendim 😊 Cep telefonu numaranızı da yazabilir misiniz?";
+      if (hasPhone && !hasAddr) return "Telefonunuzu aldım efendim 😊 Açık adres bilginiz ile devam edelim.";
+      // ━━━ FIX F7: name_only → isim aldık, açık adres ve telefon iste ━━━
+      if (intent === "name_only") return "İsim bilginizi aldım efendim 😊 Açık adres ve cep telefonu numaranız ile devam edelim.";
     }
     return null;
   }
@@ -110,8 +141,95 @@ function getDeterministicInfoResponse(intent, ctx) {
   if (/^\?+$/.test((message||'').trim())) return "En kısa sürede dönüş sağlanacaktır efendim 😊";
   if (hasAny(norm, ["cevap yok mu","cevap vermiyorsun","neden cevap yok","cevap bekliyorum","donus bekliyorum","dönüş bekliyorum","cvp bekliyorum"])) return "En kısa sürede dönüş sağlanacaktır efendim 😊";
 
+  // ━━━ FIX F8: DEFERRAL / FAREWELL — su/trust template'lerinden ÖNCE ━━━
+  // Müşteri "düşüneyim / dönüş yaparım / sonra bakarım / eşime danışayım" diyorsa
+  // hiçbir info template'i patlamasın, sıcak bir bekleriz dönsün.
+  if (hasAny(norm, [
+    "dusunup donus","düşünüp dönüş","dusuneyim","düşüneyim","dusunup","düşünüp",
+    "dusunup size","düşünüp size","dusunup donecegim","düşünüp döneceğim",
+    "donus yapacagim","dönüş yapacağım","donus yapicam","dönüş yapıcam",
+    "donus yaparim","dönüş yaparım","tekrar donecegim","tekrar döneceğim",
+    "sonra yazarim","sonra yazacagim","sonra yazacağım","sonra yazarım",
+    "esime danisayim","eşime danışayım","esime soracagim","eşime soracağım",
+    "inceleyip donerim","bakip donerim","bakıp dönerim",
+    "arastirip donerim","araştırıp dönerim",
+    "dusunup yarin","düşünüp yarın","biraz dusun","biraz düşün",
+    "dusunup geri donus","düşünüp geri dönüş",
+    "musait bir zamanda","müsait bir zamanda","muaset zamanda",
+    "suan degil","şuan değil","simdi degil","şimdi değil","henuz vermeyec","henüz vermeyec",
+    "beyefendi dusun","beyefendi düşün",
+    "bi dusunup","bı dusunup","bi düşünüp","bı düşünüp",
+  ])) {
+    return "Tabi efendim, bekliyoruz 😊 Ne zaman isterseniz yazabilirsiniz.";
+  }
+
+  // ━━━ FIX F8b: SHORT FOLLOW-UP with lastContext ━━━
+  // "Yani rengi", "Mümkün mü", "Fiyat değişir mi", "Yapar mı" gibi kısa pronoun-only
+  // mesajları son bot cevabının bağlamıyla çöz.
+  const rawMsg = (message || "").trim();
+  const lc = ctx.lastContext || {};
+  if (rawMsg.length <= 30 && lc) {
+    // "Fiyat değişir mi" + önceki mesajda kişi/sayı sorusu
+    if (/fiyat degis|fiyat değiş|fiyat fark|fiyati degis|fiyatı değiş/.test(norm) && lc.askedAboutPeople) {
+      return "Hayır efendim, kişi sayısına göre fiyat farkı yoktur 😊";
+    }
+    // "Rengi / renk" tek başına + önceki renk/trust/solma bağlamı
+    if (/^(yani )?(rengi|renk)$/i.test(rawMsg) || /^yani rengi/i.test(rawMsg)) {
+      if (lc.askedAboutTrust || lc.askedAboutColor) {
+        return "Altın kaplama standart renktir efendim 😊 Gümüş kaplama varyantımız da mevcuttur. Kararma, solma yapmaz.";
+      }
+    }
+    // "Mümkün mü / yapar mı / olur mu / oluyor mu" tek başına + bağlama göre
+    if (/^(mumkun mu|mümkün mü|yapar mi|yapar mı|olur mu|oluyor mu|yapilir mi|yapılır mı)\??$/i.test(rawMsg)) {
+      if (lc.askedAboutPeople) return "Evet efendim, yapıyoruz 😊 Birden fazla kişi olsa da fiyat farkı olmaz.";
+      if (lc.askedAboutBackText) return "Evet efendim, arka yüze istediğiniz yazıyı yazıyoruz 😊 Ücretsizdir.";
+      if (lc.askedAboutTrust) return "Evet efendim 😊 Paslanmaz çelik üzeri 14 ayar altın kaplama, kararma solma yapmaz.";
+      if (lc.askedAboutFit) return "Evet efendim, istediğiniz yazı sığıyor 😊";
+    }
+    // "Bunu yapabiliyor muyuz" — ödeme stage'inde bile arka yazı bağlamı olabilir
+    if (/^bunu yap|^bunu yapabiliyor/i.test(rawMsg) && lc.askedAboutBackText) {
+      return "Evet efendim, arka yüze istediğiniz yazıyı yazabiliyoruz 😊 Ücretsizdir.";
+    }
+  }
+
   // ── SU/DENİZ DAYANIKLILIK ──
-  if (hasAny(norm, ["su ile","suya","denize","denizde","dus","duş","banyo","yuzme","yüzme","islak","ıslak","su temas","su sikinti","su sıkıntı","yikama","yıkama"])) return "Suya dayanıklıdır efendim 😊 Su veya denizde sorun yaşanmaz.";
+  if (hasAny(norm, ["su ile","suya dayanikli","suya dayanıklı","denize","denizde","dusta","duşta","dus alir","duş alır","banyo","yuzme","yüzme","islak","ıslak","su temas","su sikinti","su sıkıntı","yikama","yıkama","suya girince","su degdigi","su değdiği","suya girdim","suya girdi","suya girsem","suya girersem","denize girdim","havuza girdim","dusa girdim","duşa girdim"])) return "Suya dayanıklıdır efendim 😊 Su veya denizde sorun yaşanmaz.";
+
+  // ── MALZEME TYPO CATCH: altın/gümüş yazım hataları ──
+  if (hasAny(norm, ["atin mi","atin deil","altin deil","altın deil","atin degil","altin degil","gumus mi","gümüs mi","gumusmü","gümüsmü"])) return "Ürünlerimiz 14 ayar altın kaplama paslanmaz çeliktir efendim 😊 Gerçek altın veya gümüş değildir, kaplamadır. Kararma, solma yapmaz.";
+
+  // ━━━ FIX F6: TRUST / KARARMA / SOLMA / PASLANMA — genişletilmiş early catch ━━━
+  // Typo normalize sonrası "kararma/solma/paslanma" tüm varyantları yakala
+  if (hasAny(norm, [
+    "kararma","kararmaz","kararir","kararır","kararma yap","solma","solmaz","solar",
+    "paslanma","paslanmaz","paslanir","paslanır","paslan yap",
+    "renk atar","renk gider","renk kaybet","renk cik","renk çık","renk atiyor","renk atıyor",
+    "beyazlama","beyazlar","solma yap","solma ol",
+    // typo normalize sonrasında zaten "kararma" olur ama pre-normalize için:
+    "karartma","karama","karalama","kararna","kararla"
+  ])) return "14 ayar altın kaplama paslanmaz çeliktir efendim 😊 Kararma, solma, paslanma yapmaz; güvenle kullanabilirsiniz.";
+
+  // ━━━ FIX F6: ALERJI ━━━
+  if (hasAny(norm, ["alerji","alerjim","alerjik","alarji","alarjik","tahris","tahriş","kasindirir","kaşındırır","deri","dermatit"])) return "Paslanmaz çelik alerji yapmaz efendim 😊 Güvenle kullanabilirsiniz.";
+
+  // ━━━ FIX F6: MATERYAL — typo dahil ━━━
+  if (hasAny(norm, ["materyal","materyali","metaryel","metaryal","metaryeli","metaryeni","metareyen","maderi","maderyal","malzemsi","malzeme nedir","urun neyden","ürün neyden","hangi malzeme"])) return "Ürünlerimiz paslanmaz çelik üzeri 14 ayar altın kaplamadır efendim 😊";
+
+  // ━━━ FIX F6: DURABILITY (silinir/bozulur) — genişletilmiş ━━━
+  if (hasAny(norm, ["silinir mi","silinmez mi","silinecek mi","zamanla silin","kayboluyor","soluyor","silinir efendim","dagilir mi","dağılır mı","bozulur mu","dayanikli mi","dayanıklı mı","asiniyor","aşınıyor","solar mi","solar mı"])) return "Lazer kazıma kalıcıdır efendim 😊 Silinmez, bozulmaz, zamanla aşınmaz.";
+
+  // ━━━ FIX F6: GARANTİ / İADE / MEMNUNİYET ━━━
+  if (hasAny(norm, ["garanti var","garantiniz","garantisi var","garanti ne"])) return "Üretim kaynaklı sorunlarda ekibimiz ilgileniyor efendim 😊 Detay için size dönüş sağlayabiliriz.";
+  if (hasAny(norm, ["iade","iade prosedur","iade kabul","iade edebilir","begenmezsem","beğenmezsem","memnun kalmazsam","memnun olmazsam","istedigim gibi olmazsa","istediğim gibi olmazsa"])) return "Ürün kişiye özel üretildiği için değişim/iade yapamıyoruz efendim 😊 Hatalı bir durum olursa ekibimiz ilgilenmektedir.";
+
+  // ━━━ FIX F6: TRUST — dolandırıcılık / güvenilirlik ━━━
+  if (hasAny(norm, ["dolandir","dolandırıcı","dolandırmıyor","dolandırm","guvenebilir","güvenebilir","guvenilir","güvenilir","eminmisiniz","emin misiniz","emin değilim","emin degilim","sahte","yanıltıyor","kandırıyor"])) return "Güvenle sipariş verebilirsiniz efendim 😊 Binlerce memnun müşterimize hizmet veriyoruz.";
+
+  // ━━━ FIX F6: PRIVACY — fotoğraf kullanım ━━━
+  if (hasAny(norm, ["reklam amaçli","reklam amaclı","reklam icin","reklam için","paylasir misiniz foto","paylaşır mısınız foto","fotom gizli","fotografim gizli","fotoğrafım gizli","baskasi goruyor","başkası görüyor","gizlilik","kullaniyor musunuz","kullanıyor musunuz fotograf"])) return "Fotoğraflarınız yalnızca siparişinizde kullanılır efendim 😊 Reklam veya başka amaçla kullanılmaz.";
+
+  // ── TRUST TYPO CATCH: beyazlama/renk atma varyasyonları (eski catch — yedekte kalsın) ──
+  if (hasAny(norm, ["beyazlama","beyazlar","renk atar","renk gider","renk cik","renk çık","solma yap","solma ol","paslanir","paslanır"])) return "14 ayar altın kaplama paslanmaz çeliktir, kararma solma paslanma yapmaz efendim 😊 Güvenle kullanabilirsiniz.";
 
   // ── FOTO KALİTE / NETLİK ──
   if (hasAny(norm, ["net cikar","net çıkar","netlik","kalite","bulanik","bulanık","piksel","fotograf kalitesi","fotoğraf kalitesi","net olur mu","duzgun cikar","düzgün çıkar","kaliteli cikar","kaliteli çıkar"])) return "Gerekli netleştirmeyi ekibimiz yapıyor efendim 😊 Mümkün olduğunca net fotoğraf göndermeniz yeterlidir.";
@@ -122,8 +240,29 @@ function getDeterministicInfoResponse(intent, ctx) {
   // ── ARKA YAZI ÜCRETİ ──
   if (hasAny(norm, ["yazi icin","yazı için","yazi ucreti","yazı ücreti","arka ucret","arka ücret","arkasi ucret","arkası ücret","yazilacak yazi icin","yazılacak yazı için","yazi fiyat","yazı fiyat"])) return "Hayır efendim, arka yüze yazılan yazıdan ek ücret almıyoruz 😊 Ücretsizdir.";
 
+  // ── FİGÜR/AKSESUAR FİYAT FARKI ──
+  if (hasAny(norm, ["figur koy","figür koy","aksesuar fiyat","fiyat degis","fiyat değiş","ek ucret","ek ücret"]) && !hasAny(norm, ["arka","yazı","yazi"])) return "Hayır efendim, fiyat değişmiyor 😊 Aksesuar (nazar boncuğu, kalp) ücretsizdir, fiyata dahildir.";
+
   // ── 4+ KİŞİ FOTOĞRAF ──
   if (hasAny(norm, ["4 kisi","4 kişi","5 kisi","5 kişi","6 kisi","6 kişi","dort kisi","dört kişi","bes kisi","beş kişi","kac kisi","kaç kişi"])) return "Evet efendim, fotoğrafa kaç kişi olursa olsun yapılabilir 😊 Çok kişili fotoğraflarda tek kare olması en idealidir.";
+
+  // ── BİLEKLİK/YÜZÜK YOK ──
+  if (hasAny(norm, ["bileklik yapiy","bileklik yapıy","bileklik var mi","bileklik var mı","yuzuk yapiy","yüzük yapıy"])) return "Şu anda sadece kolye modellerimiz bulunmaktadır efendim 😊";
+
+  // ── KOPMA/SİLİNME ──
+  if (hasAny(norm, ["kopma","kopar","silinme","silinir","silinecek","yazı silinir","resim silinir","silinme ihtimal"])) return "Lazer kazıma yöntemiyle hazırlanmaktadır efendim 😊 Silinme veya kopma olmaz, kalıcıdır.";
+
+  // ── X RESİM/FOTO TEK KOLYEDE → EVET YAPILIR ──
+  if (hasAny(norm, ["ayni kolyeye","aynı kolyeye","ayni kolyede","aynı kolyede","tek kolyede","tek kolyeye","1 kolyede","1 kolyeye","bir kolyede","bir kolyeye"]) && hasAny(norm, ["resim","resmi","foto","fotoğraf","kisi","kişi","fotograf"])) return "Evet efendim, tek kolyeye birden fazla fotoğraf yapabiliyoruz 😊 Fiyat farkı yoktur.";
+
+  // ── ALERJİ ──
+  if (hasAny(norm, ["alerji","alerjim","hassasiyet","hassas cild","hassas cilt"])) return "Ürünlerimiz 14 ayar altın kaplama paslanmaz çelikten üretilmektedir efendim, alerji riski yoktur 😊";
+
+  // ── RESİM BOYUTU ÖNEMLİ Mİ ──
+  if (hasAny(norm, ["resim boyutu","foto boyutu","fotoğraf boyutu","resim onemli","resim önemli","boyutu onemli","boyutu önemli"])) return "Hayır efendim, biz zaten gerekli ayarlamayı yapıyoruz 😊 Mümkün olduğunca net fotoğraf göndermeniz yeterlidir.";
+
+  // ── BÜYÜK/KÜÇÜK → PLAKA, UZUN/KISA → ZİNCİR ──
+  if (hasAny(norm, ["daha buyuk","daha büyük","daha kucuk","daha küçük","buyuklugu","büyüklüğü","kucuklugu","küçüklüğü","buyuk istesek","büyük istesek","buyuk olur mu","büyük olur mu"])) return "Plaka boyutu 3 cm'dir efendim 😊 Farklı boyut seçeneğimiz bulunmamaktadır.";
 
   // ── ÖDEME SONRASI HAZIRLIK ──
   if (hasAny(norm, ["odeme sonrasi hazir","ödeme sonrası hazır","odeme yapildiktan sonra","ödeme yapıldıktan sonra","odeme sonrasi mi","ödeme sonrası mı","odeme yapinca","ödeme yapınca"])) return "Evet efendim, ödeme yapıldıktan sonra siparişiniz hazırlanmaya başlıyor 😊";
@@ -131,15 +270,91 @@ function getDeterministicInfoResponse(intent, ctx) {
   // ── ARKASINA BAŞKA RESİM ──
   if (hasAny(norm, ["arkasina baska resim","arkasına başka resim","arkasina da resim","arkasına da resim","arkasina resim","arkasına resim","arka yuze resim","arka yüze resim","arkasina da baski","arkasına da baskı"])) return "Evet efendim, arka yüze de fotoğraf veya yazı yapabiliyoruz 😊 Ücretsizdir.";
 
+  // ── ARKA YAZDIRIM İSTEĞİ: "yazılsın/basabilir/yazabilir/sığar" ──
+  if (hasAny(norm, ["yazilsin","yazılsın","basabilir misiniz","yazabilir misiniz","yazabilirmisiniz","sigar","sığar","sigdirir","sığdırır","sigar mi","sığar mı"]) && !hasAny(norm, ["ucret","ücret","fiyat"])) return "Tabi efendim, yazarız 😊 Ücretsizdir.";
+
+  // ── İKİ TARAFLI RESİM ──
+  if (hasAny(norm, ["iki tarafina","iki tarafına","2 tarafina","2 tarafına","iki tarafi","iki tarafı","iki yuze","iki yüze","2 tarafli","2 taraflı","iki tarafli","iki taraflı","cift taraf","çift taraf"])) return "Evet efendim, ön ve arka yüze ayrı fotoğraf yapabiliyoruz 😊 Fiyat farkı yoktur.";
+
+  // ── SİYAH BEYAZ / RENKLİ ──
+  if (hasAny(norm, ["siyah beyaz","siyah beyaz mi","renkli mi","renkli olur","renkli de olur"])) return "İstediğiniz fotoğrafı gönderebilirsiniz efendim 😊 Gerekli düzenlemeyi biz yapıyoruz. Siyah beyaz veya renkli farketmez.";
+
   // ── CANIM KURALI: "canım" geçen mesaj = arka yazı (back_text) ──
   if (hasAny(norm, ["canim"]) && stage === STAGE.WAITING_ADDRESS) return "Tabi efendim, arka yazı notu aldım 😊 Açık adres bilgileriniz ile devam edelim.";
   if (hasAny(norm, ["canim"]) && stage === STAGE.WAITING_PAYMENT) return "Tabi efendim, arka yazı notu aldım 😊 Ödeme tercihinizi belirtebilir misiniz? EFT / Havale veya kapıda ödeme.";
+  if (hasAny(norm, ["canim"]) && (stage === STAGE.ORDER_COMPLETED || stage === "order_completed")) return "Tabi efendim, arka yazı notu aldım 😊";
+
+  // ── TARİH KURALI: isim + tarih (dd.mm.yyyy veya yyyy) = arka yazı ──
+  if (/\d{2}[.\-\/]\d{2}[.\-\/]\d{2,4}/.test(message) || /\d{4}/.test(message)) {
+    const hasName = /[A-ZÇĞİÖŞÜa-zçğıöşü]{3,}/.test(message);
+    const isAddress = hasAny(norm, ["mahalle","mahallesi","sokak","cadde","caddesi","apt","daire","kat","no "]);
+    if (hasName && !isAddress && !hasAny(norm, ["05","adres","telefon"])) {
+      if (stage === STAGE.WAITING_ADDRESS) return "Tabi efendim, arka yazı notu aldım 😊 Açık adres bilgileriniz ile devam edelim.";
+      if (stage === STAGE.WAITING_PAYMENT) return "Tabi efendim, arka yazı notu aldım 😊 Ödeme tercihinizi belirtebilir misiniz? EFT / Havale veya kapıda ödeme.";
+      if (stage === STAGE.ORDER_COMPLETED || stage === "order_completed") return "Tabi efendim, arka yazı notu aldım 😊";
+    }
+  }
 
   // ── TRUST FOLLOW-UP (last_intent trust + süre/yıl sorusu) ──
   if (ctx.fields?.last_intent === "trust" && hasAny(norm, ["yil mi","yıl mı","kac yil","kaç yıl","kac sene","kaç sene","sure","süre","mesela"])) return "Garanti veriyoruz efendim 😊 Kararma, solma veya kaplama kaynaklı bir durumda ürün değişimi sağlıyoruz. Kesin bir süre sınırı bulunmamaktadır.";
 
+  // ─────────────────────────────────────────────────────────────────
+  // PREVIEW / KARAR DESTEĞİ AİLESİ — 3 subtype cevap politikaları
+  // ─────────────────────────────────────────────────────────────────
+
+  // ── preview_request: müşteri ön izleme / görsel istiyor ──
+  if (intent === "preview_request") {
+    const st = ctx.fields?.conversation_stage || "";
+    if (!st || st === "waiting_product") return null; // menüye düşsün
+    if (st === STAGE.ORDER_COMPLETED || st === "order_completed")
+      return "Yoğunluğa göre kargo öncesi paylaşabiliyoruz efendim 😊";
+    if (st === STAGE.WAITING_PAYMENT)
+      return "Tabi efendim, fotoğrafınızı gönderin, ön izleme hazırlayalım 😊 Gerekli düzenlemeleri biz yapıyoruz. Ödeme tercihinizi de belirtebilirsiniz.";
+    if (st === STAGE.WAITING_ADDRESS)
+      return "Tabi efendim, ön izleme paylaşabiliriz 😊 Adres bilgilerinizi de tamamlayalım.";
+    return "Tabi efendim, fotoğrafınızı gönderirseniz ön izleme hazırlayabiliriz 😊 Gerekli düzenlemeleri biz yapıyoruz.";
+  }
+
+  // ── decision_support: müşteri kararsız, seçim desteği istiyor ──
+  if (intent === "decision_support") {
+    const st = ctx.fields?.conversation_stage || "";
+    if (!st || st === "waiting_product") return null; // menüye düşsün
+    if (st === STAGE.ORDER_COMPLETED || st === "order_completed")
+      return "Tabi efendim, fotoğraflarınızı gönderin, birlikte bakalım 😊";
+    if (st === STAGE.WAITING_PAYMENT)
+      return "Tabi efendim, fotoğraflarınızı gönderin, birlikte en güzelini seçelim 😊 Ödeme tercihinizi de belirleyebilirsiniz.";
+    return "Tabi efendim, fotoğraflarınızı gönderin, hangisinin daha güzel çıkacağını birlikte değerlendirelim 😊";
+  }
+
+  // ── composition_question: görsel kompozisyon / yerleşim sorusu ──
+  if (intent === "composition_question") {
+    const st = ctx.fields?.conversation_stage || "";
+    // Arkalı önlü (ön + arka yüze ayrı resim)
+    if (hasAny(norm, ["arkali onlu","arkalı önlü","onlu arkali","önlü arkalı","iki yuzune","iki yüzüne","iki tarafina","iki tarafına","iki tarafta","2 tarafta","bir yuzune","bir yüzüne","diger yuzune","diğer yüzüne","kolyenin iki tarafina","kolyenin iki tarafına"]))
+      return "Evet efendim, ön ve arka yüze ayrı ayrı fotoğraf yapabiliyoruz 😊 Fiyat farkı olmaz.";
+    // Yan yana / aynı karede
+    if (hasAny(norm, ["yan yana","yanyana","ayni karede","aynı karede","ayni kareye","aynı kareye","tek karede","tek kare"]))
+      return "Evet efendim, birden fazla kişiyi aynı karede yan yana basabiliyoruz 😊 Fiyat farkı olmaz.";
+    // İki+ kişi / çocuk / aile
+    if (hasAny(norm, ["iki cocuk","iki çocuk","2 cocuk","2 çocuk","uc cocuk","üç çocuk","3 cocuk","3 çocuk","dort cocuk","dört çocuk","iki kisi","iki kişi","2 kisi","2 kişi","uc kisi","üç kişi","3 kisi","3 kişi","5 kisi","5 kişi","aile","iki oglum","iki oğlum","iki kizim","iki kızım","cocuklarim","çocuklarım"]))
+      return "Evet efendim, birden fazla kişi tek kolyede olabilir 😊 Fiyat farkı olmaz; yan yana veya ön-arka yüz tercihinize göre basıyoruz.";
+    // İki+ resim / foto
+    if (hasAny(norm, ["iki resim","2 resim","uc resim","üç resim","3 resim","iki foto","2 foto","3 foto","iki fotograf","iki fotoğraf","iki ayri","iki ayrı","ayri ayri","ayrı ayrı","birden fazla resim","birden fazla foto"]))
+      return "Evet efendim, birden fazla fotoğrafı tek kolyede birleştirebiliyoruz 😊 Fiyat farkı olmaz. En fazla 3 fotoğraf aynı tasarımda kullanılabilir.";
+    // Completed stage'de genel
+    if (st === STAGE.ORDER_COMPLETED || st === "order_completed")
+      return "Evet efendim, birden fazla fotoğrafı tek kolyede birleştirebiliyoruz 😊 En fazla 3 fotoğraf tek tasarımda kullanılabilir.";
+    return "Evet efendim, fotoğrafları birleştirebiliyoruz 😊 En fazla 3 fotoğraf tek tasarımda kullanılabilir. Daha fazla kişi için tek karede çekilmiş fotoğraf göndermeniz yeterli.";
+  }
+
   // ── PRICE ──
+  // "İkisinin/her ikisinin fiyatı" w_product'ta → iki ürünün fiyatını ver
+  if (hasAny(norm, ["ikisinin fiyat","ikisinin de fiyat","ikisininde fiyat","her ikisinin","ikisini de ogr","ikisini de öğr","iki urunun","iki ürünün"]) && !p) {
+    return "Fiyatlarımız:\n\n📸 Resimli Lazer Kolye: EFT 599 TL, kapıda 649 TL\n✨ Harfli Ataç Kolye: EFT 499 TL, kapıda 549 TL\n\nHangi model ile ilgileniyorsunuz efendim? 😊";
+  }
   if (intent === "price") {
+    // Kolye ucu / sadece uç → zincirle birlikte
+    if (hasAny(norm, ["kolye ucu","sadece ucu","sadece uc","tek kolye ucu","tek ucu","zincirsiz"])) return "Ürünlerimiz zinciri ile birlikte sunulmaktadır efendim 😊";
     // Out-of-scope ürün fiyatı soruluyorsa → kolye bilgisi
     if (hasAny(norm, ["yuzuk","yüzük","kupe","küpe","bileklik fiyat","anahtarlik","anahtarlık","tesbih"])) return "Şu anda sadece kolye modellerimiz bulunmaktadır efendim 😊";
     // Arka foto fiyat → product-aware
@@ -166,6 +381,56 @@ function getDeterministicInfoResponse(intent, ctx) {
     return `Fiyatlarımız:\n\n📸 Resimli Lazer Kolye: EFT ${PRICE.LAZER_EFT} TL, kapıda ${PRICE.LAZER_KAPIDA} TL\n✨ Harfli Ataç Kolye: EFT ${PRICE.ATAC_EFT} TL, kapıda ${PRICE.ATAC_KAPIDA} TL\n\nHangi model ile ilgileniyorsunuz efendim? 😊`;
   }
 
+  // ─────────────────────────────────────────────────────────────────
+  // PRODUCT STRUCTURE vs QUANTITY AİLESİ — cevap politikaları
+  // ─────────────────────────────────────────────────────────────────
+
+  // ── single_pendant_request: zincirsiz / sadece uç ──
+  if (intent === "single_pendant_request") {
+    // Kendi zinciri var → sadece uç gönderilebilir mi?
+    if (hasAny(norm, ["kendi zincirim","kendi zincirime","altin zincirim","altın zincirim","gold zincirim"])) {
+      return "Altın zincirinize takabilirsiniz efendim 😊 İsterseniz sadece lazer kolye ucunu gönderebiliriz. Fiyat ve detay için ekibimize iletiyorum.";
+    }
+    return "Ürünlerimiz zinciri ile birlikte sunulmaktadır efendim 😊 Zincirsiz gönderim yapmıyoruz, zincir fiyata dahildir.";
+  }
+
+  // ── product_structure_request: tek kolye / çift uç / yapı ──
+  if (intent === "product_structure_request") {
+    if (hasAny(norm, ["ust uste","üst üste","iki uc","iki uç","cift uc","çift uç","uc iki tane","uç iki tane","ucu iki","uc iki"])) {
+      return "Tek zincire iki ayrı plaka takılabiliyor efendim 😊 Biri kısa biri uzun zincirde olursa birbirini çizmez. Ekibimize iletiyorum, detay için dönüş sağlıyorlar.";
+    }
+    if (hasAny(norm, ["iki plaka","tek kolyede iki","tek kolyeye iki","bir kolyeye iki","ayni kolyeye"])) {
+      return "Evet efendim, iki ayrı plaka tek zincire takılabiliyor 😊 Farklı uzunlukta zincirle gönderilir ki birbirini çizmesin.";
+    }
+    // Genel yapı sorusu — "şansımız var mı", "olur mu" gibi
+    if (hasAny(norm, ["sansimiz","şansımız","olur mu","olurmu","mumkun mu","mümkün mü","yapiliyor mu","yapılıyor mu"])) {
+      return "Tek zincire iki ayrı plaka takılabiliyor efendim 😊 Biri kısa biri uzun olması gerekir ki birbirini çizmesin.";
+    }
+    return "Ürün yapısı hakkında ekibimize iletiyorum efendim 😊 Detaylı bilgi için en kısa sürede dönüş sağlıyorlar.";
+  }
+
+  // ── chain_structure_request: zincir yapı soruları ──
+  if (intent === "chain_structure_request") {
+    if (hasAny(norm, ["dahil mi","fiyata dahil"])) return "Evet efendim, zincir fiyata dahildir 😊";
+    if (hasAny(norm, ["zincirsiz","zincirsiz olur mu"])) return "Ürünlerimiz zinciri ile birlikte sunulmaktadır efendim 😊 Zincirsiz gönderim yapmıyoruz.";
+    if (hasAny(norm, ["altın zincir","altin zincir","kendi zincir"])) return "Altın zincirinize takabilirsiniz efendim 😊 İsterseniz sadece kolye ucunu gönderebiliriz, ekibimize iletiyorum.";
+    if (hasAny(norm, ["degistir","değiştir","baska zincir","başka zincir","secebilir","seçebilir"])) return "Standart zincirimiz 60 cm'dir efendim 😊 Farklı model için ekibimize iletiyorum.";
+    return "Standart zincirimiz 60 cm uzunluğundadır efendim 😊 Zincir fiyata dahildir.";
+  }
+
+  // ── quantity_order: gerçek adet siparişi ──
+  if (intent === "quantity_order") {
+    const st = ctx.fields?.conversation_stage || "";
+    if (hasAny(norm, ["20 adet","20"])) return "20 adet için özel fiyat ve ödeme bilgisi için ekibimize iletiyorum efendim 😊";
+    if (p === "lazer" || !p) {
+      if (hasAny(norm, ["4","dort","dört"])) return `Tabi efendim 😊 Çoklu alımda 4 kolye aynı adrese: EFT ${PRICE.MULTI_LAZER[4]?.eft || "2000"} TL. ${st === STAGE.WAITING_PAYMENT ? "Ödeme tercihinizi belirtebilirsiniz." : ""}`.trim();
+      if (hasAny(norm, ["5","bes","beş"])) return `Tabi efendim 😊 Çoklu alımda 5 kolye aynı adrese: EFT ${PRICE.MULTI_LAZER[5]?.eft || "2500"} TL.`;
+      if (hasAny(norm, ["3","uc","üç"])) return `Tabi efendim 😊 Çoklu alımda 3 kolye aynı adrese: EFT ${PRICE.MULTI_LAZER[3].eft} TL, kapıda ${PRICE.MULTI_LAZER[3].kapida} TL.`;
+      return `Tabi efendim 😊 Çoklu alımda 2 kolye aynı adrese: EFT ${PRICE.MULTI_LAZER[2].eft} TL, kapıda ${PRICE.MULTI_LAZER[2].kapida} TL.`;
+    }
+    return `Tabi efendim, çoklu alımda indirimli fiyatlarımız mevcut 😊 Kaç adet düşünüyorsunuz?`;
+  }
+
   // ── MULTI ORDER ──
   if (intent === "multi_order") {
     if (p === "lazer" || !p) {
@@ -189,7 +454,11 @@ function getDeterministicInfoResponse(intent, ctx) {
   if (intent === "shipping") {
     if (hasAny(norm, ["kargom","siparisim","siparişim","gelmedi","ulasmadi","ulaşmadı","verildi mi","yola cikti"])) return "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊";
     if (hasAny(norm, ["aras kargo","aras ile","mng kargo","surat kargo","sürat kargo","farkli kargo","farklı kargo"])) return "Gönderimlerimiz PTT Kargo ile yapılmaktadır efendim 😊 Farklı kargo seçeneği için +25 TL ek ücret ile Aras Kargo tercih edilebilir.";
-    if (hasAny(norm, ["hangi kargo","kargo firmasi","kargo firması","ptt mi","ptt ile"])) return "Gönderimlerimiz PTT Kargo ile yapılmaktadır efendim 😊";
+    if (hasAny(norm, ["hangi kargo","kargo firmasi","kargo firması","ptt mi","ptt ile"])) {
+      // Combo: hangi kargo + süre birlikte sorulmuşsa
+      if (hasAny(norm, ["kac gun","kaç gün","kac is gunu","kaç iş günü","ne zaman","suresi","süresi","teslim"])) return "Gönderimlerimiz PTT Kargo ile yapılmaktadır efendim 😊 İstanbul içi 1-2, diğer iller 2-3 iş günü.";
+      return "Gönderimlerimiz PTT Kargo ile yapılmaktadır efendim 😊";
+    }
     if (hasAny(norm, ["takip numarasi","takip numarası","takip no","numara rica","numarasi rica","numarası rica"])) return "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊";
     if (hasAny(norm, ["takip","nasil takip","nasıl takip"])) return "Kargoya verildiğinde size otomatik SMS gelecektir efendim 😊 PTT Kargo takip numarası ile takibinizi yapabilirsiniz.";
     if (hasAny(norm, ["istanbul disi","istanbul dışı","sehir disi","şehir dışı"])) return "İstanbul dışı gönderimler genellikle 2-3 iş günü içinde teslim edilmektedir efendim 😊 Kargoya verildiğinde SMS gelecektir.";
@@ -203,6 +472,8 @@ function getDeterministicInfoResponse(intent, ctx) {
   if (intent === "chain_question") {
     // Plaka ölçüsü sorusu chain'e düşebilir
     if (hasAny(norm, ["plaka","olcu","ölçü","yuvarlak","boyut"]) && !hasAny(norm, ["zincir"])) return "Plaka boyutu 3 cm'dir efendim 😊";
+    // Zincir dahil mi → ürüne bakılmaksızın
+    if (hasAny(norm, ["dahil mi","fiyata dahil","zincir dahil","dahil"])) return "Evet efendim, zincir fiyata dahildir 😊";
     if (p === "lazer") {
       if (hasAny(norm, ["uzat","uzatma","uzatilir","uzatılır","daha uzun"])) return "Lazer kolyede zincir 60 cm standarttır, uzatma bulunmamaktadır efendim 😊";
       if (hasAny(norm, ["kisalt","kısalt","kisa zincir","kısa zincir"])) return "Lazer kolyede zincir 60 cm standarttır, kısaltma yapılmamaktadır efendim 😊";
@@ -303,7 +574,7 @@ function getDeterministicInfoResponse(intent, ctx) {
     return "Arka yüze fotoğraf eklemek ücretsizdir efendim 😊 Ek ücret alınmaz.";
   }
   if (intent === "back_text_info") {
-    const origProduct = ctx.fields?.ilgilenilen_urun || ctx.product;
+    const origProduct = ctx.previousProduct || ctx.fields?.ilgilenilen_urun || ctx.product;
     if (origProduct === "atac") return "Bu modelde arka yüze yazı yapılmıyor efendim 😊 Resimli lazer kolyede arka yüze yazı eklenebilmektedir.";
     if (hasAny(norm, ["ne yazilir","ne yazılır","genelde","ornek","örnek","ne yazabiliriz","neler yaziliyor","neler yazılıyor"])) return "Arka yüze genelde isim, tarih, kısa bir not veya dua yazılıyor efendim 😊 Ücretsizdir.";
     if (hasAny(norm, ["dua","isim yazilir","isim yazılır","tarih yazilir","tarih yazılır"])) return "Tabi efendim, arka yüze yazılabilir 😊 Ücretsizdir.";
@@ -313,7 +584,7 @@ function getDeterministicInfoResponse(intent, ctx) {
   }
   if (intent === "back_text_examples") return "Genelde isim, tarih, kısa bir not veya dua yazılıyor efendim 😊";
   if (intent === "back_photo_info") {
-    const origProduct = ctx.fields?.ilgilenilen_urun || ctx.product;
+    const origProduct = ctx.previousProduct || ctx.fields?.ilgilenilen_urun || ctx.product;
     if (origProduct === "atac") return "Bu modelde fotoğraf kullanılmıyor efendim 😊 Resimli lazer kolyede ön ve arka yüze fotoğraf eklenebilmektedir.";
     if (hasAny(norm, ["onlu arkali","önlü arkalı","arkali onlu","arkalı önlü","iki farkli foto","iki farklı foto"])) return "Tabi efendim, birden fazla kişi olabilir 😊 Ön yüze bir fotoğraf, arka yüze başka bir fotoğraf yapabiliyoruz. Aynı fiyattan.";
     // Birleştirme sorusu (tek yüz, iki ayrı resim)
@@ -354,7 +625,10 @@ function getDeterministicInfoResponse(intent, ctx) {
   if (hasAny(norm, ["hazir olunca","hazır olunca","bitince paylas","bitince paylaş","gondermeden once paylas","göndermeden önce paylaş","hazir oldugunda","hazır olduğunda","atar misiniz foto","atar mısınız foto","foto atar misiniz","foto atar mısınız","paylasir misiniz","paylaşır mısınız","yapilmis halini","yapılmış halini","gorsel atar","görsel atar","bitince gorsel","bitince görsel","atiyomusunuz","atıyomusunuz","atiyormusunuz","atıyormusunuz","urunu gormek","ürünü görmek","gormeden odeme","görmeden ödeme","urun cikinca","ürün çıkınca","foto atin","foto atın","resim atin","resim atın","gosterir misiniz","gösterir misiniz","gorebilir miyim","görebilir miyim","kargoya vermeden","gondermeden once foto","göndermeden önce foto","gondermeden once gors","göndermeden önce görs","yapildiginda","yapıldığında","gorsel paylasir","görsel paylaşır","gorsel paylasabil","görsel paylaşabil","fotograf paylasir","fotoğraf paylaşır","urunu gormeden","ürünü görmeden","gorsel gonderir","görsel gönderir","duzenleyince","düzenleyince"])) return "Yoğunluğa göre kargo sonrası paylaşabiliyoruz efendim 😊";
 
   // ── EXAMPLE ──
-  if (intent === "example_request") return "Tabi efendim, buradan inceleyebilirsiniz 😊\n\n📸 Örnek çalışmalar: https://www.instagram.com/stories/highlights/18084971893996144/\n📦 Sizden gelenler: https://www.instagram.com/stories/highlights/18079575341155587/";
+  if (intent === "example_request") {
+    if (stage === STAGE.ORDER_COMPLETED || stage === "order_completed") return "Yoğunluğa göre kargo öncesi paylaşabiliyoruz efendim 😊";
+    return "Tabi efendim, buradan inceleyebilirsiniz 😊\n\n📸 Örnek çalışmalar: https://www.instagram.com/stories/highlights/18084971893996144/\n📦 Sizden gelenler: https://www.instagram.com/stories/highlights/18079575341155587/";
+  }
 
   // ── DETAIL REQUEST ──
   if (intent === "detail_request") {
@@ -386,7 +660,7 @@ function getDeterministicInfoResponse(intent, ctx) {
   if (hasAny(norm, ["link ile odeme","link ile ödeme","online odeme","online ödeme"])) return "Link ile ödeme seçeneğimiz bulunmamaktadır efendim 😊";
   if (hasAny(norm, ["kolye ucu","sadece ucu","sadece uc","kendi zincirime","zincir yok","zincirsiz"])) return "Ürünlerimiz zinciri ile birlikte sunulmaktadır efendim 😊";
   if (hasAny(norm, ["2 plaka","iki plaka","3 plaka","birden fazla plaka"])) return "Bir zincirde tek plaka olarak hazırlanıyor efendim 😊 İsterseniz iki ayrı kolye olarak hazırlayabiliriz.";
-  if (hasAny(norm, ["aksesuar","pembe kalp","siyah kalp","nazar boncugu","nazar boncuğu","kalp var mi","kalp var mı","nazar boncuklu","kalp takil","kalp şekli","kalp sekli","kalp yapil","kalp yapıl","boncuk ekle","boncuklu olsun","kalp olsun","kalpli olsun","kalp seklinde","kalp şeklinde","aksesuar secenekleri","aksesuar seçenekleri"])) return "Pembe kalp, siyah kalp ve nazar boncuğumuz mevcut efendim 😊 Aksesuar ücretsizdir, fiyata dahildir.";
+  if (hasAny(norm, ["aksesuar","pembe kalp","siyah kalp","nazar boncugu","nazar boncuğu","kalp var mi","kalp var mı","nazar boncuklu","kalp takil","kalp şekli","kalp sekli","kalp yapil","kalp yapıl","boncuk ekle","boncuklu olsun","boncuk koy","boncukta koy","boncuk var mi","boncuk var mı","boncuk istiyorum","kalp olsun","kalpli olsun","kalp seklinde","kalp şeklinde","aksesuar secenekleri","aksesuar seçenekleri"])) return "Pembe kalp, siyah kalp ve nazar boncuğumuz mevcut efendim 😊 Aksesuar ücretsizdir, fiyata dahildir.";
   // Plaka/renk/zincir örneği isteme → highlights linki
   if (hasAny(norm, ["plaka ornegi","plaka örneği","altin plaka orne","altın plaka örne","gumus plaka","gümüş plaka","mat celik nasil","mat çelik nasıl","mat celik ornek","mat çelik örnek","renk ornegi","renk örneği","nasil gorunuyor","nasıl görünüyor","nasil duruyor","nasıl duruyor","altin plaka","altın plaka","gumus ornek","gümüş örnek","zincir ornegi","zincir örneği"])) return "Tabi efendim, buradan inceleyebilirsiniz 😊\n\n📸 Örnek çalışmalar: https://www.instagram.com/stories/highlights/18084971893996144/";
   if (hasAny(norm, ["bileklik","bilezik"])) {
@@ -416,13 +690,20 @@ function getDeterministicInfoResponse(intent, ctx) {
   if (hasAny(norm, ["gumus olsun","gümüş olsun","gumus istiyorum","gümüş istiyorum","gumus yapabiliyor","gümüş yapabiliyor","gumus var mi","gümüş var mı","gumus seceneg","gümüş seçenek"])) return "Ürünlerimiz paslanmaz çelikten üretilmektedir efendim 😊 Gümüş kaplama seçeneğimiz bulunmaktadır. Kararma, solma yapmaz.";
   // Her yere kargo
   if (hasAny(norm, ["her yere kargo","her yere gonderi","her yere gönderim","her ile","turkiyenin her yeri","türkiyenin her yeri"])) return "Evet efendim, Türkiye'nin her yerine kargo ile gönderim yapıyoruz 😊";
-  if (hasAny(norm, ["seffaf kargo","şeffaf kargo","ozel kargo","özel kargo","aras kargo","mng kargo","surat kargo","sürat kargo"])) return "Gönderimlerimiz PTT Kargo ile yapılmaktadır efendim 😊 Farklı kargo seçeneği için +25 TL ek ücret ile Aras Kargo tercih edilebilir.";
+  if (hasAny(norm, ["seffaf kargo","şeffaf kargo"])) return "Şeffaf kargo seçeneğimiz bulunmamaktadır efendim 😊 Ancak ürününüzü göndermeden önce fotoğrafını çekip atabiliriz.";
+  if (hasAny(norm, ["ozel kargo","özel kargo","aras kargo","mng kargo","surat kargo","sürat kargo"])) return "Gönderimlerimiz PTT Kargo ile yapılmaktadır efendim 😊 Farklı kargo seçeneği için +25 TL ek ücret ile Aras Kargo tercih edilebilir.";
   if (hasAny(norm, ["italyan zincir","halat zincir","burgulu zincir"])) { 
     const c = p === "atac" ? "50" : "60"; 
     const suffix = stage === STAGE.WAITING_LETTERS ? " Yapılmasını istediğiniz harfleri yazabilirsiniz 😊" : "";
     return `Tek model standart zincirimiz bulunmaktadır efendim 😊 ${c} cm.${suffix}`; 
   }
-  if (hasAny(norm, ["siparis nasil","sipariş nasıl","nasil siparis","nasıl sipariş","siparis verme","sipariş verme","siparis vermek","sipariş vermek","nasil siparis verebilirim","nasıl sipariş verebilirim"])) {
+  if (hasAny(norm, ["siparis nasil","sipariş nasıl","nasil siparis","nasıl sipariş","siparis verme","sipariş verme","siparis vermek","sipariş vermek","nasil siparis verebilirim","nasıl sipariş verebilirim"]) && !hasAny(norm, ["vermeyeceg","istemiyorum","vazgec","vazgeç","henuz","henüz","daha sonra","dusuneceg","düşüneceğ"])) {
+    // Stage ilerlemişse → fiyat dump etme, stage'e uygun davet ver
+    if (stage === STAGE.WAITING_PAYMENT) return null;
+    if (stage === STAGE.WAITING_ADDRESS) return null;
+    // ━━━ FIX F2: waiting_photo/letters'ta fiyat dump etme ━━━
+    if (stage === STAGE.WAITING_PHOTO) return "Tabii efendim 😊 Fotoğrafınızı buradan iletebilirsiniz, siparişinizi hemen oluşturuyoruz.";
+    if (stage === STAGE.WAITING_LETTERS) return "Tabii efendim 😊 Yapılmasını istediğiniz harfleri yazabilirsiniz.";
     if (p === "lazer") return TEXT.LAZER_PRICE;
     if (p === "atac") return TEXT.ATAC_PRICE;
     return TEXT.MAIN_MENU;
@@ -453,7 +734,70 @@ function getToneResponse(intent, ctx) {
 
   // ── CLAIMS (stage-aware) ──
   if (intent === "photo_claim") return "Fotoğrafınızı aldım efendim 😊";
-  if (intent === "address_claim") return "Bilgilerinizi aldım efendim 😊 Eksik bilgi varsa ekibimiz sizinle iletişime geçecektir.";
+  // ══ SIRA 6: SLOT-AWARE CLAIM / PARTIAL SLOT / FULL BUNDLE ══
+
+  // full_contact_bundle: name + phone + address → tekrar bilgi istemek YASAK
+  if (intent === "full_contact_bundle") {
+    const st = ctx.fields?.conversation_stage || "";
+    if (st === STAGE.WAITING_ADDRESS || st === STAGE.WAITING_PAYMENT || st === STAGE.WAITING_PHOTO) {
+      return "Bilgilerinizi aldım efendim 😊 Siparişinizi işleme alıyoruz, kargoya verilince bilgilendirme yapacağız.";
+    }
+    return "Bilgilerinizi aldım efendim, teşekkürler 😊";
+  }
+
+  // phone_provide: sadece telefon → telefonu aldım + adres iste
+  if (intent === "phone_provide") {
+    const st = ctx.fields?.conversation_stage || "";
+    if (st === STAGE.WAITING_ADDRESS) return "Telefon numaranızı aldım efendim 😊 Ad soyad ve açık adres bilgileriniz ile devam edelim.";
+    if (st === STAGE.WAITING_PHOTO || st === STAGE.WAITING_PAYMENT) return "Telefon numaranızı not aldım efendim 😊";
+    return "Telefon numaranızı aldım efendim 😊";
+  }
+
+  // address_provide_partial: şehir/ilçe düzeyinde → konum alındı + devam iste
+  if (intent === "address_provide_partial") {
+    return "Konum bilginizi aldım efendim 😊 Ad soyad, cep telefonu ve açık adresin devamını da yazabilirsiniz.";
+  }
+
+  // address_provide_full: açık adres var → aldım
+  if (intent === "address_provide_full") {
+    const st = ctx.fields?.conversation_stage || "";
+    if (st === STAGE.WAITING_ADDRESS) return "Adres bilgilerinizi aldım efendim 😊 Siparişinizi hazırlıyoruz.";
+    return "Adres bilgilerinizi not aldım efendim 😊";
+  }
+
+  // identity_provide: isim → aldım + telefon/adres iste
+  if (intent === "identity_provide") {
+    return "İsim bilgisini aldım efendim 😊 Cep telefonu ve açık adresiniz ile devam edelim.";
+  }
+
+  // slot_claim (generic): claim var ama target belli değil
+  if (intent === "slot_claim") {
+    const st = ctx.fields?.conversation_stage || "";
+    const f = ctx.fields || {};
+    // Completed stage'de ödeme claim'i → ekibimize
+    if (st === STAGE.ORDER_COMPLETED || st === "order_completed") return "Siparişiniz alınmıştır efendim 😊 Ekibimize iletiyorum, kontrol edip dönüş sağlayacağız.";
+    const hasPhone = f.phone_received === "1";
+    const hasAddr = f.address_status === "received";
+    if (hasPhone && hasAddr) return "Bilgilerinizi aldım efendim, teşekkürler 😊";
+    if (!hasPhone) return "Bilgilerinizi not aldım efendim 😊 Cep telefonu ve açık adres bilgilerinizi de paylaşabilir misiniz?";
+    if (!hasAddr) return "Not aldım efendim 😊 Açık adres bilgilerinizi de yazabilirsiniz.";
+    return "Tabi efendim, bilgilerinizi aldım 😊";
+  }
+
+  // address_claim: "adresi attım" claim
+  if (intent === "address_claim") {
+    const f = ctx.fields || {};
+    if (f.address_status === "received") return "Adresinizi aldık efendim 😊 Kargoya verilince bilgilendirme yapacağız.";
+    return "Bilgileri aldım efendim 😊 Ekibimiz kontrol edip en kısa sürede dönüş sağlayacak.";
+  }
+
+  // phone_claim: "telefonu attım" claim
+  if (intent === "phone_claim") {
+    const f = ctx.fields || {};
+    if (f.phone_received === "1") return "Telefon numaranızı aldık efendim 😊";
+    return "Telefon bilginizi aldım efendim 😊 Kontrol edip dönüş sağlayacağız.";
+  }
+
   if (intent === "info_claim") return "Bilgilerinizi aldım efendim 😊";
   if (intent === "general_claim") return "Tabi efendim, bilgilerinizi aldım 😊";
 
@@ -470,8 +814,13 @@ function getToneResponse(intent, ctx) {
     if (hasAny(norm, ["gunaydin","günaydın"])) return "Günaydın efendim 😊";
     if (hasAny(norm, ["kolay gelsin"])) return "Teşekkür ederiz efendim 😊";
     if (hasAny(norm, ["allah razi olsun","allah razı olsun"])) return "Cümlemizden efendim, teşekkür ederiz 🤍";
-    if (hasAny(norm, ["insallah","inşallah"])) return "Amin efendim 🤍";
-    if (hasAny(norm, ["amin"])) return "Amin efendim 🤍";
+    if (hasAny(norm, ["insallah","inşallah"])) {
+      // Dua bağlamı: "Allah" AYRIYKEN (inşallah'ın içindeki değil), rahmet, cennet, şifa → amin
+      const duaContext = /\ballah\b/.test(norm.replace(/insallah|inşallah/g,"")) || hasAny(norm, ["rahmet","cennet","sifa","şifa","dua","hayirli","hayırlı"]);
+      if (duaContext) return "Amin efendim 🤍";
+      return "İnşallah efendim 😊";
+    }
+    if (/\bamin\b/.test(norm)) return "Amin efendim 🤍";
     if (hasAny(norm, ["masallah","maşallah"])) return "Maşallah efendim 😊";
     if (hasAny(norm, ["elinize saglik","elinize sağlık","ellerinize saglik","ellerinize sağlık","emeginize saglik","emeğinize sağlık"])) return "Teşekkür ederiz efendim 😊";
     if (hasAny(norm, ["bayildim","bayıldım","cok guzel","çok güzel","harika","muhtesem","muhteşem","super","süper","begendim","beğendim","tatli","tatlı","gecmis olsun","geçmiş olsun","rica ederim","helal edin"])) return "Çok teşekkür ederiz efendim 😊";
@@ -518,6 +867,9 @@ function getProductFlowResponse(intent, ctx) {
     const stage = ctx.fields?.conversation_stage || "";
     if (stage === STAGE.WAITING_PAYMENT) return "Tabi efendim 😊 Ödeme tercihinizi belirtebilir misiniz? EFT / Havale veya kapıda ödeme.";
     if (stage === STAGE.WAITING_ADDRESS) return "Tabi efendim 😊 Ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim.";
+    // ━━━ FIX F2: waiting_photo'da fiyat dump değil fotoğraf daveti ━━━
+    if (stage === STAGE.WAITING_PHOTO) return "Tabii efendim 😊 Fotoğrafınızı buradan iletebilirsiniz, siparişinizi hemen oluşturuyoruz.";
+    if (stage === STAGE.WAITING_LETTERS) return "Tabii efendim 😊 Yapılmasını istediğiniz harfleri yazabilirsiniz.";
     if (p === "lazer") return TEXT.LAZER_PRICE;
     if (p === "atac") return TEXT.ATAC_PRICE;
     return TEXT.MAIN_MENU;
@@ -547,7 +899,7 @@ async function callAI(ctx, factBlock, knowledge) {
   if (!apiKey) return null;
   const model = process.env.AI_REPLY_MODEL || "gpt-5-mini";
   const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-  const systemPrompt = `Sen Yudum Jewels Instagram satış asistanısın. SADECE JSON döndür.\nKURALLAR:\n1. Bilgi uydurma. 2. Max 2 cümle, sonuna 😊. 3. Yan soru → sadece onu cevapla. 4. Lazer zincir 60cm. 5. Fiyat: Lazer EFT 599, kapıda 649. Ataç EFT 499, kapıda 549. 6. Kapıda SADECE NAKİT. 7. WhatsApp müşteri sormadıkça verme. 8. İndirim yapma.\n${factBlock ? `KONU:\n${factBlock}` : ""}`;
+  const systemPrompt = `Sen Yudum Jewels Instagram satış asistanısın. SADECE JSON döndür.\nKURALLAR:\n1. Bilgi uydurma. 2. Min 1 tam cümle, max 2 cümle, sonuna 😊. TEK KELİMELİK CEVAP YASAK ("Fotoğraf?", "Kaç?", "Renk?" gibi kısa cevaplar VER-ME). 3. Yan soru → sadece onu cevapla, stage sorusunu EKLEME. 4. Lazer kolyede zincir 60 cm TEK MODEL. 5. Fiyat: Lazer EFT 599, kapıda 649. Ataç EFT 499, kapıda 549. 6. Kapıda SADECE NAKİT. 7. WhatsApp müşteri sormadıkça verme. 8. İndirim yapma. 9. "Suya dayanıklı" cümlesini SADECE su/deniz sorusu gelirse kullan, başka durumda KULLANMA. 10. Müşteriden ONAY İSTEME, bilgiyi al ve devam et. 11. Kendini tanıtırken "ben sen" YAZMA, "Yudum Jewels satış asistanıyım" de.\n${factBlock ? `KONU:\n${factBlock}` : ""}`;
   const userPrompt = `Ürün: ${ctx.product || "?"}\nAşama: ${ctx.fields?.conversation_stage || "?"}\n${knowledge ? `BİLGİ:\n${knowledge}\n` : ""}MÜŞTERİ: "${ctx.message}"\nJSON: {"reply":"...","confidence":0.0-1.0,"next_action":"none|handoff"}`;
   try {
     const c = new AbortController(); const t = setTimeout(() => c.abort(), 25000);
@@ -581,24 +933,73 @@ export async function generateAnswer(ctx) {
   if (isCompleted) {
     const { norm } = ctx;
     // Completed'da normal akışa düşmesi gereken intentler
-    const passThrough = ["smalltalk","ack","sensitivity","frustration","new_order","order_start","bargain","chain_question","material_question","trust","example_request","back_text_info","back_photo_info","detail_request","location","shipping_price","shipping","price"];
+    const passThrough = ["smalltalk","ack","sensitivity","frustration","new_order","order_start","bargain","chain_question","material_question","trust","example_request","back_text_info","back_photo_info","back_text_content","back_text_question","back_text_fit_question","detail_request","location","shipping_price","shipping","price","preview_request","decision_support","composition_question","quantity_order","product_structure_request","single_pendant_request","chain_structure_request",
+      // Sıra 6: slot/claim intents
+      "photo_claim","address_claim","phone_claim","slot_claim","info_claim","general_claim","full_contact_bundle","phone_provide","address_provide_partial","address_provide_full","identity_provide","completed_change_request"];
+      // NOT: completed_photo_share_request passThrough'dan ÇIKARILDI — satır ~968'deki deterministic preview policy cevabını alsın (F4 fix)
     
     // Sipariş teyidi — kargo takipten ÖNCE
     if (hasAny(norm, ["siparis alindi","siparişim alındı","siparis tamam","siparişim tamam","siparisim alindi","siparişim alındı"])) return { text: "Evet efendim, siparişiniz alınmıştır 😊 Ekibimiz en kısa sürede ürününüzü hazırlayacaktır.", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+
+    // ━━━ FIX F7: completed stage'de yeni adres/telefon/bundle → operatöre gitmesin ━━━
+    // Müşteri tamamlanmış siparişte adres/telefon değişikliği veya ek bilgi yazıyorsa
+    const _raw = ctx.message || "";
+    const _hasPhoneCompl = /\b0?5\d{2}[\s.\-]?\d{3}[\s.\-]?\d{2}[\s.\-]?\d{2}\b/.test(_raw);
+    const _hasAddressCompl = hasAny(norm, ["mahalle","mah ","cadde","cad ","sokak","sok ","bulvar","apt","daire","kat "]);
+    const _hasNameCompl = /[A-ZÇĞİÖŞÜa-zçğıöşü]{3,}\s+[A-ZÇĞİÖŞÜa-zçğıöşü]{3,}/.test(_raw) && _raw.trim().length < 100;
+    const _bundleScore = (_hasPhoneCompl ? 1 : 0) + (_hasAddressCompl ? 1 : 0) + (_hasNameCompl ? 1 : 0);
+
+    // Tam bundle — direkt kabul
+    if (_bundleScore >= 2) {
+      return { text: "Bilgilerinizi aldım efendim 😊 Ekibimize iletiyoruz, siparişinizde ilgili güncelleme yapılacaktır.", source: "completed_bundle", reply_class: REPLY_CLASS.FIXED_INFO };
+    }
+    // Sadece telefon — telefon aldık
+    if (_hasPhoneCompl && !_hasAddressCompl && _raw.trim().length < 30) {
+      return { text: "Telefon numaranızı aldım efendim 😊 Ekibimize iletiyoruz.", source: "completed_phone", reply_class: REPLY_CLASS.FIXED_INFO };
+    }
+    // Sadece adres (tek mesajda uzun adres)
+    if (_hasAddressCompl && !_hasPhoneCompl && _raw.trim().length > 30) {
+      return { text: "Adres bilginizi aldım efendim 😊 Ekibimize iletiyoruz.", source: "completed_address", reply_class: REPLY_CLASS.FIXED_INFO };
+    }
     
     // Yeni sipariş isteği completed'da → menü göster (sadece gerçek sipariş isteği)
     if ((intent === "order_start" || intent === "new_order") && hasAny(norm, ["siparis","siparış","istiyorum","yaptirmak","yaptırmak","vermek","tekrar","yeni","bir tane daha","baska","başka"])) return { text: TEXT.MAIN_MENU, source: "completed_new_order", reply_class: REPLY_CLASS.FLOW_PROGRESS };
     
+    // Foto paylaşım completed'da → koşullu cevap (operatör DEĞİL) — DURUM SORUSUNDAN ÖNCE
+    if (hasAny(norm, ["paylasirsaniz","paylaşırsanız","bitince paylas","bitince paylaş","paylasiyor musunuz","paylaşıyor musunuz","paylasiyormusunuz","paylaşıyormusunuz","siparis sonrasi foto","sipariş sonrası foto","gorsel atar","görsel atar","foto atar","paylasir misiniz","paylaşır mısınız","yapinca foto","yapınca foto","yapinca resim","yapınca resim","hazir olunca","hazır olunca","duzenleyince","düzenleyince","gorebilir miyim","görebilir miyim","resim atar","fotograf atar","fotoğraf atar","hazirlandiginda","hazırlandığında","hazirlaninca","hazırlanınca","onceden atma","önceden atma","onceden gorme","önceden görme","onceden gor","önceden gör","ornek atma","örnek atma","bitince atar","bittiginde","bittiğinde"])) return { text: "Yoğunluğa göre kargo sonrası paylaşabiliyoruz efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+
+    // ━━━ FIX F4: preview/reminder ("atacaktınız / görsel atar mısınız / hazırlanmış halini") → policy cevabı ━━━
+    // Durum sorusu olarak operatöre atılmasın, preview policy dönsün
+    if (hasAny(norm, [
+      "atacaktiniz","atacaktınız","atacaginizi","atacağınızı","atacak miydiniz","atacak mıydınız",
+      "soylemistiniz","söylemiştiniz","demistiniz","demiştiniz",
+      "atma sansiniz","atma şansınız","atma sans",
+      "hazirlanmis hal","hazırlanmış hal","hazirlanmis halini","hazırlanmış halini",
+      "gonderebilir misiniz","gönderebilir misiniz","gonderirseniz","gönderirseniz",
+      "gormek isterim","görmek isterim","gormek istiyorum","görmek istiyorum",
+      "goremez miyim","göremez miyim","goremezmiyim","göremezmiyim",
+      "rica etsem atma","baskidan once","baskıdan önce",
+      "nasil durdu","nasıl durdu","nasil durduguna","nasıl durduğuna",
+      "kolyenin yapilmis","kolyenin yapılmış","yapılmış hali","yapilmis hali",
+      "zinciri de atarsin","zinciri de atarsınız","bi bakayim","bı bakayım",
+      "sipairs gorseli","sipariş görseli","sipariş gorseli","gorsel atilacakti","görsel atılacaktı",
+      "gorsel atacakti","görsel atacaktı","attigimiz gorseli","attığımız görseli",
+      "urunu goreme","ürünü göreme","urunu gorebil","ürünü görebil","benim urun","benim ürün",
+      "taslagini","taslağını","taslagini atar","taslağını atar",
+    ])) return { text: "Yoğunluğa göre kargo öncesi paylaşabiliyoruz efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+
     // Durum sorusu / hatırlatma — intent ne olursa olsun (passthrough override)
-    if (hasAny(norm, ["hazirlandi mi","hazırlandı mı","hazirlandi","hazırlandı","yapildi mi","yapıldı mı","ne durumda","hazir mi","hazır mı","ne asamada","ne aşamada","haber bekliyorum","cvp bekliyorum","donus bekliyorum","dönüş bekliyorum","kolyeyi yapinca","kolyeyi yapınca","neden donmuyorsunuz","neden dönmüyorsunuz","neden donus","neden dönüş","cevap vermiyorsunuz","atacaktiniz","atacaktınız","atacaginizi","atacağınızı","soylemistiniz","söylemiştiniz","hatirlatma","hatırlatma","siparis verdim","sipariş verdim","siparis vermistim","sipariş vermiştim","urun geldi","ürün geldi","siparisimle alakasi","siparişimle alakası"])) return { text: "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
+    // NOT: "yapildi mi + görsel/resim" → preview'a git (durum DEĞİL)
+    const asksVisual = hasAny(norm, ["gorsel","görsel","resim","foto","fotograf","fotoğraf","atar","atin","atın","ilet","gonder","gönder","bakayim","bakayım"]);
+    if (hasAny(norm, ["hazirlandi mi","hazırlandı mı","hazirlandi","hazırlandı","yapildi mi","yapıldı mı","ne durumda","hazir mi","hazır mı","ne asamada","ne aşamada","haber bekliyorum","cvp bekliyorum","donus bekliyorum","dönüş bekliyorum","kolyeyi yapinca","kolyeyi yapınca","neden donmuyorsunuz","neden dönmüyorsunuz","neden donus","neden dönüş","cevap vermiyorsunuz","hatirlatma","hatırlatma","siparis verdim","sipariş verdim","siparis vermistim","sipariş vermiştim","urun geldi","ürün geldi","siparisimle alakasi","siparişimle alakası"]) && !asksVisual) return { text: "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
+    // Görsel istiyorsa, durum sorusu olsa bile preview policy dön
+    if (hasAny(norm, ["hazirlandi mi","hazırlandı mı","yapildi mi","yapıldı mı"]) && asksVisual) return { text: "Yoğunluğa göre kargo öncesi paylaşabiliyoruz efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
     // "bekliyorum" tek başına (fiyat/bilgi bekliyorum hariç) → basit teyit
     if (hasAny(norm, ["bekliyorum"]) && !hasAny(norm, ["fiyat","bilgi"])) return { text: "Siparişiniz alınmıştır efendim 😊 En kısa sürede hazırlanıp kargoya verilecektir.", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
 
     // Kişisel kargo takibi her zaman operatöre (passthrough override)
     if (hasAny(norm, ["kargom","gelmedi","ulasmadi","ulaşmadı","nerede kargo","verildi mi","dagitim","dağıtım","kargoya verdiniz","kargoya verildi","herkesin kargosu","gec geldi","geç geldi","gec kaldi","geç kaldı"])) return { text: "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
     
-    // Foto paylaşım completed'da → koşullu cevap (operatör DEĞİL)
-    if (hasAny(norm, ["paylasirsaniz","paylaşırsanız","bitince paylas","bitince paylaş","paylasiyor musunuz","paylaşıyor musunuz","paylasiyormusunuz","paylaşıyormusunuz","siparis sonrasi foto","sipariş sonrası foto","gorsel atar","görsel atar","foto atar","paylasir misiniz","paylaşır mısınız","yapinca foto","yapınca foto","yapinca resim","yapınca resim","hazir olunca","hazır olunca","duzenleyince","düzenleyince","gorebilir miyim","görebilir miyim","resim atar","fotograf atar","fotoğraf atar"])) return { text: "Yoğunluğa göre kargo sonrası paylaşabiliyoruz efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
     // Gizlilik/iade/değişiklik completed'da → operatör (passThrough intent'leri bile yakala)
     if (hasAny(norm, ["silinir mi","silinecek mi","gizlilik","fotografi paylas","fotoğrafı paylaş","foto paylasin","foto paylaşın","iade","almak istemiyorum","degistirebilir","değiştirebilir","degistirmek","değiştirmek","bu fotograf olsun","bu fotoğraf olsun","bu foto olsun"])) return { text: "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
     // Dekont completed'da → iletebilirsiniz
@@ -618,6 +1019,26 @@ export async function generateAnswer(ctx) {
       if (intent === "multi_order") return { text: TEXT.MAIN_MENU, source: "completed", reply_class: REPLY_CLASS.FLOW_PROGRESS };
       // Complaint completed'da → operatör
       if (intent === "complaint") return { text: "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
+      // ══ SIRA 7: COMPLETED EDGE-CASE POLICY ══
+
+      // completed_change_request: değişiklik/iptal → operatör
+      if (intent === "completed_change_request") return { text: "Ekibimize iletiyorum efendim, kontrol edip en kısa sürede dönüş sağlıyoruz 😊", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
+
+      // completed_back_text_content: ek içerik → kabul et
+      if (intent === "completed_back_text_content" || intent === "back_text_content") return { text: "Tabi efendim, arka yazı notu aldım 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+
+      // completed_photo_share_request: foto paylaşım → deterministic policy
+      if (intent === "completed_photo_share_request" || intent === "example_request") return { text: "Yoğunluğa göre kargo öncesi paylaşabiliyoruz efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+
+      // completed_gratitude: teşekkür / memnuniyet → sıcak ack, menü AÇMA
+      if (intent === "completed_gratitude") {
+        if (/\bamin\b/.test(norm) || hasAny(norm, ["allah razi","allah razı","dua ","dua."])) return { text: "Amin efendim, iyi günler dileriz 😊 Güle güle kullanın inşallah 🤍", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+        return { text: "Çok teşekkür ederiz efendim 😊 Rica ederiz, güle güle kullanın inşallah 🤍", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
+
+      // completed_neutral_ack: kısa nötr → "tabi efendim", BİLGİLERİNİZİ ALDIM YASAK
+      if (intent === "completed_neutral_ack") return { text: "Tabi efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+
       // Ürün sorunları
       if (hasAny(norm, ["kotu geldi","kötü geldi","kirik","kırık","cizik","çizik","hasarli","hasarlı","kopuk","eksik","hata var","cizikler","sikayet","şikayet","gec geldi","geç geldi","gec kaldi","geç kaldı"])) return { text: "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
       // Memnuniyetsizlik
@@ -634,20 +1055,70 @@ export async function generateAnswer(ctx) {
       if (hasAny(norm, ["siparisiniz olusturuldu","siparişiniz oluşturuldu","siparisiniz alindi","siparişiniz alındı"])) return { text: "Siparişiniz onaylanmıştır efendim 😊 Ekibimiz en kısa sürede ürününüzü hazırlayacaktır.", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
       // Photo/claim/phone in completed → teyit
       if (intent === "phone" || intent === "name_only") return { text: "Bilgilerinizi aldım efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
-      if (intent === "payment_confirmation" || intent === "photo" || intent === "photo_claim" || intent === "general_claim" || intent === "address_claim" || intent === "info_claim") return { text: "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
+      if (intent === "payment_confirmation" || intent === "photo" || intent === "photo_claim" || intent === "general_claim" || intent === "address_claim" || intent === "info_claim" || intent === "slot_claim" || intent === "phone_claim" || intent === "full_contact_bundle") return { text: "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
       if (intent === "post_sale" || intent === "cancel_order") return { text: "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
       // Phone/short info in completed → basit teyit (ekibimize DEĞİL)
-      if (intent === "phone" || intent === "name_only" || (intent === "general" && norm.length < 10)) return { text: "Tabi efendim, bilgilerinizi aldım 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      if (intent === "phone" || intent === "name_only") return { text: "Bilgilerinizi aldım efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      if (intent === "general" && norm.length < 10) return { text: "Tabi efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
       // Foto uygunluk completed'da
       if (hasAny(norm, ["foto uygun","fotoğraf uygun","fotograf uygun"])) return { text: "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
+      // Arka yazı istekleri completed'da → kabul et
+      if (hasAny(norm, ["yazilcak","yazılcak","yazilsin","yazılsın","yazabilir","yazalim","yazalım","ne yazabilir","ne yazabiliriz","ne yazdiral","ne yazdıral","isim dogum","isim doğum","isim tarih"])) return { text: "Tabi efendim, arka yazı notu aldım 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      // CANIM completed'da
+      if (hasAny(norm, ["canim"])) return { text: "Tabi efendim, arka yazı notu aldım 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      // TARİH completed'da
+      if (/\d{2}[.\-\/]\d{2}[.\-\/]\d{2,4}/.test(ctx.message) || /\d{4}/.test(ctx.message)) {
+        const hasName = /[A-ZÇĞİÖŞÜa-zçğıöşü]{3,}/.test(ctx.message);
+        const isAddress = hasAny(norm, ["mahalle","mahallesi","sokak","cadde","caddesi","apt","daire","kat"]);
+        if (hasName && !isAddress && !hasAny(norm, ["05","adres","telefon"])) return { text: "Tabi efendim, arka yazı notu aldım 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
+      // ── COMPLETED EDGE-CASE POLICY ──
+      // Kısa duygusal mesaj (emoji, mutluluk, üzüntü)
+      if (norm.length < 20 && hasAny(norm, ["mutlu","sevindim","guzel","güzel","harika","super","süper","memnun","cok iyi","çok iyi","bayildim","bayıldım"])) return { text: "Çok sevindik efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      // Nötr long ack (bilgi vermemiş)
+      if (hasAny(norm, ["olabilir","tamam","tamamdir","tamamdır","peki","anladim","anladım","sorun yok","dogru","doğru"]) && norm.length < 15) return { text: "Tabi efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      // Nötr extended ack: "tamamdır iletiyorum/göndereceğim/atacağım"
+      if (hasAny(norm, ["tamamdir","tamamdır","tamam"]) && hasAny(norm, ["iletiyorum","gonderi","gönderi","atacag","atacağ","yollayac","yollayacağ","simdi","şimdi"])) return { text: "Tabi efendim, bekliyoruz 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      // Aksesuar tercihi completed'da
+      if (hasAny(norm, ["boncuk olmasin","boncuk olmasın","kalp olsun","kalp olmasin","kalp olmasın","boncuk koy","boncuklu","kalpsiz","boncuksuz"])) return { text: "Tabi efendim, notunuzu aldım 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      // Kısa back_text content: isim + sevgi sözcüğü (papatyam, güneşim, meleğim)
+      if (norm.length < 25 && hasAny(norm, ["papatyam","gunesim","güneşim","melegim","meleğim","birtanem","prensesim","aslanim","aslanım","yildiziim","yıldızım","hayatim","hayatım","cicegim","çiçeğim"]) && intent === "general") return { text: "Tabi efendim, arka yazı notu aldım 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      // Follow-up soru
+      if (hasAny(norm, ["soru sorabilir","sormak istiyorum","merak ediyorum","bir sey sorabilir","bir şey sorabilir","buyrun"])) return { text: "Tabi efendim, buyurun sorabilirsiniz 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      // General catch-all completed — uzun belirsiz mesajlar operatöre, kısa sorular AI'a bırak
+      if (intent === "general" && norm.length >= 30 && !hasAny(norm, ["aksesuar","renk","plaka","erkek","kadin","kadın","hediye","bileklik"])) return { text: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
     }
   }
 
   const slotResp = getSlotCommitResponse(intent, ctx);
   if (slotResp !== undefined) return { text: slotResp, source: "slot_commit", reply_class: REPLY_CLASS.FLOW_PROGRESS };
 
-  // B. Deterministic info
+  // B. Deterministic info (primary)
   const infoResp = getDeterministicInfoResponse(intent, ctx);
+
+  // B2. Secondary intent combine — primary cevabına secondary bilgi ekle
+  if (infoResp && ctx.secondary_intent) {
+    const secResp = getDeterministicInfoResponse(ctx.secondary_intent, { ...ctx, intent: ctx.secondary_intent });
+    if (secResp && secResp !== infoResp) {
+      // Primary ve secondary aynı bilgiyi içeriyorsa combine etme
+      const infoNorm = infoResp.toLowerCase().replace(/[^\w\s]/g, " ");
+      const secNorm = secResp.toLowerCase().replace(/[^\w\s]/g, " ");
+      // Secondary, primary'nin alt kümesiyse skip
+      const secWords = secNorm.split(/\s+/).filter(w => w.length > 4);
+      const overlap = secWords.filter(w => infoNorm.includes(w)).length;
+      if (overlap / Math.max(secWords.length, 1) > 0.6) {
+        // %60 kelime örtüşmesi → combine etme, primary yeterli
+      } else {
+        // Secondary'nin özünü al (ilk cümleyi)
+        const secCore = secResp.split(/[.!?😊]/)[0].replace(/^(Tabi efendim|Evet efendim|Ürünlerimiz|Kargo|Standart)\s*/i, "").trim();
+        if (secCore.length > 5) {
+          const combined = infoResp.trimEnd().replace(/😊\s*$/, "").trimEnd() + " 😊 Ayrıca: " + secCore.charAt(0).toLowerCase() + secCore.slice(1) + ".";
+          return { text: combined, source: "deterministic_combined", reply_class: REPLY_CLASS.FIXED_INFO };
+        }
+      }
+    }
+  }
+
   if (infoResp) return { text: infoResp, source: "deterministic", reply_class: REPLY_CLASS.FIXED_INFO };
 
   // C. Tone

@@ -112,14 +112,44 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
 
   // ═══ 6. FLOW REMINDER STRIP ═══
   // Yan soru cevabının sonundaki gereksiz akış hatırlatması
+  // Preview/decision/composition intentleri için trim yapma — cevap kasıtlı fotoğraf içeriyor
+  const TRIM_EXEMPT_INTENTS = ["preview_request","decision_support","composition_question","back_text_question","back_text_fit_question","product_structure_request","single_pendant_request","back_photo_info"];
+  // waiting_photo/waiting_letters'ta order_start/new_order cevabı kasıtlı olarak stage-prompt içerir
+  const STAGE_INVITE_EXEMPT = (ctx.intent === "order_start" || ctx.intent === "new_order" || ctx.intent === "photo_offer") &&
+                              (stage === STAGE.WAITING_PHOTO || stage === STAGE.WAITING_LETTERS);
   const flowReminder = /[.,]?\s*(fotoğrafınızı|foto.*gönder|foto.*bekl|adres.*ilet|ödeme.*seç)[^.]*[.!]?\s*$/i;
-  if (flowReminder.test(text) && text.length > 50) {
+  if (flowReminder.test(text) && text.length > 50 && !TRIM_EXEMPT_INTENTS.includes(ctx.intent) && !STAGE_INVITE_EXEMPT) {
     const cleaned = text.replace(flowReminder, "").trim();
     if (cleaned.length > 10) {
       console.log("[GUARD] TRIM: flow reminder stripped");
       text = cleaned;
       if (!text.endsWith("😊") && !text.endsWith(".") && !text.endsWith("!")) text += " 😊";
     }
+  }
+
+  // ═══ 7. AI LEAKAGE HARD GUARD ═══
+  const norm_msg = (ctx.norm || "").toLowerCase();
+  const norm_reply = text.toLowerCase().replace(/[çÇ]/g,"c").replace(/[şŞ]/g,"s").replace(/[ğĞ]/g,"g").replace(/[ıİ]/g,"i").replace(/[öÖ]/g,"o").replace(/[üÜ]/g,"u");
+  
+  // "Suya dayanıklı" sızma — sadece su/deniz sorusu gelirse kullanılmalı
+  if (norm_reply.includes("suya dayanikli") && !hasAny(norm_msg, ["su","deniz","dus","duş","dusta","duşta","banyo","yuzme","yüzme","islak","ıslak","yikama","yıkama","su degdig","su değdiğ"])) {
+    console.log("[GUARD] AI_LEAK: suya dayanıklı stripped");
+    text = "Tabi efendim 😊";
+  }
+  
+  // Kısa AI cevap — "Fotoğraf? 😊", "Kaç? 😊", "Renk? 😊" gibi tek kelime soru yasak
+  if (/^[A-ZÇĞİÖŞÜa-zçğıöşü]{2,15}\?\s*😊?\s*$/.test(text.trim())) {
+    console.log("[GUARD] AI_LEAK: short question stripped → ", text.trim());
+    const stage = ctx.fields?.conversation_stage || "";
+    if (stage === "waiting_photo") text = "Fotoğrafınızı buradan iletebilirsiniz efendim 😊";
+    else if (stage === "waiting_payment") text = "Ödeme tercihinizi belirtebilir misiniz efendim? EFT / Havale veya kapıda ödeme 😊";
+    else if (stage === "waiting_address") text = "Ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim efendim 😊";
+    else text = "Tabi efendim 😊";
+  }
+
+  // "ben sen" AI hatası
+  if (text.includes("ben Sen ") || text.includes("ben sen ")) {
+    text = text.replace(/ben [Ss]en /g, "");
   }
 
   reply.text = text;

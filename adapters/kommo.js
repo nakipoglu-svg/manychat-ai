@@ -32,7 +32,23 @@ const STAGE_MAP = {
 const STAGE_DESTEK = 104106247;       // Destek (sipariş sonrası)
 const STAGE_ON_DESTEK = 104346083;    // Ön Destek (sipariş öncesi)
 const STAGE_IPTAL = 104333019;        // İptal / İade
-const STAGE_KARGOLANDI = 104333015;   // Kargolandı (manuel kullanım)
+const STAGE_KARGOLANDI = 104333015;   // Kargo (manuel kullanım)
+const STAGE_GONDERILDI = 104456771;   // Gönderildi
+const STAGE_MUTLU = 104456775;        // Mutlu :)
+const STAGE_MUTSUZ = 104456779;       // Mutsuz :(
+
+// ─── PIPELINE DIRECTION RULES ───
+// Kargo ve sonrası stage'lerden geri dönüş yasak
+const LOCKED_STAGES = new Set([
+  104333015,  // Kargo
+  104456771,  // Gönderildi
+  104456775,  // Mutlu :)
+  104456779,  // Mutsuz :(
+]);
+// Kargo'dan sadece buraya gidilebilir
+const KARGO_ALLOWED = new Set([104106247, 104333019]); // Destek, İptal/İade
+// Gönderildi'den sadece buraya gidilebilir
+const GONDERILDI_ALLOWED = new Set([104456775, 104456779, 104000639]); // Mutlu, Mutsuz, Yeni Müşteri (yeni sipariş)
 
 // Ödeme yöntemine göre ek pipeline aşamaları (varsa)
 // Not: Kommo'da bu aşamalar yoksa oluşturulmalı veya mevcut ID'ler güncellenmelidir
@@ -188,25 +204,62 @@ async function triggerBot(botId, leadId) {
   return kApi("POST", `/api/v4/bots/${botId}/run`, { entity_id: Number(leadId), entity_type: "leads" });
 }
 
-async function movePipelineStage(leadId, stage, hasProduct, paymentMethod, supportMode, orderStatus) {
+async function movePipelineStage(leadId, stage, hasProduct, paymentMethod, supportMode, orderStatus, currentStatusId) {
   let target = STAGE_MAP[stage];
+  const cur = Number(currentStatusId || 0);
   
   // İptal / İade: order_status cancel_requested → İptal aşamasına
+  // AMA Kargo/Gönderildi/Mutlu/Mutsuz'dan İptal'e GİDEMEZ
   if (orderStatus === "cancel_requested" || stage === "human_support") {
-    target = STAGE_IPTAL;
+    if (cur === STAGE_KARGOLANDI) {
+      target = STAGE_DESTEK; // Kargo'dan sadece Destek'e
+    } else if (cur === STAGE_GONDERILDI || cur === STAGE_MUTLU || cur === STAGE_MUTSUZ) {
+      target = STAGE_MUTSUZ; // Gönderildi/Mutlu/Mutsuz'dan → Mutsuz
+    } else {
+      target = STAGE_IPTAL;
+    }
   }
   // Destek ayrımı: sipariş tamamlanmış mı?
   else if (supportMode === "1" && orderStatus !== "cancel_requested") {
-    if (orderStatus === "completed" || stage === "order_completed") {
-      // Sipariş sonrası destek
+    if (cur === STAGE_KARGOLANDI) {
+      target = STAGE_DESTEK; // Kargo'dan Destek'e
+    } else if (cur === STAGE_GONDERILDI || cur === STAGE_MUTLU || cur === STAGE_MUTSUZ) {
+      target = STAGE_MUTSUZ; // Gönderildi sonrası → Mutsuz
+    } else if (orderStatus === "completed" || stage === "order_completed") {
       target = STAGE_DESTEK;
     } else {
-      // Sipariş öncesi destek (henüz sipariş tamamlanmamış)
       target = STAGE_ON_DESTEK;
     }
   }
 
   if (!target) return;
+
+  // ═══ PIPELINE DIRECTION GUARD ═══
+  const cur = Number(currentStatusId || 0);
+  if (cur && LOCKED_STAGES.has(cur)) {
+    // Kargo'dan sadece Destek veya İptal/İade'ye
+    if (cur === STAGE_KARGOLANDI) {
+      if (!KARGO_ALLOWED.has(target)) {
+        console.log("[WH] BLOCKED: Kargo→" + target + " yasak. Kargo'dan sadece Destek/İptal.");
+        return;
+      }
+    }
+    // Gönderildi'den sadece Mutlu, Mutsuz, veya Yeni Müşteri (yeni sipariş)
+    else if (cur === STAGE_GONDERILDI) {
+      if (!GONDERILDI_ALLOWED.has(target)) {
+        console.log("[WH] BLOCKED: Gönderildi→" + target + " yasak. Sadece Mutlu/Mutsuz/Yeni Sipariş.");
+        return;
+      }
+    }
+    // Mutlu/Mutsuz'dan hiçbir yere gidemez (yeni sipariş hariç → Yeni Müşteri)
+    else if (cur === STAGE_MUTLU || cur === STAGE_MUTSUZ) {
+      // Mutsuz'dan Mutsuz'a da izin ver (support→mutsuz routing için)
+      if (target !== 104000639 && target !== STAGE_MUTSUZ) {
+        console.log("[WH] BLOCKED: Mutlu/Mutsuz→" + target + " yasak. Sadece yeni sipariş.");
+        return;
+      }
+    }
+  }
 
   try {
     await kApi("PATCH", "/api/v4/leads/" + leadId, { pipeline_id: PIPELINE_ID, status_id: target });
@@ -217,7 +270,11 @@ async function movePipelineStage(leadId, stage, hasProduct, paymentMethod, suppo
 async function readLeadFields(leadId) {
   try {
     const r = await kApi("GET", "/api/v4/leads/" + leadId);
-    if (r.s === 200) return readFields(r.d);
+    if (r.s === 200) {
+      const fields = readFields(r.d);
+      fields._status_id = r.d?.status_id || 0;
+      return fields;
+    }
   } catch (e) { console.error("[WH] readLeadFields error:", e.message); }
   return {};
 }
@@ -1072,7 +1129,13 @@ export default async function handler(req, res) {
     }
 
     // Adım 4: Pipeline stage (arka planda)
-    await movePipelineStage(lid, result.conversation_stage || "", !!result.ilgilenilen_urun, result.payment_method || "", result.support_mode || "", result.order_status || "");
+    // Mevcut status_id'yi al — geri dönüş koruması için
+    let currentStatusId = 0;
+    try {
+      const leadCheck = await readLeadFields(lid);
+      currentStatusId = leadCheck._status_id || 0;
+    } catch(e) {}
+    await movePipelineStage(lid, result.conversation_stage || "", !!result.ilgilenilen_urun, result.payment_method || "", result.support_mode || "", result.order_status || "", currentStatusId);
 
     // ── Logging + Order Sync (arka plan) ──
     try {

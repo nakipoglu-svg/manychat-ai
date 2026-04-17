@@ -42,10 +42,14 @@ export function deriveState(initialState, ctx) {
   const phoneCorrectionSignal = /numara.*yanlis|numara.*yanlış|telefon.*yanlis|telefon.*yanlış|numaram.*degisti|telefonum.*degisti|yeni numara|dogrusu bu|doğrusu bu|numaram bu/.test(norm || "");
   const addressCorrectionSignal = /adres.*yanlis|adres.*yanlış|adres.*degisti|adres.*değişti|yeni adres|mahalle.*yanlis|numara.*yanlis.*adres/.test(norm || "");
 
-  // Ürün değişimi → full reset
+  // Ürün değişimi → full reset + stage recovery
   if (previousProduct && product && previousProduct !== product) {
+    // Ataç → Lazer: foto zaten gönderildiyse waiting_payment'a recovery
+    const wasAtacToLazer = previousProduct === "atac" && product === "lazer";
+    const hasPhotoInMessage = /http|lookaside|fbsbx|cdninstagram|amojo|kommo/.test(ctx?.message || "");
+    const recoveryStage = wasAtacToLazer && hasPhotoInMessage ? "waiting_payment" : "";
     Object.assign(patch, {
-      product, conversation_stage: "", photo_received: "", payment_method: "",
+      product, conversation_stage: recoveryStage, photo_received: hasPhotoInMessage ? "1" : "", payment_method: "",
       order_status: "started", back_text_status: "", address_status: "",
       support_mode: "", support_mode_reason: "", reply_class: "",
       cancel_reason: "", context_lock: product ? "1" : initialState.context_lock || "",
@@ -98,6 +102,12 @@ export function deriveState(initialState, ctx) {
   const signalUndecided = ctx.signals?.undecided || false;
   const signalIsQuestion = (ctx.signals?.questions?.length || 0) > 0;
   const isBackTextQuestion = /yaziyor mu|yazıyor mu|yazilir mi|yazılır mı|yapilir mi|yapılır mı|olur mu|olurmu|oluyor mu|yazabilir|yazamiyor|yazilmiyor|var mi|varmi|genelde|ne yazilir/.test(ctx.norm || "");
+  // back_text_content: müşteri içerik verdi → her zaman received (skipped bile olsa override)
+  if (intent === "back_text_content") {
+    patch.back_text_status = "received"; _confidence.back_text = "high"; _source.back_text = "content_explicit";
+  }
+  // back_text_question ile back_text_fit_question: soru → received SET ETME
+  // Sadece eski back_text intent'i (legacy) ve heuristic aşağıda
   if (intent === INTENT.BACK_TEXT && !signalUndecided && !signalIsQuestion && !isBackTextQuestion) {
     patch.back_text_status = "received"; _confidence.back_text = "high"; _source.back_text = "explicit";
   }
@@ -107,7 +117,7 @@ export function deriveState(initialState, ctx) {
   // Heuristic back_text: w_payment + photo var + back_text boş + general intent + kişisel mesaj
   const currentStageForBT = initialState.conversation_stage;
   const btEmpty = !initialState.back_text_status && !patch.back_text_status;
-  const btSkipped = initialState.back_text_status === "skipped";
+  const btSkipped = initialState.back_text_status === "skipped" && !patch.back_text_status;
   const photoReady = truthy(initialState.photo_received) || patch.photo_received === "1";
   const isPersonalMessage = /canim|canım|seviyorum|annem|babam|ailem|seni cok|seni çok|hatira|hatıra|duam|allah|mekanim|mekanım|rahatla|huzurla|ozledim|özledim|sensiz|biricik|yavrum/.test(ctx.norm || "");
   // "arkaya yazdırmak istiyorum" — back_text skipped bile olsa override
@@ -116,12 +126,42 @@ export function deriveState(initialState, ctx) {
   const msgLength = msgTrimmed.length;
   const wordCount = msgTrimmed.split(/\s+/).length;
   const isShortNameLike = wordCount <= 4 && /^[A-ZÇĞİÖŞÜ]/.test(msgTrimmed) && !/\?|odeme|ödeme|kargo|fiyat|kaç|kac|nasil|nasıl|neden|nerede/.test(ctx.norm || "");
+  // back_text_content skipped iken de override eder
+  if (intent === "back_text_content" && btSkipped) {
+    patch.back_text_status = "received"; _confidence.back_text = "high"; _source.back_text = "content_override_skipped";
+  }
   if (currentStageForBT === "waiting_payment" && photoReady && intent === INTENT.GENERAL) {
     if (isBackTextRequest) {
       patch.back_text_status = "received"; _confidence.back_text = "high"; _source.back_text = "explicit_request";
     } else if (btEmpty && (isPersonalMessage || isShortNameLike)) {
       patch.back_text_status = "received"; _confidence.back_text = "medium"; _source.back_text = "heuristic_personal";
     }
+  }
+  // isBackTextRequest skipped iken de override
+  if (isBackTextRequest && btSkipped) {
+    patch.back_text_status = "received"; _confidence.back_text = "high"; _source.back_text = "explicit_override_skipped";
+  }
+
+  // ═══ SIRA 6: FULL CONTACT BUNDLE — name+phone+address tek mesajda ═══
+  if (intent === "full_contact_bundle") {
+    if (extracted.phone) { patch.phone_received = "1"; }
+    if (extracted.hasAddress || ctx.norm?.length > 40) {
+      patch.address_status = "received";
+      // Stage'i ilerlet
+      if (initialState.conversation_stage === "waiting_address") {
+        patch.conversation_stage = "order_completed";
+      }
+    }
+  }
+
+  // phone_provide → phone slot doldur
+  if (intent === "phone_provide" && extracted.phone) {
+    patch.phone_received = "1";
+  }
+
+  // address_provide_full → address slot doldur
+  if (intent === "address_provide_full") {
+    patch.address_status = "received";
   }
 
   // ═══ PHONE (with correction mode) ═══

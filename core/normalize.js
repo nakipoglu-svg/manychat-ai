@@ -10,7 +10,7 @@ import {
 // ─── TEXT NORMALIZATION ─────────────────────────────────────
 
 export function normalizeText(text) {
-  return String(text || "")
+  let t = String(text || "")
     .replace(/İ/g, "i")
     .toLowerCase()
     .replace(/i̇/g, "i")
@@ -27,6 +27,12 @@ export function normalizeText(text) {
     .replace(/[^\w\s:/?.=&+\-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+  // Product typo normalization
+  t = t.replace(/\baracli\b/g, "atacli");
+  t = t.replace(/\baracl\b/g, "atacl");
+  t = t.replace(/\batin deil/g, "altin degil");
+  t = t.replace(/\batin mi\b/g, "altin mi");
+  return t;
 }
 
 export function hasAny(text, keywords) {
@@ -336,4 +342,61 @@ export function getEntryProduct(body = {}) {
     if (n) return n;
   }
   return "";
+}
+
+// ─── SIRA 8: TARGETED TYPO NORMALIZATION ──────────────────────────────────
+// Sadece kanıtlanmış, sık gelen, anlamı net typo'lar normalize edilir.
+// Semantic classification değil — sadece surface-form düzeltme.
+
+const TYPO_MAP = [
+  // Product typo'ları
+  [/araçlı|aracli|aracli|araçli/gi, "ataçlı"],
+  [/atajlı|ataslı|ataclı|ataşlı/gi, "ataçlı"],
+  [/lazer kolye|lazer kolye/gi, "lazer kolye"],
+
+  // Material typo'ları
+  [/atın deilmi|atın değil mi|altın deilmi|altin deilmi|altin değilmi/gi, "altın değil mi"],
+  [/gümüş mı\b|gumus mu\b|gümüşmü|gumusmu/gi, "gümüş mü"],
+  [/atın gibi|altın gibi/gi, "altın gibi"],
+
+  // ━━━ F6 fix: kararma typo'ları ━━━
+  [/(?:^|\s)karar[nml]a(?=\s|$|[.,?!])/gi, " kararma"],       // kararna, kararla, kararma
+  [/(?:^|\s)karama(?=\s|$|[.,?!])/gi, " kararma"],             // karama → kararma
+  [/(?:^|\s)karalama(?=\s|$|[.,?!])/gi, " kararma"],           // karalama → kararma
+  [/(?:^|\s)karartma(?=\s|$|[.,?!])/gi, " kararma"],           // karartma → kararma
+  [/\bkararma yapiyor\b/gi, "kararma yapıyor"],
+
+  // ━━━ F6 fix: material typo'ları ━━━
+  [/(?:^|\s)metaryen[ei]?(?=\s|$|[.,?!])/gi, " materyal"],
+  [/(?:^|\s)metareyen(?=\s|$|[.,?!])/gi, " materyal"],
+  [/(?:^|\s)maderi(?=\s|$|[.,?!])/gi, " materyali"],
+  [/(?:^|\s)malzemsi(?=\s|$|[.,?!])/gi, " malzemesi"],
+  [/(?:^|\s)maderyal(?=\s|$|[.,?!])/gi, " materyal"],
+  [/(?:^|\s)materyeli(?=\s|$|[.,?!])/gi, " materyali"],
+
+  // ━━━ F6 fix: alerji typo'ları (Türkçe 'ı' için \b yerine manual boundary) ━━━
+  [/(?:^|\s)alarj[ıi](?=\s|$|[.,?!])/gi, " alerji"],
+  [/(?:^|\s)alarjik(?=\s|$|[.,?!])/gi, " alerjik"],
+  [/(?:^|\s)alerjim(?=\s|$|[.,?!])/gi, " alerjim"],
+
+  // Media typo'ları
+  [/resmı\b/gi, "resmi"],
+  [/fotraf\b|fotoraf\b/gi, "fotoğraf"],
+  [/gorsel\b/gi, "görsel"],
+
+  // Ack typo'ları
+  [/bekliyorul\b/gi, "bekliyorum"],
+  [/tesekkurler\b/gi, "teşekkürler"],
+];
+
+/**
+ * applyTypoNormalization: mesajı intent-engine'e göndermeden önce yüzeysel typo düzeltmesi.
+ * Sadece TYPO_MAP'te tanımlı kanıtlanmış pattern'ler — kural dışı tahmin yok.
+ */
+export function applyTypoNormalization(raw = "") {
+  let result = raw;
+  for (const [pattern, replacement] of TYPO_MAP) {
+    result = result.replace(pattern, replacement);
+  }
+  return result;
 }

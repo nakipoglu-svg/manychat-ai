@@ -7,20 +7,24 @@
 import {
   REPLY_CLASS, SUPPORT_REASON, TEXT, STAGE, PRODUCT,
   EXPLICIT_SWITCH_PHRASES, KW,
+  LAZER_STRONG_SIGNALS, LAZER_MEDIUM_SIGNALS, ATAC_STRONG_SIGNALS, PRODUCT_AMBIGUOUS_SIGNALS,
 } from "./constants.js";
 import {
   normalizeText, unwrap, normalizeProduct, normalizeStage,
   normalizePayment, normalizeOrderStatus, normalizeBackText, normalizeAddress,
   hasAny, truthy, cleanReply, getEntryProduct, detectProductFromText,
+  applyTypoNormalization,
 } from "./normalize.js";
-import { detectIntent, extractEntities } from "./intent-engine.js";
+import { detectIntent, detectSecondaryIntent, extractEntities } from "./intent-engine.js";
 import { readInitialState, deriveState, commitPatch, getFilledSlots, getMissingSlots } from "./state.js";
 import { buildSlotStates, applyEarlySlotMemory } from "./slot-machine.js";
 import { generateAnswer } from "./answer-engine.js";
 import { guardReply } from "./guard-engine.js";
 
 function buildContext(body) {
-  const message = unwrap(body.message || body.last_input_text || body.last_user_message || "");
+  const messageRaw = unwrap(body.message || body.last_input_text || body.last_user_message || "");
+  // Sıra 8: Typo normalization — kanıtlanmış yüzey-form typo'ları düzelt
+  const message = applyTypoNormalization(messageRaw);
   const norm = normalizeText(message);
   const fields = {
     ilgilenilen_urun: unwrap(body.ilgilenilen_urun), user_product: unwrap(body.user_product),
@@ -40,16 +44,145 @@ function buildContext(body) {
   const entryProduct = getEntryProduct(body);
   const explicitProduct = detectProductFromText(norm);
   let product = previousProduct || entryProduct || explicitProduct || "";
+
+  // ════════════════════════════════════════════════════════════════
+  // PRODUCT CONTEXT SWITCH — 3 seviyeli sinyal sistemi (Sıra 3)
+  // ════════════════════════════════════════════════════════════════
+
+  // Helper: skoru hesapla
+  function calcLazerSignal(n) {
+    let score = 0;
+    if (hasAny(n, LAZER_STRONG_SIGNALS)) score += 3;
+    const mediumHits = LAZER_MEDIUM_SIGNALS.filter(s => n.includes(s)).length;
+    score += Math.min(mediumHits, 2); // max 2 orta sinyal sayılır
+    return score;
+  }
+  function calcAtacSignal(n) {
+    if (hasAny(n, ATAC_STRONG_SIGNALS)) return 3;
+    return 0;
+  }
+
+  // Mevcut ürün var + explicit text sinyali farklı → standard switch kararı
   if (previousProduct && explicitProduct && previousProduct !== explicitProduct) {
-    const keep = !hasAny(norm, EXPLICIT_SWITCH_PHRASES) && (
+    // Ambiguous bağlam → switch yapma
+    if (hasAny(norm, PRODUCT_AMBIGUOUS_SIGNALS)) {
+      product = previousProduct;
+    }
+    // Sadece fiyat/bilgi soruları → bağlamı koru
+    else if (!hasAny(norm, EXPLICIT_SWITCH_PHRASES) && (
       hasAny(norm, KW.price) || hasAny(norm, KW.shipping) || hasAny(norm, KW.trust) ||
       hasAny(norm, KW.chain) || hasAny(norm, KW.payment) || hasAny(norm, KW.material_question)
-    );
-    product = keep ? previousProduct : explicitProduct;
+    )) {
+      product = previousProduct;
+    }
+    else {
+      product = explicitProduct;
+    }
   }
+
+  // ── PRODUCT CONTEXT RECOVERY ──
+  // Mevcut ürün ataç iken lazer lehine güçlü sinyal → lazer'e geç
+  if (product === PRODUCT.ATAC) {
+    // ━━━ FIX F5_product_switch ━━━
+    // Güçlü resim/foto/lazer sinyali varsa AMBIGUOUS olsa bile switch yap
+    const strongPhotoSignal = hasAny(norm, [
+      "resim olsun","resimli olsun","resimli istiyor","resim istiyor","resim olur mu",
+      "fotograf olsun","fotoğraf olsun","foto olsun","foto istiyor","fotograf istiyor","fotoğraf istiyor",
+      "hangi modelde resim","hangi modelde foto","hangi modelde fotograf","hangi modelde fotoğraf",
+      "resimli hangi","resim yapilan","resim yapılan","fotograf yapilan","fotoğraf yapılan",
+      "gorsel de neden resim","görsel de neden resim","ama resim","ama fotograf","ama fotoğraf",
+      "resimli modele","resimli modelde","resimli model",
+      "kolyenin iki tarafina foto","kolyenin iki tarafına foto","iki tarafina foto","iki tarafına foto",
+      "yanyana yapacak","yan yana yapacak","yanyana yapacaksiniz","yan yana yapacaksınız",
+      "resim atacakti","resim atacaktı","resmi atacakti","resmi atacaktı",
+      "lazer kolye","lazer kolyesi","resimli lazer","lazer olacak","lazerli foto","lazerli resim",
+      "fotograf atacakti","fotoğraf atacaktı","foto atacakti","foto atacaktı",
+      "resim yaptir","resim yaptırıp","resim yaptırsak","resim yaptirsak",
+      "resmi yaptir","resmi yaptırıp","resimli yaptir","resimli yaptır",
+      "son resimde","son resim","son attigim resim","son attığım resim",
+      "resimde ayicik","resimde ayıcık","resimde boncuk","resimde kalp",
+    ]);
+    if (strongPhotoSignal) {
+      product = PRODUCT.LAZER;
+      // waiting_letters'tan waiting_photo'ya düş (harf değil foto bekliyoruz artık)
+      if (fields.conversation_stage === "waiting_letters") {
+        fields.conversation_stage = STAGE.WAITING_PHOTO;
+      }
+      // Sonraki info response'ları doğru ürün üzerinden okusun
+      fields.ilgilenilen_urun = PRODUCT.LAZER;
+      fields.user_product = PRODUCT.LAZER;
+    }
+    // Ambiguous ise geçme
+    const isAmbiguous = hasAny(norm, PRODUCT_AMBIGUOUS_SIGNALS);
+    if (product === PRODUCT.ATAC && !isAmbiguous) {
+      const lazerScore = calcLazerSignal(norm);
+      const atacScore = calcAtacSignal(norm);
+      // Fotoğraf yükleme → kesin lazer
+      if (hasAny(norm, ["http","lookaside","fbsbx","cdninstagram","amojo","kommo"]) || /https?:\/\//.test(message || "")) {
+        product = PRODUCT.LAZER;
+      }
+      // Güçlü lazer sinyali (score≥3) ve ataç güçlü sinyal yok → geç
+      else if (lazerScore >= 3 && atacScore === 0) {
+        product = PRODUCT.LAZER;
+      }
+      // Orta lazer sinyal (score≥2) ve mevcut ataç stage erken (waiting_letters/waiting_product) → geç
+      else if (lazerScore >= 2 && atacScore === 0 &&
+               ["waiting_letters","waiting_product",""].includes(fields.conversation_stage || "")) {
+        product = PRODUCT.LAZER;
+      }
+      // Resim + kişi/çocuk bağlamı ataç waiting_letters'da → lazer (score≥1 + özel sinyal)
+      else if (lazerScore >= 1 && atacScore === 0 &&
+               fields.conversation_stage === "waiting_letters" &&
+               hasAny(norm, ["resim","resmi","resmini","foto","fotograf","fotografin","fotografı","fotoğraf","fotografini","fotoğrafını"]) &&
+               hasAny(norm, ["cocuk","çocuk","cocug","kardes","kardeş","aile","kisi","kişi","tek resim","bir resim","cocuklarim","çocuklarım","cocuğumun","cocuklarimin","oglum","oglu","oğlum","kizim","kızım"])) {
+        product = PRODUCT.LAZER;
+      }
+      // 3+ resim waiting_letters → lazer (fotoğraf bağlamı)
+      else if (lazerScore >= 1 && atacScore === 0 &&
+               fields.conversation_stage === "waiting_letters" &&
+               hasAny(norm, ["3 resim","uc resim","üç resim","iki resim","2 resim","3 foto","uc foto","üç foto","iki foto","2 foto"]) &&
+               hasAny(norm, ["tek kolye","tek kolyede","kolye","bir kolye"])) {
+        product = PRODUCT.LAZER;
+      }
+    }
+  }
+
+  // Mevcut ürün lazer iken ataç lehine güçlü sinyal → ataç'a geç (daha temkinli)
+  if (product === PRODUCT.LAZER) {
+    const isAmbiguous = hasAny(norm, PRODUCT_AMBIGUOUS_SIGNALS);
+    if (!isAmbiguous && calcAtacSignal(norm) >= 3 && calcLazerSignal(norm) === 0) {
+      // Sadece erken stage'de (fotoğraf gönderilmemişse)
+      if (!fields.photo_received && ["waiting_photo","waiting_product",""].includes(fields.conversation_stage || "")) {
+        product = PRODUCT.ATAC;
+      }
+    }
+  }
+  // No-product context: güçlü lazer sinyali varsa lazer set et
+  if (!product && hasAny(norm, LAZER_STRONG_SIGNALS)) {
+    product = PRODUCT.LAZER;
+  }
+
   const extracted = extractEntities(message, norm, product, fields.conversation_stage);
   const intent = detectIntent({ message, norm, product, stage: fields.conversation_stage, extracted, fields });
-  return { message, norm, product, previousProduct, intent, fields, extracted };
+  const secondary_intent = detectSecondaryIntent(norm, intent, { fields, product });
+  // F5_product_switch: switch olduysa previousProduct'ı da senkronize et ki
+  // answer-engine'deki `ctx.previousProduct || ctx.fields.ilgilenilen_urun` kontrolleri yeni ürünü görsün.
+  const effectivePreviousProduct = (product && previousProduct && product !== previousProduct) ? product : previousProduct;
+  // ━━━ FIX F8: lastContext — son bot cevabından bağlam çıkar ━━━
+  const lastReplyNorm = normalizeText(fields.ai_reply || "");
+  const lastContext = {
+    askedAboutFit: /sigar|sigdi|bebek kucuk|cok kucuk/.test(lastReplyNorm) || fields.last_intent === "back_text_fit_question",
+    askedAboutPeople: /kac kisi|birden fazla|iki kisi|uc kisi|aile fot|3 kisi|3 kisilik/.test(lastReplyNorm),
+    askedAboutColor: /renk|gumus|altin|sari|gold/.test(lastReplyNorm),
+    askedAboutChain: /zincir|italyan|burgu|60 cm/.test(lastReplyNorm),
+    askedAboutBackText: /arka yazi|arka yuz|ne yazalim|arkasina|arka tarafa/.test(lastReplyNorm),
+    askedAboutPayment: /odeme|eft|havale|kapida/.test(lastReplyNorm),
+    askedAboutShip: /kargo|teslim|kac gunde|iş gunu|is gunu/.test(lastReplyNorm),
+    askedAboutTrust: /kararma|solma|paslanma|14 ayar|celik|alerji|garanti/.test(lastReplyNorm),
+    askedAboutPreview: /yogunluga gore|kargo sonrasi|kargo oncesi|paylasabiliyoruz/.test(lastReplyNorm),
+    lastIntent: fields.last_intent || "",
+  };
+  return { message, norm, product, previousProduct: effectivePreviousProduct, intent, secondary_intent, fields, extracted, lastContext };
 }
 
 function buildOutput(ctx, reply, committed, meta) {
@@ -74,9 +207,15 @@ function buildOutput(ctx, reply, committed, meta) {
   else if (!orderStatus && s.product) orderStatus = "started";
   if ((orderStatus === "completed" || siparisAlindi === "1") && [STAGE.WAITING_PHOTO,STAGE.WAITING_PAYMENT,STAGE.WAITING_ADDRESS,STAGE.WAITING_LETTERS,STAGE.WAITING_PRODUCT].includes(stage)) stage = STAGE.ORDER_COMPLETED;
   if (s._nextStage === STAGE.HUMAN_SUPPORT || orderStatus === "cancel_requested") { stage = STAGE.HUMAN_SUPPORT; orderStatus = "cancel_requested"; supportMode = "1"; }
+  const LAST_INTENT_MAP = {
+    "back_text_content": "back_text", "back_text_question": "back_text_info",
+    "back_text_fit_question": "back_text_info", "quantity_order": "multi_order",
+    "decision_support": "preview_request", "composition_question": "back_photo_info",
+    "example_request": "preview_request",
+  };
   return {
     success: true, ai_reply: replyText, ilgilenilen_urun: s.product, user_product: s.product,
-    last_intent: ctx.intent, conversation_stage: stage, photo_received: s.photo_received || "",
+    last_intent: LAST_INTENT_MAP[ctx.intent] || ctx.intent, conversation_stage: stage, photo_received: s.photo_received || "",
     payment_method: s.payment_method || "", menu_gosterildi: menuShown, order_status: orderStatus,
     back_text_status: s.back_text_status || "", address_status: s.address_status || "",
     support_mode: supportMode, support_mode_reason: supportReason, reply_class: replyClass,
