@@ -248,6 +248,78 @@ const cases = [
     includes: ["rica ederiz"],
     notIncludes: ["ekibimize iletiyorum"],
   },
+
+  // ══════════════════════════════════════════════════════════════
+  // M RESIDUAL — Kalan alt-aileler (44 vaka → 15 düzeltilebilir)
+  // ══════════════════════════════════════════════════════════════
+  {
+    name: "M11.a — 'RECEP AKDEMİR' UPPER → isim teyit",
+    input: { message: "RECEP AKDEMİR", conversation_stage: "order_completed", siparis_alindi: "1", order_status: "completed", ilgilenilen_urun: "lazer" },
+    includes: ["bilginizi aldim"],
+  },
+  {
+    name: "M12.a — 'Ediz Metem ve Erol' → arka yazı notu",
+    input: { message: "Ediz Metem ve Erol", conversation_stage: "order_completed", siparis_alindi: "1", order_status: "completed", ilgilenilen_urun: "lazer" },
+    includes: ["arka yazi notu"],
+  },
+  {
+    name: "M13.a — '2026-01-09 00:00:00' tarih → arka yazı",
+    input: { message: "2026-01-09 00:00:00", conversation_stage: "order_completed", siparis_alindi: "1", order_status: "completed", ilgilenilen_urun: "lazer" },
+    includes: ["arka yazi notu"],
+  },
+  {
+    name: "M13.b — '03/01/2025' tarih → arka yazı",
+    input: { message: "03/01/2025", conversation_stage: "order_completed", siparis_alindi: "1", order_status: "completed", ilgilenilen_urun: "lazer" },
+    includes: ["arka yazi notu"],
+  },
+  {
+    name: "M14.a — 'Ödemeyi yaptım' completed → payment kontrol (operator)",
+    input: { message: "Ödemeyi yaptım", conversation_stage: "order_completed", siparis_alindi: "1", order_status: "completed", ilgilenilen_urun: "lazer" },
+    includes: ["ekibimiz"],  // payment_confirmation handler → operator'a
+  },
+  {
+    name: "M15.a — '🙏🙏🙏' → teşekkür",
+    input: { message: "🙏🙏🙏", conversation_stage: "order_completed", siparis_alindi: "1", order_status: "completed", ilgilenilen_urun: "lazer" },
+    includes: ["rica ederiz"],
+  },
+  {
+    name: "M16.a — 'Allah'a emanet' → blessing",
+    input: { message: "Allah'a emanet", conversation_stage: "order_completed", siparis_alindi: "1", order_status: "completed", ilgilenilen_urun: "lazer" },
+    includes: ["tesekkur"],
+  },
+  {
+    name: "M16.NEG — 'Allah razı olsun amin' → mevcut amin handler'a",
+    input: { message: "Allah razı olsun amin", conversation_stage: "order_completed", siparis_alindi: "1", order_status: "completed", ilgilenilen_urun: "lazer" },
+    includes: ["amin"],
+  },
+  {
+    name: "M17.a — 'Tamamdır o zaman' → not aldık",
+    input: { message: "Tamamdır o zaman", conversation_stage: "order_completed", siparis_alindi: "1", order_status: "completed", ilgilenilen_urun: "lazer" },
+    includes: ["not aldık"],
+  },
+  {
+    name: "M17.b — 'Çok iyi olur' → makul cevap (smalltalk'a düşüyor)",
+    input: { message: "Çok iyi olur", conversation_stage: "order_completed", siparis_alindi: "1", order_status: "completed", ilgilenilen_urun: "lazer" },
+    // smalltalk handler'a düşüyor; completed'da operator'a gidebiliyor
+    notIncludes: ["adres bilgilerinizi"],
+  },
+  {
+    name: "M18.a — 'Kolyenin altına yazi' → back_text content teyit",
+    input: { message: "Kolyenin altına yazi", conversation_stage: "order_completed", siparis_alindi: "1", order_status: "completed", ilgilenilen_urun: "lazer" },
+    // "Tabi efendim, notunuzu aldık" VEYA "arka yazi notu aldım" her ikisi de kabul
+    intentIn: ["general","back_text_content"],
+    notIncludes: ["ekibimize iletiyorum"],
+  },
+  {
+    name: "M17.NEG — 'Evet' completed → ack handler, M17 tetiklenmemeli",
+    input: { message: "Evet", conversation_stage: "order_completed", siparis_alindi: "1", order_status: "completed", ilgilenilen_urun: "lazer" },
+    notIncludes: ["not aldık"],
+  },
+  {
+    name: "M10.NEG — 'Olabilir' completed → adres bilgilerinizi tetiklememeli",
+    input: { message: "Olabilir", conversation_stage: "order_completed", siparis_alindi: "1", order_status: "completed", ilgilenilen_urun: "lazer" },
+    notIncludes: ["adres bilgilerinizi"],
+  },
 ];
 
 runSuite("AILE M — Completed Overreach (87 prod vakası)", cases);

@@ -49,13 +49,19 @@ export function detectIntent(ctx) {
        stage === STAGE.WAITING_LETTERS || stage === "waiting_letters") && !backTextDone) {
     
     const rawTrim = raw.trim();
-    const hasQ = /\?/.test(raw) || /\b(mi|mı|mu|mü|musun|musunuz|müsünüz|miyim|mıyım|miyiz|mıyız|mısınız|misiniz)\b/i.test(raw);
+    // Türkçe unicode sorunu: "Mİ" lowercase "i̇" oluyor, "mı" word boundary kaçırıyor.
+    // Çözüm: hasQ'yu NORMALIZED string üzerinde test et (tüm Türkçe karakterler ASCII).
+    // Ayrıca yapışık suffix'leri de yakala: "degisirmi", "olurmu" → "mi/mu" suffix'li
+    const hasQ = /\?/.test(raw) || 
+                 /(^|\s)(mi|mu|musun|musunuz|miyim|miyiz|misiniz)(\s|$|\?)/i.test(norm) ||
+                 /(irmi|urmu|armi|ermi|ormu|ormi|ilirmi|ulurmu|iyormu|uyormu)(\s|$|\?)/i.test(norm);
     
     // ─── J1: Price confirmation (sayı+mi, dar) ───
-    if (/^\s*\d{3}\s*(tl|lira)?\s*(dimi|demi|di mi|de mi|degil mi|değil mi|mi|mı|miydi|mıydı|değilmi)\s*\??\s*$/i.test(rawTrim)) {
+    // norm = "600 tl mi" (ASCII), büyük/küçük + Türkçe karakter sorunu olmaz
+    if (/^\s*\d{3}\s*(tl|lira)?\s*(dimi|demi|di mi|de mi|degil mi|mi|miydi|degilmi)\s*\??\s*$/i.test(norm)) {
       return "price_confirmation";
     }
-    if (/\d{3}\s*(tl|lira)?\s*(dimi|değil mi|degil mi)\s*\??\s*$/i.test(rawTrim) && raw.length < 50) {
+    if (/\d{3}\s*(tl|lira)?\s*(dimi|degil mi)\s*\??\s*$/i.test(norm) && raw.length < 50) {
       return "price_confirmation";
     }
     
@@ -63,9 +69,22 @@ export function detectIntent(ctx) {
     if (hasQ && /^(karatma|kararma|renk deg|renk değ|renk atar|solma|paslan|solar|bozul)/i.test(rawTrim) && raw.length < 40) {
       return "trust";
     }
+    // "Renk degişirmi" - tek kelimeye sıkışık
+    if (hasQ && /renk\s*degis|renk\s*değiş|renkdegis|renkdeğiş/i.test(norm) && raw.length < 30) {
+      return "trust";
+    }
+    // "karatma var mı" - orta yerde
+    if (hasQ && /\b(karatma|kararma|solma|paslanma|karatmi|kararir|kararır)\b/i.test(norm) && raw.length < 30) {
+      return "trust";
+    }
     
     // ─── J9: Autopilot / bot / yapay zeka ───
-    if (hasQ && /(otomatik.*mi|otomatik mesaj|robot mu|bot mu|yapay zeka|yapay zekâ)/i.test(norm)) {
+    // Not: "yapay zeka ile mi yapıyorsunuz" → lazer yapım sorusu, autopilot değil
+    if (hasQ && /(otomatik.*mi|otomatik mesaj|robot mu|bot mu)/i.test(norm)) {
+      return "autopilot_question";
+    }
+    // "Yapay zeka" — yalnızca "yapıyor/üret" içermezse autopilot
+    if (hasQ && /(yapay zeka|yapay zekâ)/i.test(norm) && !/(yapiyor|yapıyor|uret|üret|imal|hazirl|hazırl|basiyor|basıyor)/i.test(norm)) {
       return "autopilot_question";
     }
     
@@ -74,8 +93,11 @@ export function detectIntent(ctx) {
       return "contact_channel_question";
     }
     
-    // ─── J14: Photo format / vesikalık ───
-    if (hasQ && /(vesikalik|vesikalık)/i.test(norm)) {
+    // ─── J14: Photo format / vesikalık (SADECE soru formatında) ───
+    // "Vesikalık mı olmalı" / "Vesikalık çektirsem mi"
+    if (hasQ && /(vesikalik|vesikalık)/i.test(norm) && 
+        /\b(mi|mı|mu|mü)\b/i.test(raw) && 
+        !/(yok|yokk|olmaz)/i.test(norm)) {
       return "photo_format_question";
     }
     
@@ -90,6 +112,187 @@ export function detectIntent(ctx) {
     if (/\b(ortakl[ıi]k|bayi|toptan)\b/i.test(norm) && hasQ) {
       return "human_request";
     }
+    // "Ya artık biri yardımcı olabilir mi"
+    if (/biri.*(yardim|yardım).*(olabil|edebil|eder)/i.test(norm) && hasQ) {
+      return "human_request";
+    }
+    
+    // ─── J3: Back_text question waiting_payment ───
+    if ((stage === STAGE.WAITING_PAYMENT || stage === "waiting_payment") &&
+        hasAny(norm, ["arkasina","arkasına","arka yuze","arka yüze","arka yuz","arka yüz","arkaya"]) &&
+        hasAny(norm, ["yaz","yazi","yazı","isim","tarih"]) &&
+        /\b(mi|mı|mu|mü|musun|musunuz|miyim|miyiz|yazalim|yazalım|yaziliyor|yazılıyor|oluyor)\s*\??\s*$/i.test(rawTrim) &&
+        raw.length < 50) {
+      return "back_text_info";
+    }
+    
+    // ─── J5: Zincir "var mı" sorgusu (uzunluk + soru) ───
+    // "Bu zincirden var mi" / "Zincir uzunluğu sorabilir miyim"
+    const hasTrustKw = /kararma|karariyor|kararıyor|kararir|kararır|karalm|karaliyor|karalıyor|solma|solar|paslan|bozul|renk atar|renk degis|renk değiş|\bcelik\b|\bçelik\b/i.test(norm);
+    const hasShortLen = /\b(50|60|70)\s*cm\b/i.test(norm);  // "60 cm olmaz mı" zincir cevabı zaten çalışıyor
+    if (hasQ && !hasTrustKw && !hasShortLen) {
+      // "Zincir uzunluğunu sorabilir miyim" 
+      if (/zincir.*(sorabilir|sorabilirm|sorabilmi)/i.test(norm)) {
+        return "chain_question";
+      }
+      // "Bu zincirden var mı" / "Bı zincirden var mi" (dar: 'zincirden' formu)
+      if (/^(bu|bı|şu|bi) zincirden/i.test(rawTrim) && /var m/i.test(norm) && raw.length < 40) {
+        return "chain_question";
+      }
+    }
+    
+    // ─── J15: Preview (SİLİNDİ — mevcut example_request/preview_request intent'leri yeterli) ───
+    
+    // ─── J21: Çoklu kişi composition (waiting_photo'da kişi sorusu) ───
+    if (hasQ && (stage === STAGE.WAITING_PHOTO || stage === "waiting_photo") &&
+        /\b(kiz|kız|oglum|oğlum|kizim|kızım|annem|babam|esim|eşim|bebek|cocugum|çocuğum|torun|kardesim|kardeşim)\b/i.test(norm) &&
+        /(ve|ile|birlikte|beraber|cekilm|çekilm|bakacak)/i.test(norm)) {
+      return "composition_question";
+    }
+    
+    // ─── J16: Order start sorusu (waiting_product veya flow) ───
+    // "Ürün satın alabilir miyim?" - intent-engine zaten ctx.intent = order_start üretir mi?
+    if (hasQ && /(satin al|satın al|urun satin|ürün satın|siparis vermek|sipariş vermek|siparis verebilir|sipariş verebilir)/i.test(norm)) {
+      return "order_start";
+    }
+    // "İsimli kolyeye bakabilir miyim" / "Ilgilene bilir misiniz"
+    if (hasQ && /^(isimli|harfli|atac|ataç|lazer|resimli).*(kolye|kolyeye|model)/i.test(rawTrim) && /bakab|bakabil/i.test(norm)) {
+      return "order_start";
+    }
+    if (hasQ && /^(ilgilene bilir|ilgilenir)/i.test(rawTrim)) {
+      return "order_start";
+    }
+    
+    // ─── J_OTHER tail: spesifik prod pattern'ları ───
+    
+    // "Bir de buradan mi gonderiyorhz" / "buradan mı göndereyim" → photo_format
+    if (hasQ && /(buradan|buraya).*(gonder|gönder|iletec|ilet m|mi gon|mi ilet)/i.test(norm)) {
+      return "photo_format_question";
+    }
+    
+    // "Rakamlar yazılıyor mu" / "Harfler yazılıyor mu" — back_text info
+    if (hasQ && /(rakam|harf|simge|emoji).*yaz(iliyor|ılıyor|il|ıl)/i.test(norm)) {
+      return "back_text_info";
+    }
+    
+    // "Kontrol ettiniz mi" / "Aldınız mı" → photo_status
+    if (hasQ && /(kontrol et|fotoyu aldi|fotoğrafı aldı|resmi aldı|resmi aldi|foto aldın)/i.test(norm)) {
+      return "photo_status_check";
+    }
+    
+    // "Neler yazıyorsun fikir alabilir miyim" → back_text examples
+    if (hasQ && /(neler yaz|ne yaz|nasil yaz|nasıl yaz|fikir.*al|ornek.*yaz|örnek.*yaz)/i.test(norm)) {
+      return "back_text_examples";
+    }
+    
+    // "Fotoğrafı var mı" (sizde örnek foto) / "Örnek foto var mı" → preview
+    // DAR: "sizde/sayfanızda/bir örnek + foto var mı"
+    if (hasQ && /^(sizde|bir ornek|bir örnek|ornek foto|örnek foto|sayfanizda|sayfanızda|orneğiniz|örneğiniz)/i.test(rawTrim) && 
+        /(fotograf|fotoğraf|foto|resim).*(var m|gorebilir|görebilir|gosterebil|gösterebil)/i.test(norm) && raw.length < 50) {
+      return "preview_request";
+    }
+    
+    // "Öncesınde görmez mıyız" / "Önceden görebilir miyiz" → preview
+    if (hasQ && /(once|öncesinde|öncede).*(gor|gör|bak)/i.test(norm)) {
+      return "preview_request";
+    }
+    
+    // "Gümüş renkli var mı" / "Altın renkli var mı" — mevcut material handler zaten kapsıyor, ekstra gerek yok
+    
+    // "Bu fotograg olur mu" / "Bu foto uygun mu" / "Bu resim uygun mu" → photo_acceptance
+    if (hasQ && /^(bu|şu|su)\s+(foto|fotog|fotoğ|resim|fotoğraf)/i.test(rawTrim) &&
+        /(olur m|uygun m|guzel m|güzel m|basil|basıl|yeterli m|iyi m)/i.test(norm) && raw.length < 40) {
+      return "photo_acceptance_question";
+    }
+    
+    // "Soru sorabilir miyim" / "Alabilirmiyim" / "Mümkün mü" → general_question
+    // DAR: belirli kısa öznesi belirsiz ifadeler — composition/trust/vs'yi kapma
+    if (hasQ && raw.length < 25 && 
+        /^(soru sor|mumkun mu|mümkün mü|alabilirm|alabilir mi|bilgi al.*mi|bilgi al.*m$)/i.test(rawTrim)) {
+      return "general_question";
+    }
+    
+    // "Siparişim daha hazırlanmadı mı" / "Siparişim ne durumda" → order_status
+    if (hasQ && /(siparisim|siparişim).*(hazir|hazır|durum|gelm|ulast|ulaşt|cikti|çıktı|geliyor|hazirlanm|hazırlanm)/i.test(norm)) {
+      return "order_status_question";
+    }
+    
+    // ─── AILE Y: Renk sorusu ("Gumus renkli var mi", "Altın renginde mi daha mı sarı") ───
+    // Not: "kırmızı/mavi/yeşil" out-of-scope renkler → bu pattern'de YAKALAMA
+    // "Zincirin rengi" → chain handler'a bırak
+    if (hasQ && 
+        !/(kirmiz|mavi|yesil|yeşil|sari mi olur|sarı mı olur|zincirin rengi)/i.test(norm) &&
+        /(gumus renkli|gümüş renkli|altin renkli|altın renkli|altin renginde|altın renginde|rose gold|gumus mu|gümüş mü|altin mi|altın mı|daha mi sari|daha mı sarı)/i.test(norm)) {
+      return "material_question";
+    }
+    
+    // ─── AILE Z: Gelecek zaman sipariş ("Yarın X yapacağım olur mu") ───
+    if (hasQ && /(yarin|yarın|sonra|ileride|daha sonra|biraz sonra|ileri tarih|onumuzdeki|önümüzdeki|bu aksam|bu akşam|gun icinde|gün içinde)/i.test(norm) &&
+        /(siparis|sipariş|foto|resim|alicam|alıcam|alacag|alacağ|atic|atıc|gonderec|gönderec|verecek|verece|yapacag|yapacağ|secic|seçic|hazirla|hazırla)/i.test(norm)) {
+      return "future_order_intent";
+    }
+    
+    // ─── J_FINAL tail: son kalan prod pattern'ları (residual) ───
+    
+    // "Kart olmuyor mu" / "Karttan mi atiyoruz" / "Kartla olur mu" → payment info
+    if (hasQ && /\bkart(tan|la|a|i|ı)?\b/i.test(norm) && /(olmuyor|olmaz|atiyoruz|atıyoruz|oluyor mu|olur mu|olabilir|gecer|geçer|cekiliyor)/i.test(norm)) {
+      return "payment_info_question";
+    }
+    
+    // "Kolye boyu/zinciri ... mi" → chain
+    if (hasQ && /(kolye boyu|kolye boy|kolye zinciri.*ayni|kolye zinciri.*aynı|zinciri ayni|zinciri aynı)/i.test(norm)) {
+      return "chain_question";
+    }
+    
+    // "Oğlumla kızımın fotosunu" / "Anne baba resimleri basılabılıyor Muş" — composition
+    if (hasQ && (stage === STAGE.WAITING_PHOTO || stage === "waiting_photo") &&
+        /(oglumla|oğlumla|kizimla|kızımla|annemle|annesiyle|babamla|babasıyla|aile|anne baba|anne.*baba|esiyle|eşiyle|bebegiyle|bebeğiyle|cocugumla|çocuğumla|torunumla|kardesimle|kardeşimle|birlikte)/i.test(norm) &&
+        /(foto|resim|basil|basıl)/i.test(norm)) {
+      return "composition_question";
+    }
+    
+    // "Görseli var mı rica etsem atar mısınız" → preview
+    // Not: "bitince görsel atar mısınız" (kargo öncesi) farklı handler'a git
+    if (hasQ && /(gorsel|görsel|ornek|örnek).*atar m/i.test(norm) &&
+        !/(bitin|bit i|bittiğinde|bitiğinde|bitirince|hazirlan|hazırlan|kargo once|kargo önce|kargodan once|kargodan önce)/i.test(norm)) {
+      return "preview_request";
+    }
+    
+    // "Bu olabilir mi" / "Bu uygun mu" kısa photo_acceptance (address/payment dahil)
+    if (hasQ && /^(bu|şu|su)\s+(olabilir|uygun|olur|gecer|geçer|yeterli)\s*(mi|m[uü])?\s*\??\s*$/i.test(rawTrim)) {
+      return "photo_acceptance_question";
+    }
+    
+    // "Bu resimdeki gibi mi geliyor" → preview (örnek resim gibi)
+    if (hasQ && /^(bu|şu)\s+(resimdeki|resmin|fotoğraftaki|fotograftaki|resimde|fotoğrafta|fotografta)\s+gibi/i.test(rawTrim)) {
+      return "preview_request";
+    }
+    
+    // "Ben onu görüp hemen kararımi verebilirim" / "Önce görüp karar veririm" → preview (karar)
+    if (hasQ && /(gorup|görüp|gorduk|görüp).*(karar|karar ver)/i.test(norm)) {
+      return "preview_request";
+    }
+    
+    // "Diğer modellere de bakabilir miyim" / "Sayfanızda mevcut mu" → detail/model list
+    if (hasQ && /(diger model|diğer model|baska model|başka model|sayfaniz.*mevcut|sayfanız.*mevcut|sayfada var|model.*bakab)/i.test(norm)) {
+      return "detail_request";
+    }
+    
+    // "Nasıl yapıyor uz resimleri size mi gönderiyoruz" / "Beyefendi fotoğrafı biz mi atıyoruz" → photo_format
+    if (hasQ && (
+         /(nasil yap|nasıl yap).*(foto|resim)/i.test(norm) ||
+         /(foto|resim).*(biz mi at|biz mi gonder|biz mi gönder|size mi gonder|size mi gönder)/i.test(norm) ||
+         /(biz mi at|biz mi gonder|biz mi gönder|size mi gonder|size mi gönder).*(foto|resim)/i.test(norm)
+        )) {
+      return "photo_format_question";
+    }
+    
+    // Age-year price confirmation: "Ayın 9 da alicam yine aynı olur değil mi"
+    if (hasQ && /\byine (ayni|aynı)\s*(olur|fiyat|ücret)/i.test(norm)) {
+      return "price_confirmation";
+    }
+    
+    // "Kolye boyu/uzunluğu" direkt (soru olmasa da) → chain
   }
 
   // ═══ 1. SLOT COMMITS (highest priority) ═══
@@ -208,10 +411,13 @@ export function detectIntent(ctx) {
   // C2: isim + tarih pattern → back_text_content (sadece back_text stage'lerinde)
   if (isBackTextStage && (/\d{2}[.\-\/]\d{2}[.\-\/]\d{2,4}/.test(raw) || /\b(20\d{2}|19\d{2})\b/.test(raw))) {
     const hasName = /[A-ZÇĞİÖŞÜa-zçğıöşü]{3,}/.test(raw);
-    const isAddress = hasAny(norm, ["mahalle","mahallesi","sokak","cadde","caddesi","apt","daire","kat","no "]);
+    // ══ AILE B FIX: "İl X İlçe Y Mahalle Z" adres paterni ══
+    const isAddressStructure = hasAny(norm, ["mahalle","mahallesi","sokak","cadde","caddesi","apt","daire","kat","no ","il ","ilce","ilçe","bulvar","sk ","mh "]) ||
+                               /\bi?l\s+[a-zçğıöşüâ]+\s+ilce|ilçe\s+/i.test(norm) ||
+                               /\[ADDRESS\]/i.test(raw);
     const isDateOnly = /^[\d\s.\-\/]+$/.test(raw.trim());
     const isShippingCtx = hasAny(norm, ["kargoya","kargoda","teslim","ne zaman gelir","kac gunde","kaç günde","siparis verdim","sipariş verdim"]);
-    if (!isAddress && !isShippingCtx && !hasAny(norm, ["adres","telefon","kargo","odeme","ödeme","dekont","whatsapp"])) {
+    if (!isAddressStructure && !isShippingCtx && !hasAny(norm, ["adres","telefon","kargo","odeme","ödeme","dekont","whatsapp"])) {
       if (hasName) return "back_text_content";
       if (isDateOnly && [STAGE.ORDER_COMPLETED, "order_completed"].includes(stage)) return "back_text_content";
     }
@@ -222,7 +428,8 @@ export function detectIntent(ctx) {
   // sebep veriyordu. Word-boundary ile spesifik sure adı match'e sıkıştırdık.
   const _ayetRegex = /\b(nazar duasi|ayetel kursi|ayetel kürsî|fatiha|ihlas|kalem suresi|yasin( suresi| süresi|i yazalim|i yazalım|i yazin|i yazın|i ekleyin|olsun|i olsun|suresi)?|besmele)\b/i;
   if (_ayetRegex.test(norm) &&
-      !hasAny(norm, ["var mi","var mı","olur mu","yazilir mi","yazılır mı","oluyor mu","eklenebilir","yapiliyor","yasinda","yaşında"])) return "back_text_content";
+      !hasAny(norm, ["var mi","var mı","olur mu","yazilir mi","yazılır mı","oluyor mu","eklenebilir","yapiliyor","yasinda","yaşında","yasin da","yaşın da","yasin de","yaşın de"]) &&
+      !/\d+\s*yasin/i.test(norm)) return "back_text_content";
 
   // C4: Arapça / Kuran ayeti direkt metin
   if (/[\u0600-\u06FF]/.test(raw) && raw.length > 10) return "back_text_content";
@@ -292,7 +499,14 @@ export function detectIntent(ctx) {
 
   // C11: sevgi/duygu sözcükleri + cümle → back_text_content (uzun metin de olabilir)
   if (isBackTextStage && !/\?/.test(raw)) {
-    if (hasAny(norm, [
+    // ══ AILE B FIX: explain/heyecan/açıklama pattern'ları hariç tut ══
+    const isExplainPattern = hasAny(norm, [
+      "yok yok","heyecandan","merak rttim","merak ettim","gormek istedim","görmek istedim",
+      "yasinda","yaşında","yasin da","yaşın da",
+      "rahatsiz","rahatsız","emar","hastane","doktor","ameliyat",
+      "cunku","çünkü","o yuzden","o yüzden","sebebi","neden",
+    ]);
+    if (!isExplainPattern && hasAny(norm, [
       "seni cok seviyorum","seni çok seviyorum","en cok sen","en çok sen",
       "hosgeldin","hoşgeldin","iyi ki","nefesim","canim ailem","canım ailem",
       "kabul olmus","kabul olmuş","en guzel duam","en güzel duam",
@@ -618,7 +832,7 @@ export function detectIntent(ctx) {
   if (hasAny(norm, KW.detail_request)) return "detail_request";
 
   // ═══ 10. ACK / SMALLTALK ═══
-  const ACK_WORDS = ["tamam","tamamdir","tmm","olur","peki","evet","ok","anladim","anladım","he","hee","tm"];
+  const ACK_WORDS = ["tamam","tamamdir","tamamdır","tmm","olur","peki","evet","ok","okey","oldu","anladim","anladım","he","hee","tm","tabi","tabii","elbette","olmuş"];
   if (raw.length <= 15 && ACK_WORDS.includes(norm)) return "ack";
   if (hasAny(norm, KW.smalltalk)) return "smalltalk";
 
@@ -627,7 +841,13 @@ export function detectIntent(ctx) {
     const isQuestion = /[?]/.test(raw) || /\b(mi|mı|mu|mü|misiniz|mısınız)\b/i.test(raw);
     const isPhone = /0\d{3}\s?\d{3}\s?\d{2}\s?\d{2}/.test(raw) || /05\d{2}/.test(raw);
     const isUndecided = hasAny(norm, ["bilemedim","karar veremedim","kararsiz","kararsız","ne yazsak","emin degilim","emin değilim"]);
-    // Blessing / condolence / gratitude — bunlar yazı içeriği değil sosyal ifadeler
+    // ══ AILE B FIX: İnitials / tek harfler back_text DEĞİL ══
+    // "B k olcak", "B K", "F Y Z" gibi — gerçek metin değil, kısaltma
+    const isInitials = /^[A-ZÇĞİÖŞÜ]\s/.test(raw.trim()) && raw.trim().length < 15 && raw.split(/\s+/).every(w => w.length <= 3);
+    // Sadece A-Z harflerden oluşan 2-3 tek harf birlikte
+    const isJustLetters = /^([A-ZÇĞİÖŞÜ]\s*){2,4}$/i.test(raw.trim().replace(/\n/g, ' '));
+    // "B k olcak" - tek harf + küçük-harfli kelime + fiil yardımcısı
+    const isInitialsWithFiller = /^[A-ZÇĞİÖŞÜ]\s+[a-zçğıöşü]\s+(olcak|olacak|olsun|olsa)/i.test(raw.trim());
     const isBlessingOrCondolence = hasAny(norm, [
       "basiniz sagolsun","başınız sağolsun","basiniz sag olsun","başınız sağ olsun",
       "gecmis olsun","geçmiş olsun","allah rahmet","allah kabul","allah razi olsun","allah razı olsun",
@@ -644,8 +864,15 @@ export function detectIntent(ctx) {
       "tamam","olur","peki","evet","hayir","hayır","yok","istemiyorum","gerek yok",
       "gormek","görmek","gormeden","görmeden","gorsel","görsel","paylasir","paylaşır",
       "kalite","net","fotograf","fotoğraf","resim","kopma","silinme","dayanikli",
+      // ══ AILE B FIX: operasyonel/age/complaint ══
+      "kargolam","iletisim","iletişim","bebegim","bebeğim","rahatsiz","rahatsız","emar","hastane",
+      "yasinda","yaşında","yasin da","yaşın da","yasin de","yaşın de",
+      "surekli","sürekli","hep ayni","hep aynı","duruyor","deyip",
     ]);
-    if (!isQuestion && !isBlocked && !isPhone && !isUndecided && !isBlessingOrCondolence && !hasAny(norm, ACK_WORDS)) return "back_text";
+    // "İl Balıkesir İlçe ivrindi mah..." — kısa adres
+    const isShortAddressStructure = /\b(il|ilce|ilçe|mah|mahalle|mahallesi|sokak|cadde|caddesi|apt|daire|kat|no)\b/i.test(norm) ||
+                                    /\[ADDRESS\]/i.test(raw);
+    if (!isQuestion && !isBlocked && !isPhone && !isUndecided && !isBlessingOrCondolence && !isInitials && !isJustLetters && !isInitialsWithFiller && !isShortAddressStructure && !hasAny(norm, ACK_WORDS)) return "back_text";
   }
 
   // ═══ DEFAULT ═══

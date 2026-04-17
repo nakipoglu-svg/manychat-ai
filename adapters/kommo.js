@@ -235,6 +235,7 @@ async function movePipelineStage(leadId, stage, hasProduct, paymentMethod, suppo
   if (!target) return;
 
   // ═══ PIPELINE DIRECTION GUARD ═══
+  const cur = Number(currentStatusId || 0);
   if (cur && LOCKED_STAGES.has(cur)) {
     // Kargo'dan sadece Destek veya İptal/İade'ye
     if (cur === STAGE_KARGOLANDI) {

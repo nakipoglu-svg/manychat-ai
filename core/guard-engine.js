@@ -82,7 +82,7 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
   // ═══ 4. VALIDATE POLICY ═══
 
   // WhatsApp sızması
-  if (/whatsapp|wa\.me|505\s*471/i.test(text) && !hasAny(ctx.norm, ["whatsapp","numara","telefon","tel alab"])) {
+  if (/whatsapp|wa\.me|505\s*471/i.test(text) && !hasAny(ctx.norm, ["whatsapp","watsap","whatssap","whatsap","numara","telefon","tel alab"]) && ctx.intent !== "contact_channel_question") {
     console.log("[GUARD] STRIP: unsolicited WhatsApp");
     text = text.replace(/[^.]*(?:whatsapp|wa\.me|505\s*471)[^.]*/gi, "").trim();
     if (!text || text.length < 5) text = "Tabi efendim 😊";
@@ -131,8 +131,13 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
   // waiting_address + slot-ack cevaplar "adres...iletirseniz" kasıtlı içerir
   const ADDRESS_SLOT_EXEMPT = stage === STAGE.WAITING_ADDRESS &&
                               /(isim bilginizi aldım|telefonunuzu aldım|adres bilginizi aldım|bilgilerinizi aldım)/i.test(text);
+  // ACK intent: "Tamam efendim 😊 fotoğrafınızı buradan iletebilirsiniz" pattern
+  // kasıtlı — prefix + prompt. Trim etme.
+  const ACK_PREFIX_EXEMPT = ctx.intent === "ack" && /(tamam efendim|harika efendim)\s*😊/i.test(text);
+  // SMALLTALK intent: "Merhaba efendim 😊 Fotoğrafınızı..." stage-aware hatırlatma kasıtlı
+  const SMALLTALK_PREFIX_EXEMPT = ctx.intent === "smalltalk" && /^merhaba efendim\s*😊/i.test(text);
   const flowReminder = /[.,]?\s*(fotoğrafınızı|foto.*gönder|foto.*bekl|adres.*ilet|ödeme.*seç)[^.]*[.!]?\s*$/i;
-  if (flowReminder.test(text) && text.length > 50 && !TRIM_EXEMPT_INTENTS.includes(ctx.intent) && !STAGE_INVITE_EXEMPT && !HIGH_INTENT_EXEMPT && !INFO_FLOW_EXEMPT && !ADDRESS_SLOT_EXEMPT && !PAYMENT_FLOW_EXEMPT) {
+  if (flowReminder.test(text) && text.length > 50 && !TRIM_EXEMPT_INTENTS.includes(ctx.intent) && !STAGE_INVITE_EXEMPT && !HIGH_INTENT_EXEMPT && !INFO_FLOW_EXEMPT && !ADDRESS_SLOT_EXEMPT && !PAYMENT_FLOW_EXEMPT && !ACK_PREFIX_EXEMPT && !SMALLTALK_PREFIX_EXEMPT) {
     const cleaned = text.replace(flowReminder, "").trim();
     if (cleaned.length > 10) {
       console.log("[GUARD] TRIM: flow reminder stripped");

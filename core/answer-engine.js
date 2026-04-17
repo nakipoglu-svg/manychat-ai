@@ -770,7 +770,7 @@ function getDeterministicInfoResponse(intent, ctx) {
 
   // ── TRUST ──
   if (intent === "trust") {
-    if (hasAny(norm, ["kararma","kararir","kararır","karariyormu","kararıyormu","karariyor mu","kararıyor mu","karaa","karar ma","solar","solma","paslan","renk atma","renk atar","silinme","silinir","kaplama atar","kaplama atma","bozulur"])) return "14 ayar altın kaplama paslanmaz çeliktir, kararma solma paslanma yapmaz efendim 😊 Güvenle kullanabilirsiniz.";
+    if (hasAny(norm, ["kararma","kararir","kararır","karariyormu","kararıyormu","karariyor mu","kararıyor mu","karaa","karar ma","karatma","solar","solma","paslan","renk atma","renk atar","renk degis","renk değiş","silinme","silinir","kaplama atar","kaplama atma","bozulur"])) return "14 ayar altın kaplama paslanmaz çeliktir, kararma solma paslanma yapmaz efendim 😊 Güvenle kullanabilirsiniz.";
     if (hasAny(norm, ["garanti","garantisi","ne kadar sure","ne kadar süre","kac yil","kaç yıl","omur boyu","ömür boyu","kac sene","kaç sene","suresi","süresi"])) return "Garanti veriyoruz efendim 😊 Kararma, solma veya kaplama kaynaklı bir durumda ürün değişimi sağlıyoruz. Kesin bir süre sınırı bulunmamaktadır.";
     if (hasAny(norm, ["guvenilir","güvenilir","dolandirici","dolandırıcı","emin","guvenemiyorum","güvenemiyorum","guven","güven","nasil guvenebil","nasıl güvenebil"])) return "Güvenle sipariş verebilirsiniz efendim 😊 Ürünlerimiz siparişe özel olarak hazırlanıp PTT Kargo ile gönderilmektedir. Dilerseniz kapıda ödeme de tercih edebilirsiniz.";
     if (hasAny(norm, ["gercek foto","gerçek foto","gercek urun","gerçek ürün","photoshop","gercek mi","gerçek mi","gercek cekim","gerçek çekim"])) return "Ürünlerimiz siparişe özel olarak hazırlanmaktadır efendim 😊 Güvenle sipariş verebilirsiniz.";
@@ -865,6 +865,7 @@ function getDeterministicInfoResponse(intent, ctx) {
     return "Evet efendim, arka yüze yazı yazabiliyoruz 😊 Ücretsizdir.";
   }
   if (intent === "back_text_examples") return "Genelde isim, tarih, kısa bir not veya dua yazılıyor efendim 😊";
+  if (intent === "order_status_question") return "Ekibimize iletiyorum efendim, siparişinizin durumunu kontrol edip en kısa sürede dönüş sağlıyoruz 😊";
   if (intent === "back_photo_info") {
     const origProduct = ctx.previousProduct || ctx.fields?.ilgilenilen_urun || ctx.product;
     const stage = ctx.fields?.conversation_stage || "";
@@ -1124,7 +1125,30 @@ function getToneResponse(intent, ctx) {
   // ── SMALLTALK ──
   if (intent === "smalltalk") {
     const isFirstMessage = !stage || stage === "waiting_product";
-    if (hasAny(norm, ["merhaba","selam","slm","mrb","merhabalar"])) return isFirstMessage ? TEXT.MAIN_MENU : "Merhaba efendim 😊 Size nasıl yardımcı olabilirim?";
+    if (hasAny(norm, ["merhaba","selam","slm","mrb","merhabalar","selamlar"])) {
+      if (isFirstMessage) return TEXT.MAIN_MENU;
+      // ══ AILE N FIX: Flow içindeyken selam — stage'e göre hatırlatma ekle ══
+      if (stage === STAGE.WAITING_PHOTO || stage === "waiting_photo") {
+        return "Merhaba efendim 😊 Fotoğrafınızı iletmenizi bekliyoruz, kolyenize işlenecek fotoğrafı buradan paylaşabilirsiniz.";
+      }
+      if (stage === STAGE.WAITING_PAYMENT || stage === "waiting_payment") {
+        return "Merhaba efendim 😊 Ödeme tercihinizi belirterek devam edelim — EFT / Havale veya kapıda ödeme.";
+      }
+      if (stage === STAGE.WAITING_ADDRESS || stage === "waiting_address") {
+        const hasPhone = ctx.fields?.phone_received === "1";
+        const hasAddr = ctx.fields?.address_status === "address_only";
+        if (hasAddr && !hasPhone) return "Merhaba efendim 😊 Cep telefonu numaranızı iletebilir misiniz?";
+        if (hasPhone && !hasAddr) return "Merhaba efendim 😊 Açık adresinizi iletebilir misiniz?";
+        return "Merhaba efendim 😊 Ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim.";
+      }
+      if (stage === STAGE.WAITING_LETTERS || stage === "waiting_letters") {
+        return "Merhaba efendim 😊 Yapılmasını istediğiniz harfleri yazabilirsiniz.";
+      }
+      if (stage === STAGE.ORDER_COMPLETED || stage === "order_completed") {
+        return "Merhaba efendim 😊 Siparişiniz alınmıştır, size nasıl yardımcı olabiliriz?";
+      }
+      return "Merhaba efendim 😊 Size nasıl yardımcı olabilirim?";
+    }
     if (hasAny(norm, ["tesekkur","teşekkür","tsk","tşk","tesekurler","teşekkürler","tesekur","teşekür"])) return isFirstMessage ? `Rica ederiz efendim 😊 Hangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye` : "Rica ederiz efendim 😊";
     if (hasAny(norm, ["basiniz sagolsun","başınız sağolsun","basiniz sag olsun","başınız sağ olsun"])) return "Teşekkür ederiz efendim 🤍";
     if (hasAny(norm, ["sagol","sağol","sag ol","sağ ol","sagolun","sağolun","saol","saolun","sağ olun","cok saolun","çok sağolun","cok sagolun"])) return isFirstMessage ? `Rica ederiz efendim 😊 Hangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye` : "Rica ederiz efendim 😊";
@@ -1153,16 +1177,31 @@ function getToneResponse(intent, ctx) {
 
   // ── ACK (stage-aware) ──
   if (intent === "ack") {
-    if (stage === STAGE.WAITING_PHOTO) return "Fotoğrafınızı buradan iletebilirsiniz efendim 😊";
-    if (stage === STAGE.WAITING_PAYMENT) return "Ödeme tercihinizi belirtebilir misiniz efendim? EFT / Havale veya kapıda ödeme 😊";
+    // ══ AILE O + S FIX: Ack (evet/tamam/peki/tamamdır) → teyit + prompt ══
+    // Kullanıcının kısa onayı görmezden gelmek yerine kibar teyit ile başla
+    const rawAck = String(ctx.message || "").trim().toLowerCase();
+    const isTamamdir = /^(tamamdır|tamamdir|tamamdr|tamamdır|tamamdır efendim)/i.test(rawAck);
+    const isEvet = /^(evet|e |evvet|ewet)$/i.test(rawAck) || rawAck === "evet";
+    const isOlur = /^(olur|olur tabi|olur peki|olmaz)$/i.test(rawAck);
+    const isPeki = /^(peki|pekii|tmm|tm|tamam|tamamm|ok|okey|oldu|olmuş|tabi|tabii|elbette)$/i.test(rawAck);
+    
+    // Teyit prefix seç
+    let prefix = "";
+    if (isTamamdir) prefix = "Harika efendim 😊 ";
+    else if (isEvet) prefix = "Tamam efendim 😊 ";
+    else if (isOlur) prefix = "Tamam efendim 😊 ";
+    else if (isPeki) prefix = "Tamam efendim 😊 ";
+    
+    if (stage === STAGE.WAITING_PHOTO) return prefix ? prefix + "fotoğrafınızı buradan iletebilirsiniz 😊" : "Fotoğrafınızı buradan iletebilirsiniz efendim 😊";
+    if (stage === STAGE.WAITING_PAYMENT) return prefix ? prefix + "ödeme tercihinizi belirtebilir misiniz? EFT / Havale veya kapıda ödeme 😊" : "Ödeme tercihinizi belirtebilir misiniz efendim? EFT / Havale veya kapıda ödeme 😊";
     if (stage === STAGE.WAITING_ADDRESS) {
       const hasPhone = ctx.fields?.phone_received === "1";
       const hasAddr = ctx.fields?.address_status === "address_only";
-      if (hasAddr && !hasPhone) return "Cep telefonu numaranızı iletebilir misiniz efendim? 😊";
-      if (hasPhone && !hasAddr) return "Açık adresinizi iletebilir misiniz efendim? 😊";
-      return "Ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim efendim 😊";
+      if (hasAddr && !hasPhone) return prefix ? prefix + "cep telefonu numaranızı iletebilir misiniz? 😊" : "Cep telefonu numaranızı iletebilir misiniz efendim? 😊";
+      if (hasPhone && !hasAddr) return prefix ? prefix + "açık adresinizi iletebilir misiniz? 😊" : "Açık adresinizi iletebilir misiniz efendim? 😊";
+      return prefix ? prefix + "ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim 😊" : "Ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim efendim 😊";
     }
-    if (stage === STAGE.WAITING_LETTERS) return "Yapılmasını istediğiniz harfleri yazabilirsiniz efendim 😊";
+    if (stage === STAGE.WAITING_LETTERS) return prefix ? prefix + "yapılmasını istediğiniz harfleri yazabilirsiniz 😊" : "Yapılmasını istediğiniz harfleri yazabilirsiniz efendim 😊";
     return "Tabi efendim 😊";
   }
 
@@ -1271,6 +1310,20 @@ export async function generateAnswer(ctx) {
   // HUMAN SUPPORT — sadece stage human_support ise
   if (stage === "human_support") {
     const { norm } = ctx;
+    const rawHs = String(ctx.message || "").trim();
+    // Teşekkür/sağol → warm gratitude
+    if (hasAny(norm, ["tesekkur","teşekkür","sagol","sağol","saolun","sağolun","saol","cok saolun","çok sağolun","tesekkur ederim","teşekkür ederim"])) {
+      return { text: "Rica ederiz efendim 😊", source: "human_support", reply_class: REPLY_CLASS.FIXED_INFO };
+    }
+    // Dua/blessing — "Allah'a emanet" eklendi
+    if (hasAny(norm, ["allah razi","allah razı","amin","elinize saglik","elinize sağlık","hayirli","hayırlı","allah.a emanet","allaha emanet","allah.a sukur","allah.a şükür","allaha sukur","allaha şükür"]) ||
+        /allah.?a emanet/i.test(norm)) {
+      return { text: "Amin efendim, teşekkür ederiz 🤍", source: "human_support", reply_class: REPLY_CLASS.FIXED_INFO };
+    }
+    // Sadece emoji (🙏/❤/💫) → teşekkür
+    if (/^[\p{Emoji}\s]+$/u.test(rawHs) && rawHs.length < 20) {
+      return { text: "Rica ederiz efendim 😊", source: "human_support", reply_class: REPLY_CLASS.FIXED_INFO };
+    }
     // Bekliyorum/tamam/peki → sakin teyit
     if (hasAny(norm, ["bekliyorum","tamam","peki","anladim","anladım","tamamdir","tamamdır"])) return { text: "En kısa sürede dönüş sağlanacaktır efendim 😊", source: "human_support", reply_class: REPLY_CLASS.FIXED_INFO };
     // Diğer → operatöre
@@ -1394,6 +1447,22 @@ export async function generateAnswer(ctx) {
       if (intent === "complaint") return { text: "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
       // ══ AILE M FIX: completed overreach önle ══
       const rawAnswer = String(ctx.message || "").trim();
+      // M2: PII redacted adres token ([ADDRESS]) → adres teyit
+      if (/\[ADDRESS\]/i.test(rawAnswer) && rawAnswer.length < 40) {
+        return { text: "Adres bilgilerinizi aldık efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
+      // M10: Pure şehir adı ("MERSİN/TARSUS", "Çukurcayır") adres parçası
+      // DAR: ya slash/tire içeren iki-parçalı ("X/Y"), ya da ALL-CAPS isim, ya da 4+ karakter tek kelime ama ack/smalltalk olmamalı
+      const isCityAllCaps = /^[A-ZÇĞİÖŞÜ]{3,}(\s*[/\-]\s*[A-ZÇĞİÖŞÜ]{3,})?$/.test(rawAnswer);
+      const isCitySlash = /^[A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜa-zçğıöşü]+\s*[/\-]\s*[A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜa-zçğıöşü]+$/.test(rawAnswer);
+      const isCommonAck = /^(olabilir|olur|tamam|peki|evet|hayir|hayır|oldu|anladim|anladım|tabi|tabii|harika|guzel|güzel|super|süper|tesekkur|teşekkür|tesekkurler|teşekkürler|rica|ediyoruz|anlasıldı|anlaşıldı|bakayim|bakayım|bakarim|bakarım|sonra|simdi|şimdi)/i.test(rawAnswer);
+      if ((isCityAllCaps || isCitySlash) && rawAnswer.length < 20 && !isCommonAck) {
+        return { text: "Adres bilgilerinizi aldık efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
+      // AGE: "16 yaşın da" / "18 yaşında" — müşteri hediyelik yaşını belirtiyor
+      if (/^\d{1,2}\s*(yasin|yaşın|yasinda|yaşında|yas)\s*(da|de)?$/i.test(rawAnswer)) {
+        return { text: "Tabi efendim, not aldık 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
       // M5: Teşekkür/saolun → gratitude (ekibimize DEĞİL) — küçük/büyük harf fark etmez
       if (/^\s*(teşkkür|teşekkür|tesekkur|saolun|sağolun|saol|sağol|cok saolun|çok sağolun|cok tesekkur|çok teşekkür|cok sagolun)/i.test(rawAnswer) && rawAnswer.length < 30) {
         return { text: "Rica ederiz efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
@@ -1423,9 +1492,33 @@ export async function generateAnswer(ctx) {
         return { text: "Ekibimize iletiyorum efendim, siparişinizle ilgileneceğiz 😊", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
       }
       
-      // M_tamam: "Tamam ben istedim" / "Tamam uygun benim icin" / "Tamam bu olacak"
-      if (/^tamam\b/i.test(rawAnswer) && /(istedim|uygun|olacak|benim icin|benim için)/i.test(norm) && rawAnswer.length < 35) {
+      // M_tamam: "Tamam ben istedim" / "Tamam uygun benim icin" / "Tamam bu olacak" / "Tamamdır o zaman"
+      if (/^tamam\b/i.test(rawAnswer) && /(istedim|uygun|olacak|benim icin|benim için|o zaman)/i.test(norm) && rawAnswer.length < 35) {
         return { text: "Tabi efendim, not aldık 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
+      if (/^tamamdir\s+o\s+zaman|^tamamdır\s+o\s+zaman/i.test(rawAnswer)) {
+        return { text: "Tabi efendim, not aldık 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
+      
+      // M_ack_completed_ext: "Evet + kısa" / "Çok iyi olur" / "Aaa evet nasil olcak"
+      if (/^(evet|e+vet|aa+|aaa)\s+(kapali|kapalı|ve|sen|nasil|nasıl|en|bu)/i.test(rawAnswer) && rawAnswer.length < 35) {
+        return { text: "Tabi efendim, not aldık 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
+      if (/^(cok|çok)\s+(iyi|guzel|güzel)\s+(olur|olacak|olsun)/i.test(rawAnswer) && rawAnswer.length < 25) {
+        return { text: "Tabi efendim, not aldık 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
+      
+      // M_back_content_completed: "Kolgenin altına yazi" / "En altta ki bileklige" / "Yubarlağın altındaki"
+      if (/(kolgenin|kolyenin|altinda|altında|altta|altta ki|altındaki|altindaki|yubarl|yuvarl).*(yazi|yazı|bileklig|bileklige)/i.test(norm) && rawAnswer.length < 40) {
+        return { text: "Tabi efendim, notunuzu aldık 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
+      if (/^(yubarl|yuvarl|kolgenin|kolyenin|altta|altinda|altında)/i.test(rawAnswer) && rawAnswer.length < 30) {
+        return { text: "Tabi efendim, notunuzu aldık 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
+      
+      // M_tarih_aldiniz: "Tarihi not aldınız mı"
+      if (/(tarihi not aldiniz|tarihi not aldınız|tarihi aldiniz|tarihi aldınız|notu aldiniz|notu aldınız)/i.test(norm) && rawAnswer.length < 30) {
+        return { text: "Evet efendim, notunuzu aldık 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
       }
       
       // M_dimi: "Bu model olacak dimi" / "Olur dimi bu sekilde"
@@ -1467,6 +1560,57 @@ export async function generateAnswer(ctx) {
           ])) {
         return { text: "İsim bilginizi aldım efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
       }
+
+      // ══ AILE M+ residual ══
+      
+      // M11: UPPER-case isim-soyisim ("RECEP AKDEMİR", "EDIZ METEM")
+      if (/^[A-ZÇĞİÖŞÜ]{2,}(\s+[A-ZÇĞİÖŞÜ]{2,}){1,3}$/.test(rawAnswer) && rawAnswer.length < 40) {
+        return { text: "İsim bilginizi aldım efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
+      
+      // M12: isim + ve + isim ("Ediz Metem ve Erol'um") → back_text/isim note
+      if (/^[A-ZÇĞİÖŞÜ][a-zçğıöşü]+\s+[A-ZÇĞİÖŞÜ]?[a-zçğıöşü]*\s+(ve|ile)\s+[A-ZÇĞİÖŞÜ]/i.test(rawAnswer) && rawAnswer.length < 50) {
+        return { text: "Tabi efendim, arka yazı notu aldım 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
+      
+      // M13: Tarih string formatları ("2026-01-09 00:00:00", "03/01/2025")
+      if (/^\d{4}-\d{2}-\d{2}(\s+\d{2}:\d{2}(:\d{2})?)?$/.test(rawAnswer) || 
+          /^\d{2}[\.\-\/]\d{2}[\.\-\/]\d{4}$/.test(rawAnswer)) {
+        return { text: "Tabi efendim, arka yazı notu aldım 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
+      
+      // M14: "Ödemeyi yaptım" / "Dekont attım" → payment teyit
+      if (/(odemeyi yapti|ödemeyi yaptı|dekont att|dekontu att|dekont gonder|dekont gönder|odemeyi gonder|ödemeyi gönder)/i.test(norm) && rawAnswer.length < 35) {
+        return { text: "Ödemenizi kontrol edip size en kısa sürede dönüş sağlıyoruz efendim 😊", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
+      }
+      
+      // M15: Sadece emoji (🙏/❤/💫) → teşekkür
+      if (/^[\p{Emoji}\s]+$/u.test(rawAnswer) && rawAnswer.length < 20) {
+        return { text: "Rica ederiz efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
+      
+      // M16: "Allah'a emanet" / "Allah'a şükür" → blessing
+      // Not: "amin" içermez — amin mevcut handler'a bırak
+      if (/(allah.a emanet|allaha emanet|allah.a sukur|allah.a şükür)/i.test(norm) && 
+          !/\bamin\b/i.test(norm) &&
+          rawAnswer.length < 30) {
+        return { text: "Teşekkür ederiz efendim 🤍", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
+      
+      // M17: Ack + completed ("Tamamdır o zaman", "Çok iyi olur", "Tamamdır")
+      // DAR: sadece belirli ack+context kombinasyonu — tek "Evet" mevcut ack handler'a
+      if (/^(tamamdir|tamamdır)\b/i.test(rawAnswer) && rawAnswer.length < 30) {
+        return { text: "Tabi efendim, not aldık 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
+      if (/^(cok iyi|çok iyi|harika|süper|super)\s+(olur|olmus|olmuş|olacak)?/i.test(rawAnswer) && rawAnswer.length < 30) {
+        return { text: "Tabi efendim, not aldık 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
+      
+      // M18: "Kolyenin altına yazi" / "Yubarlağın altındaki" — back_text spec
+      if (/(altina|altına|ust|üst|onune|önüne|arkasina|arkasına).*(yaz|bileklik|kolye|halka|yuvarlak|madalyon)/i.test(norm) && rawAnswer.length < 40) {
+        return { text: "Tabi efendim, arka yazı notu aldım 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      }
+
 
       // ━━━ Orijinal completed cascade ━━━
 
