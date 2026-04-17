@@ -1,0 +1,2962 @@
+{
+  "totalUnique": 333,
+  "severity": {
+    "P0": 8,
+    "P1": 207,
+    "P2": 118
+  },
+  "families": {
+    "F8_context_miss": 55,
+    "F3_back_text": 50,
+    "F5_composition": 33,
+    "F4_preview_operator": 17,
+    "F6_trust_material": 15,
+    "F1_fallback_operator": 13,
+    "F5_product_switch": 13,
+    "F2_photo_price_misfire": 8,
+    "F1_location_miss": 7,
+    "F6_color_miss": 7,
+    "F1_accessory": 7,
+    "F1_chain_weak": 6,
+    "F8_weak_clarify": 6,
+    "F1_eta": 5,
+    "F7_address_phantom": 4,
+    "F1_post_delivery": 4,
+    "F7_bundle_merge": 3,
+    "F1_weak_ack": 3,
+    "F7_phone_fallback": 3,
+    "F8_sensitivity_pet": 3,
+    "F1_cancel_miss": 3,
+    "F1_single_pendant": 3,
+    "F1_photo_edit": 3,
+    "F4_decision": 3,
+    "F1_pet_photo": 3,
+    "F1_photo_change": 2,
+    "F1_product_appearance": 2,
+    "F7_name_only": 2,
+    "F1_order_howto": 2,
+    "F1_howto": 2,
+    "F7_address_update": 2,
+    "F8_correction_misfire": 2,
+    "F1_reminder": 2,
+    "F6_return_policy": 2,
+    "F1_trust_weak": 1,
+    "F6_payment_confusion": 1,
+    "bot_asks_clarify": 1,
+    "F7_slot_claim": 1,
+    "F1_shipping_typo": 1,
+    "F1_whatsapp": 1,
+    "F1_letters_count": 1,
+    "frustration_no_response": 1,
+    "F8_reminder_clarify": 1,
+    "F8_sensitivity_continuation": 1,
+    "F1_system_leak": 1,
+    "F2_photo_intent_fallback": 1,
+    "F4_decision_operator": 1,
+    "F2_wrong_product": 1,
+    "F8_emoji_weak": 1,
+    "F1_praise_miss": 1,
+    "F1_photo_selection": 1,
+    "F8_weak_paraphrase": 1,
+    "F8_eft_question_wrong": 1,
+    "F8_emotional_fallback": 1,
+    "F8_context_weak": 1,
+    "F8_sensitivity": 1,
+    "F1_size_q": 1,
+    "F8_weak_confirm": 1,
+    "F8_confabulation": 1,
+    "F8_weak_dump": 1,
+    "F6_durability_miss": 1,
+    "F8_weak_ack": 1,
+    "F8_ambiguous": 1,
+    "F8_question_miss": 1,
+    "F1_photo_crop": 1,
+    "F7_bundle_fallback": 1,
+    "F1_chain_thick": 1,
+    "F8_context_contradiction": 1,
+    "F6_satisfaction": 1,
+    "F8_reminder_dump": 1,
+    "F1_weak": 1,
+    "F4_preview_weak": 1
+  },
+  "bugs": [
+    {
+      "ts": "14.04 15:57",
+      "stage": "waiting_payment",
+      "msg": "Bu sığar mı bebek çok küçük olursa tek olsun",
+      "reply": "Tabi efendim, arka yüze de fotoğraf yapabiliyoruz 😊 Fiyat farkı olmuyor.",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "'Sığar efendim' çizgisinde kısa fit cevabı"
+    },
+    {
+      "ts": "14.04 15:58",
+      "stage": "waiting_product",
+      "msg": "Kolyemle aşk yaşıyorum resmen",
+      "reply": "Merhaba efendim 😊 Hangi model ile ilgileniyorsunuz?",
+      "family": "F1_fallback_operator",
+      "sev": "P2",
+      "expected": "Önceki müşteri bağlamını tanı / sıcak karşıla"
+    },
+    {
+      "ts": "14.04 16:46",
+      "stage": "waiting_letters",
+      "msg": "Efendim bana hazırlanmış halini atacaktınız",
+      "reply": "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊",
+      "family": "F4_preview_operator",
+      "sev": "P1",
+      "expected": "Müsait olduğumuzda atıyoruz policy cevabı"
+    },
+    {
+      "ts": "14.04 16:46",
+      "stage": "order_completed",
+      "msg": "Siparişimin",
+      "reply": "Yapılmasını istediğiniz harfleri yazabilirsiniz efendim 😊",
+      "family": "F5_product_switch",
+      "sev": "P0",
+      "expected": "Müşteri ataç seçmemiş, yanlış ürünle akış"
+    },
+    {
+      "ts": "14.04 16:47",
+      "stage": "waiting_photo",
+      "msg": "Resimli yapılacaktı gün içinde yazın demiştiniz",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_fallback_operator",
+      "sev": "P2",
+      "expected": "Hemen ekibimiz ilgileniyor reassurance"
+    },
+    {
+      "ts": "14.04 18:26",
+      "stage": "order_completed",
+      "msg": "Rica etsem atma şansınız varmı merak ediyorum da",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F4_preview_operator",
+      "sev": "P1",
+      "expected": "Yoğunluğa göre kargo öncesi paylaşabiliyoruz"
+    },
+    {
+      "ts": "14.04 19:38",
+      "stage": "waiting_photo",
+      "msg": "Sipariş vermek istiyorum",
+      "reply": "Resimli lazer kolye fiyatımız EFT / Havale ile 599 TL Kapıda ödeme ile 649 TL'dir efendim 😊",
+      "family": "F2_photo_price_misfire",
+      "sev": "P2",
+      "expected": "Fotoğrafınızı bekliyorum çizgisi"
+    },
+    {
+      "ts": "14.04 19:38",
+      "stage": "waiting_photo",
+      "msg": "Fotoğraf atsam size",
+      "reply": "Resimli lazer kolye fiyatımız EFT / Havale ile 599 TL...",
+      "family": "F2_photo_price_misfire",
+      "sev": "P1",
+      "expected": "Tabii efendim bekliyorum fotoğrafınızı"
+    },
+    {
+      "ts": "14.04 19:38",
+      "stage": "waiting_photo",
+      "msg": "Fotoğraf oynaya bilirmisimiz",
+      "reply": "Resimli lazer kolye fiyatımız...",
+      "family": "F2_photo_price_misfire",
+      "sev": "P1",
+      "expected": "Evet düzenleme yapabiliriz"
+    },
+    {
+      "ts": "14.04 19:42",
+      "stage": "waiting_payment",
+      "msg": "Önceki foraf olmasın",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_photo_change",
+      "sev": "P1",
+      "expected": "Son fotoğrafı esas alıyoruz / hangisi olsun netleyelim"
+    },
+    {
+      "ts": "14.04 19:52",
+      "stage": "order_completed",
+      "msg": "Annem yazın bide kevokamın",
+      "reply": "Amin efendim 🤍",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Arka yazı içeriği olarak al"
+    },
+    {
+      "ts": "14.04 19:52",
+      "stage": "order_completed",
+      "msg": "Yazabilir isiniz",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Tabii efendim, yazıyoruz"
+    },
+    {
+      "ts": "14.04 19:52",
+      "stage": "order_completed",
+      "msg": "Annem\nKevokamın",
+      "reply": "Amin efendim 🤍",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Arka yazı içeriği"
+    },
+    {
+      "ts": "14.04 19:53",
+      "stage": "order_completed",
+      "msg": "Tahmin süresi",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_eta",
+      "sev": "P1",
+      "expected": "Tahmini ne zaman elime ulaşır cevabı"
+    },
+    {
+      "ts": "14.04 20:23",
+      "stage": "waiting_photo",
+      "msg": "Suyla temasda sorun olur mu",
+      "reply": "Fotoğrafınızı buradan iletebilirsiniz efendim 😊",
+      "family": "F6_trust_material",
+      "sev": "P1",
+      "expected": "Su/deniz dayanıklı cevabı"
+    },
+    {
+      "ts": "14.04 20:26",
+      "stage": "waiting_photo",
+      "msg": "Gerçek altın değil galiba",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F6_trust_material",
+      "sev": "P1",
+      "expected": "Gerçek altın değil, kaplama + açıklama"
+    },
+    {
+      "ts": "14.04 20:27",
+      "stage": "waiting_photo",
+      "msg": "İki oğlumun resmi ve isimleri ne kadar olur fiyat değişir mi",
+      "reply": "Tabi efendim, arka yüze de fotoğraf yapabiliyoruz 😊 Fiyat farkı olmuyor.",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "İki resim + isim + fiyat farkı yok — hep birlikte"
+    },
+    {
+      "ts": "14.04 20:32",
+      "stage": "waiting_photo",
+      "msg": "Eminmisiniz",
+      "reply": "Evet efendim, eminim 😊",
+      "family": "F1_trust_weak",
+      "sev": "P2",
+      "expected": "Güvence + ürün/sipariş konteksi"
+    },
+    {
+      "ts": "14.04 20:35",
+      "stage": "waiting_photo",
+      "msg": "Fotoğraf bozulmuyor mu",
+      "reply": "Resimli lazer kolye fiyatımız EFT / Havale ile 599 TL...",
+      "family": "F2_photo_price_misfire",
+      "sev": "P1",
+      "expected": "Hayır silinmez / bozulmaz + materyal"
+    },
+    {
+      "ts": "14.04 20:35",
+      "stage": "waiting_photo",
+      "msg": "Cift fotografta ayni mi",
+      "reply": "Resimli lazer kolye fiyatımız...",
+      "family": "F2_photo_price_misfire",
+      "sev": "P1",
+      "expected": "Evet yaparız, fiyat farkı yok"
+    },
+    {
+      "ts": "14.04 20:36",
+      "stage": "waiting_photo",
+      "msg": "Teşekür ederim ben bı düşüneyim dönüş yaparım size tekrardan",
+      "reply": "Suya dayanıklıdır efendim 😊 Su veya denizde sorun yaşanmaz.",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "expected": "Bekliyoruz efendim / rica ederiz"
+    },
+    {
+      "ts": "14.04 20:42",
+      "stage": "waiting_product",
+      "msg": "Aydın nazilli",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_location_miss",
+      "sev": "P1",
+      "expected": "Evet kargomuz var / Türkiye'nin her yerine gönderiyoruz"
+    },
+    {
+      "ts": "14.04 20:48",
+      "stage": "waiting_photo",
+      "msg": "Bir kolyeye 3 çocuğumun resminin yapılmadını istiyorum",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "Evet yaparız / 2-3-4 çocuk fark etmez"
+    },
+    {
+      "ts": "14.04 20:51",
+      "stage": "waiting_product",
+      "msg": "İkiside",
+      "reply": "Ödeme olarak EFT mi yoksa kapıda nakit mi tercih edersiniz efendim?",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "expected": "İki ürünün de fiyatını ver"
+    },
+    {
+      "ts": "14.04 20:51",
+      "stage": "waiting_product",
+      "msg": "Öğrenebilirmişim",
+      "reply": "Haklısınız efendim, ne öğrenmek istersiniz? 😊",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "expected": "Son 3 mesaj bağlamıyla cevapla"
+    },
+    {
+      "ts": "14.04 20:54",
+      "stage": "waiting_photo",
+      "msg": "Kapida kk ödeme oluyor mu",
+      "reply": "Evet efendim, kapıda ödeme seçeneğimiz mevcut 😊 Kapıda ödeme fiyatımız 649 TL'dir. Sadece nakit geçerlidir.",
+      "family": "F6_payment_confusion",
+      "sev": "P1",
+      "expected": "Hayır, kapıda kredi kartı geçmiyor, sadece nakit"
+    },
+    {
+      "ts": "14.04 20:59",
+      "stage": "waiting_photo",
+      "msg": "5 kişi bır kolyeye sıgarmi",
+      "reply": "Evet efendim, fotoğrafa kaç kişi olursa olsun yapılabilir 😊 Çok kişili fotoğraflarda tek kare olması en idealidir.",
+      "family": "F5_composition",
+      "sev": "P2",
+      "expected": "+ fiyat farkı olmaz belirt"
+    },
+    {
+      "ts": "14.04 21:00",
+      "stage": "waiting_photo",
+      "msg": "Fiyat değişir mi",
+      "reply": "EFT / Havale ile 599 TL, kapıda ödeme ile 649 TL'dir efendim 😊",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "expected": "5 kişi de olsa fiyat farkı yok (son mesaja bağlanmalı)"
+    },
+    {
+      "ts": "14.04 21:01",
+      "stage": "waiting_address",
+      "msg": "08.02.2026\nİyi ki sen Alparslan'ım yazalım",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Arka yazı içeriği olarak kaydet"
+    },
+    {
+      "ts": "14.04 21:02",
+      "stage": "order_completed",
+      "msg": "Özge şenyüz\n05XX...\nAkbilek mahallesi...",
+      "reply": "Bilgilerinizi aldım efendim 😊 Açık adres bilginiz ile devam edelim.",
+      "family": "F7_bundle_merge",
+      "sev": "P1",
+      "expected": "Tüm bundle zaten geldi, tekrar sorma"
+    },
+    {
+      "ts": "14.04 21:03",
+      "stage": "waiting_photo",
+      "msg": "Biz size 2 kişi aynı ve 1 kişi ayrı ve 1 kişi daha ayrı bunları birleştirirmisiniz",
+      "reply": "Evet efendim, birden fazla kişi olabilir 😊 Fotoğrafta kaç kişi olursa olsun basıyoruz.",
+      "family": "F5_composition",
+      "sev": "P2",
+      "expected": "Birleştirme özelinde onay"
+    },
+    {
+      "ts": "14.04 21:05",
+      "stage": "waiting_photo",
+      "msg": "Yani rengi",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "expected": "Önceki mesajdaki 'solar mı?' bağlamıyla cevap"
+    },
+    {
+      "ts": "14.04 21:11",
+      "stage": "order_completed",
+      "msg": "Tekrar rahatsız ediyorum ama ürün hazırlandıktan sonra kargoya verilmeden önce görselini gönderebilir misiniz",
+      "reply": "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊",
+      "family": "F4_preview_operator",
+      "sev": "P1",
+      "expected": "Yoğunluğa göre kargo öncesi paylaşabiliyoruz"
+    },
+    {
+      "ts": "14.04 21:11",
+      "stage": "order_completed",
+      "msg": "Benim için heyecanlı bi kargo, görmek isterim",
+      "reply": "Kargo ücretsiz, PTT ile gönderim yapılmaktadır efendim...",
+      "family": "F4_preview_operator",
+      "sev": "P1",
+      "expected": "Asıl vurgu görmek → preview cevabı"
+    },
+    {
+      "ts": "14.04 21:12",
+      "stage": "waiting_photo",
+      "msg": "Bu şekildemi gelecek",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_product_appearance",
+      "sev": "P1",
+      "expected": "Ürün zinciriyle, aksesuarıyla, kutusunda gelir"
+    },
+    {
+      "ts": "14.04 21:16",
+      "stage": "waiting_photo",
+      "msg": "2 resim yapabilir misiniz",
+      "reply": "Tabi efendim, arka yüze de fotoğraf yapabiliyoruz 😊",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "Evet 2 kişi/2 resim olur, fiyat farkı yok"
+    },
+    {
+      "ts": "14.04 21:17",
+      "stage": "waiting_photo",
+      "msg": "Yanyana olmaz mı",
+      "reply": "Tabi efendim, arka yüze de fotoğraf yapabiliyoruz 😊",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "Evet yan yana yaparız"
+    },
+    {
+      "ts": "14.04 21:25",
+      "stage": "waiting_photo",
+      "msg": "Ürün ne zaman elime ulaşır peki",
+      "reply": "İstanbul içi 1-2, diğer iller 2-3 iş günü içinde teslim edilmektedir...",
+      "family": "F1_eta",
+      "sev": "P2",
+      "expected": "Hazırlık süresi + teslim süresi birlikte"
+    },
+    {
+      "ts": "14.04 21:30",
+      "stage": "waiting_photo",
+      "msg": "Ayın 9 da alicam yine aynı olur değil mi",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F8_context_miss",
+      "sev": "P2",
+      "expected": "Stok sabit, evet aynı olur"
+    },
+    {
+      "ts": "14.04 21:34",
+      "stage": "waiting_photo",
+      "msg": "Arkasına dogdugu tarih isim felan da yazılıyor demi saat felan",
+      "reply": "Fotoğrafınızı buradan iletebilirsiniz efendim 😊",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Ne yazarsanız yazıyoruz"
+    },
+    {
+      "ts": "14.04 21:42",
+      "stage": "waiting_photo",
+      "msg": "Zamanla silinir mi resim aceba",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F6_trust_material",
+      "sev": "P1",
+      "expected": "Silinmez, lazer kazıma kalıcı"
+    },
+    {
+      "ts": "14.04 21:42",
+      "stage": "waiting_photo",
+      "msg": "Bir yüzüne bir çocuğum diğer yüzüne diğer çocuğumu bastırabilir miyim",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "Evet arkalı-önlü yaparız"
+    },
+    {
+      "ts": "14.04 21:46",
+      "stage": "waiting_photo",
+      "msg": "Metaryeni nedir",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F6_trust_material",
+      "sev": "P1",
+      "expected": "Materyal cevabı (typo tolere)"
+    },
+    {
+      "ts": "14.04 21:47",
+      "stage": "waiting_photo",
+      "msg": "Zincir sadece bumu başka model zincir yok mu",
+      "reply": "Ürünlerimiz zinciri ile birlikte sunulmaktadır efendim 😊",
+      "family": "F1_chain_weak",
+      "sev": "P2",
+      "expected": "Zincir modelimiz standart tek"
+    },
+    {
+      "ts": "14.04 21:48",
+      "stage": "waiting_photo",
+      "msg": "Burgu görsel bakabilir miyim",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F4_preview_operator",
+      "sev": "P1",
+      "expected": "Link paylaş"
+    },
+    {
+      "ts": "14.04 21:52",
+      "stage": "order_completed",
+      "msg": "Teyit için mj atmadınız nasıl oldu kolyem",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F4_preview_operator",
+      "sev": "P2",
+      "expected": "Ekibimiz ilgileniyor (güven verici ton)"
+    },
+    {
+      "ts": "14.04 21:57",
+      "stage": "waiting_photo",
+      "msg": "Teşekkür ederim düşünüp geri dönüş yapacağım",
+      "reply": "Suya dayanıklıdır efendim 😊 Su veya denizde sorun yaşanmaz.",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "expected": "Bekliyoruz efendim"
+    },
+    {
+      "ts": "14.04 22:00",
+      "stage": "waiting_product",
+      "msg": "Kocaeli",
+      "reply": "Merhaba efendim 😊 Hangi model ile ilgileniyorsunuz?",
+      "family": "F1_location_miss",
+      "sev": "P1",
+      "expected": "Türkiye'nin her yerine kargomuz mevcut"
+    },
+    {
+      "ts": "14.04 22:04",
+      "stage": "waiting_photo",
+      "msg": "Kolyenin iki tarafına foto yapilabilirmi",
+      "reply": "Yapılmasını istediğiniz harfleri yazabilirsiniz efendim 😊",
+      "family": "F5_product_switch",
+      "sev": "P0",
+      "expected": "Evet yaparız (lazer context)"
+    },
+    {
+      "ts": "14.04 22:04",
+      "stage": "waiting_photo",
+      "msg": "Karartma yapıyor mu",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F6_trust_material",
+      "sev": "P1",
+      "expected": "Kararma yapmaz, çeliktir"
+    },
+    {
+      "ts": "14.04 22:08",
+      "stage": "waiting_photo",
+      "msg": "Üç tane çocuğumun birlikte olan fotoğrafını yapabilir misiniz",
+      "reply": "Tabi efendim 😊 Çoklu alımda 3 kolye aynı adrese: EFT 1400 TL, kapıda 1500 TL.",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "Tek kolyede 3 çocuk olur, fiyat farkı yok"
+    },
+    {
+      "ts": "14.04 22:09",
+      "stage": "waiting_photo",
+      "msg": "Yok öyle değil 1 kolyede üçünün fotoğrafi olarak yapabilirmisiniz",
+      "reply": "Tabi efendim 😊",
+      "family": "F1_weak_ack",
+      "sev": "P2",
+      "expected": "Evet tek kolyede yaparız"
+    },
+    {
+      "ts": "14.04 22:09",
+      "stage": "waiting_photo",
+      "msg": "Karama yapıyorum",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F6_trust_material",
+      "sev": "P1",
+      "expected": "Kararma cevabı"
+    },
+    {
+      "ts": "14.04 22:12",
+      "stage": "waiting_photo",
+      "msg": "Mersin",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_location_miss",
+      "sev": "P1",
+      "expected": "Kargomuz var"
+    },
+    {
+      "ts": "14.04 22:15",
+      "stage": "waiting_photo",
+      "msg": "Teşekkür ederim şuan değil müsait bir zamanda inşallah sipariş oluşturacağım",
+      "reply": "Resimli lazer kolye fiyatımız EFT / Havale ile 599 TL...",
+      "family": "F2_photo_price_misfire",
+      "sev": "P1",
+      "expected": "Bekleriz efendim"
+    },
+    {
+      "ts": "14.04 22:16",
+      "stage": "waiting_photo",
+      "msg": "Kararna oluyormu",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F6_trust_material",
+      "sev": "P1",
+      "expected": "Kararma cevabı"
+    },
+    {
+      "ts": "14.04 22:19",
+      "stage": "waiting_product",
+      "msg": "Sadece resim",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_fallback_operator",
+      "sev": "P1",
+      "expected": "Resimli lazer kolye olarak devam"
+    },
+    {
+      "ts": "14.04 22:20",
+      "stage": "waiting_photo",
+      "msg": "Her iki yüze resim çiziliyor mu, yoksa tek tarafmı sadece?",
+      "reply": "Tabi efendim 😊",
+      "family": "F3_back_text",
+      "sev": "P2",
+      "expected": "Evet arkalı önlü basıyoruz, fiyat farkı yok"
+    },
+    {
+      "ts": "14.04 22:21",
+      "stage": "waiting_photo",
+      "msg": "Tamam resimlerim hazır olunca dönüş yaparım size. Bu fiyata zincir de dahil mi, zamanla bozulma ılur mu?",
+      "reply": "Güvenle sipariş verebilirsiniz efendim 😊 Siparişleriniz özenle hazırlanıp PTT Kargo ile gönderilmektedir.",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "expected": "Zincir dahil + bozulma yok — iki soru birden"
+    },
+    {
+      "ts": "14.04 22:22",
+      "stage": "waiting_photo",
+      "msg": "Bir kolyenin ustune 3 resim cizebilir misiniz",
+      "reply": "Tabi efendim, arka yüze de fotoğraf yapabiliyoruz 😊 Fiyat farkı olmuyor.",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "Evet 3 resim yaparız tek kolyede"
+    },
+    {
+      "ts": "14.04 22:23",
+      "stage": "waiting_payment",
+      "msg": "Pekala bu resmi sadece hiç kimse olmadan yanında babamla annemi istiyorum mesela o olabilir",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "Evet yaparız"
+    },
+    {
+      "ts": "14.04 22:24",
+      "stage": "waiting_address",
+      "msg": "Ben esnaf olduğum için daha önce de yaptırmıştım babamın resmini illa ki kolyeyi hediye ettim ablama bu nedenle",
+      "reply": "Bilgilerinizi aldım efendim / Cep telefonu numaranızı",
+      "family": "F7_address_phantom",
+      "sev": "P1",
+      "note": "Alınan bilgi yok"
+    },
+    {
+      "ts": "14.04 22:24",
+      "stage": "waiting_address",
+      "msg": "Müşterilerim görünce soruyorlar size yönlendirmem için güzel olması gerekiyor",
+      "reply": "Cep telefonu numaranızı iletebilir misiniz",
+      "family": "F8_context_miss",
+      "sev": "P1"
+    },
+    {
+      "ts": "14.04 22:26",
+      "stage": "waiting_address",
+      "msg": "Nurdil kalyoncu",
+      "reply": "Bilgilerinizi aldım efendim 😊 Açık adres bilginiz ile devam edelim.",
+      "family": "F7_name_only",
+      "sev": "P2",
+      "expected": "İsmi kaydet + açık adres iste"
+    },
+    {
+      "ts": "14.04 22:26",
+      "stage": "waiting_photo",
+      "msg": "Bunun gümüş rengi ni de yapiyormusunuz",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F6_color_miss",
+      "sev": "P1",
+      "expected": "Evet gümüş kaplama da var"
+    },
+    {
+      "ts": "14.04 22:27",
+      "stage": "order_completed",
+      "msg": "05XXXXXXXX [phone only]",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F7_phone_fallback",
+      "sev": "P1",
+      "expected": "Telefonunuzu aldım efendim"
+    },
+    {
+      "ts": "14.04 22:27",
+      "stage": "waiting_letters",
+      "msg": "Tamm şipariş vermek istıyorum",
+      "reply": "Harfli ataç kolye fiyatımız EFT / Havale ile 499 TL...",
+      "family": "F2_photo_price_misfire",
+      "sev": "P1",
+      "expected": "Harf ise harf iste, foto ise foto iste — fiyat değil"
+    },
+    {
+      "ts": "14.04 22:28",
+      "stage": "waiting_letters",
+      "msg": "Resim olsun ıstıyorum",
+      "reply": "Bu modelde fotoğraf kullanılmıyor efendim, sadece harf ile hazırlanıyor",
+      "family": "F5_product_switch",
+      "sev": "P0",
+      "expected": "Product switch'le lazer ürüne geç"
+    },
+    {
+      "ts": "14.04 22:28",
+      "stage": "waiting_letters",
+      "msg": "Peki Hangı modelde resım oluyor",
+      "reply": "Bu modelde fotoğraf kullanılmıyor efendim, sadece harf ile hazırlanıyor",
+      "family": "F5_product_switch",
+      "sev": "P0",
+      "expected": "Resimli lazer kolye cevabı"
+    },
+    {
+      "ts": "14.04 22:28",
+      "stage": "waiting_letters",
+      "msg": "Ama görsel de neden resım var",
+      "reply": "Bu modelde fotoğraf kullanılmıyor efendim, sadece harf ile hazırlanıyor",
+      "family": "F5_product_switch",
+      "sev": "P0",
+      "expected": "Resimli lazer kolye açıkla"
+    },
+    {
+      "ts": "14.04 22:29",
+      "stage": "waiting_photo",
+      "msg": "Resimli LAZER kolye olucak efendim",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F5_product_switch",
+      "sev": "P1",
+      "expected": "Ürünü set et ve devam et"
+    },
+    {
+      "ts": "14.04 22:31",
+      "stage": "waiting_photo",
+      "msg": "İstanbul Anadolu yakası",
+      "reply": "Fotoğrafınızı buradan iletebilirsiniz efendim 😊",
+      "family": "F1_location_miss",
+      "sev": "P2",
+      "expected": "Evet kargo yapıyoruz Anadolu yakasına"
+    },
+    {
+      "ts": "14.04 22:31",
+      "stage": "waiting_photo",
+      "msg": "Resimli lazer kolye olcak kapıda ödeme olacak efendim",
+      "reply": "Evet efendim, kapıda ödeme seçeneğimiz mevcut 😊 Kapıda ödeme fiyatımız 649 TL'dir.",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "expected": "Ödeme set'le ve devam et"
+    },
+    {
+      "ts": "14.04 22:34",
+      "stage": "waiting_photo",
+      "msg": "Aydın nazilli",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_location_miss",
+      "sev": "P1",
+      "expected": "Kargomuz var"
+    },
+    {
+      "ts": "14.04 22:36",
+      "stage": "waiting_photo",
+      "msg": "Ayrı ayrı göndersem",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "Evet ayrı ayrı gönderebilirsiniz birleştiririz"
+    },
+    {
+      "ts": "14.04 22:38",
+      "stage": "waiting_photo",
+      "msg": "Çok teşekkür ederim düşünüp dönüş yaparım iyi geceler",
+      "reply": "Suya dayanıklıdır efendim 😊",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "expected": "Bekleriz"
+    },
+    {
+      "ts": "14.04 22:39",
+      "stage": "waiting_address",
+      "msg": "29.05.2021",
+      "reply": "Sipariş efendim? 😊",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Arka yazı tarihi"
+    },
+    {
+      "ts": "14.04 22:41",
+      "stage": "waiting_payment",
+      "msg": "Sakinim",
+      "reply": "EFT / Havale veya kapıda 😊",
+      "family": "F8_context_miss",
+      "sev": "P2",
+      "expected": "Bağlam nötr kabul et"
+    },
+    {
+      "ts": "14.04 22:42",
+      "stage": "order_completed",
+      "msg": "Hangi? 😊",
+      "reply": "(bot asks 'hangi')",
+      "family": "bot_asks_clarify",
+      "sev": "P2",
+      "expected": "Hangi olduğunu sormak yerine sonraki mesaja hazır ol"
+    },
+    {
+      "ts": "14.04 22:46",
+      "stage": "waiting_photo",
+      "msg": "Kolye ölçüleri nedir birde gümüş mu kolyeler",
+      "reply": "Ürünlerimiz 14 ayar altın kaplama paslanmaz çelikten üretilmektedir...",
+      "family": "F8_context_miss",
+      "sev": "P2",
+      "expected": "Ölçü + gümüş varyant iki soru birden"
+    },
+    {
+      "ts": "14.04 22:48",
+      "stage": "order_completed",
+      "msg": "Resmîn arkasına Senı çok sevıyorum dıye yazılabılırmı",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Evet yazıyoruz"
+    },
+    {
+      "ts": "14.04 22:51",
+      "stage": "waiting_photo",
+      "msg": "Mersin",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_location_miss",
+      "sev": "P1",
+      "expected": "Kargomuz var"
+    },
+    {
+      "ts": "14.04 22:57",
+      "stage": "waiting_product",
+      "msg": "Nası sipariş veriyoruz",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_order_howto",
+      "sev": "P1",
+      "expected": "Menü açıklaması"
+    },
+    {
+      "ts": "14.04 23:01",
+      "stage": "waiting_address",
+      "msg": "22.07.24",
+      "reply": "22.07.24 teslimat tarihi mi, efendim? 😊",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Tarih → arka yazı (doğum tarihi varsayımı)"
+    },
+    {
+      "ts": "14.04 23:01",
+      "stage": "waiting_address",
+      "msg": "Tarih doğum tarihi",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Arka yazıya doğum tarihi olarak kaydedildi"
+    },
+    {
+      "ts": "14.04 23:04",
+      "stage": "waiting_payment",
+      "msg": "Hangi bankaydi",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_fallback_operator",
+      "sev": "P2",
+      "expected": "Akbank (veya bilgiyi ver)"
+    },
+    {
+      "ts": "14.04 23:07",
+      "stage": "waiting_photo",
+      "msg": "Rengi",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "expected": "Altın/gümüş renk cevabı"
+    },
+    {
+      "ts": "14.04 23:14",
+      "stage": "waiting_photo",
+      "msg": "Kendinizmi yapıyorsunuz",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_fallback_operator",
+      "sev": "P2",
+      "expected": "Evet kendimiz hazırlıyoruz"
+    },
+    {
+      "ts": "14.04 23:18",
+      "stage": "waiting_photo",
+      "msg": "Rengi",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "expected": "Renk cevabı"
+    },
+    {
+      "ts": "14.04 23:20",
+      "stage": "waiting_photo",
+      "msg": "Kızım ve oğlum var birlikte çekilmiş resimleri olur mu acaba",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "Evet olur birden fazla kişi"
+    },
+    {
+      "ts": "14.04 23:27",
+      "stage": "waiting_product",
+      "msg": "Beyefendi fotoğrafı biz mi atıyoruz",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_howto",
+      "sev": "P1",
+      "expected": "Evet buraya DM ile atarsınız"
+    },
+    {
+      "ts": "14.04 23:29",
+      "stage": "waiting_photo",
+      "msg": "Peki ne zaman istesem gelir mii",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_fallback_operator",
+      "sev": "P2",
+      "expected": "Stok sabit, ne zaman isterseniz"
+    },
+    {
+      "ts": "14.04 23:35",
+      "stage": "waiting_photo",
+      "msg": "Alarjı yapar mı",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F6_trust_material",
+      "sev": "P1",
+      "expected": "Alerji riski yok"
+    },
+    {
+      "ts": "14.04 23:39",
+      "stage": "waiting_photo",
+      "msg": "Peki ıkı resım göndersem bi oglumum bi kızımım arkalı önlü yapabilirmisiniz resmi",
+      "reply": "Tabi efendim, birden fazla kişi olabilir 😊",
+      "family": "F5_composition",
+      "sev": "P2",
+      "expected": "Evet arkalı önlü yapabiliriz"
+    },
+    {
+      "ts": "14.04 23:40",
+      "stage": "waiting_payment",
+      "msg": "Tamam resim o olcak isterseniz siyah beyazda olabilir hangisi daha güzel olursa onu size bırakıyorum Arkaya isim olarak Umut Rana Kıvanç Yazılacak",
+      "reply": "Ödeme tercihinizi belirtebilir misiniz efendim?",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Arka yazı kaydet + ödeme iste"
+    },
+    {
+      "ts": "14.04 23:47",
+      "stage": "waiting_photo",
+      "msg": "Yanda ki boncuk",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_accessory",
+      "sev": "P2",
+      "expected": "Nazar boncuğu aksesuarı"
+    },
+    {
+      "ts": "14.04 23:50",
+      "stage": "waiting_photo",
+      "msg": "2 tarafta olsa",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "İki tarafa resim olur"
+    },
+    {
+      "ts": "14.04 23:51",
+      "stage": "waiting_photo",
+      "msg": "Tamam ben düşünüp sizi döneceğim iyi akşamlar",
+      "reply": "Suya dayanıklıdır efendim 😊",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "expected": "Bekleriz"
+    },
+    {
+      "ts": "14.04 23:57",
+      "stage": "waiting_address",
+      "msg": "Bu resimdeki değilmi mavi boncukta o olsun ltf",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_accessory",
+      "sev": "P1",
+      "expected": "Evet o aksesuar seçimi"
+    },
+    {
+      "ts": "15.04 00:02",
+      "stage": "waiting_letters",
+      "msg": "Ürünler karalama yapar mı",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F6_trust_material",
+      "sev": "P1",
+      "expected": "Kararma cevabı (typo)"
+    },
+    {
+      "ts": "15.04 00:06",
+      "stage": "waiting_photo",
+      "msg": "Yanda ki boncuk",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_accessory",
+      "sev": "P2",
+      "expected": "Nazar boncuğu"
+    },
+    {
+      "ts": "15.04 00:10",
+      "stage": "waiting_address",
+      "msg": "Yapildigina dair mi",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "expected": "Dekont mu kastediliyor — daha net cevap"
+    },
+    {
+      "ts": "15.04 00:14",
+      "stage": "waiting_photo",
+      "msg": "\"05.03.26 ♾\"",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Arka yazı tarih+sembol"
+    },
+    {
+      "ts": "15.04 00:14",
+      "stage": "waiting_photo",
+      "msg": "Arkasına bu",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F3_back_text",
+      "sev": "P2",
+      "expected": "Arka yazı kaydet"
+    },
+    {
+      "ts": "15.04 00:18",
+      "stage": "order_completed",
+      "msg": "16 yaşın da",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F8_context_miss",
+      "sev": "P2",
+      "expected": "Sohbet tonu, ekibimiz görecek"
+    },
+    {
+      "ts": "15.04 00:19",
+      "stage": "order_completed",
+      "msg": "Birşey yazmama gerek var mı",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F8_context_miss",
+      "sev": "P2",
+      "expected": "Açıklama gerekli değil (veya) isim yazın"
+    },
+    {
+      "ts": "15.04 00:40",
+      "stage": "order_completed",
+      "msg": "Olur ama ne yazalım",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F3_back_text",
+      "sev": "P2",
+      "expected": "Öneri ver / tarih/isim yazabilirsiniz"
+    },
+    {
+      "ts": "15.04 00:49",
+      "stage": "order_completed",
+      "msg": "Resim sadece yüz mü olcak",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F8_context_miss",
+      "sev": "P2",
+      "expected": "Tercihinize göre crop yaparız"
+    },
+    {
+      "ts": "15.04 00:50",
+      "stage": "order_completed",
+      "msg": "İsmi mi yazıcak",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F3_back_text",
+      "sev": "P2",
+      "expected": "İsim back_text'e ekleriz"
+    },
+    {
+      "ts": "15.04 10:22",
+      "stage": "order_completed",
+      "msg": "Tamam zinciri de atarsınız bı bakayım müsait olduğunuz zaman",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F4_preview_operator",
+      "sev": "P2",
+      "expected": "Yoğunluğa göre paylaşıyoruz"
+    },
+    {
+      "ts": "15.04 10:36",
+      "stage": "order_completed",
+      "msg": "Nazarlık nasıl",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_accessory",
+      "sev": "P2",
+      "expected": "Nazar boncuğu anlatımı"
+    },
+    {
+      "ts": "15.04 13:10",
+      "stage": "waiting_product",
+      "msg": "Merhabalar, Kolyem bugün geldi çok güzel olmuş ellerinize sağlık. Fakat ben kapıda ödeme seçmiştim ama kargo kapıya bırakıp gitmiş, ben fiyatını ödemedim ama ulaşmaya çalışıcaz ptt kargoya",
+      "reply": "Kargo ücretsiz, PTT ile gönderim yapılmaktadır...",
+      "family": "F1_post_delivery",
+      "sev": "P1",
+      "expected": "Ekibimize iletiyorum (operatör — ama stage yanlış)"
+    },
+    {
+      "ts": "15.04 15:29",
+      "stage": "waiting_address",
+      "msg": "Öldü",
+      "reply": "Adresinizi paylaşır mısınız efendim?",
+      "family": "F8_sensitivity_pet",
+      "sev": "P1",
+      "expected": "Başınız sağ olsun (hayvan kayıp bağlamı)"
+    },
+    {
+      "ts": "15.04 15:30",
+      "stage": "waiting_address",
+      "msg": "Bende resmini taşımak istiyorum",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F8_context_miss",
+      "sev": "P2",
+      "expected": "Çok anlamlı + adres iste"
+    },
+    {
+      "ts": "15.04 15:30",
+      "stage": "waiting_address",
+      "msg": "Garip",
+      "reply": "Ne konuda garip geldi efendim?",
+      "family": "F8_context_miss",
+      "sev": "P2",
+      "expected": "Bağlam nötr"
+    },
+    {
+      "ts": "15.04 15:33",
+      "stage": "waiting_address",
+      "msg": "Vermiştim",
+      "reply": "Teşekkürler efendim, adresinizi aldım; satıcıya yönlendiriyorum...",
+      "family": "F7_slot_claim",
+      "sev": "P2",
+      "expected": "Adresi zaten almış olmalı — son mesajdaki adresi ara"
+    },
+    {
+      "ts": "15.04 16:28",
+      "stage": "order_completed",
+      "msg": "Tek atarsınız diye düşünmüştüm görseli",
+      "reply": "Suya dayanıklıdır efendim 😊",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "expected": "Preview policy"
+    },
+    {
+      "ts": "15.04 18:03",
+      "stage": "waiting_address",
+      "msg": "Resim atacaktiniz",
+      "reply": "Bu modelde fotoğraf kullanılmıyor efendim, sadece harf ile hazırlanıyor",
+      "family": "F5_product_switch",
+      "sev": "P0",
+      "expected": "Ataç ürün ama müşteri resimli bekliyor — switch veya preview"
+    },
+    {
+      "ts": "15.04 20:30",
+      "stage": "order_completed",
+      "msg": "09.01.2026",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Arka yazı tarih"
+    },
+    {
+      "ts": "15.04 20:39",
+      "stage": "waiting_payment",
+      "msg": "Ama ben Diyarbakırdayım",
+      "reply": "EFT / Havale veya kapıda 😊",
+      "family": "F3_back_text",
+      "sev": "P2",
+      "expected": "Lokasyon cevabı"
+    },
+    {
+      "ts": "15.04 20:40",
+      "stage": "waiting_payment",
+      "msg": "Dolandırmıyosunuz değilmi",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F6_trust_material",
+      "sev": "P1",
+      "expected": "Güven cevabı"
+    },
+    {
+      "ts": "15.04 20:40",
+      "stage": "waiting_payment",
+      "msg": "İptalmi etsek",
+      "reply": "EFT / Havale veya kapıda 😊",
+      "family": "F1_cancel_miss",
+      "sev": "P1",
+      "expected": "İptal niyet — soru/cancel flow"
+    },
+    {
+      "ts": "15.04 20:51",
+      "stage": "waiting_photo",
+      "msg": "Gümüşün fotoğrafı var mı acaba",
+      "reply": "Resimli lazer kolye fiyatımız EFT / Havale ile 599 TL...",
+      "family": "F6_color_miss",
+      "sev": "P1",
+      "expected": "Gümüş varyant foto/link paylaş"
+    },
+    {
+      "ts": "15.04 20:57",
+      "stage": "waiting_photo",
+      "msg": "Kullandıkça kararla olurmu",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F6_trust_material",
+      "sev": "P1",
+      "expected": "Kararma cevabı"
+    },
+    {
+      "ts": "15.04 21:02",
+      "stage": "waiting_address",
+      "msg": "Arkasınada 22.08.2022 hoşgeldin nefesim yazarmısınız",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Evet yazıyoruz"
+    },
+    {
+      "ts": "15.04 21:03",
+      "stage": "waiting_photo",
+      "msg": "Beyaz altın varmı",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F6_color_miss",
+      "sev": "P1",
+      "expected": "Beyaz altın yok — gümüş kaplama var"
+    },
+    {
+      "ts": "15.04 21:03",
+      "stage": "waiting_photo",
+      "msg": "Gönderdiğim fotoğraf ve reklam amaçlı kullanılacak mı peki",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F6_trust_material",
+      "sev": "P1",
+      "expected": "Hayır, gizli tutulur"
+    },
+    {
+      "ts": "15.04 21:16",
+      "stage": "waiting_photo",
+      "msg": "Lq gunde gelir",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_shipping_typo",
+      "sev": "P1",
+      "expected": "Kaç günde gelir = shipping"
+    },
+    {
+      "ts": "15.04 21:18",
+      "stage": "waiting_photo",
+      "msg": "Watsap varmi",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_whatsapp",
+      "sev": "P2",
+      "expected": "WhatsApp yok, DM üzerinden"
+    },
+    {
+      "ts": "15.04 21:33",
+      "stage": "waiting_photo",
+      "msg": "Mavi taşli yanina ayni mi",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_accessory",
+      "sev": "P2",
+      "expected": "Aynı aksesuar"
+    },
+    {
+      "ts": "15.04 21:44",
+      "stage": "waiting_photo",
+      "msg": "İki ayrı fot olurmu",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "Evet iki ayrı fotoğraf"
+    },
+    {
+      "ts": "15.04 21:45",
+      "stage": "waiting_photo",
+      "msg": "Sadece lazerli foto istesek yuvarlak olanı kolye olmadan. Fiyatı ne olur",
+      "reply": "EFT / Havale ile 599 TL, kapıda ödeme ile 649 TL'dir efendim 😊",
+      "family": "F1_single_pendant",
+      "sev": "P1",
+      "expected": "Sadece uç fiyatı / zincirsiz cevabı"
+    },
+    {
+      "ts": "15.04 21:45",
+      "stage": "waiting_photo",
+      "msg": "Kolye olmadan ne kadar",
+      "reply": "EFT / Havale ile 599 TL, kapıda ödeme ile 649 TL'dir efendim 😊",
+      "family": "F1_single_pendant",
+      "sev": "P1",
+      "expected": "Zincirsiz özel cevap"
+    },
+    {
+      "ts": "15.04 21:46",
+      "stage": "waiting_photo",
+      "msg": "Lazer kolye ebatı ne kadar",
+      "reply": "EFT / Havale ile 599 TL, kapıda ödeme ile 649 TL'dir efendim 😊",
+      "family": "F2_photo_price_misfire",
+      "sev": "P1",
+      "expected": "Plaka 3cm boyutu"
+    },
+    {
+      "ts": "15.04 21:48",
+      "stage": "waiting_photo",
+      "msg": "Bırde tek fotoğraf cıft fotograf foyatı aynımı",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "Fiyat aynı"
+    },
+    {
+      "ts": "15.04 21:48",
+      "stage": "waiting_photo",
+      "msg": "Anladım cıft foto cokmu kucuk kalır",
+      "reply": "Fotoğrafınızı buradan iletebilirsiniz efendim 😊",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "Boyutta uyum cevabı"
+    },
+    {
+      "ts": "15.04 21:56",
+      "stage": "order_completed",
+      "msg": "Benim ürünü göremezmiyim acaba",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F4_preview_operator",
+      "sev": "P1",
+      "expected": "Yoğunluğa göre paylaşıyoruz"
+    },
+    {
+      "ts": "15.04 21:58",
+      "stage": "order_completed",
+      "msg": "Ne zaman ulasır elime",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_eta",
+      "sev": "P1",
+      "expected": "ETA cevabı"
+    },
+    {
+      "ts": "15.04 21:59",
+      "stage": "order_completed",
+      "msg": "Cuma olurmu elimde",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_eta",
+      "sev": "P1",
+      "expected": "Yoğunluğa göre mümkün, söz veremiyoruz"
+    },
+    {
+      "ts": "15.04 22:00",
+      "stage": "waiting_photo",
+      "msg": "Ölen kişilerin fotoğraflarını yapa bilirmisiniz",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "Evet yapıyoruz, rahmet dileği"
+    },
+    {
+      "ts": "15.04 22:03",
+      "stage": "waiting_photo",
+      "msg": "Babam sorup geri döndüş yapıcam annemin vefat eden babasın yaptırmayı düşünüyorum da",
+      "reply": "Suya dayanıklıdır efendim 😊",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "expected": "Başsağlığı + bekleriz"
+    },
+    {
+      "ts": "15.04 22:05",
+      "stage": "waiting_photo",
+      "msg": "Nazar duası olsun",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Arka yazı kaydet"
+    },
+    {
+      "ts": "15.04 22:10",
+      "stage": "order_completed",
+      "msg": "İSTEDİĞİM GİBİ OLMAZSA YADA BEĞENMEZSEM NE OLUYOR ACABA",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F6_trust_material",
+      "sev": "P1",
+      "expected": "İade/garanti politikası"
+    },
+    {
+      "ts": "15.04 22:12",
+      "stage": "order_completed",
+      "msg": "İADE PROSEDÜRÜNÜZ NASIL İŞLİYOR",
+      "reply": "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊",
+      "family": "F6_trust_material",
+      "sev": "P1",
+      "expected": "Garanti veriyoruz açıklama"
+    },
+    {
+      "ts": "15.04 22:14",
+      "stage": "waiting_photo",
+      "msg": "Mümkün mü",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F8_context_miss",
+      "sev": "P2",
+      "expected": "Evet mümkün (önceki mesaj bağlamı)"
+    },
+    {
+      "ts": "15.04 22:23",
+      "stage": "waiting_photo",
+      "msg": "Sayfanızda mevcut mu",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_fallback_operator",
+      "sev": "P2",
+      "expected": "Instagram profilinden bakabilirsiniz"
+    },
+    {
+      "ts": "15.04 22:29",
+      "stage": "waiting_photo",
+      "msg": "Kolyesi beyaz olan varmı",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F6_color_miss",
+      "sev": "P1",
+      "expected": "Beyaz yok — gümüş kaplama var"
+    },
+    {
+      "ts": "15.04 22:36",
+      "stage": "waiting_photo",
+      "msg": "Bı kızim bı oğlum varda",
+      "reply": "Nasıl? 😊",
+      "family": "F5_composition",
+      "sev": "P2",
+      "expected": "İki kişi yaparız onay"
+    },
+    {
+      "ts": "15.04 22:43",
+      "stage": "waiting_product",
+      "msg": "Dört harf yapıyormusunuz",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_letters_count",
+      "sev": "P1",
+      "expected": "3 harfe kadar yapıyoruz / uzarsa ekstra yer yok"
+    },
+    {
+      "ts": "15.04 22:50",
+      "stage": "waiting_photo",
+      "msg": "Bı kızim bı oğlum varda",
+      "reply": "Nasıl? 😊",
+      "family": "F5_composition",
+      "sev": "P2",
+      "expected": "Evet yaparız"
+    },
+    {
+      "ts": "15.04 22:51",
+      "stage": "waiting_letters",
+      "msg": "Peki resim yaptirsak yanına bir harf koysak olurmu",
+      "reply": "Bu modelde fotoğraf kullanılmıyor efendim, sadece harf ile hazırlanıyor 😊",
+      "family": "F5_product_switch",
+      "sev": "P1",
+      "expected": "Farklı ürün — resim için lazer ürüne geç"
+    },
+    {
+      "ts": "15.04 22:53",
+      "stage": "waiting_payment",
+      "msg": "Bu görseldeki gibi biraz kıyafetten başlarsa güzel olur. Bu fotodaki gibi çok iyi olur",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_photo_edit",
+      "sev": "P2",
+      "expected": "Notunu aldık"
+    },
+    {
+      "ts": "15.04 22:54",
+      "stage": "order_completed",
+      "msg": "Birşey sorucam arka plan ve öndeki kola kutusu falan gözükücekmi",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_photo_edit",
+      "sev": "P1",
+      "expected": "Silebiliriz arka planı"
+    },
+    {
+      "ts": "15.04 22:57",
+      "stage": "waiting_product",
+      "msg": "Nası sipariş veriyoruz",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_order_howto",
+      "sev": "P1",
+      "expected": "Menü aç"
+    },
+    {
+      "ts": "15.04 23:12",
+      "stage": "waiting_photo",
+      "msg": "Materyal nedir acaba",
+      "reply": "Fotoğrafınızı buradan iletebilirsiniz efendim 😊",
+      "family": "F6_trust_material",
+      "sev": "P1",
+      "expected": "Materyal cevabı"
+    },
+    {
+      "ts": "15.04 23:31",
+      "stage": "waiting_payment",
+      "msg": "0545XXXXXXX [phone]",
+      "reply": "Bu telefon numarası EFT dekontu için mi efendim? 😊",
+      "family": "F7_phone_fallback",
+      "sev": "P1",
+      "expected": "Telefonu kaydet"
+    },
+    {
+      "ts": "15.04 23:33",
+      "stage": "waiting_photo",
+      "msg": "İki yüzünede fotoğraf basılması mümkünmü",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "Evet arkalı önlü yaparız"
+    },
+    {
+      "ts": "15.04 23:44",
+      "stage": "waiting_photo",
+      "msg": "Nazar derken",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "expected": "Nazar boncuğu açıklaması"
+    },
+    {
+      "ts": "15.04 23:49",
+      "stage": "waiting_photo",
+      "msg": "2 tarafta olsa",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "2 taraf yaparız"
+    },
+    {
+      "ts": "15.04 23:54",
+      "stage": "waiting_address",
+      "msg": "22.07.24",
+      "reply": "22.07.24 teslimat tarihi mi, efendim?",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Arka yazı tarihi"
+    },
+    {
+      "ts": "15.04 23:55",
+      "stage": "waiting_address",
+      "msg": "Tarih doğum tarihi",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Arka yazı olarak kaydedildi"
+    },
+    {
+      "ts": "15.04 23:57",
+      "stage": "waiting_address",
+      "msg": "Bu resimdeki değilmi mavi boncukta o olsun ltf",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_accessory",
+      "sev": "P1",
+      "expected": "Aksesuar tercih"
+    },
+    {
+      "ts": "16.04 00:03",
+      "stage": "waiting_photo",
+      "msg": "Yapar mi",
+      "reply": "Ne yapmamızı istediğinizi kısaca belirtir misiniz efendim?",
+      "family": "F8_context_miss",
+      "sev": "P2",
+      "expected": "Solma yapar mı → önceki mesaj bağlamı"
+    },
+    {
+      "ts": "16.04 00:04",
+      "stage": "waiting_photo",
+      "msg": "Oğlumla kızımın fotosunu yaptiracagim",
+      "reply": "Fotoğrafı hangi ürüne yaptıracaksınız efendim?",
+      "family": "F8_weak_clarify",
+      "sev": "P2",
+      "expected": "Lazer ürün varsayımı"
+    },
+    {
+      "ts": "16.04 00:07",
+      "stage": "waiting_photo",
+      "msg": "Fotoğraf göndersem önce taslağını görebilir miyim nasıl olaca",
+      "reply": "Yoğunluğa göre kargo sonrası paylaşabiliyoruz efendim 😊",
+      "family": "F4_preview_operator",
+      "sev": "P1",
+      "expected": "Sipariş sonrası yapıyoruz"
+    },
+    {
+      "ts": "16.04 00:14",
+      "stage": "waiting_photo",
+      "msg": "Attığımız görselim baskıdan önceki Haline görebiliyor muyuz",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F4_preview_operator",
+      "sev": "P1",
+      "expected": "Yoğunluğa göre paylaşıyoruz"
+    },
+    {
+      "ts": "16.04 00:26",
+      "stage": "order_completed",
+      "msg": "Pardon arkasınada yazı değil de başka bir resim koyamazmisniz",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "Evet arka yüze de resim"
+    },
+    {
+      "ts": "16.04 00:34",
+      "stage": "order_completed",
+      "msg": "Sizce hangisi olsun",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F4_decision",
+      "sev": "P2",
+      "expected": "Decision support"
+    },
+    {
+      "ts": "16.04 00:37",
+      "stage": "order_completed",
+      "msg": "\"Kalbimin en güzel köşesi Canım Kızım MEYRAM❤️ 29.01.2024💫\"",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Arka yazı kaydet"
+    },
+    {
+      "ts": "16.04 00:43",
+      "stage": "waiting_photo",
+      "msg": "Tmm bi dusunup donus yapacam siz",
+      "reply": "Suya dayanıklıdır efendim 😊",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "expected": "Bekleriz"
+    },
+    {
+      "ts": "16.04 00:47",
+      "stage": "waiting_address",
+      "msg": "Ne zaman a hazır olur",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_eta",
+      "sev": "P1",
+      "expected": "ETA cevabı"
+    },
+    {
+      "ts": "16.04 00:48",
+      "stage": "waiting_address",
+      "msg": "İnsanlar çift yaratılmıştır derler",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F8_context_miss",
+      "sev": "P2",
+      "expected": "Sohbet tonu"
+    },
+    {
+      "ts": "16.04 01:48",
+      "stage": "waiting_photo",
+      "msg": "Bu resimdeki gibi mi geliyor",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_product_appearance",
+      "sev": "P1",
+      "expected": "Evet bu şekilde"
+    },
+    {
+      "ts": "16.04 01:51",
+      "stage": "waiting_photo",
+      "msg": "Ekibinize neyi iletiyorsunuz",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "frustration_no_response",
+      "sev": "P1",
+      "expected": "Sorunuzu yardım ettim — direct apology"
+    },
+    {
+      "ts": "16.04 02:12",
+      "stage": "waiting_photo",
+      "msg": "Peki isim veya tarihte arka kismina yaziliyormu",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Evet yazılıyor"
+    },
+    {
+      "ts": "16.04 10:24",
+      "stage": "waiting_payment",
+      "msg": "Resmi değiştirebilirmiyim",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_photo_change",
+      "sev": "P1",
+      "expected": "Tabii değiştirebiliriz, yenisini atın"
+    },
+    {
+      "ts": "16.04 10:27",
+      "stage": "waiting_photo",
+      "msg": "Günaydın çok özür dilerim siparişi iptal edermisin halkını helal et",
+      "reply": "Fotoğrafınızı buradan iletebilirsiniz efendim 😊",
+      "family": "F1_cancel_miss",
+      "sev": "P1",
+      "expected": "İptal → support_mode"
+    },
+    {
+      "ts": "16.04 11:39",
+      "stage": "waiting_payment",
+      "msg": "Bunu yapabiliyor muyuz",
+      "reply": "EFT / Havale veya kapıda 😊",
+      "family": "F3_back_text",
+      "sev": "P2",
+      "expected": "Önceki mesajdaki referansa bağlı cevap"
+    },
+    {
+      "ts": "16.04 11:45",
+      "stage": "order_completed",
+      "msg": "BARBAROS MAH. KÖKNAR SOK. NO:12 DAIRE:7 MERKEZ/ÇANAKKALE",
+      "reply": "Tabi efendim 😊",
+      "family": "F7_address_phantom",
+      "sev": "P2",
+      "expected": "Adresinizi aldım (daha önce verilmişti ek vermiyorsa)"
+    },
+    {
+      "ts": "16.04 11:55",
+      "stage": "waiting_photo",
+      "msg": "Fotograf atsam nasil durduguna bakabilirmiyim",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F4_preview_operator",
+      "sev": "P1",
+      "expected": "Sipariş sonrası yoğunluğa göre paylaşıyoruz"
+    },
+    {
+      "ts": "16.04 12:12",
+      "stage": "waiting_address",
+      "msg": "Merhaba ben adres [ADDRESS]",
+      "reply": "Merhaba efendim 😊 Size nasıl yardımcı olabilirim?",
+      "family": "F7_address_update",
+      "sev": "P1",
+      "expected": "Adres güncelleme — kaydet"
+    },
+    {
+      "ts": "16.04 12:12",
+      "stage": "waiting_address",
+      "msg": "69 değil 67 olacaktı",
+      "reply": "Anladım efendim, lazer zincir 60cm; fiyatımız EFT 599 TL...",
+      "family": "F8_correction_misfire",
+      "sev": "P1",
+      "expected": "Adres düzeltmesini kaydet"
+    },
+    {
+      "ts": "16.04 13:10",
+      "stage": "waiting_product",
+      "msg": "Merhabalar, Kolyem bugün geldi çok güzel olmuş ellerinize sağlık. Fakat ben kapıda ödeme seçmiştim ama kargo kapıya bırakıp gitmiş, ben fiyatını ödemedim ama ulaşmaya çalışıcaz ptt kargoya",
+      "reply": "Kargo ücretsiz, PTT ile gönderim yapılmaktadır...",
+      "family": "F1_post_delivery",
+      "sev": "P1",
+      "expected": "Operatöre ve teşekkür"
+    },
+    {
+      "ts": "16.04 13:26",
+      "stage": "waiting_address",
+      "msg": "Buna tarih ekleniyor mı",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Evet tarih ekliyoruz"
+    },
+    {
+      "ts": "16.04 13:41",
+      "stage": "waiting_photo",
+      "msg": "İki kızım var",
+      "reply": "Ne kadar güzel, efendim. İsterseniz kızlarınız için uygun modeller önereyim 😊",
+      "family": "F5_composition",
+      "sev": "P2",
+      "expected": "İki çocuk tek kolye olur cevabı"
+    },
+    {
+      "ts": "16.04 13:43",
+      "stage": "waiting_photo",
+      "msg": "İki kızımın da fotoğrafının olduğu güzel bir model",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F5_composition",
+      "sev": "P1",
+      "expected": "Evet iki kızınızın fotoğrafıyla yaparız"
+    },
+    {
+      "ts": "16.04 14:09",
+      "stage": "waiting_photo",
+      "msg": "Ve gümüş rengi var mı",
+      "reply": "Fotoğrafınızı buradan iletebilirsiniz efendim 😊",
+      "family": "F6_color_miss",
+      "sev": "P1",
+      "expected": "Evet gümüş kaplama var"
+    },
+    {
+      "ts": "16.04 14:28",
+      "stage": "waiting_address",
+      "msg": "Eşimin kartından EFT yapiliyormu",
+      "reply": "Tamamdır efendim, ödemeniz kaydedildi 😊",
+      "family": "F8_context_miss",
+      "sev": "P2",
+      "expected": "EFT herhangi banka hesabından olur"
+    },
+    {
+      "ts": "16.04 14:33",
+      "stage": "order_completed",
+      "msg": "\"Eyupcan Lina yazarsanız sevinirim\"",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "expected": "Arka yazı kaydet"
+    },
+    {
+      "ts": "16.04 15:18",
+      "stage": "waiting_product",
+      "msg": "Yaptığınızı söylemiştiniz",
+      "reply": "Hangi işlemi kastettiğinizi söyleyebilir misiniz efendim?",
+      "family": "F8_reminder_clarify",
+      "sev": "P2",
+      "expected": "Operatöre ver daha iyisi"
+    },
+    {
+      "ts": "16.04 15:23",
+      "stage": "waiting_photo",
+      "msg": "Kedi resmi yapıyor musınuz",
+      "reply": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F1_pet_photo",
+      "sev": "P1",
+      "expected": "Evet her resim yapılır"
+    },
+    {
+      "ts": "14.04 21:01",
+      "stage": "waiting_address",
+      "msg": "08.02.2026 İyi ki sen Alparslan'ım yazalım",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F3_back_text",
+      "sev": "P1"
+    },
+    {
+      "ts": "14.04 21:02",
+      "stage": "waiting_address",
+      "msg": "Özge şenyüz [PHONE] Akbilek mahallesi... Merkez/amasya",
+      "reply": "Bilgilerinizi aldım efendim / Açık adres bilginiz ile devam edelim",
+      "family": "F7_bundle_merge",
+      "sev": "P1"
+    },
+    {
+      "ts": "14.04 21:35",
+      "stage": "waiting_photo",
+      "msg": "Tamamdır şu an mi yani",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F8_context_miss",
+      "sev": "P2"
+    },
+    {
+      "ts": "14.04 22:23",
+      "stage": "waiting_address",
+      "msg": "Ani bebek ölümü",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F8_sensitivity_continuation",
+      "sev": "P2"
+    },
+    {
+      "ts": "14.04 22:26",
+      "stage": "waiting_address",
+      "msg": "İlk attığım olsun",
+      "reply": "Tamam efendim, ilk attığınız ürün seçildi",
+      "family": "F8_context_miss",
+      "sev": "P2",
+      "note": "Fotoğrafı kastetti, ürün değil"
+    },
+    {
+      "ts": "14.04 22:27",
+      "stage": "order_completed",
+      "msg": "[PHONE number only]",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F7_phone_fallback",
+      "sev": "P1",
+      "note": "Öncesinde zaten telefon sorduktan sonra müşteri verdi — apışıp kaldı"
+    },
+    {
+      "ts": "14.04 22:34",
+      "stage": "waiting_photo",
+      "msg": "Burgu zincir nasıl",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_chain_weak",
+      "sev": "P1"
+    },
+    {
+      "ts": "14.04 22:42",
+      "stage": "order_completed",
+      "msg": "The message could not be displayed due to API restrictions",
+      "reply": "Tabi efendim",
+      "family": "F1_system_leak",
+      "sev": "P2"
+    },
+    {
+      "ts": "14.04 22:46",
+      "stage": "waiting_photo",
+      "msg": "Ben kolye olarak ıstıyorum resımlı",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F5_product_switch",
+      "sev": "P1"
+    },
+    {
+      "ts": "14.04 22:47",
+      "stage": "order_completed",
+      "msg": "Resmîn arkasına Senı çok sevıyorum dıye yazılabılırmı",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F3_back_text",
+      "sev": "P1"
+    },
+    {
+      "ts": "14.04 22:50",
+      "stage": "waiting_photo",
+      "msg": "Iki cocugumun 1 olur mu ikisi bir",
+      "reply": "Fiyatlarımız sabit olarak belirlenmiştir",
+      "family": "F5_composition",
+      "sev": "P1",
+      "note": "Pazarlık değil, composition sorusu"
+    },
+    {
+      "ts": "14.04 22:51",
+      "stage": "waiting_photo",
+      "msg": "Resim göndermem lazım şimdi",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F2_photo_intent_fallback",
+      "sev": "P2"
+    },
+    {
+      "ts": "14.04 22:53",
+      "stage": "order_completed",
+      "msg": "Birşey sorucam arka plan ve öndeki kola kutusu falan gözükücekmi",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_photo_edit",
+      "sev": "P1"
+    },
+    {
+      "ts": "14.04 22:55",
+      "stage": "waiting_photo",
+      "msg": "Tek resim mi istediğiniz kadar resim koyabiliyormuyuz",
+      "reply": "Tabi efendim, arka yüze de fotoğraf yapabiliyoruz",
+      "family": "F5_composition",
+      "sev": "P1",
+      "note": "İstediğiniz kadar resim sorusu, arka yüz cevabı"
+    },
+    {
+      "ts": "14.04 22:57",
+      "stage": "waiting_photo",
+      "msg": "Biz size 2 kişi aynı ve 1 kişi ayrı ve 1 kişi daha ayrı bunları birlestirirmisiniz",
+      "reply": "Evet efendim, birden fazla kişi olabilir",
+      "family": "F5_composition",
+      "sev": "P2"
+    },
+    {
+      "ts": "14.04 23:01",
+      "stage": "waiting_letters",
+      "msg": "Peki üç çocuk resmi olur mu",
+      "reply": "Bu modelde fotoğraf kullanılmıyor efendim",
+      "family": "F5_product_switch",
+      "sev": "P0"
+    },
+    {
+      "ts": "14.04 23:01",
+      "stage": "waiting_photo",
+      "msg": "Arkasına isim de mi yazılıyor",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F3_back_text",
+      "sev": "P1"
+    },
+    {
+      "ts": "14.04 23:12",
+      "stage": "order_completed",
+      "msg": "Tamam ben düşünüp sizi döneceğim iyi akşamlar",
+      "reply": "Suya dayanıklıdır efendim",
+      "family": "F8_context_miss",
+      "sev": "P1"
+    },
+    {
+      "ts": "14.04 23:15",
+      "stage": "order_completed",
+      "msg": "Zincirde burgu olsun",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_chain_weak",
+      "sev": "P1"
+    },
+    {
+      "ts": "14.04 23:16",
+      "stage": "order_completed",
+      "msg": "Evet ve en hassas resim",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_fallback_operator",
+      "sev": "P2"
+    },
+    {
+      "ts": "14.04 23:17",
+      "stage": "order_completed",
+      "msg": "Sonda attığınızı göremiyorum",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_fallback_operator",
+      "sev": "P2"
+    },
+    {
+      "ts": "14.04 23:17",
+      "stage": "order_completed",
+      "msg": "Ama sonuçta birtane yapa bilicez sizce hangisi olsun",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F4_decision_operator",
+      "sev": "P2"
+    },
+    {
+      "ts": "14.04 23:18",
+      "stage": "waiting_photo",
+      "msg": "Tek taraf mı sadece",
+      "reply": "Tabi efendim 😊",
+      "family": "F5_composition",
+      "sev": "P2",
+      "note": "back_text_skip misfire"
+    },
+    {
+      "ts": "14.04 23:19",
+      "stage": "order_completed",
+      "msg": "Görsel ala bilirmıyım nasıl oöur diye",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F4_preview_operator",
+      "sev": "P1"
+    },
+    {
+      "ts": "14.04 23:25",
+      "stage": "waiting_photo",
+      "msg": "Resimli lazer kolye arkasında da ismi yazan",
+      "reply": "Merhaba efendim / Hangi model ile ilgileniyorsunuz",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "note": "Menü açılıyor halbuki ürün belli"
+    },
+    {
+      "ts": "14.04 23:32",
+      "stage": "waiting_letters",
+      "msg": "Peki 3lu olunca fiyat nedir",
+      "reply": "Tabi efendim, çoklu alımda indirimli fiyatlarımız mevcut",
+      "family": "F2_wrong_product",
+      "sev": "P2",
+      "note": "Ataç set ama 3 kolye düşünülüyor — ayrıca clarity"
+    },
+    {
+      "ts": "14.04 23:54",
+      "stage": "waiting_address",
+      "msg": "22.07.24",
+      "reply": "22.07.24 teslimat tarihi mi, efendim?",
+      "family": "F3_back_text",
+      "sev": "P1"
+    },
+    {
+      "ts": "14.04 23:55",
+      "stage": "waiting_address",
+      "msg": "Tarih doğum tarihi",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F3_back_text",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 00:01",
+      "stage": "waiting_product",
+      "msg": "Ayarlayıp göndereceğim size birazdan",
+      "reply": "EFT / Havale veya kapıda",
+      "family": "F8_context_miss",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 00:14",
+      "stage": "waiting_photo",
+      "msg": "05.03.26 ♾",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F3_back_text",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 00:27",
+      "stage": "order_completed",
+      "msg": "Resim için",
+      "reply": "Tabi efendim, erkek için de uygundur",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "note": "Resim için dedi, erkek cevabı döndü"
+    },
+    {
+      "ts": "15.04 00:34",
+      "stage": "order_completed",
+      "msg": "Bencede",
+      "reply": "Tabi efendim, bilgilerinizi aldım",
+      "family": "F1_weak_ack",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 00:55",
+      "stage": "order_completed",
+      "msg": "En altta ki bileklige",
+      "reply": "Hangi?",
+      "family": "F8_weak_clarify",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 11:18",
+      "stage": "order_completed",
+      "msg": "500oluyomu iki adet alıcaz",
+      "reply": "EFT / Havale ile 599 TL",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "note": "İki adet pazarlık bargain, fiyat dump"
+    },
+    {
+      "ts": "15.04 11:31",
+      "stage": "order_completed",
+      "msg": "Eşimle oğlumun fotosunu atıyorum",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_fallback_operator",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 11:34",
+      "stage": "order_completed",
+      "msg": "Tamam bu olacak",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_fallback_operator",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 11:34",
+      "stage": "order_completed",
+      "msg": "Ediz Metem ve Erol'um",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F3_back_text",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 11:37",
+      "stage": "order_completed",
+      "msg": "NE zaman isteyeceğim",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F8_context_miss",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 11:39",
+      "stage": "waiting_payment",
+      "msg": "Bunu yapabiliyor muyuz",
+      "reply": "EFT / Havale veya kapıda",
+      "family": "F8_context_miss",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 11:45",
+      "stage": "order_completed",
+      "msg": "BARBAROS MAH. KÖKNAR SOK. NO:12 DAIRE:7 MERKEZ/ÇANAKKALE",
+      "reply": "Tabi efendim",
+      "family": "F7_address_phantom",
+      "sev": "P2",
+      "note": "Adres verilmiş, teyit yok"
+    },
+    {
+      "ts": "15.04 11:55",
+      "stage": "waiting_photo",
+      "msg": "Fotograf atsam nasil durduguna bakabilirmiyim",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F4_preview_operator",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 12:12",
+      "stage": "waiting_address",
+      "msg": "Merhaba ben adres [ADDRESS]",
+      "reply": "Merhaba efendim / Size nasıl yardımcı olabilirim?",
+      "family": "F7_address_update",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 12:12",
+      "stage": "waiting_address",
+      "msg": "69 değil 67 olacaktı",
+      "reply": "Lazer zincir 60cm; EFT 599...",
+      "family": "F8_correction_misfire",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 13:10",
+      "stage": "waiting_product",
+      "msg": "Merhabalar Kolyem bugün geldi çok güzel olmuş... kargo kapıya bırakıp gitmiş ben fiyatını ödemedim",
+      "reply": "Kargo ücretsiz, PTT ile gönderim",
+      "family": "F1_post_delivery",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 13:17",
+      "stage": "waiting_payment",
+      "msg": "Ödemeyi yapmistim",
+      "reply": "EFT / Havale ile veya kapıda nakit olarak",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "note": "Ödemeyi yaptım cevabı lazım, yanlış cevap"
+    },
+    {
+      "ts": "15.04 13:25",
+      "stage": "order_completed",
+      "msg": "😍",
+      "reply": "Tabi efendim, bilgilerinizi aldım",
+      "family": "F8_emoji_weak",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 13:31",
+      "stage": "order_completed",
+      "msg": "Çok güzeş",
+      "reply": "Tabi efendim, bilgilerinizi aldım",
+      "family": "F1_praise_miss",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 13:43",
+      "stage": "waiting_photo",
+      "msg": "İki kızımın da fotoğrafının olduğu güzel bir model",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F5_composition",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 13:50",
+      "stage": "order_completed",
+      "msg": "Yani şu en son attığınız olsun diğerlerinde kızıma benzemiyor yüzü değişmiş",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_photo_selection",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 13:58",
+      "stage": "order_completed",
+      "msg": "Yapay zekaya atıyorum bazen yüzünü özellikle değiştirme diyorum",
+      "reply": "Anladım efendim / yüzünüzü değiştirmeden",
+      "family": "F8_weak_paraphrase",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 14:09",
+      "stage": "waiting_photo",
+      "msg": "Ve gümüş rengi var mı",
+      "reply": "Fotoğrafınızı buradan iletebilirsiniz",
+      "family": "F6_color_miss",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 14:28",
+      "stage": "waiting_address",
+      "msg": "Eşimin kartından EFT yapiliyormu",
+      "reply": "Tamamdır efendim, ödemeniz kaydedildi",
+      "family": "F8_eft_question_wrong",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 14:33",
+      "stage": "order_completed",
+      "msg": "Eyupcan Lina yazarsanız sevinirim",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F3_back_text",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 14:51",
+      "stage": "order_completed",
+      "msg": "Sipairş görseli atıcaktınız",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F4_preview_operator",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 15:04",
+      "stage": "waiting_photo",
+      "msg": "Ben size şimdi fotoğraflari atsam bana taslağı atsanız olurmu",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F4_preview_operator",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 15:05",
+      "stage": "waiting_photo",
+      "msg": "Yazi",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F3_back_text",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 15:06",
+      "stage": "waiting_photo",
+      "msg": "2 kişi aynı resimde 2 kişi ayrı resimde olurmu bunlari birleştirsek",
+      "reply": "Evet efendim, birden fazla kişi olabilir",
+      "family": "F5_composition",
+      "sev": "P2",
+      "note": "Birleştirme özeliğine odaklanmamış"
+    },
+    {
+      "ts": "15.04 15:10",
+      "stage": "order_completed",
+      "msg": "Yapildi mi acaba gorsel iletebilirmisiniz",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F4_preview_operator",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 15:22",
+      "stage": "waiting_photo",
+      "msg": "Kedi resmi yapıyor musınuz",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_pet_photo",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 15:28",
+      "stage": "waiting_address",
+      "msg": "Öldü",
+      "reply": "Adresinizi paylaşır mısınız efendim",
+      "family": "F8_sensitivity_pet",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 15:28",
+      "stage": "waiting_address",
+      "msg": "Bende resmini taşımak istiyorum",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F8_emotional_fallback",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 15:29",
+      "stage": "waiting_letters",
+      "msg": "İyi günler resim atacaktınız",
+      "reply": "Ekibimize iletiyorum, kontrol edip hemen dönüş",
+      "family": "F1_reminder",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 15:29",
+      "stage": "waiting_address",
+      "msg": "Garip",
+      "reply": "Ne konuda garip geldi efendim?",
+      "family": "F8_weak_clarify",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 15:30",
+      "stage": "waiting_address",
+      "msg": "Duygularını insan gibi belli ediyordu",
+      "reply": "Adresinizi paylaşabilir misiniz",
+      "family": "F8_sensitivity_pet",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 15:31",
+      "stage": "waiting_address",
+      "msg": "Bendede 1 tane sultan papağanı 1 muhabbet kuşu 1 tane köpekim var",
+      "reply": "Bilgilerinizi aldım / Cep telefonu",
+      "family": "F7_address_phantom",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 15:32",
+      "stage": "waiting_address",
+      "msg": "Evet öylee ama hepsi bir huzur",
+      "reply": "Harika, adresinizi paylaşabilir misiniz",
+      "family": "F8_context_miss",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 15:34",
+      "stage": "waiting_photo",
+      "msg": "Yerini nerde",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_location_miss",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 16:14",
+      "stage": "order_completed",
+      "msg": "Arkasın da tarih yazıyor değil mi",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F3_back_text",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 16:16",
+      "stage": "waiting_payment",
+      "msg": "İlyas inaya",
+      "reply": "EFT / Havale veya kapıda",
+      "family": "F3_back_text",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 16:16",
+      "stage": "waiting_payment",
+      "msg": "İnat ettim",
+      "reply": "EFT / Havale veya kapıda",
+      "family": "F3_back_text",
+      "sev": "P2",
+      "note": "İnayetımı kastediyor, arka yazı içeriği"
+    },
+    {
+      "ts": "15.04 16:17",
+      "stage": "waiting_address",
+      "msg": "Borcumu yazarsanız atim",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_fallback_operator",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 16:17",
+      "stage": "waiting_address",
+      "msg": "Son resimde ayıcık olmasa olur",
+      "reply": "Bu modelde fotoğraf kullanılmıyor",
+      "family": "F5_product_switch",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 16:18",
+      "stage": "waiting_address",
+      "msg": "Valla bende samimiyetinize güvenip inat ettim",
+      "reply": "Güvenle sipariş verebilirsiniz",
+      "family": "F8_context_weak",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 16:19",
+      "stage": "order_completed",
+      "msg": "2 çocuk",
+      "reply": "Tabi efendim, bilgilerinizi aldım",
+      "family": "F8_context_miss",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 16:20",
+      "stage": "order_completed",
+      "msg": "Alttaki ayıcığı koymayın",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_accessory",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 16:21",
+      "stage": "order_completed",
+      "msg": "Abi kardeş onlar abi öldü hatıra olsun diye",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F8_sensitivity",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 16:21",
+      "stage": "order_completed",
+      "msg": "Arkaya İlyas ❤️inaya",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F3_back_text",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 16:22",
+      "stage": "order_completed",
+      "msg": "Yanyana yapacaksınız",
+      "reply": "Bu modelde fotoğraf kullanılmıyor",
+      "family": "F5_product_switch",
+      "sev": "P0"
+    },
+    {
+      "ts": "15.04 16:26",
+      "stage": "order_completed",
+      "msg": "Bir kusur olacagından değil",
+      "reply": "Neden?",
+      "family": "F8_weak_clarify",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 16:39",
+      "stage": "order_completed",
+      "msg": "Tamam o zaman 3 üde hazır",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_fallback_operator",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 16:46",
+      "stage": "order_completed",
+      "msg": "Size bıraktım",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F4_decision",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 16:48",
+      "stage": "order_completed",
+      "msg": "Künyede asker künyesi ebatında",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_size_q",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 16:50",
+      "stage": "order_completed",
+      "msg": "Yubarlağın altındaki",
+      "reply": "Hangi?",
+      "family": "F8_weak_clarify",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 16:51",
+      "stage": "order_completed",
+      "msg": "Siz bundan mı seç",
+      "reply": "Evet efendim, bu üründen seçilmiş durumda",
+      "family": "F8_weak_confirm",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 16:52",
+      "stage": "order_completed",
+      "msg": "Tamam soldaki",
+      "reply": "Teşekkürler efendim, soldaki ataç için siparişiniz oluşturuldu",
+      "family": "F8_confabulation",
+      "sev": "P2",
+      "note": "Bot kendisi varsayım yapıyor"
+    },
+    {
+      "ts": "15.04 16:52",
+      "stage": "order_completed",
+      "msg": "Zincir",
+      "reply": "Tabi efendim, bilgilerinizi aldım",
+      "family": "F1_weak_ack",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 17:13",
+      "stage": "order_completed",
+      "msg": "Salih demir",
+      "reply": "Siparişiniz tamamlandı, Salih Demir, çok teşekkürler",
+      "family": "F3_back_text",
+      "sev": "P2",
+      "note": "İsim muhtemelen arka yazı içeriği"
+    },
+    {
+      "ts": "15.04 17:58",
+      "stage": "waiting_payment",
+      "msg": "Bana",
+      "reply": "Ne?",
+      "family": "F8_weak_clarify",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 17:59",
+      "stage": "waiting_payment",
+      "msg": "Dün sipariş verdim bana 4 gibi hatırlatın size resşm atıcam demiştşniz",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_reminder",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 18:56",
+      "stage": "order_completed",
+      "msg": "Ucreti ne zamn gonderecegim",
+      "reply": "EFT / Havale 599 TL, kapıda 649 TL",
+      "family": "F8_context_miss",
+      "sev": "P2",
+      "note": "Ne zaman sordu, fiyat cevabı"
+    },
+    {
+      "ts": "15.04 18:56",
+      "stage": "order_completed",
+      "msg": "Eft havele aticam beb",
+      "reply": "EFT / Havale ile veya kapıda nakit olarak",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "note": "EFT yapacağım zaten, IBAN ver"
+    },
+    {
+      "ts": "15.04 19:00",
+      "stage": "order_completed",
+      "msg": "Aaa evet nasil olcak",
+      "reply": "Siparişiniz tamamlandı; lazer zincir 60 cm...",
+      "family": "F8_weak_dump",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 19:40",
+      "stage": "order_completed",
+      "msg": "Arkasina yazi olarak EN ÇOK SEN yazsin",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F3_back_text",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 20:03",
+      "stage": "waiting_photo",
+      "msg": "silinir efendim fotoğraf",
+      "reply": "Resimli lazer kolye fiyatımız",
+      "family": "F6_durability_miss",
+      "sev": "P1",
+      "note": "Silinir mi dedi, fiyat döndü"
+    },
+    {
+      "ts": "15.04 20:16",
+      "stage": "order_completed",
+      "msg": "Zinciri kendimiz seçebiliyormuyuz",
+      "reply": "Lazer kolyemiz standart 60cm zincirdir",
+      "family": "F1_chain_weak",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 20:19",
+      "stage": "order_completed",
+      "msg": "Bu zincirden istiyorum",
+      "reply": "Siparişiniz tamamlandı",
+      "family": "F8_context_miss",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 20:35",
+      "stage": "waiting_product",
+      "msg": "İkiside",
+      "reply": "Tamam efendim, ikisini de not aldım",
+      "family": "F8_weak_ack",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 21:02",
+      "stage": "waiting_address",
+      "msg": "İlknur düzgün",
+      "reply": "Bilgilerinizi aldım / Açık adres",
+      "family": "F7_name_only",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 21:05",
+      "stage": "waiting_photo",
+      "msg": "Nazar duası olsun",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F3_back_text",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 21:46",
+      "stage": "waiting_photo",
+      "msg": "Kolye olmadan ne kadar",
+      "reply": "EFT / Havale ile 599 TL",
+      "family": "F1_single_pendant",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 21:57",
+      "stage": "waiting_photo",
+      "msg": "Öyle bir durumda iade kabul ediyor musunuz",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F6_return_policy",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 22:04",
+      "stage": "waiting_photo",
+      "msg": "24.10.2025",
+      "reply": "Fotoğrafınızı buradan iletebilirsiniz",
+      "family": "F3_back_text",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 22:11",
+      "stage": "order_completed",
+      "msg": "ATAÇ ZİNCİRİ KALIN İSTİYORUM BELİRTİRSENİZ SEVŞNŞRİM",
+      "reply": "Bu üründe tek model standart zincir",
+      "family": "F1_chain_weak",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 22:25",
+      "stage": "waiting_address",
+      "msg": "Yapıldığına dair mi",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F8_context_miss",
+      "sev": "P1",
+      "note": "Ödeme dekont bağlamında"
+    },
+    {
+      "ts": "15.04 22:31",
+      "stage": "waiting_photo",
+      "msg": "Çok kalın olmasın zincir",
+      "reply": "İnce olan 60 cm lazer zinciri tercih eder misiniz",
+      "family": "F1_chain_weak",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 22:32",
+      "stage": "order_completed",
+      "msg": "Arkada Ömer ve 24.11.2025 yazsın",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F3_back_text",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 22:34",
+      "stage": "waiting_photo",
+      "msg": "E et isdiyorummm",
+      "reply": "Harika efendim, lazer zincir 60cm",
+      "family": "F8_ambiguous",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 22:40",
+      "stage": "waiting_photo",
+      "msg": "Ne yazılıyor",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F8_context_miss",
+      "sev": "P2",
+      "note": "Arka yazı örneği isteği"
+    },
+    {
+      "ts": "15.04 22:42",
+      "stage": "order_completed",
+      "msg": "Sarı renk olsun",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F6_color_miss",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 22:42",
+      "stage": "waiting_photo",
+      "msg": "Aile resmi oluyor mu",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F5_composition",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 22:49",
+      "stage": "waiting_photo",
+      "msg": "Fotoğraflardan seçim atayım arkadaşım için hediye düşünmüştüm",
+      "reply": "Suya dayanıklıdır efendim",
+      "family": "F8_context_miss",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 22:52",
+      "stage": "waiting_letters",
+      "msg": "Peki resim yaptirsak yanına bir harf koysak olurmu",
+      "reply": "Bu modelde fotoğraf kullanılmıyor",
+      "family": "F5_product_switch",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 22:57",
+      "stage": "waiting_payment",
+      "msg": "Seni seviyorum Güneş'im",
+      "reply": "Çok tatlısınız, teşekkür ederim",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "note": "Arka yazı içeriği"
+    },
+    {
+      "ts": "15.04 22:58",
+      "stage": "waiting_product",
+      "msg": "HARFLER TAŞLI OLUYORMU",
+      "reply": "Yapılmasını istediğiniz harfleri yazabilirsiniz",
+      "family": "F8_question_miss",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 23:00",
+      "stage": "waiting_photo",
+      "msg": "Bu görseldeki gibi biraz kıyafetten başlarsa güzel olur",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_photo_crop",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 23:04",
+      "stage": "order_completed",
+      "msg": "Merve demir Sarıyer/ İstanbul PTT evleri... [PHONE]",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F7_bundle_fallback",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 23:05",
+      "stage": "order_completed",
+      "msg": "UZUNLUK OLARAK DEĞİL ZİNCİRİN KALINLIĞINI",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_chain_thick",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 23:05",
+      "stage": "order_completed",
+      "msg": "ÇÜNKÜ SİZ KALINIDA VAR DEDİNİZ",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F8_context_contradiction",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 23:09",
+      "stage": "order_completed",
+      "msg": "187 çıktı",
+      "reply": "Bu tutar kargo bedeli mi yoksa ödemeniz mi",
+      "family": "F8_context_miss",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 23:10",
+      "stage": "order_completed",
+      "msg": "İSTEDİĞİM GİBİ OLMAZSA YADA BEĞENMEZSEM NE OLUYOR ACABA",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F6_satisfaction",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 23:12",
+      "stage": "order_completed",
+      "msg": "İADE PROSEDÜRÜNÜZ NASIL İŞLİYOR",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F6_return_policy",
+      "sev": "P1"
+    },
+    {
+      "ts": "15.04 23:14",
+      "stage": "waiting_photo",
+      "msg": "Mümkün mü",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F8_context_miss",
+      "sev": "P2"
+    },
+    {
+      "ts": "15.04 23:27",
+      "stage": "waiting_address",
+      "msg": "Dun boyle mesaj",
+      "reply": "Adresinizi paylaşır mısınız",
+      "family": "F8_reminder_dump",
+      "sev": "P2"
+    },
+    {
+      "ts": "16.04 00:10",
+      "stage": "waiting_address",
+      "msg": "Yapildigina dair mi",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F8_context_miss",
+      "sev": "P1"
+    },
+    {
+      "ts": "16.04 00:17",
+      "stage": "waiting_address",
+      "msg": "Peki o olsun o zaman",
+      "reply": "Ödeme tercihinizi belirtebilir misiniz",
+      "family": "F8_context_miss",
+      "sev": "P2"
+    },
+    {
+      "ts": "16.04 00:19",
+      "stage": "waiting_address",
+      "msg": "Çocuğun fotosunu ve bılgısını burdan mı atıcam",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_howto",
+      "sev": "P1"
+    },
+    {
+      "ts": "16.04 00:28",
+      "stage": "waiting_photo",
+      "msg": "Başka bir tanede var size zahmet ona da bakarsanız",
+      "reply": "Tabii efendim, hangi ürünün linkini",
+      "family": "F1_weak",
+      "sev": "P2"
+    },
+    {
+      "ts": "16.04 00:29",
+      "stage": "order_completed",
+      "msg": "Ediz Metem 20.12.2024",
+      "reply": "Adres ve telefon numaranızı paylaşır mısınız",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "note": "Arka yazı ama adres istedi"
+    },
+    {
+      "ts": "16.04 00:34",
+      "stage": "order_completed",
+      "msg": "Ediz Metem ve Erol'um",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F3_back_text",
+      "sev": "P1"
+    },
+    {
+      "ts": "16.04 00:36",
+      "stage": "order_completed",
+      "msg": "Sizce hangisi olsun",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F4_decision",
+      "sev": "P2"
+    },
+    {
+      "ts": "16.04 00:36",
+      "stage": "order_completed",
+      "msg": "Bunumu yapacaksınız",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F8_context_miss",
+      "sev": "P2"
+    },
+    {
+      "ts": "16.04 00:37",
+      "stage": "order_completed",
+      "msg": "Kalbimin en güzel köşesi Canım Kızım MEYRAM❤️ 29.01.2024💫",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F3_back_text",
+      "sev": "P1"
+    },
+    {
+      "ts": "16.04 00:46",
+      "stage": "waiting_address",
+      "msg": "Gözlerimin gördüğü yerde olmasanda daldıgı yerdesin",
+      "reply": "Ne kadar güzel bir ifade, çok teşekkür ederim",
+      "family": "F3_back_text",
+      "sev": "P1",
+      "note": "Arka yazı içeriği"
+    },
+    {
+      "ts": "16.04 00:50",
+      "stage": "order_completed",
+      "msg": "Tülay ulukoz Arapçeşme... [PHONE]",
+      "reply": "Bilgilerinizi aldım / Açık adres",
+      "family": "F7_bundle_merge",
+      "sev": "P1"
+    },
+    {
+      "ts": "16.04 10:27",
+      "stage": "waiting_photo",
+      "msg": "Günaydın çok özür dilerim siparişi iptal edermisin",
+      "reply": "Fotoğrafınızı buradan iletebilirsiniz",
+      "family": "F1_cancel_miss",
+      "sev": "P1"
+    },
+    {
+      "ts": "16.04 11:18",
+      "stage": "order_completed",
+      "msg": "500oluyomu iki adet alıcaz",
+      "reply": "EFT / Havale ile 599 TL",
+      "family": "F8_context_miss",
+      "sev": "P1"
+    },
+    {
+      "ts": "16.04 13:10",
+      "stage": "waiting_product",
+      "msg": "Kolyem bugün geldi... kargo kapıya bırakıp gitmiş",
+      "reply": "Kargo ücretsiz, PTT ile gönderim",
+      "family": "F1_post_delivery",
+      "sev": "P1"
+    },
+    {
+      "ts": "16.04 14:27",
+      "stage": "waiting_payment",
+      "msg": "Karttan mi atiyoruz",
+      "reply": "Kapıda sadece nakit kabul",
+      "family": "F8_context_miss",
+      "sev": "P2",
+      "note": "EFT'ten sonra kart sorusu — EFT için bir şey söylenmeli"
+    },
+    {
+      "ts": "16.04 14:33",
+      "stage": "order_completed",
+      "msg": "Eyupcan Lina yazarsanız sevinirim",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F3_back_text",
+      "sev": "P1"
+    },
+    {
+      "ts": "16.04 14:51",
+      "stage": "order_completed",
+      "msg": "Merhaba sipariş görseli atıcaktınız ama",
+      "reply": "Merhaba efendim",
+      "family": "F4_preview_weak",
+      "sev": "P2"
+    },
+    {
+      "ts": "16.04 14:51",
+      "stage": "order_completed",
+      "msg": "Sipairş görseli atıcaktınız",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F4_preview_operator",
+      "sev": "P1"
+    },
+    {
+      "ts": "16.04 15:22",
+      "stage": "waiting_photo",
+      "msg": "Kedi resmi yapıyor musınuz",
+      "reply": "Ekibimize iletiyorum",
+      "family": "F1_pet_photo",
+      "sev": "P1"
+    }
+  ]
+}

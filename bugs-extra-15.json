@@ -1,0 +1,156 @@
+{
+  "totalUnique": 15,
+  "note": "GPT tarafından tespit edilen ve ana 333 backlog'unda ayrı fix maddesi olmayan bug'lar. Her biri ayrı aile etiketiyle işleniyor.",
+  "bugs": [
+    {
+      "id": "E01",
+      "ts": "14.04 15:58",
+      "stage": "waiting_product",
+      "msg": "Kolyemle aşk yaşıyorum resmen",
+      "reply_before": "Merhaba efendim 😊 Hangi model ile ilgileniyorsunuz?",
+      "family": "F9_sales_warmth",
+      "expected": "Eski müşteri övgüsü / sıcak karşıla / menüye dönme",
+      "sev": "P2"
+    },
+    {
+      "id": "E02",
+      "ts": "14.04 20:34",
+      "stage": "order_completed",
+      "msg": "Tabiki atarım şimdi bile çok güzel 👏",
+      "reply_before": "Çok teşekkür ederiz efendim 😊",
+      "family": "F9_post_sale_warmth",
+      "expected": "Paylaşım niyeti için daha sıcak: 'çok sevindik, paylaşmanız bizi çok mutlu eder'",
+      "sev": "P2"
+    },
+    {
+      "id": "E03",
+      "ts": "15.04 00:45",
+      "stage": "order_completed",
+      "msg": "Bir annenin oğluna olan sevgisini anlatmak imkansız ama yazamadıklarımı bu kolyeyle anlatabilirim bebeğim seni çok seviyorum",
+      "reply_before": "Tabi efendim 😊",
+      "family": "F3_back_text_long_skip",
+      "expected": "Uzun duygusal back_text metnini içerik olarak al, 'Tabi efendim' ile geçiştirme",
+      "sev": "P1"
+    },
+    {
+      "id": "E04",
+      "ts": "15.04 00:47",
+      "stage": "order_completed",
+      "msg": "Önemli olan o çünki",
+      "reply_before": "Neden? 😊",
+      "family": "F9_empathic_continuation",
+      "expected": "Empatik continuation: 'Çok haklısınız efendim, size en güzel şekilde hazırlıyoruz 🤍'",
+      "sev": "P2"
+    },
+    {
+      "id": "E05",
+      "ts": "15.04 00:48",
+      "stage": "order_completed",
+      "msg": "Hiç çıkarmıcak boynundan inanın ki",
+      "reply_before": "Ne güzel efendim, çok sevindim, teşekkür ederim 😊",
+      "family": "F9_post_sale_warmth",
+      "expected": "Daha sıcak post-sale praise",
+      "sev": "P2"
+    },
+    {
+      "id": "E06",
+      "ts": "13.04 21:38",
+      "stage": "order_completed",
+      "msg": "Olabilir",
+      "reply_before": "Tabi efendim, bilgilerinizi aldım 😊",
+      "family": "F10_false_slot_ack",
+      "expected": "Belirsiz ack olmamalı — 'Olabilir' → 'Efendim?' veya clarify",
+      "sev": "P1"
+    },
+    {
+      "id": "E07",
+      "ts": "13.04 21:39",
+      "stage": "waiting_product",
+      "msg": "Teşekkür ederim çok beğendim elinize sağlık hediyeniz için teşekkür ederim",
+      "reply_before": "Merhaba efendim 😊 Hangi model ile ilgileniyorsunuz?",
+      "family": "F9_returning_customer_praise",
+      "expected": "Eski müşteri övgü → menü yerine sıcak teşekkür",
+      "sev": "P2"
+    },
+    {
+      "id": "E08",
+      "ts": "13.04 22:46",
+      "stage": "order_completed",
+      "msg": "Ne yazabiliriz",
+      "reply_before": "Siparişiniz başarıyla tamamlandı, lazer zincir 60cm...",
+      "family": "F3_back_text_examples_miss",
+      "expected": "Arka yazı içerik önerisi — 'Genelde isim, tarih, dua, not yazılıyor efendim'",
+      "sev": "P1"
+    },
+    {
+      "id": "E09",
+      "ts": "13.04 23:50",
+      "stage": "waiting_photo",
+      "msg": "Nakşt",
+      "reply_before": "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+      "family": "F11_payment_typo",
+      "expected": "'Nakşt' = 'nakit' typo → kapıda ödeme cevabı",
+      "sev": "P1"
+    },
+    {
+      "id": "E10",
+      "ts": "13.04 21:41",
+      "stage": "waiting_photo",
+      "msg": "Resimli kolye düşünüyorum çocuklarımın",
+      "reply_before": "Tabi efendim, bekliyoruz 😊 Ne zaman isterseniz yazabilirsiniz.",
+      "family": "F12_weak_cta_high_intent",
+      "expected": "High-intent → aktif CTA: 'Çok güzel fikir! Çocuklarınızın fotoğrafını buradan iletebilirsiniz, hemen oluşturalım'",
+      "sev": "P1"
+    },
+    {
+      "id": "E11",
+      "ts": "13.04 22:45",
+      "stage": "waiting_address",
+      "msg": "Ahmet Yılmaz 05421234567",
+      "reply_before": "Bilgilerinizi aldım efendim 😊",
+      "family": "F7_partial_bundle_vague",
+      "expected": "'İsim ve cep telefonunuzu aldım, açık adres ile devam edelim' (ne aldığını spesifik söyle)",
+      "sev": "P1"
+    },
+    {
+      "id": "E12",
+      "ts": "13.04 23:50",
+      "stage": "waiting_photo",
+      "msg": "Sipariş verirsem tamam",
+      "reply_before": "Tabi efendim 😊",
+      "family": "F12_weak_cta_conditional",
+      "expected": "Net sonraki adım: 'Tabi efendim 😊 Fotoğrafınızı buradan iletirseniz siparişi hemen oluşturalım'",
+      "sev": "P1"
+    },
+    {
+      "id": "E13",
+      "ts": "13.04 23:50",
+      "stage": "waiting_photo",
+      "msg": "Bekliyoruz",
+      "reply_before": "Fotoğrafı hazırlıyoruz, en kısa sürede size iletiyoruz...",
+      "family": "F13_confabulated_status",
+      "expected": "Uydurma süreç bilgisi YOK — 'Tabi efendim, ne zaman hazır olursanız fotoğrafı bekliyoruz 😊'",
+      "sev": "P0"
+    },
+    {
+      "id": "E14",
+      "ts": "13.04 23:51",
+      "stage": "waiting_photo",
+      "msg": "Bumu",
+      "reply_before": "Efendim? 😊",
+      "family": "F14_weak_clarify_context",
+      "expected": "Son bağlamla spesifik clarify — 'Modeli mi soruyorsunuz efendim? Resimli lazer kolye modelimizdir.'",
+      "sev": "P1"
+    },
+    {
+      "id": "E15",
+      "ts": "multiple",
+      "stage": "waiting_photo",
+      "msg": "Dusuneyim donus yaparim",
+      "reply_before": "Tabi efendim, bekliyoruz 😊 Ne zaman isterseniz yazabilirsiniz.",
+      "family": "F12_weak_close_deferral",
+      "expected": "Kapatma fırsatı kaybedilmesin — 'Tabi efendim, ne zaman hazır olursanız buradayız. Karar verirken takıldığınız bir şey olursa yardımcı olalım 🤍'",
+      "sev": "P2"
+    }
+  ]
+}

@@ -6,13 +6,13 @@ const cases = [
     name: "[14.04 20:36] 'Teşekür ederim düşüneyim dönüş yaparım' — Suya dayanıklı sızmamalı",
     input: { message: "Teşekür ederim ben bı düşüneyim dönüş yaparım size tekrardan", conversation_stage: "waiting_photo", ilgilenilen_urun: "lazer" },
     notIncludes: ["suya dayanikli", "denizde sorun"],
-    includes: "bekliyoruz",
+    includes: "buradayiz",
   },
   {
     name: "[14.04 21:57] 'Teşekkür ederim düşünüp geri dönüş yapacağım'",
     input: { message: "Teşekkür ederim düşünüp geri dönüş yapacağım", conversation_stage: "waiting_photo", ilgilenilen_urun: "lazer" },
     notIncludes: "suya dayanikli",
-    includes: "bekliyoruz",
+    includes: "buradayiz",
   },
   {
     name: "[14.04 22:38] 'Çok teşekkür ederim düşünüp dönüş yaparım iyi geceler'",
@@ -28,13 +28,13 @@ const cases = [
     name: "[16.04 00:43] 'Tmm bi dusunup donus yapacam siz'",
     input: { message: "Tmm bi dusunup donus yapacam siz", conversation_stage: "waiting_photo", ilgilenilen_urun: "lazer" },
     notIncludes: "suya dayanikli",
-    includes: "bekliyoruz",
+    includes: "buradayiz",
   },
   {
     name: "[14.04 22:15] 'Teşekkür ederim şuan değil müsait bir zamanda inşallah sipariş oluşturacağım'",
     input: { message: "Teşekkür ederim şuan değil müsait bir zamanda inşallah sipariş oluşturacağım", conversation_stage: "waiting_photo", ilgilenilen_urun: "lazer" },
     notIncludes: ["599", "kapida odeme ile 649", "resimli lazer kolye fiyatimiz"],
-    includes: "bekliyoruz",
+    includes: "buradayiz",
   },
   {
     name: "[15.04 22:03] 'Babam sorup geri döndüş yapıcam annemin vefat eden babasın yaptırmayı düşünüyorum'",

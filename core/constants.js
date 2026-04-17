@@ -245,6 +245,7 @@ export const KW = {
     "kararma yaparmi", "kararma yapiyormu", "kararma yapıyor mu",
     "kararma oluyormu", "kararma oluyor mu",
     "karariyormu", "kararıyormu", "kararirmi", "kararırmi",
+    "karariyor mu", "kararıyor mu",  // typo map sonrası boşluklu halleri
     "karaa", "kararmi", "solma yapiyormu", "solma yapıyormu",
     "renk atma", "renk atar", "renk atması", "renk bozul",
     "rengi gidiyor", "rengi gider", "rengi aciyor", "rengi açıyor",
@@ -999,6 +1000,17 @@ export const LAZER_STRONG_SIGNALS = [
   "on izleme resimli", "ön izleme resimli",
   "lazer kolye istiyorum", "resimli lazer",
   "arkaya dua", "arkasina dua", "arkasına dua",
+  // Prod logs fix: composition combo patterns (ataç stage'de foto/resim + kişi/sayı → lazer)
+  "iki foto", "iki fotograf", "iki fotoğraf", "iki resim",
+  "uc foto", "üç foto", "3 foto", "3 fotograf", "3 fotoğraf", "3 resim",
+  "4 foto", "4 fotograf", "4 fotoğraf", "4 resim",
+  "iki kisi resim", "iki kişi resim", "iki kisi foto", "iki kişi foto",
+  "uc kisi resim", "üç kişi resim", "3 kisi resim", "3 kişi resim",
+  "aile fotograf", "aile fotoğraf", "aile resmi",
+  "yan yana foto", "yan yana fotograf", "yan yana fotoğraf", "yan yana resim",
+  "2 tarafli resim", "2 taraflı resim", "iki tarafa resim", "iki tarafa foto", "iki tarafa fotograf",
+  "cok kisi foto", "çok kişi foto", "coklu foto", "çoklu foto", "coklu resim", "çoklu resim",
+  "uc kardes", "üç kardeş", "3 kardes", "3 kardeş",
 ];
 
 // Lazer lehine ORTA sinyaller (birden fazlası bir arada switch yapar)

@@ -35,11 +35,33 @@ export function normalizeText(text) {
   return t;
 }
 
+// Word-boundary regex cache — Türkçe morfolojisine uyarlı asymmetric boundary
+// Türkçe aglutinatif bir dildir: kelime başında önek YOK, kelime sonunda ek VAR.
+//   - "ebat" → "ebatı", "ebatları", "ebata" → başta word-boundary, sonda serbest (stem match)
+//   - "deri" → "ederim" içinde substring → leak (başta word-boundary gerek)
+// Asymmetric: başta `(^|\s)` zorunlu, sonda ek serbest
+const _wbCache = new Map();
+function _wbTest(text, k) {
+  let r = _wbCache.get(k);
+  if (!r) {
+    const esc = k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // Başta sert word-boundary, sonda hiçbir şey (stem'in sonuna Türkçe ek gelebilir)
+    r = new RegExp(`(^|\\s)${esc}`);
+    _wbCache.set(k, r);
+  }
+  return r.test(text);
+}
+
+// Kısa keyword'lerde (≤4 char) Türkçe collision riski yüksek:
+//   "deri" ⊂ "ederim", "var" ⊂ "varmış", "iki" ⊂ "ikinci"
+// Bu keyword'lerde baş-boundary kontrolü uygulanır;
+// uzun keyword'lerde (5+) substring davranışı korunur.
 export function hasAny(text, keywords) {
   return keywords.some(k => {
     if (!text.includes(k)) return false;
-    if (k.length === 1) return new RegExp(`\\b${k}\\b`).test(text);
-    return true;
+    if (k.includes(" ")) return true;          // çok-kelimeli → substring OK
+    if (k.length <= 4) return _wbTest(text, k); // kısa → baş-boundary zorunlu
+    return true;                                 // uzun → stem semantiği
   });
 }
 
@@ -273,10 +295,15 @@ export function parsePaymentFromMessage(norm, existing = "") {
   // Saf kredi kartı (kapıda olmadan) → desteklenmiyor, boş dön
   if (hasAny(norm, ["kredi karti", "kredi kartı"]) && !hasAny(norm, ["kapida","kapıda"])) return existing || "";
   if (hasAny(norm, ["kartla", "kart ile"]) && !hasAny(norm, ["kapida","kapıda"])) return existing || "";
-  
+
+  // ━━━ Prod logs fix: explicit commit suffixes (ödemeli, ile olsun, ödeyeceğim) ━━━
+  // "Kapıda ödemeli", "Kapıda ödeme ile olsun", "havale ödeyeceğim" → explicit commit
+  if (hasAny(norm, ["kapida odemeli","kapıda ödemeli","kapida ile olsun","kapıda ile olsun","kapida olsun"])) return "kapida_odeme";
+  if (hasAny(norm, ["havale odeyecegim","havale ödeyeceğim","eft odeyecegim","eft ödeyeceğim","havale ile olsun","eft ile olsun","havale olsun","eft olsun"])) return "eft_havale";
+
   // INFO QUESTION GUARD: "fark nedir", "nasıl oluyor", "ne kadar" → payment SELECTION değil
   // AMA: seçim fiili varsa ("olsun", "seçeyim", "olur") → commit izni ver
-  const hasSelectionVerb = hasAny(norm, ["olsun","seceyim","seçeyim","istiyorum","sectim","seçtim","olur","yapalim","yapalım","yapacagim","yapacağım"]);
+  const hasSelectionVerb = hasAny(norm, ["olsun","seceyim","seçeyim","istiyorum","sectim","seçtim","olur","yapalim","yapalım","yapacagim","yapacağım","odeyecegim","ödeyeceğim","odemeli","ödemeli"]);
   const isInfoQuestion = hasAny(norm, ["fark nedir","arasindaki fark","arasındaki fark","farki ne","farkı ne","hangisi nasil","hangisi nasıl","nasil oluyor","nasıl oluyor","ne demek","ne anlama","ne kadar","nekadar","kac tl","kaç tl","kac lira","kaç lira","fiyati ne","fiyatı ne","ucret ne","ücret ne"]);
   const isPriceConfirmation = hasAny(norm, ["degil mi","değil mi","dimi","di mi","demi","de mi","miydi","midir","mudur"]);
   
@@ -353,6 +380,8 @@ const TYPO_MAP = [
   [/araçlı|aracli|aracli|araçli/gi, "ataçlı"],
   [/atajlı|ataslı|ataclı|ataşlı/gi, "ataçlı"],
   [/lazer kolye|lazer kolye/gi, "lazer kolye"],
+  // Prod logs: "Araçlı kolye ne kadar" → "ataç kolye ne kadar" (ürün typo)
+  [/\bara[çc]l[ıi]\s+kolye/gi, "ataç kolye"],
 
   // Material typo'ları
   [/atın deilmi|atın değil mi|altın deilmi|altin deilmi|altin değilmi/gi, "altın değil mi"],
@@ -365,6 +394,11 @@ const TYPO_MAP = [
   [/(?:^|\s)karalama(?=\s|$|[.,?!])/gi, " kararma"],           // karalama → kararma
   [/(?:^|\s)karartma(?=\s|$|[.,?!])/gi, " kararma"],           // karartma → kararma
   [/\bkararma yapiyor\b/gi, "kararma yapıyor"],
+  // Prod logs: yeni kararma varyantları
+  [/(?:^|\s)kararıyo(?=\s|$|[.,?!])/gi, " kararıyor"],         // kararıyo → kararıyor (r yoksa ekle)
+  [/(?:^|\s)kararıyomu(?=\s|$|[.,?!])/gi, " kararıyor mu"],    // kararıyomu → kararıyor mu
+  [/(?:^|\s)kararıyormu(?=\s|$|[.,?!])/gi, " kararıyor mu"],   // kararıyormu → kararıyor mu (compound)
+  [/(?:^|\s)kararir[mM][ıi](?=\s|$|[.,?!])/gi, " kararır mı"],
 
   // ━━━ F6 fix: material typo'ları ━━━
   [/(?:^|\s)metaryen[ei]?(?=\s|$|[.,?!])/gi, " materyal"],
@@ -379,6 +413,28 @@ const TYPO_MAP = [
   [/(?:^|\s)alarjik(?=\s|$|[.,?!])/gi, " alerjik"],
   [/(?:^|\s)alerjim(?=\s|$|[.,?!])/gi, " alerjim"],
 
+  // ━━━ Prod logs fix: write verb typo'ları (yazılcak → yazılacak, yaziliyomu) ━━━
+  [/(?:^|\s)yaz[ıi]lcak(?=\s|$|[.,?!])/gi, " yazılacak"],
+  [/(?:^|\s)yaz[ıi]lcam[ıi](?=\s|$|[.,?!])/gi, " yazılacak mı"],
+  [/(?:^|\s)yaz[ıi]l[ıi]yomu(?=\s|$|[.,?!])/gi, " yazılıyor mu"],
+  [/(?:^|\s)yazarm[ıi]s[ıi]n[ıi]z(?=\s|$|[.,?!])/gi, " yazar mısınız"],
+  [/(?:^|\s)yazabilirmi[sş]i?niz(?=\s|$|[.,?!])/gi, " yazabilir misiniz"],
+
+  // ━━━ Prod logs fix: solma/renk typo ━━━
+  [/(?:^|\s)solarm[ıi](?=\s|$|[.,?!])/gi, " solar mı"],
+  [/(?:^|\s)solmuyor\s+mu(?=\s|$|[.,?!])/gi, " solmuyor mu"],
+  [/(?:^|\s)solmazm[ıi](?=\s|$|[.,?!])/gi, " solmaz mı"],
+  [/(?:^|\s)beyazl[aá]ma?\s+yap[sş]r?m[ıi](?=\s|$|[.,?!])/gi, " beyazlama yapar mı"],
+
+  // ━━━ Prod logs fix: eksik 'ı' suffix typo'ları (mobile klavye) ━━━
+  [/(?:^|\s)mısınz(?=\s|$|[.,?!])/gi, " mısınız"],
+  [/(?:^|\s)musunz(?=\s|$|[.,?!])/gi, " musunuz"],
+  [/(?:^|\s)olurm[ıi](?=\s|$|[.,?!])/gi, " olur mu"],
+  [/(?:^|\s)varm[ıi]\s+acaba(?=\s|$|[.,?!])/gi, " var mı acaba"],
+
+  // ━━━ Prod logs fix: order completion / size ━━━
+  [/(?:^|\s)cmdir(?=\s|$|[.,?!])/gi, " cm'dir"],
+
   // Media typo'ları
   [/resmı\b/gi, "resmi"],
   [/fotraf\b|fotoraf\b/gi, "fotoğraf"],
@@ -387,6 +443,13 @@ const TYPO_MAP = [
   // Ack typo'ları
   [/bekliyorul\b/gi, "bekliyorum"],
   [/tesekkurler\b/gi, "teşekkürler"],
+
+  // ━━━ F11 fix: nakit/kapıda ödeme typo'ları ━━━
+  [/(?:^|\s)naks?t?(?=\s|$|[.,?!])/gi, " nakit"],      // nakşt, nakst, nakt
+  [/(?:^|\s)nakıt(?=\s|$|[.,?!])/gi, " nakit"],
+  [/(?:^|\s)naki̇t(?=\s|$|[.,?!])/gi, " nakit"],
+  [/(?:^|\s)kapıdan(?=\s|$|[.,?!])/gi, " kapıda"],
+  [/(?:^|\s)kapida(?=\s|$|[.,?!])/gi, " kapıda"],
 ];
 
 /**

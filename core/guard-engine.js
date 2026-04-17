@@ -113,12 +113,26 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
   // ═══ 6. FLOW REMINDER STRIP ═══
   // Yan soru cevabının sonundaki gereksiz akış hatırlatması
   // Preview/decision/composition intentleri için trim yapma — cevap kasıtlı fotoğraf içeriyor
-  const TRIM_EXEMPT_INTENTS = ["preview_request","decision_support","composition_question","back_text_question","back_text_fit_question","product_structure_request","single_pendant_request","back_photo_info"];
+  const TRIM_EXEMPT_INTENTS = ["preview_request","decision_support","composition_question","back_text_question","back_text_fit_question","product_structure_request","single_pendant_request","back_photo_info",
+    // Slot-ack intent'leri: isim/telefon/adres aldı cevabı kasıtlı olarak "devam edelim" içerir
+    "name_only","phone","address","address_provide_partial","phone_only"];
   // waiting_photo/waiting_letters'ta order_start/new_order cevabı kasıtlı olarak stage-prompt içerir
   const STAGE_INVITE_EXEMPT = (ctx.intent === "order_start" || ctx.intent === "new_order" || ctx.intent === "photo_offer") &&
                               (stage === STAGE.WAITING_PHOTO || stage === STAGE.WAITING_LETTERS);
+  // High-intent mesajlarda CTA kasıtlı — TRIM'leme (EXTRA-15 E10)
+  const HIGH_INTENT_EXEMPT = (stage === STAGE.WAITING_PHOTO) &&
+                             hasAny(ctx.norm || "", ["resimli kolye dusun","resimli kolye düşün","kolye dusunuyorum","kolye düşünüyorum","kolye yaptirmayi","kolye yaptırmayı","siparis verirsem","sipariş verirsem","siparis versem","sipariş versem","fotograf atsam","fotoğraf atsam"]);
+  // waiting_photo + info-class cevap (renk/material/kararma vb.) → cevabın sonundaki
+  // "Fotoğrafınızı iletebilirsiniz" ifadesi flow-continuation olarak kasıtlıdır; trim etme.
+  const INFO_FLOW_EXEMPT = stage === STAGE.WAITING_PHOTO &&
+                           /(kaplama|çelik|kararma|solma|güvenle|aksesuar|nazar)/i.test(text);
+  // Payment commit waiting_photo'da: "Fotoğrafınızı gönderdikten sonra" flow-continuation kasıtlı
+  const PAYMENT_FLOW_EXEMPT = stage === STAGE.WAITING_PHOTO && ctx.intent === "payment";
+  // waiting_address + slot-ack cevaplar "adres...iletirseniz" kasıtlı içerir
+  const ADDRESS_SLOT_EXEMPT = stage === STAGE.WAITING_ADDRESS &&
+                              /(isim bilginizi aldım|telefonunuzu aldım|adres bilginizi aldım|bilgilerinizi aldım)/i.test(text);
   const flowReminder = /[.,]?\s*(fotoğrafınızı|foto.*gönder|foto.*bekl|adres.*ilet|ödeme.*seç)[^.]*[.!]?\s*$/i;
-  if (flowReminder.test(text) && text.length > 50 && !TRIM_EXEMPT_INTENTS.includes(ctx.intent) && !STAGE_INVITE_EXEMPT) {
+  if (flowReminder.test(text) && text.length > 50 && !TRIM_EXEMPT_INTENTS.includes(ctx.intent) && !STAGE_INVITE_EXEMPT && !HIGH_INTENT_EXEMPT && !INFO_FLOW_EXEMPT && !ADDRESS_SLOT_EXEMPT && !PAYMENT_FLOW_EXEMPT) {
     const cleaned = text.replace(flowReminder, "").trim();
     if (cleaned.length > 10) {
       console.log("[GUARD] TRIM: flow reminder stripped");
@@ -138,12 +152,21 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
   }
   
   // Kısa AI cevap — "Fotoğraf? 😊", "Kaç? 😊", "Renk? 😊" gibi tek kelime soru yasak
+  // Ayrıca "Adres?", "Telefon?", "İsim?" tek kelimelik prompt'lar da buraya düşüyor.
   if (/^[A-ZÇĞİÖŞÜa-zçğıöşü]{2,15}\?\s*😊?\s*$/.test(text.trim())) {
     console.log("[GUARD] AI_LEAK: short question stripped → ", text.trim());
     const stage = ctx.fields?.conversation_stage || "";
     if (stage === "waiting_photo") text = "Fotoğrafınızı buradan iletebilirsiniz efendim 😊";
     else if (stage === "waiting_payment") text = "Ödeme tercihinizi belirtebilir misiniz efendim? EFT / Havale veya kapıda ödeme 😊";
     else if (stage === "waiting_address") text = "Ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim efendim 😊";
+    else text = "Tabi efendim 😊";
+  }
+  // "Tam efendim..." gibi LLM'in mesajı KESMİŞ cümleleri yakala (müşteri "Tamam" dedi, bot "Tam" diye parse etti)
+  // Pattern: başta 3-4 karakterlik truncated Türkçe kelime ardından "efendim"
+  if (/^(Tam|Evt|Hyr|Pek|Tem|Ank)\s+efendim/i.test(text.trim())) {
+    console.log("[GUARD] AI_LEAK: truncated word stripped → ", text.substring(0, 40));
+    const stage = ctx.fields?.conversation_stage || "";
+    if (stage === "waiting_photo") text = "Tamam efendim, fotoğrafınızı bekliyorum 😊";
     else text = "Tabi efendim 😊";
   }
 

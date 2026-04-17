@@ -26,14 +26,70 @@ export function detectIntent(ctx) {
     // C1: completed_change_request — değişiklik/iptal
     if (hasAny(norm, COMPLETED_CHANGE_REQ)) return "completed_change_request";
     // C2: arka yazı ek içerik — "arkasına doğum tarihi de olsun"
+    // Note: "olsun" jussive modifier olduğu için tek başına write-verb olarak sayılmaz;
+    // arkasina/arkaya explicit back marker + gerçek write verb bekliyoruz.
     if (hasAny(norm, ["arkasina","arkasına","arka yuzune","arka yüzüne","arka tarafa","arkaya"]) &&
-        hasAny(norm, ["yazalim","yazalım","yazsin","yazsın","ekleyelim","ekle","olsun","de olsun","da olsun","eklensin","yazilsin","yazılsın"])) return "completed_back_text_content";
+        hasAny(norm, ["yazalim","yazalım","yazsin","yazsın","ekleyelim","ekle","eklensin","yazilsin","yazılsın","de olsun","da olsun"])) return "completed_back_text_content";
     // C3: foto paylaşım isteği
     if (hasAny(norm, COMPLETED_PHOTO_SHARE_REQ)) return "completed_photo_share_request";
     // C4: teşekkür / memnuniyet
     if (hasAny(norm, COMPLETED_GRATITUDE)) return "completed_gratitude";
     // C5: kısa nötr ack — sadece exact match, uzunluk tabanlı değil
     if (hasAny(norm, COMPLETED_NEUTRAL_ACK)) return "completed_neutral_ack";
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // AILE J FIX — Soru sorulmuş ama stage-prompt dönüyor
+  // Info-question gate: mesajda ? veya "mi/mı/mu/mü" varsa spesifik intent'e yönlendir
+  // DAR pattern'lar — sadece regresyon üretmeyen SAĞLAM alt-aileler burada
+  // ═══════════════════════════════════════════════════════════════════════
+  if ((stage === STAGE.WAITING_PHOTO || stage === "waiting_photo" ||
+       stage === STAGE.WAITING_PAYMENT || stage === "waiting_payment" ||
+       stage === STAGE.WAITING_ADDRESS || stage === "waiting_address" ||
+       stage === STAGE.WAITING_LETTERS || stage === "waiting_letters") && !backTextDone) {
+    
+    const rawTrim = raw.trim();
+    const hasQ = /\?/.test(raw) || /\b(mi|mı|mu|mü|musun|musunuz|müsünüz|miyim|mıyım|miyiz|mıyız|mısınız|misiniz)\b/i.test(raw);
+    
+    // ─── J1: Price confirmation (sayı+mi, dar) ───
+    if (/^\s*\d{3}\s*(tl|lira)?\s*(dimi|demi|di mi|de mi|degil mi|değil mi|mi|mı|miydi|mıydı|değilmi)\s*\??\s*$/i.test(rawTrim)) {
+      return "price_confirmation";
+    }
+    if (/\d{3}\s*(tl|lira)?\s*(dimi|değil mi|degil mi)\s*\??\s*$/i.test(rawTrim) && raw.length < 50) {
+      return "price_confirmation";
+    }
+    
+    // ─── J2: Kararma/renk/solma soru (dar başlangıç) ───
+    if (hasQ && /^(karatma|kararma|renk deg|renk değ|renk atar|solma|paslan|solar|bozul)/i.test(rawTrim) && raw.length < 40) {
+      return "trust";
+    }
+    
+    // ─── J9: Autopilot / bot / yapay zeka ───
+    if (hasQ && /(otomatik.*mi|otomatik mesaj|robot mu|bot mu|yapay zeka|yapay zekâ)/i.test(norm)) {
+      return "autopilot_question";
+    }
+    
+    // ─── J13: WhatsApp ───
+    if (hasQ && /(watsap|whatsapp|whatssap|whatsap)/i.test(norm)) {
+      return "contact_channel_question";
+    }
+    
+    // ─── J14: Photo format / vesikalık ───
+    if (hasQ && /(vesikalik|vesikalık)/i.test(norm)) {
+      return "photo_format_question";
+    }
+    
+    // ─── J6: Human help (dar) ───
+    if (/^\s*(yardimci|yardımcı)\s*(ol|olur)/i.test(rawTrim) && 
+        /\b(musun|musunuz|olabil|edebil)/i.test(raw) && raw.length < 50) {
+      return "human_request";
+    }
+    if (/^(lutfen|lütfen|artik|artık)?\s*(soru.*cevap|cevap ver).*\b(mi|mı|musun|musunuz)/i.test(rawTrim)) {
+      return "human_request";
+    }
+    if (/\b(ortakl[ıi]k|bayi|toptan)\b/i.test(norm) && hasQ) {
+      return "human_request";
+    }
   }
 
   // ═══ 1. SLOT COMMITS (highest priority) ═══
@@ -46,15 +102,25 @@ export function detectIntent(ctx) {
 
   // ━━━ H4 F7 HARDENING: bundle detection before phone/address (Özge/Tülay bug) ━━━
   // Önce tam bundle kontrolü; phone intent'ten önce yakalasın
+  // Prod logs fix: PII redaction sonrası [PHONE], [ADDRESS] token'ları da sinyal sayılır
+  // (production'da raw'da bu tokenlar görülüyor — kullanıcı aslında vermiş ama redact edilmiş)
   if ([STAGE.WAITING_ADDRESS, STAGE.WAITING_PAYMENT, STAGE.ORDER_COMPLETED, "order_completed"].includes(stage)) {
-    const _hasPhoneEarly = extracted.phone || /\b0?5\d{2}[\s.\-]?\d{3}[\s.\-]?\d{2}[\s.\-]?\d{2}\b/.test(raw);
-    const _hasAddressEarly = extracted.hasAddress || hasAny(norm, ["mahalle","mah ","cadde","cad ","sokak","sok ","bulvar","apt","daire","kat "]);
+    const _hasRedactedPhone = /\[PHONE\]/i.test(raw);
+    const _hasRedactedAddr = /\[ADDRESS\]/i.test(raw);
+    const _hasPhoneEarly = extracted.phone || /\b0?5\d{2}[\s.\-]?\d{3}[\s.\-]?\d{2}[\s.\-]?\d{2}\b/.test(raw) || _hasRedactedPhone;
+    const _hasAddressEarly = extracted.hasAddress || hasAny(norm, ["mahalle","mah ","cadde","cad ","sokak","sok ","bulvar","apt","daire","kat "]) || _hasRedactedAddr;
     const _hasNameEarly = extracted.hasName || (/[A-ZÇĞİÖŞÜa-zçğıöşü]{3,}\s+[A-ZÇĞİÖŞÜa-zçğıöşü]{3,}/.test(raw) && raw.trim().length < 120);
     // Sohbet bağlamı varsa bundle DEĞİL (false positive engelle)
     const _isChatty = hasAny(norm, ["cunku","çünkü","icin","için","daha once","daha önce","esnaf","hediye ettim","musterilerim","müşterilerim","yonlendirmem","yönlendirmem","yaptirmistim","yaptırmıştım","soruyorlar","gormek icin","görmek için"]);
-    const _score = (_hasPhoneEarly ? 1 : 0) + (_hasAddressEarly ? 1 : 0) + (_hasNameEarly ? 1 : 0);
-    // Bundle: skor >=2 VE sohbet bağlamı YOK VE en az biri phone veya address
-    if (_score >= 2 && !_isChatty && (_hasPhoneEarly || _hasAddressEarly)) return "full_contact_bundle";
+    // ━━━ EXTRA-15 E11: Tam bundle = name + phone + address (üçü birden). 2'li kısmi farklı ele alınsın. ━━━
+    if (_hasPhoneEarly && _hasAddressEarly && _hasNameEarly && !_isChatty) return "full_contact_bundle";
+    // Kısmi: name + phone var ama adres yok → "partial_name_phone"
+    if (_hasPhoneEarly && _hasNameEarly && !_hasAddressEarly && !_isChatty) return "partial_name_phone";
+    // Kısmi: phone + adres var ama isim yok → yine bundle (yaygın kullanım)
+    if (_hasPhoneEarly && _hasAddressEarly && !_isChatty) return "full_contact_bundle";
+    // Solo redacted: sadece [PHONE] veya sadece [ADDRESS] → slot commit
+    if (_hasRedactedPhone && !_hasAddressEarly && !_hasNameEarly && raw.trim().length < 30) return "phone";
+    if (_hasRedactedAddr && !_hasPhoneEarly && !_hasNameEarly && raw.trim().length < 60) return "address";
   }
 
   if (extracted.phone && stage === STAGE.WAITING_ADDRESS) return "phone";
@@ -74,11 +140,17 @@ export function detectIntent(ctx) {
   }
 
   // Payment commit
-  const paymentVerb = /seceyim|seçeyim|olsun|istiyorum|sectim|seçtim|seciyorum|seçiyorum|yapacagim|yapacağım|yapicam|yapıcam|yapayim|yapayım|yapalim|yapalım/.test(norm);
+  // Prod logs fix: "odemeli", "odeyecegim", "ile olsun", "yaparim", "olacak", "ile" suffix commit ifadeleri
+  const paymentVerb = /seceyim|seçeyim|olsun|istiyorum|sectim|seçtim|seciyorum|seçiyorum|yapacagim|yapacağım|yapicam|yapıcam|yapayim|yapayım|yapalim|yapalım|odemeli|ödemeli|odeyecegim|ödeyeceğim|ile olsun|yaparim|yaparım|olacak/.test(norm);
+  // Price confirmation (dimi/miydi) payment commit değil, price_confirmation'a düşsün
+  const isPriceConfirm = /\d{3}\s*(tl|lira)?\s*.{0,30}\b(dimi|di mi|değil mi|degil mi|miydi|mıydı)\b/i.test(norm);
+  // "Kapıda ödeme ile" / "eft ile" — yalnız başına "ile" commit sinyali (kısa mesajda)
+  const paymentPureCommit = /^(kapida|kapıda|kapida odeme|kapıda ödeme|eft|havale|eft havale|nakit)\s*(ile)?\s*$/i.test(norm.trim());
   // Payment confirmation (dekont, ödeme yaptım) — payment commit'ten ÖNCE
   if (hasAny(norm, ["dekont attim","dekont attım","dekont gonderdim","dekont gönderdim","eft attim","eft attım","eft gonderdim","eft gönderdim","havale gonderdim","havale gönderdim","havale attim","havale attım","odeme yaptim","ödeme yaptım","odemeyi yaptim","ödemeyi yaptım","odeme gonderdim","ödeme gönderdim","hesaba attim","hesaba attım","ekran goruntusu","ekran görüntüsü","dekont atayim","dekont atayım","ucreti attim","ücreti attım"])) return "payment_confirmation";
   // Payment commit: verb varsa her yerde, w_payment'ta verb olmadan da kabul et
-  if (extracted.payment && (paymentVerb || stage === STAGE.WAITING_PAYMENT)) return "payment";
+  // Fiyat teyidi (650 tl kapıda dimi) commit değil → price_confirmation'a kalsın
+  if (extracted.payment && !isPriceConfirm && (paymentVerb || paymentPureCommit || stage === STAGE.WAITING_PAYMENT)) return "payment";
 
   // ═══ 2. SENSITIVITY ═══
   if (hasAny(norm, ["vefat","kaybettik","kaybettim","rahmetli","merhum","babami kaybettim","babamı kaybettim","annemi kaybettim","esimi kaybettim","eşimi kaybettim","vefat etti","annem vefat","babam vefat","hayatini kaybetti","hayatını kaybetti","olum yildonumu","ölüm yıldönümü"])) return "sensitivity";
@@ -146,8 +218,11 @@ export function detectIntent(ctx) {
   }
 
   // C3: Dua/ayet/sure direkt içerik (soru fiili YOK)
-  if (hasAny(norm, ["nazar duasi","ayetel kursi","ayetel kürsî","fatiha","ihlas","kalem suresi","yasin","besmele"]) &&
-      !hasAny(norm, ["var mi","var mı","olur mu","yazilir mi","yazılır mı","oluyor mu","eklenebilir","yapiliyor"])) return "back_text_content";
+  // Not: "yasin" 5 karakter; "yaşında" normalize olunca "yasinda" oluyor ve false match'e
+  // sebep veriyordu. Word-boundary ile spesifik sure adı match'e sıkıştırdık.
+  const _ayetRegex = /\b(nazar duasi|ayetel kursi|ayetel kürsî|fatiha|ihlas|kalem suresi|yasin( suresi| süresi|i yazalim|i yazalım|i yazin|i yazın|i ekleyin|olsun|i olsun|suresi)?|besmele)\b/i;
+  if (_ayetRegex.test(norm) &&
+      !hasAny(norm, ["var mi","var mı","olur mu","yazilir mi","yazılır mı","oluyor mu","eklenebilir","yapiliyor","yasinda","yaşında"])) return "back_text_content";
 
   // C4: Arapça / Kuran ayeti direkt metin
   if (/[\u0600-\u06FF]/.test(raw) && raw.length > 10) return "back_text_content";
@@ -157,23 +232,34 @@ export function detectIntent(ctx) {
       isBackTextStage &&
       !hasAny(norm, ["ucret","ücret","fiyat","para","ekstra","bedava","ucretsiz","ücretsiz","bir ucret","bir ücret"])) return "back_text_content";
 
-  // C6: dua/ayet + olsun/yazalım bağlamı → back_text_content
+  // C6: dua/ayet + EXPLICIT write verb veya back_text_status=received → back_text_content
+  // "olsun" jussive modifier olduğu için tek başına write verb sayılmaz
   if (hasAny(norm, ["dua","ayet","sure","ayetel","kursi","fatiha","ihlas"]) &&
-      (ctx.fields?.back_text_status === "received" || hasAny(norm, ["yazalim","yazalım","olsun"])) &&
+      (ctx.fields?.back_text_status === "received" || hasAny(norm, ["yazalim","yazalım","yazsin","yazsın","eklensin","yazilsin","yazılsın"])) &&
       !hasAny(norm, ["istemiyorum","istemem","olmamali","olmamalı"])) return "back_text_content";
 
   // ━━━ FIX F3: back_text içerik genişletme ━━━
   // C7: "YAZARSANIZ / YAZARMISINIZ / YAZSIN / YAZALIM + isim/tarih/cümle" → back_text_content
+  // Not: "olsun" BAĞIMSIZ olarak write verb DEĞİLDİR — Türkçe'de jussive/dilek modifier'dır
+  // ("sağ olsun", "geçmiş olsun" = blessing; "[X] olsun" = yazma fiili değil).
+  // Gerçek write verb'ler: yaz-, ekle-, bas-.
   if (isBackTextStage) {
     const hasWriteVerb = hasAny(norm, [
       "yazarsaniz","yazarsanız","yazarmisiniz","yazar misiniz","yazarmısınız","yazar mısınız",
-      "yazin","yazın","yazalim","yazalım","yazsin","yazsın","eklensin","olsun",
+      "yazin","yazın","yazalim","yazalım","yazsin","yazsın","eklensin",
       "basabilir","basin","basın"
     ]);
     const hasNameOrDate = /[A-ZÇĞİÖŞÜ][a-zçğıöşü]{2,}/.test(raw) || /\d{2}[.\-\/]\d{2}[.\-\/]\d{2,4}/.test(raw) || /\b20\d{2}\b/.test(raw) || /\b19\d{2}\b/.test(raw);
     const hasQuoteOrEmoji = /["'❤️💫♾️🤍💜❤💫⭐]/.test(raw);
     const isQuestionFormat = hasAny(norm, ["var mi","var mı","olur mu","oluyor mu","yapiliyor mu","yapılıyor mu","mumkun mu","mümkün mü"]);
-    if (hasWriteVerb && (hasNameOrDate || hasQuoteOrEmoji) && !isQuestionFormat) return "back_text_content";
+    // Prod logs fix: "basın" (5-char) substring'i "basiniz sagolsun" içinde yanlış match ediyordu.
+    // Blessing/condolence guard — bu ifadeler back_text DEĞİL.
+    const isBlessingHere = hasAny(norm, [
+      "basiniz sagolsun","başınız sağolsun","basiniz sag olsun","başınız sağ olsun",
+      "gecmis olsun","geçmiş olsun","allah rahmet","allah kabul","allah razi olsun","allah razı olsun",
+      "saglikla kullan","sağlıkla kullan","gule gule kullan","güle güle kullan",
+    ]);
+    if (hasWriteVerb && (hasNameOrDate || hasQuoteOrEmoji) && !isQuestionFormat && !isBlessingHere) return "back_text_content";
   }
 
   // C8: Multi-line mesajda her satırı ayrı kontrol — bir satır tarih/isim ise content
@@ -204,13 +290,19 @@ export function detectIntent(ctx) {
     return "back_text_content";
   }
 
-  // C11: "SENI COK SEVIYORUM", "EN COK SEN", "CANIM AILEM" vb. sevgi sözcüğü cümle
-  if (isBackTextStage && raw.length < 80 && !/\?/.test(raw)) {
+  // C11: sevgi/duygu sözcükleri + cümle → back_text_content (uzun metin de olabilir)
+  if (isBackTextStage && !/\?/.test(raw)) {
     if (hasAny(norm, [
       "seni cok seviyorum","seni çok seviyorum","en cok sen","en çok sen",
       "hosgeldin","hoşgeldin","iyi ki","nefesim","canim ailem","canım ailem",
       "kabul olmus","kabul olmuş","en guzel duam","en güzel duam",
-      "gozlerimin","gözlerimin","kalbimin","güneşim","gunesim","papatyam"
+      "gozlerimin","gözlerimin","kalbimin","güneşim","gunesim","papatyam",
+      // Uzun duygusal cümleler
+      "annenin oglu","annenin oğlu","bebegim","bebeğim",
+      "yazamadiklarim","yazamadıklarım","kolyeyle anlat","kolye ile anlat",
+      "sevgimi anlat","sevgisini anlat","bu kolye ile",
+      "dunyalar kadar","dünyalar kadar","kalbimde ozel","kalbimde özel",
+      "bir tanem","birtanem","canimsin","canımsın"
     ])) return "back_text_content";
   }
 
@@ -359,6 +451,17 @@ export function detectIntent(ctx) {
     if (/\d{3}/.test(norm) && hasAny(norm, ["olmaz","olur mu","yapar mi","yapar mı"])) {} // bargain'a düşsün
     else return "payment_info_question";
   }
+  // Prod logs fix: "arka + resim/foto" combo composition; "arka + yazı" back_text
+  // "Arkasına da farklı bir resim", "Arka yüz de de foto olacak" → composition_question
+  // Fiyat/ücret sorusu varsa composition'a gitme (back_photo_info'da özel fiyat branch'ı var)
+  // waiting_payment'ta composition'a gitme — orada back_photo_info default cevabı kasıtlı (legacy R88_4747)
+  const hasBackMarker = hasAny(norm, ["arkasina","arkasında","arka kismina","arka kısmına","arka yuze","arka yüze","arka yuz","arka yüz","arkaya","arka taraf"]);
+  const hasPhotoWord = hasAny(norm, ["resim","resmi","resimli","foto","fotograf","fotoğraf","fotografli","fotoğraflı"]);
+  const hasTextWord = hasAny(norm, ["yazi","yazı","yazacak","yazılır","yazabiliyor","yazılsin","yazılsın","not","isim","tarih","dua"]);
+  const hasPriceWord = hasAny(norm, ["fiyat","ucret","ücret","ne kadar","ekstra","bedava","dahil"]);
+  if (hasBackMarker && hasPhotoWord && !hasTextWord && !hasPriceWord &&
+      stage !== STAGE.WAITING_PAYMENT && stage !== "waiting_payment") return "composition_question";
+
   if (hasAny(norm, KW.back_text_info)) return "back_text_info";
   // Ek back_text_info: "arkasına" + soru kalıbı (tarih/isim/yazı atiyor mu vs)
   if (hasAny(norm, ["arkasina","arka kismina","arka kısmına","arka yuze","arka yüze"]) && hasAny(norm, ["atiyor","atıyor","yaziyor","yazıyor","olur mu","oluyor mu","yapiliyor","yapılıyor","yazilir","yazılır","eklenebilir","yazabilir","yazabiliyor","koyabiliyor","yazdir","yazdır","olabilir","yazalim","yazalım","basabilir","koyabilir"])) return "back_text_info";
@@ -366,6 +469,17 @@ export function detectIntent(ctx) {
   // ━━━ FIX F5: composition_question back_photo_info'dan ÖNCE ━━━
   // KW.composition_question genişletilmiş olduğundan artık geniş yakalıyor
   if (hasAny(norm, KW.composition_question)) return "composition_question";
+
+  // Structural catch: Türkçe'de "2 tane resim", "iki tane kızım", "3 tane çocuğun" gibi
+  // araya "tane" kelimesi girdiğinde keyword-list match'lemiyor. Regex ile pattern tespiti:
+  //   (sayı/harf karşılığı) + tane? + (resim/foto/fotoğraf/çocuk/kızım/oğlum/ailem/bebeğin)
+  // Bu sayısal composition sinyali; composition_question intent'ine yönlendirir.
+  const _numWord = "(2|3|4|5|iki|üç|uc|dort|dört|bes|beş|cift|çift)";
+  const _compNoun = "(resim|resmi|resme|resmin|foto|fotograf|fotoğraf|cocuk|çocuk|cocugun|çocuğun|kizim|kızım|oglum|oğlum|torunum|bebegin|bebeğin|ailem|aile)";
+  const compCountRegex = new RegExp(`\\b${_numWord}\\s+(tane\\s+)?${_compNoun}`);
+  if (compCountRegex.test(norm)) return "composition_question";
+  // "bir kolye + birleş" / "bir kolyeye + iki/üç/...resim" → composition
+  if (hasAny(norm, ["bir kolye","tek kolye","bi kolye"]) && hasAny(norm, ["birlesin","birleşsin","birlesi","birleşi"])) return "composition_question";
 
   // Kişi/resim sayısı soruları → photo_question (back_photo_info'dan ÖNCE)
   if (hasAny(norm, ["kac kisi","kaç kişi","kac kisilik","kaç kişilik","iki kisi","iki kişi","2 kisi","2 kişi","birden fazla kisi","birden fazla kişi","ikisini","3 kisi","3 kişi","5 kisi","5 kişi","aile foto","3 kisilik","3 kişilik"])) return "photo_question";
@@ -452,6 +566,11 @@ export function detectIntent(ctx) {
   if (/\d{3}\s*(e |a |ye |ya )(birak|bırak|gonder|gönder|yapar|yapın|yapin)/i.test(norm)) return "bargain";
   if (/\d{3}\s*(tl)?\s*(olmaz|olur)\s*(mi|mı|mu|mü)/i.test(norm)) return "bargain";
 
+  // Prod logs fix: "Halat kolyeyle mi bu fiyat" → chain_question (halat spesifik keyword)
+  if (hasAny(norm, ["halat kolye","halat zincir","halatla","halat model","halat mi","halat mı","halat var"]) && !hasAny(norm, ["fotograf","fotoğraf","resim"])) {
+    return "chain_question";
+  }
+
   if (hasAny(norm, KW.price)) return "price";
 
   // ═══ 8. BACK TEXT (waiting_payment, explicit signal) ═══
@@ -470,6 +589,26 @@ export function detectIntent(ctx) {
   // future-tense resim/foto gönderim → general (order_start değil)
   if (hasAny(norm, ["resim atacagim","resim atacağım","foto atacagim","foto atacağım","resim atcam","foto atcam","resim yollarim","foto yollarim","resim gondericegim","foto gondericegim"]) &&
       !hasAny(norm, ["hadi","haydi","simdi","şimdi","hazir","hazır"])) return "general";
+  // Prod logs fix (FIX E): waiting_product'ta past-tense sipariş referansı veya dönüş şikayeti → post_sale
+  // "ben sipariş verdim" / "siparişim var" / "oluşturmuştum" / "dönüş yapmıyorsunuz" — menu DEĞİL, operator'a
+  const isPastOrderRef = hasAny(norm, [
+    "siparis verdim","sipariş verdim","siparis vermistim","sipariş vermiştim",
+    "siparisim var","siparişim var","siparisim vardi","siparişim vardı",
+    "olusturmustum","oluşturmuştum","siparis olusturmustum","sipariş oluşturmuştum",
+    "size siparis","size sipariş","verdigim siparis","verdiğim sipariş",
+    "biraz once siparis","biraz önce sipariş","az once siparis","az önce sipariş",
+  ]);
+  const isReturnComplaint = hasAny(norm, [
+    "donus yapmiy","dönüş yapmıy","donus yapılmı","dönüş yapılmı","neden donus","neden dönüş",
+    "hala donus yok","hala dönüş yok","donus gelmedi","dönüş gelmedi","cevap vermiyor",
+    "neden cevap","hala cevap yok","donus olmadi","dönüş olmadı",
+  ]);
+  // waiting_product stage (normal veya completed sonrası) — ilk mesaj değilse past-tense sipariş post_sale
+  const stageForPostSale = stage === STAGE.WAITING_PRODUCT || stage === "waiting_product";
+  if ((isPastOrderRef || isReturnComplaint) && stageForPostSale) {
+    return "post_sale";
+  }
+
   if (raw.length <= 30 && (hasAny(norm, KW.product_lazer) || hasAny(norm, KW.product_atac))) return "order_start";
   if (hasAny(norm, KW.order_start)) {
     if (hasAny(norm, ["ama suan degil","ama henuz degil","ama simdi degil","dusunuyorum","düşünüyorum","daha sonra","henuz","henüz","vermeyeceg","istemiyorum","vazgec","vazgeç"])) return "general";
@@ -488,6 +627,14 @@ export function detectIntent(ctx) {
     const isQuestion = /[?]/.test(raw) || /\b(mi|mı|mu|mü|misiniz|mısınız)\b/i.test(raw);
     const isPhone = /0\d{3}\s?\d{3}\s?\d{2}\s?\d{2}/.test(raw) || /05\d{2}/.test(raw);
     const isUndecided = hasAny(norm, ["bilemedim","karar veremedim","kararsiz","kararsız","ne yazsak","emin degilim","emin değilim"]);
+    // Blessing / condolence / gratitude — bunlar yazı içeriği değil sosyal ifadeler
+    const isBlessingOrCondolence = hasAny(norm, [
+      "basiniz sagolsun","başınız sağolsun","basiniz sag olsun","başınız sağ olsun",
+      "gecmis olsun","geçmiş olsun","allah rahmet","allah kabul","allah razi olsun","allah razı olsun",
+      "hayirli olsun","hayırlı olsun","mubarek olsun","mübarek olsun","sihhatle kullan","sıhhatle kullan",
+      "saglikla kullan","sağlıkla kullan","gule gule kullan","güle güle kullan",
+      "tesekkur ederim","teşekkür ederim","tesekkurler","teşekkürler","cok sagolun","çok sağolun"
+    ]);
     const isBlocked = hasAny(norm, [
       "bekliyorum","neden","niye","hala","hâlâ","tekrar","yine","sorun","sikayet","şikayet","memnun",
       "yanlis","yanlış","yeter","yazdim","yazdım","verdim","attim","attım","gonderdim","gönderdim",
@@ -498,7 +645,7 @@ export function detectIntent(ctx) {
       "gormek","görmek","gormeden","görmeden","gorsel","görsel","paylasir","paylaşır",
       "kalite","net","fotograf","fotoğraf","resim","kopma","silinme","dayanikli",
     ]);
-    if (!isQuestion && !isBlocked && !isPhone && !isUndecided && !hasAny(norm, ACK_WORDS)) return "back_text";
+    if (!isQuestion && !isBlocked && !isPhone && !isUndecided && !isBlessingOrCondolence && !hasAny(norm, ACK_WORDS)) return "back_text";
   }
 
   // ═══ DEFAULT ═══

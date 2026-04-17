@@ -40,6 +40,10 @@ function buildContext(body) {
     cancel_reason: unwrap(body.cancel_reason), context_lock: unwrap(body.context_lock),
     letters_received: unwrap(body.letters_received), phone_received: unwrap(body.phone_received),
   };
+  // RAW input product — buildContext'in LAZER/ATAC signal-based upgrade'lerinden önce
+  // kullanıcının GERÇEKTEN seçtiği ürün. Handler'lar bunu kullanabilir: kullanıcı ürün
+  // seçmeden composition sorusu soruyorsa, derived product lazer olsa bile gate aktif kalsın.
+  const rawInputProduct = normalizeProduct(unwrap(body.ilgilenilen_urun) || unwrap(body.user_product) || "");
   const previousProduct = normalizeProduct(fields.ilgilenilen_urun || fields.user_product || "");
   const entryProduct = getEntryProduct(body);
   const explicitProduct = detectProductFromText(norm);
@@ -182,7 +186,7 @@ function buildContext(body) {
     askedAboutPreview: /yogunluga gore|kargo sonrasi|kargo oncesi|paylasabiliyoruz/.test(lastReplyNorm),
     lastIntent: fields.last_intent || "",
   };
-  return { message, norm, product, previousProduct: effectivePreviousProduct, intent, secondary_intent, fields, extracted, lastContext };
+  return { message, norm, product, previousProduct: effectivePreviousProduct, rawInputProduct, intent, secondary_intent, fields, extracted, lastContext };
 }
 
 function buildOutput(ctx, reply, committed, meta) {
@@ -273,6 +277,60 @@ export async function processChat(body = {}) {
 
     // Guard
     reply = guardReply(reply, ctx, filledSlots, missingSlots);
+
+    // ═══ MERKEZİ POST-PROCESS: waiting_product menu-suffix ═══
+    // Kök yapısal durum: info/material/color/shipping/accessory/trust/kararma/engraving/warranty
+    // gibi "bilgi veren" cevaplar waiting_product stage'inde + ürün seçilmediğinde
+    // kullanıcıyı menüye yönlendirmeli. Tekil handler'lar tek tek eklemek yerine
+    // merkezi bir koşullu suffix uygulaması.
+    // NOT: menu_gosterildi="evet" olsa bile kullanıcı hala ürün seçmediyse, menu prompt'u
+    // tekrar ekle (stuck-in-selection durumu — kullanıcı menüyü görmüş ama cevap vermemiş).
+    {
+      const st = ctx.fields?.conversation_stage || "";
+      const prod = ctx.product || ctx.fields?.ilgilenilen_urun || "";
+      const replyText = reply?.text || "";
+      const needsMenu =
+        (st === STAGE.WAITING_PRODUCT || st === "waiting_product" || st === "") &&
+        !prod &&
+        replyText &&
+        // Reply zaten menu ya da fiyat-menu içermiyorsa
+        !/hangi model/i.test(replyText) &&
+        !/fiyatlarımız/i.test(replyText) &&
+        !/siparişiniz başarıyla/i.test(replyText) &&
+        replyText !== TEXT.FALLBACK &&
+        reply.source !== "guard_frustration" &&
+        reply.source !== "fallback" &&
+        // Flow commit cevapları değil
+        !/fotoğrafınız ulaştı/i.test(replyText) &&
+        !/fotoğrafı aldım/i.test(replyText) &&
+        !/adres.*aldım/i.test(replyText) &&
+        !/harfleri.*aldım/i.test(replyText) &&
+        !/arka yazı notu aldım/i.test(replyText) &&
+        !/bilgilerinizi aldım/i.test(replyText) &&
+        !/isim bilginizi aldım/i.test(replyText) &&
+        !/telefon.*aldım/i.test(replyText) &&
+        !/ödeme tercihi/i.test(replyText) &&
+        // Ürün seçim cevapları zaten flow ilerletiyor
+        !/resimli lazer kolye siparişiniz/i.test(replyText) &&
+        !/harfli ataç kolye siparişiniz/i.test(replyText) &&
+        // Smalltalk / warmth / praise intentleri — kapanış mesajı, menu eklenmez
+        reply.source !== "smalltalk" &&
+        reply.source !== "completed" &&
+        ![
+          "smalltalk","ack","sensitivity","frustration","complaint","gratitude","greeting",
+          "praise","condolence","blessing"
+        ].includes(ctx.intent) &&
+        // Warmth/praise cevap içerikleri (intent 'general' olsa bile metin warmth ise)
+        !/sevindik|güle güle kullan|çok mutlu|çok sevindim|paylaşmanız/i.test(replyText) &&
+        !/allah razı olsun|teşekkür ederiz|rica ederiz|rica ederim/i.test(replyText) &&
+        !/amin efendim|sağlıkla kullansın/i.test(replyText) &&
+        // Cevap çok kısa nötr ise ekleme
+        replyText.length > 25;
+
+      if (needsMenu) {
+        reply.text = replyText.trimEnd() + (/[.!?😊🤍💫]\s*$/.test(replyText) ? "" : ".") + " Hangi model ile ilgileniyorsunuz efendim?";
+      }
+    }
 
     // Output
     const committed = commitPatch(derived, reply);
