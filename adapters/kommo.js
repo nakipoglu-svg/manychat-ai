@@ -1116,24 +1116,23 @@ export default async function handler(req, res) {
     // Adım 1: State field'larını yaz (ai_reply boş bırak)
     await updateFields(lid, { ...fieldUpdate, ai_reply: "" });
 
-    // Adım 2: Kısa bekleme — Kommo API propagation
-    await new Promise(r => setTimeout(r, 100));
-
-    // Adım 3: ai_reply yaz + bot trigger
+    // Adım 2: ai_reply yaz
+    // Not: 100ms setTimeout kaldırıldı — Kommo API zaten serialize ediyor,
+    // gereksiz bekleme idi (-100ms kazanım).
     const cleanReplyText = stripEmoji(result.ai_reply || "");
     await updateFields(lid, { ai_reply: cleanReplyText });
 
-    if (result.ai_reply) {
-      await triggerBot(REPLY_BOT_ID, lid);
-    }
-
-    // Adım 4: Pipeline stage (arka planda)
-    // Mevcut status_id'yi al — geri dönüş koruması için
+    // Adım 3: triggerBot + readLeadFields PARALEL
+    // Bot trigger ve status_id okuma birbirinden bağımsız → paralel çalışabilir.
+    // Tek mesajlık API round-trip (~300-500ms) kazanım sağlar.
     let currentStatusId = 0;
-    try {
-      const leadCheck = await readLeadFields(lid);
-      currentStatusId = leadCheck._status_id || 0;
-    } catch(e) {}
+    const [, leadCheckResult] = await Promise.all([
+      result.ai_reply ? triggerBot(REPLY_BOT_ID, lid) : Promise.resolve(null),
+      readLeadFields(lid).catch(() => ({ _status_id: 0 })),
+    ]);
+    currentStatusId = leadCheckResult?._status_id || 0;
+
+    // Adım 4: Pipeline stage (currentStatusId hazır, direction guard çalışır)
     await movePipelineStage(lid, result.conversation_stage || "", !!result.ilgilenilen_urun, result.payment_method || "", result.support_mode || "", result.order_status || "", currentStatusId);
 
     // ── Logging + Order Sync (arka plan) ──
