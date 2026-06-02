@@ -1,5 +1,5 @@
 // price.js — Fiyat soruları
-import { INTENT, PRODUCT, REPLY_CLASS, PRICE, TEXT } from "../constants.js";
+import { INTENT, PRODUCT, REPLY_CLASS, PRICE, TEXT, KW } from "../constants.js";
 import { hasAny, truthy } from "../normalize.js";
 
 const R = (t) => ({ text: t, reply_class: REPLY_CLASS.FIXED_INFO, support_mode_reason: "" });
@@ -7,6 +7,12 @@ const R = (t) => ({ text: t, reply_class: REPLY_CLASS.FIXED_INFO, support_mode_r
 export function priceRule(ctx, state) {
   if (ctx.intent !== INTENT.PRICE) return null;
   const { norm } = ctx;
+
+  // Yeni ürünler: fiyat net değilse ekibe yönlendir
+  if (state.product === PRODUCT.ANAHTARLIK || hasAny(norm, KW.product_anahtarlik || [])) return { text: "Anahtarlık fiyat ve sipariş detayları için ekibimize iletiyorum efendim 😊", reply_class: REPLY_CLASS.SELLER_REQUIRED, support_mode_reason: "seller_required" };
+  if (state.product === PRODUCT.MEZAR_TASI || hasAny(norm, KW.product_mezar_tasi || [])) return { text: "Evcil hayvan mezar taşı fiyat ve tasarım detayları için ekibimize iletiyorum efendim 😊", reply_class: REPLY_CLASS.SELLER_REQUIRED, support_mode_reason: "seller_required" };
+  if (state.product === PRODUCT.BILEKLIK || hasAny(norm, KW.product_bileklik || [])) return { text: "Resimli lazer bileklik fiyatımız efendim 😊\n\nEFT / Havale veya sitemizden kart ile ödeme: 549 TL\nKapıda ödeme: 599 TL’dir.", reply_class: REPLY_CLASS.FIXED_INFO, support_mode_reason: "" };
+  if (state.product === PRODUCT.OTHER || hasAny(norm, KW.product_other || [])) return { text: TEXT.OTHER_PRODUCT_REDIRECT, reply_class: REPLY_CLASS.SELLER_REQUIRED, support_mode_reason: "seller_required" };
 
   // Cross-product
   if (state.product === PRODUCT.LAZER && hasAny(norm, ["atac","ataç","harfli"])) return R("Harfli ataç kolye: EFT / havale 499 TL, kapıda ödeme 549 TL'dir efendim 😊 3 harfe kadar standarttır, her ek harf +50 TL'dir.");

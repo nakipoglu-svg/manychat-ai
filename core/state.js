@@ -274,6 +274,10 @@ function calcNextStage(s) {
     if (s.address_status !== "received") return STAGE.WAITING_ADDRESS;
     return STAGE.ORDER_COMPLETED;
   }
+  if (s.product === PRODUCT.ANAHTARLIK || s.product === PRODUCT.MEZAR_TASI || s.product === PRODUCT.BILEKLIK || s.product === PRODUCT.OTHER) {
+    // Yeni / operasyonel ürünlerde akışı otomatik tamamlamıyoruz; cevap seller_required olarak döner.
+    return "";
+  }
   return "";
 }
 
@@ -295,6 +299,9 @@ export function getMissingSlots(state) {
   }
   if (product === PRODUCT.ATAC) {
     if (!truthy(state.letters_received)) missing.push("letters");
+  }
+  if (product === PRODUCT.ANAHTARLIK || product === PRODUCT.MEZAR_TASI || product === PRODUCT.BILEKLIK || product === PRODUCT.OTHER) {
+    return ["seller_followup"];
   }
   if (!state.payment_method) missing.push("payment");
   if (state.address_status !== "received") {

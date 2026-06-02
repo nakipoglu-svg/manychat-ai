@@ -3,7 +3,14 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // ─── PRODUCTS ───────────────────────────────────────────────
-export const PRODUCT = { LAZER: "lazer", ATAC: "atac" };
+export const PRODUCT = {
+  LAZER: "lazer",
+  ATAC: "atac",
+  ANAHTARLIK: "anahtarlik",
+  MEZAR_TASI: "evcil_hayvan_mezar_tasi",
+  BILEKLIK: "resimli_lazer_bileklik",
+  OTHER: "other_product",
+};
 
 // ─── STAGES ─────────────────────────────────────────────────
 export const STAGE = {
@@ -70,11 +77,19 @@ export const PRICE = {
 export const TEXT = {
   FALLBACK: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
 
-  MAIN_MENU: "Merhaba efendim 😊\nHangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye",
+  MAIN_MENU: "Merhaba efendim 😊\nHangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye\n• Kişiye Özel Anahtarlık\n• Evcil Hayvan Mezar Taşı",
 
   LAZER_PRICE: "Resimli lazer kolye fiyatımız\n\nEFT / Havale ile 599 TL\nKapıda ödeme ile 649 TL'dir efendim 😊\n\nÜrünlerimiz lazer kazıma yöntemiyle hazırlanır, silinmez ve kararma yapmaz.\nSiparişe devam etmek isterseniz fotoğrafı buradan gönderebilirsiniz 📷",
 
   ATAC_PRICE: "Harfli ataç kolye fiyatımız\n\nEFT / Havale ile 499 TL\nKapıda ödeme ile 549 TL'dir efendim 😊\n\nSiparişe devam etmek isterseniz istediğiniz 3 harfi yazabilirsiniz ✍️",
+
+  ANAHTARLIK_INFO: "Kişiye özel anahtarlık modelimiz için yardımcı olalım efendim 😊 Fotoğraf / yazı detayınızı buradan iletebilirsiniz; ekibimiz tasarım ve sipariş detayları için size dönüş sağlayacaktır.",
+
+  MEZAR_TASI_INFO: "Evcil hayvan mezar taşı ürünümüz için yardımcı olalım efendim 😊 Traverten taş ve 316L paslanmaz çelik plaka üzerine lazer kazıma ile hazırlanır. Sipariş sonrası ekibimiz tasarım detayları için size dönüş sağlayacaktır.",
+
+  BILEKLIK_INFO: "Resimli lazer bileklik modelimiz için yardımcı olalım efendim 😊 Fotoğraf ön yüze işlenir, arka yüze isim/tarih/kısa yazı yazılabilir. Ekibimiz tasarım ve sipariş detayları için size dönüş sağlayacaktır.",
+
+  OTHER_PRODUCT_REDIRECT: "Bu ürün için sizi ekibimize yönlendiriyorum efendim 😊 Ekibimiz mevcut seçenekler ve detaylar konusunda yardımcı olacaktır.",
 
   EFT_INFO: "IBAN: TR34 0015 7000 0000 0076 2524 67\nAlıcı: Servet Cihan Nakipoğlu",
 
@@ -152,6 +167,21 @@ export const KW = {
   product_atac: [
     "atac", "ataç", "harfli", "harf kolye", "harfli kolye",
     "3 harf", "uc harf", "isim harf", "harfli atac",
+  ],
+  product_anahtarlik: [
+    "anahtarlik", "anahtarlık", "anahtarli", "anahtarlı", "anahtar", "keychain", "kişiye özel anahtarlık", "kisiye ozel anahtarlik",
+  ],
+  product_mezar_tasi: [
+    "evcil hayvan mezar", "evcil hayvan mezar tasi", "evcil hayvan mezar taşı", "mezar tasi", "mezar taşı",
+    "pet mezar", "hayvan mezar", "kedi mezar", "köpek mezar", "kopek mezar", "pati mezar",
+  ],
+  product_bileklik: [
+    "resimli bileklik", "fotoğraflı bileklik", "fotografli bileklik", "lazer bileklik", "resimli lazer bileklik",
+    "fotoğraflı lazer bileklik", "fotografli lazer bileklik", "kişiye özel bileklik", "kisiye ozel bileklik",
+    "fotoğraflı çelik bileklik", "fotografli celik bileklik", "bileklik", "bilezik",
+  ],
+  product_other: [
+    "yonca", "yonca kolye", "yuzuk", "yüzük", "kupe", "küpe", "piercing", "saat", "broş", "bros", "toka", "kemer", "cuzdan", "cüzdan", "kunye", "künye",
   ],
 
   cancel: ["siparisi iptal", "siparişi iptal", "iptal", "vazgectim", "vazgeçtim"],

@@ -124,6 +124,9 @@ function getKnowledgeFiles(intent, product) {
   if (!hardFact.includes(intent)) {
     if (product === "lazer") files.push("PRODUCT_LASER.txt");
     if (product === "atac") files.push("PRODUCT_ATAC.txt");
+    if (product === "anahtarlik") files.push("PRODUCT_PHOTO_KEYCHAIN.txt");
+    if (product === "evcil_hayvan_mezar_tasi") files.push("PRODUCT_PET_MEMORIAL.txt");
+    if (product === "resimli_lazer_bileklik") files.push("PRODUCT_LASER_BRACELET.txt");
   }
 
   // Fotoğraf konusunda IMAGE_RULES

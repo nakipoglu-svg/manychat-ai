@@ -19,13 +19,19 @@ export function preHandlers(ctx, state, nextStage) {
     return { text: "Çok özür dileriz efendim, sizi dinliyorum. Size nasıl yardımcı olabilirim? 😊", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
   }
 
-  // ═══ ÜRÜN KAPSAMI DIŞI — bileklik, yüzük, anahtarlık vb. ═══
-  if (hasAny(norm, ["bileklik","bilezik","yuzuk","yüzük","anahtarlik","anahtarlık","kupe","küpe","piercing","saat","broş","bros","toka","kemer","cuzdan","cüzdan","bileklik isim","kunye","künye"])) {
-    // Müşteri satılmayan ürün soruyor
-    if (hasAny(norm, ["kunye","künye"])) {
-      return R("Şu an künye modelimiz bulunmuyor efendim 😊 Resimli lazer kolye ve harfli ataç kolye modellerimiz mevcut. Yardımcı olabilir miyim?");
-    }
-    return R("Şu an sadece kolye modellerimiz mevcut efendim 😊 Resimli lazer kolye ve harfli ataç kolye yapıyoruz. Bu modeller hakkında bilgi almak ister misiniz?");
+  // ═══ YENİ ÜRÜNLER / DİĞER ÜRÜNLER ═══
+  // Anahtarlık ve evcil hayvan mezar taşı artık ürün listesinde var; fiyat/operasyon detayları ekibe yönlenir.
+  if (ctx.product === PRODUCT.ANAHTARLIK) {
+    return { text: TEXT.ANAHTARLIK_INFO, reply_class: REPLY_CLASS.SELLER_REQUIRED, support_mode_reason: SUPPORT_REASON.SELLER };
+  }
+  if (ctx.product === PRODUCT.MEZAR_TASI) {
+    return { text: TEXT.MEZAR_TASI_INFO, reply_class: REPLY_CLASS.SELLER_REQUIRED, support_mode_reason: SUPPORT_REASON.SELLER };
+  }
+  if (ctx.product === PRODUCT.BILEKLIK) {
+    return { text: TEXT.BILEKLIK_INFO, reply_class: REPLY_CLASS.SELLER_REQUIRED, support_mode_reason: SUPPORT_REASON.SELLER };
+  }
+  if (ctx.product === PRODUCT.OTHER || hasAny(norm, ["yuzuk","yüzük","kupe","küpe","piercing","saat","broş","bros","toka","kemer","cuzdan","cüzdan","kunye","künye","yonca","yonca kolye"])) {
+    return { text: TEXT.OTHER_PRODUCT_REDIRECT, reply_class: REPLY_CLASS.SELLER_REQUIRED, support_mode_reason: SUPPORT_REASON.SELLER };
   }
 
   // ═══ FOTO GELDİ AMA ÜRÜN SEÇİLMEMİŞ → OTOMATİK LAZER ═══

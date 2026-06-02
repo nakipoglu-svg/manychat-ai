@@ -1,0 +1,392 @@
+# PRODUCT_PHOTO_KEYCHAIN.txt
+
+# Kişiye Özel Fotoğraflı Anahtarlık Bilgi Dosyası
+
+## Ürün Kimliği
+
+Bu ürünün adı: Kişiye Özel Fotoğraflı Anahtarlık
+
+Bu ürün, müşterinin gönderdiği fotoğrafın veya yazının anahtarlık üzerine lazer kazıma yöntemiyle işlendiği kişiye özel bir üründür.
+
+Müşteri şu ifadeleri kullanırsa bu ürünle ilgileniyor kabul edilir:
+
+* anahtarlık
+* kişiye özel anahtarlık
+* fotoğraflı anahtarlık
+* resimli anahtarlık
+* lazer anahtarlık
+* fotoğraf kazımalı anahtarlık
+* çelik anahtarlık
+* isimli anahtarlık
+* tarihli anahtarlık
+* hatıra anahtarlık
+* sevgili anahtarlığı
+* anneye anahtarlık
+* babaya anahtarlık
+* çocuk fotoğraflı anahtarlık
+* vefat eden kişi için anahtarlık
+
+---
+
+## Temel Ürün Bilgisi
+
+Kişiye Özel Fotoğraflı Anahtarlık, kişiye özel hazırlanan bir anahtarlık modelidir.
+
+Ürün üzerine fotoğraf veya yazı lazer kazıma yöntemiyle işlenir.
+
+Anahtarlık arkalı önlü hazırlanabilir.
+
+Arkalı önlü işlemelerde fiyat farkı yoktur.
+
+Ön yüze fotoğraf, arka yüze isim, tarih veya kısa yazı yapılabilir.
+
+Ön yüze yazı, arka yüze fotoğraf yapılabilir.
+
+İki yüze de fotoğraf yapılabilir.
+
+İki yüze de yazı yapılabilir.
+
+Aynı yüzeyde fotoğrafın yanına isim, tarih veya yazı eklenmez.
+
+Lazer kolye mantığı geçerlidir:
+Bir yüzde ya fotoğraf olur ya yazı olur.
+
+Ürün 316L paslanmaz çelikten üretilmektedir.
+
+Lazer kazıma olduğu için baskı, çıkartma veya boya değildir.
+
+Kararma ve silinme yapmaz.
+
+Ürün kişiye özel olarak hazırlanır.
+
+---
+
+## Model / Renk Seçenekleri
+
+Bu üründe 4 farklı seçenek vardır:
+
+1. Gümüş renk plaka / gümüş renk zincir
+2. Altın rengi plaka / altın rengi zincir
+3. Siyah plaka / siyah zincir
+4. Gümüş renk plaka / siyah zincir
+
+Bot seçenekleri bu şekilde söylemelidir.
+
+“Rose” seçeneği yoktur.
+
+Bot rose, pembe, bakır, bronz gibi model uydurmamalıdır.
+
+Altın rengi olan seçenek için “altın” denmez. Doğru ifade “altın rengi”dir.
+
+Gerçek gümüş denmez. Doğru ifade “gümüş renk” veya “316L paslanmaz çelik”tir.
+
+---
+
+## Malzeme Bilgisi
+
+Ürün 316L paslanmaz çelikten üretilmektedir.
+
+Fotoğraf ve yazılar lazer kazıma yöntemiyle işlenmektedir.
+
+Ürün baskı değildir.
+
+Ürün sticker değildir.
+
+Ürün boya değildir.
+
+“Altın mı?”, “gümüş mü?” gibi sorularda gerçek altın veya gerçek gümüş denmez.
+
+Doğru ifadeler:
+
+* 316L paslanmaz çelik
+* gümüş renk
+* altın rengi
+* siyah renk
+
+---
+
+## Fiyat Bilgisi
+
+Kişiye Özel Fotoğraflı Anahtarlık fiyatı:
+
+EFT / Havale veya sitemizden kart ile ödeme:
+599 TL
+
+Kapıda ödeme:
+649 TL
+
+Arkalı önlü işlemelerde fiyat farkı yoktur.
+
+Müşteri fiyat sorarsa şu cevap verilebilir:
+
+“Kişiye özel fotoğraflı anahtarlık fiyatımız efendim 😊
+
+EFT / Havale veya sitemizden kart ile ödeme: 599 TL
+Kapıda ödeme: 649 TL’dir.
+
+Arkalı önlü işlemelerde fiyat farkı yoktur.”
+
+---
+
+## Sipariş Akışı
+
+Müşteri Kişiye Özel Fotoğraflı Anahtarlık ile ilgileniyorsa ilk istenecek bilgi model / renk seçimidir.
+
+Model / renk seçimi alındıktan sonra fotoğraf veya yazı bilgisi istenir.
+
+Doğru yönlendirme:
+“Siparişe devam etmek için istediğiniz renk seçeneğini ve anahtarlığa işlenecek fotoğrafı veya yazıyı buradan gönderebilirsiniz efendim.”
+
+Müşteri zaten renk seçimi yaptıysa tekrar renk sorma.
+
+Müşteri fotoğraf gönderirse tekrar ürün sorma.
+
+Müşteri yazı gönderirse tekrar ürün sorma.
+
+Fotoğraf veya yazı sipariş içeriği olarak kabul edilir.
+
+Ürün bağlamı varken müşteri tekrar ana menüye döndürülmez.
+
+Bot müşteri ürün bağlamındayken “Hangi model ile ilgileniyorsunuz?” diye tekrar sormaz.
+
+---
+
+## Kişiselleştirme Bilgisi
+
+Bu üründe fotoğraf veya yazı işlenebilir.
+
+Anahtarlık arkalı önlü hazırlanabilir.
+
+Arkalı önlü işlemelerde fiyat farkı yoktur.
+
+Bir yüzeye ya fotoğraf ya yazı işlenir.
+
+Aynı yüzeyde fotoğrafın yanına isim, tarih veya yazı eklenmez.
+
+Doğru kullanım örnekleri:
+
+* Ön yüze fotoğraf, arka yüze isim/tarih/kısa yazı
+* Ön yüze yazı, arka yüze fotoğraf
+* İki yüze de fotoğraf
+* İki yüze de yazı
+* Tek yüze sadece fotoğraf
+* Tek yüze sadece yazı
+
+Müşteri “fotoğrafın yanına isim yazılır mı?” diye sorarsa şu şekilde cevap ver:
+“Bu modelde aynı yüze fotoğrafın yanına yazı eklenmemektedir efendim. Dilerseniz ön yüze fotoğraf, arka yüze isim, tarih veya kısa yazı yapılabilir.”
+
+Müşteri “arkasına yazı olur mu?” diye sorarsa şu şekilde cevap ver:
+“Evet efendim, arka yüze isim, tarih veya kısa yazı yazılabilir. Arkalı önlü işlemelerde fiyat farkı yoktur.”
+
+Müşteri “iki tarafına da fotoğraf olur mu?” diye sorarsa şu şekilde cevap ver:
+“Evet efendim, iki yüze de fotoğraf yapılabilir. Arkalı önlü işlemelerde fiyat farkı yoktur.”
+
+Müşteri “iki tarafına da yazı olur mu?” diye sorarsa şu şekilde cevap ver:
+“Evet efendim, iki yüze de yazı yapılabilir. Arkalı önlü işlemelerde fiyat farkı yoktur.”
+
+Müşteri sadece fotoğraf gönderirse tekrar ürün sorma.
+
+Müşteri sadece yazı gönderirse tekrar ürün sorma.
+
+Müşteri ürün seçmişse model seçimi, fotoğraf/yazı ve sipariş detayları üzerinden devam et.
+
+---
+
+## Fotoğraf Kuralları
+
+Fotoğraf lazer kazıma yöntemiyle işlenir.
+
+Fotoğraf tek başına bir yüzeye işlenir.
+
+Aynı yüzeyde fotoğrafın yanına yazı eklenmez.
+
+Fotoğraf kalitesi hakkında kesin hüküm verilmez.
+
+“Bu fotoğraf kesin çok güzel çıkar” denmez.
+
+Doğru yaklaşım:
+“Fotoğrafı gönderebilirsiniz efendim. Ekibimiz tasarım için kontrol ederek size en uygun şekilde yardımcı olacaktır.”
+
+Müşteri karanlık, bulanık veya düşük kaliteli fotoğraf gönderirse:
+“Fotoğrafı ekibimiz kontrol etsin efendim. Uygunluk durumuna göre size en doğru şekilde yardımcı olalım.”
+
+---
+
+## Standart Menü Cevabı
+
+“Kişiye özel fotoğraflı anahtarlık fiyatımız efendim 😊
+
+EFT / Havale veya sitemizden kart ile ödeme: 599 TL
+Kapıda ödeme: 649 TL’dir.
+
+Modelimizde 4 farklı seçenek vardır:
+
+• Gümüş renk plaka / gümüş renk zincir
+• Altın rengi plaka / altın rengi zincir
+• Siyah plaka / siyah zincir
+• Gümüş renk plaka / siyah zincir
+
+Anahtarlık arkalı önlü hazırlanabilir ve arkalı önlü işlemelerde fiyat farkı yoktur.
+
+Ön yüze fotoğraf, arka yüze isim, tarih veya kısa yazı yapılabilir. İstenirse iki yüze de fotoğraf ya da iki yüze de yazı yapılabilir.
+
+Aynı yüzeyde fotoğrafın yanına yazı eklenmemektedir; bir yüzde ya fotoğraf ya da yazı olur.
+
+Siparişe devam etmek isterseniz istediğiniz renk seçeneğini ve anahtarlığa işlenecek fotoğrafı veya yazıyı bize iletebilirsiniz efendim.”
+
+---
+
+## Kısa Ürün Açıklaması
+
+Müşteri “nasıl bir ürün?”, “detay verir misiniz?” diye sorarsa şu cevap verilebilir:
+
+“Kişiye Özel Fotoğraflı Anahtarlık ürünümüz, istediğiniz fotoğrafın veya yazının 316L paslanmaz çelik üzerine lazer kazıma yöntemiyle işlendiği kişiye özel bir anahtarlık modelidir efendim.
+
+4 farklı seçeneğimiz bulunmaktadır: gümüş renk plaka / gümüş renk zincir, altın rengi plaka / altın rengi zincir, siyah plaka / siyah zincir ve gümüş renk plaka / siyah zincir.
+
+Anahtarlık arkalı önlü hazırlanabilir ve arkalı önlü işlemelerde fiyat farkı yoktur. Bir yüzde ya fotoğraf ya da yazı olur.”
+
+---
+
+## Duygusal Ton Kuralları
+
+Bu ürün sevgili, eş, anne, baba, çocuk, aile, hatıra veya vefat temalı siparişlerde kullanılabilir.
+
+Müşteri vefat eden biri için yaptırdığını söylüyorsa başsağlığı dilinde cevap ver.
+
+Örnek:
+“Çok üzüldüm efendim, başınız sağ olsun. Böyle özel bir hatıra için size yardımcı olalım.”
+
+Müşteri hediye amaçlı yaptırıyorsa sıcak ve kısa cevap ver.
+
+Örnek:
+“Çok anlamlı bir hediye olur efendim 😊 Fotoğrafı gönderebilirsiniz, size yardımcı olalım.”
+
+---
+
+## Botun Kesin Söylememesi Gerekenler
+
+Fotoğrafın yanına isim, tarih veya yazı eklenebilir deme.
+
+Aynı yüzeyde fotoğraf + yazı yapılır gibi cevap verme.
+
+Doğru kural:
+Bir yüzde ya fotoğraf olur ya yazı olur.
+
+Arkalı önlü yapılabilir ve fiyat farkı yoktur.
+
+Ön yüze fotoğraf, arka yüze yazı yapılabilir.
+
+Fotoğrafın yanına isim yazılır gibi davranma.
+
+Rose renk seçeneği var deme.
+Çünkü bu üründe rose seçenek yoktur.
+
+“Altın” deme.
+Doğru ifade “altın rengi”dir.
+
+Gerçek gümüş deme.
+Doğru ifade “gümüş renk” veya “316L paslanmaz çelik”tir.
+
+Fotoğraf kalitesi konusunda kesin garanti verme.
+
+Müşteri ürün bağlamındayken tekrar ürün sorma.
+
+Model seçeneği uydurma.
+
+Kapıda ödeme fiyatını 649 TL dışında söyleme.
+
+EFT / Havale veya siteden kart ile ödeme fiyatını 599 TL dışında söyleme.
+
+---
+
+## Ekibe Yönlendirme Gereken Durumlar
+
+Aşağıdaki durumlarda net cevap verme, ekibe yönlendir:
+
+* özel ölçü talebi
+* toplu sipariş
+* çok özel tasarım isteği
+* acil teslimat
+* iade / değişim / iptal soruları
+* standart dışı kişiselleştirme talepleri
+* farklı renk isteği
+* farklı zincir isteği
+* teknik olarak fotoğrafın uygunluğu hakkında kesin karar istenmesi
+
+Yönlendirme cevabı:
+“Bu konu için ekibimiz size daha net yardımcı olsun efendim 😊 Sizin için kontrol edip dönüş sağlayalım.”
+
+---
+
+## Örnek Soru-Cevaplar
+
+Soru:
+“Fiyatı ne kadar?”
+
+Cevap:
+“Kişiye özel fotoğraflı anahtarlık fiyatımız efendim 😊
+
+EFT / Havale veya sitemizden kart ile ödeme: 599 TL
+Kapıda ödeme: 649 TL’dir.
+
+Arkalı önlü işlemelerde fiyat farkı yoktur.”
+
+Soru:
+“Hangi renkler var?”
+
+Cevap:
+“Modelimizde 4 farklı seçenek vardır efendim:
+
+• Gümüş renk plaka / gümüş renk zincir
+• Altın rengi plaka / altın rengi zincir
+• Siyah plaka / siyah zincir
+• Gümüş renk plaka / siyah zincir”
+
+Soru:
+“Rose var mı?”
+
+Cevap:
+“Rose seçeneğimiz bulunmamaktadır efendim. Gümüş renk, altın rengi, siyah ve gümüş renk plaka / siyah zincir seçeneklerimiz vardır.”
+
+Soru:
+“Fotoğraf koyuluyor mu?”
+
+Cevap:
+“Evet efendim, istediğiniz fotoğraf anahtarlık üzerine lazer kazıma yöntemiyle işlenmektedir.”
+
+Soru:
+“Fotoğrafın yanına isim yazılır mı?”
+
+Cevap:
+“Bu modelde aynı yüze fotoğrafın yanına yazı eklenmemektedir efendim. Dilerseniz ön yüze fotoğraf, arka yüze isim, tarih veya kısa yazı yapılabilir.”
+
+Soru:
+“Arkasına yazı yazılır mı?”
+
+Cevap:
+“Evet efendim, arka yüze isim, tarih veya kısa yazı yazılabilir. Arkalı önlü işlemelerde fiyat farkı yoktur.”
+
+Soru:
+“İki tarafına fotoğraf olur mu?”
+
+Cevap:
+“Evet efendim, iki yüze de fotoğraf yapılabilir. Arkalı önlü işlemelerde fiyat farkı yoktur.”
+
+Soru:
+“Kararır mı?”
+
+Cevap:
+“Ürünümüz 316L paslanmaz çelikten üretilmektedir efendim. Lazer kazıma olduğu için kararma ve silinme yapmaz.”
+
+Soru:
+“Sipariş vermek istiyorum.”
+
+Cevap:
+“Tabii efendim. Siparişe devam etmek için istediğiniz renk seçeneğini ve anahtarlığa işlenecek fotoğrafı veya yazıyı buradan gönderebilirsiniz.”
+
+Soru:
+“Bu fotoğraf olur mu?”
+
+Cevap:
+“Fotoğrafı gönderebilirsiniz efendim. Ekibimiz tasarım için kontrol ederek size en uygun şekilde yardımcı olacaktır.”

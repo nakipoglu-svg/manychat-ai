@@ -89,6 +89,10 @@ export function normalizeProduct(value) {
   const v = normalizeText(value);
   if (["lazer", "resimli", "resimli lazer kolye"].includes(v)) return PRODUCT.LAZER;
   if (["atac", "ataç", "harfli atac kolye", "harfli ataç kolye"].includes(v)) return PRODUCT.ATAC;
+  if (["anahtarlik", "anahtarlık", "kisiye ozel anahtarlik", "kişiye özel anahtarlık"].includes(v)) return PRODUCT.ANAHTARLIK;
+  if (["evcil_hayvan_mezar_tasi", "evcil hayvan mezar tasi", "evcil hayvan mezar taşı", "mezar tasi", "mezar taşı"].includes(v)) return PRODUCT.MEZAR_TASI;
+  if (["resimli_lazer_bileklik", "resimli lazer bileklik", "fotoğraflı bileklik", "fotografli bileklik", "bileklik", "bilezik"].includes(v)) return PRODUCT.BILEKLIK;
+  if (["other_product", "diger", "diğer"].includes(v)) return PRODUCT.OTHER;
   return "";
 }
 
@@ -323,8 +327,13 @@ export function parsePaymentFromMessage(norm, existing = "") {
 }
 
 export function detectProductFromText(norm) {
-  if (hasAny(norm, KW.product_lazer)) return PRODUCT.LAZER;
+  // Önce spesifik yeni ürünler; yoksa generic "foto/resimli" lazer kolyeye kaçabilir.
+  if (hasAny(norm, KW.product_anahtarlik)) return PRODUCT.ANAHTARLIK;
+  if (hasAny(norm, KW.product_mezar_tasi)) return PRODUCT.MEZAR_TASI;
+  if (hasAny(norm, KW.product_bileklik)) return PRODUCT.BILEKLIK;
   if (hasAny(norm, KW.product_atac)) return PRODUCT.ATAC;
+  if (hasAny(norm, KW.product_lazer)) return PRODUCT.LAZER;
+  if (hasAny(norm, KW.product_other)) return PRODUCT.OTHER;
   return "";
 }
 

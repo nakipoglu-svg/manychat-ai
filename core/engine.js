@@ -209,6 +209,11 @@ function buildOutput(ctx, reply, committed, meta) {
   if (replyText.includes("Hangi model ile ilgileniyorsunuz")) { menuShown = "evet"; if (!s.product) stage = STAGE.WAITING_PRODUCT; }
   if (s._nextStage === STAGE.ORDER_COMPLETED) { orderStatus = "completed"; siparisAlindi = "1"; }
   else if (!orderStatus && s.product) orderStatus = "started";
+  // Anahtarlık / mezar taşı / diğer ürünler operasyonel yönlendirme; otomatik sipariş başlatma yok.
+  if ([PRODUCT.ANAHTARLIK, PRODUCT.MEZAR_TASI, PRODUCT.BILEKLIK, PRODUCT.OTHER].includes(s.product)) {
+    orderStatus = "";
+    siparisAlindi = "";
+  }
   if ((orderStatus === "completed" || siparisAlindi === "1") && [STAGE.WAITING_PHOTO,STAGE.WAITING_PAYMENT,STAGE.WAITING_ADDRESS,STAGE.WAITING_LETTERS,STAGE.WAITING_PRODUCT].includes(stage)) stage = STAGE.ORDER_COMPLETED;
   if (s._nextStage === STAGE.HUMAN_SUPPORT || orderStatus === "cancel_requested") { stage = STAGE.HUMAN_SUPPORT; orderStatus = "cancel_requested"; supportMode = "1"; }
   const LAST_INTENT_MAP = {

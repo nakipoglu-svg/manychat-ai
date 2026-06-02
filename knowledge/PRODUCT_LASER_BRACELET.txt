@@ -1,0 +1,315 @@
+# PRODUCT_LASER_BRACELET.txt
+# Resimli Lazer Bileklik Bilgi Dosyası
+
+## Ürün Kimliği
+
+Bu ürünün adı: Resimli Lazer Bileklik
+
+Bu ürün, müşterinin gönderdiği fotoğrafın bileklik üzerine lazer kazıma yöntemiyle işlendiği kişiye özel bir bileklik ürünüdür.
+
+Müşteri şu ifadeleri kullanırsa bu ürünle ilgileniyor kabul edilir:
+- resimli bileklik
+- fotoğraflı bileklik
+- lazer bileklik
+- resimli lazer bileklik
+- fotoğraflı lazer bileklik
+- kişiye özel bileklik
+- fotoğraf baskılı bileklik
+- fotoğraflı çelik bileklik
+- hatıra bileklik
+- anı bilekliği
+- bileklik yaptırmak istiyorum
+- fotoğraflı bileklik istiyorum
+
+---
+
+## Temel Ürün Bilgisi
+
+Resimli Lazer Bileklik kişiye özel hazırlanan bir bileklik modelidir.
+
+Müşteriden mutlaka fotoğraf alınır.
+
+Fotoğraf ürünün ön yüzüne lazer kazıma yöntemiyle işlenir.
+
+Arka yüze isim, tarih veya kısa yazı yazılabilir.
+
+Bu ürün resimli lazer kolye mantığıyla hazırlanır.
+
+Ürün 316L paslanmaz çelikten üretilmektedir.
+
+Kararma ve silinme yapmaz.
+
+Lazer kazıma olduğu için baskı, çıkartma veya boya değildir.
+
+---
+
+## Renk Bilgisi
+
+Bu ürünün gümüş renk seçeneği yoktur.
+
+Bu ürün altın rengidir.
+
+Gerçek altın değildir.
+
+Bot hiçbir zaman “altın” demez.
+
+Bot her zaman “altın rengi” der.
+
+Müşteri “gümüşü var mı?” diye sorarsa şu şekilde cevap ver:
+“Bu modelimizin gümüş renk seçeneği bulunmamaktadır efendim. Ürün altın rengidir.”
+
+---
+
+## Ölçü ve Kullanım Bilgisi
+
+Ürünün uzunluğu 20 cm’dir.
+
+Zincir yapısı ataç şeklindedir.
+
+Ataç zincir yapısı sayesinde daha kısa şekilde de kullanılabilir.
+
+Müşteri “kaç cm?” diye sorarsa şu şekilde cevap ver:
+“Ürünümüzün uzunluğu 20 cm’dir efendim. Ataç zincir yapısı sayesinde daha kısa şekilde de kullanılabilmektedir.”
+
+Müşteri “bileğime büyük gelir mi?” diye sorarsa şu şekilde cevap ver:
+“Ürünümüz 20 cm uzunluğundadır efendim. Ataç zincir yapısı sayesinde daha kısa şekilde de kullanılabilmektedir.”
+
+---
+
+## Malzeme Bilgisi
+
+Ürün 316L paslanmaz çelikten üretilmektedir.
+
+Renk olarak altın rengi kullanılır.
+
+Fotoğraf ve yazılar lazer kazıma yöntemiyle işlenmektedir.
+
+“Gümüş mü?”, “altın mı?” gibi sorularda gerçek altın veya gerçek gümüş denmez.
+
+Doğru ifade:
+- 316L paslanmaz çelik
+- altın rengi
+
+---
+
+## Fiyat Bilgisi
+
+Resimli Lazer Bileklik fiyatı:
+
+EFT / Havale veya sitemizden kart ile ödeme:
+549 TL
+
+Kapıda ödeme:
+599 TL
+
+Müşteri fiyat sorarsa şu cevap verilebilir:
+
+“Resimli Lazer Bileklik fiyatımız efendim 😊
+
+EFT / Havale veya sitemizden kart ile ödeme: 549 TL
+Kapıda ödeme: 599 TL’dir.”
+
+---
+
+## Sipariş Akışı
+
+Müşteri Resimli Lazer Bileklik ile ilgileniyorsa ilk istenecek bilgi fotoğraftır.
+
+Doğru yönlendirme:
+“Siparişe devam etmek isterseniz bilekliğe işlenecek fotoğrafı buradan gönderebilirsiniz efendim.”
+
+Fotoğraf geldikten sonra ürün tekrar sorulmaz.
+
+Fotoğraf sipariş içeriği olarak kabul edilir.
+
+Ürün bağlamı varken müşteri tekrar ana menüye döndürülmez.
+
+Bot müşteri ürün bağlamındayken “Hangi model ile ilgileniyorsunuz?” diye tekrar sormaz.
+
+---
+
+## Kişiselleştirme Bilgisi
+
+Bu üründe müşteriden mutlaka fotoğraf alınır.
+
+Fotoğraf ön yüze işlenir.
+
+Arka yüze şu bilgiler yazılabilir:
+- isim
+- tarih
+- kısa yazı
+- kısa not
+
+Müşteri “isim de yazılır mı?” diye sorarsa şu şekilde cevap ver:
+“Evet efendim. Bu modelde fotoğraf ön yüze işlenir. Arka yüze ise isim, tarih veya kısa yazı yazılabilir.”
+
+Müşteri “arkasına yazı olur mu?” diye sorarsa şu şekilde cevap ver:
+“Evet efendim, bu modelde arka yüze isim, tarih veya kısa yazı yazılabilmektedir.”
+
+Müşteri sadece fotoğraf gönderirse tekrar ürün sorma.
+
+Müşteri ürün seçmişse fotoğraf, arka yazı ve sipariş detayları üzerinden devam et.
+
+---
+
+## Fotoğraf Kuralları
+
+Sipariş için fotoğraf mutlaka alınır.
+
+Fotoğraf ön yüze işlenir.
+
+Fotoğraf kalitesi hakkında kesin hüküm verilmez.
+
+“Bu fotoğraf kesin çok güzel çıkar” denmez.
+
+Doğru yaklaşım:
+“Fotoğrafı gönderebilirsiniz efendim. Ekibimiz tasarım için kontrol ederek size en uygun şekilde yardımcı olacaktır.”
+
+Müşteri karanlık, bulanık veya düşük kaliteli fotoğraf gönderirse:
+“Fotoğrafı ekibimiz kontrol etsin efendim. Uygunluk durumuna göre size en doğru şekilde yardımcı olalım.”
+
+---
+
+## Standart Menü Cevabı
+
+“Resimli Lazer Bileklik fiyatımız efendim 😊
+
+EFT / Havale veya sitemizden kart ile ödeme: 549 TL
+Kapıda ödeme: 599 TL’dir.
+
+İstediğiniz fotoğraf ürünün ön yüzüne lazer kazıma yöntemiyle işlenmektedir.
+
+Arka yüze isim, tarih veya kısa yazı yazılabilmektedir.
+
+Ürünümüz altın rengidir ve 316L paslanmaz çelikten üretilmektedir.
+
+Uzunluğu 20 cm’dir. Ataç zincir yapısı sayesinde daha kısa şekilde de kullanılabilmektedir.
+
+Siparişe devam etmek isterseniz bilekliğe işlenecek fotoğrafı buradan gönderebilirsiniz efendim.”
+
+---
+
+## Kısa Ürün Açıklaması
+
+Müşteri “nasıl bir ürün?”, “detay verir misiniz?” diye sorarsa şu cevap verilebilir:
+
+“Resimli Lazer Bileklik ürünümüz, istediğiniz fotoğrafın 316L paslanmaz çelik üzerine lazer kazıma yöntemiyle işlendiği kişiye özel bir bileklik modelidir efendim.
+
+Fotoğraf ön yüze işlenir. Arka yüze ise isim, tarih veya kısa yazı yazılabilir.
+
+Ürün altın rengidir. Uzunluğu 20 cm’dir ve ataç zincir yapısı sayesinde daha kısa şekilde de kullanılabilmektedir.”
+
+---
+
+## Duygusal Ton Kuralları
+
+Bu ürün sevgili, eş, anne, baba, çocuk, aile, hatıra veya vefat temalı siparişlerde kullanılabilir.
+
+Müşteri vefat eden biri için yaptırdığını söylüyorsa başsağlığı dilinde cevap ver.
+
+Örnek:
+“Çok üzüldüm efendim, başınız sağ olsun. Böyle özel bir hatıra için size yardımcı olalım.”
+
+Müşteri hediye amaçlı yaptırıyorsa sıcak ve kısa cevap ver.
+
+Örnek:
+“Çok anlamlı bir hediye olur efendim 😊 Fotoğrafı gönderebilirsiniz, size yardımcı olalım.”
+
+---
+
+## Botun Kesin Söylememesi Gerekenler
+
+“Gümüş seçeneği var” deme.
+Çünkü bu ürünün gümüş versiyonu yoktur.
+
+“Altın” deme.
+Doğru ifade “altın rengi”dir.
+
+Fotoğraf istemeden siparişe geçmiş gibi davranma.
+Bu ürün için fotoğraf mutlaka alınmalıdır.
+
+Fotoğraf kalitesi konusunda kesin garanti verme.
+
+Müşteri ürün bağlamındayken tekrar ürün sorma.
+
+Arka yazı yokmuş gibi cevap verme.
+Bu üründe arka yüze yazı yazılabilir.
+
+Gerçek altın veya gerçek gümüş gibi ifadeler kullanma.
+
+---
+
+## Ekibe Yönlendirme Gereken Durumlar
+
+Aşağıdaki durumlarda net cevap verme, ekibe yönlendir:
+- özel ölçü talebi
+- toplu sipariş
+- çok özel tasarım isteği
+- acil teslimat
+- iade / değişim / iptal soruları
+- standart dışı kişiselleştirme talepleri
+- teknik olarak fotoğrafın uygunluğu hakkında kesin karar istenmesi
+
+Yönlendirme cevabı:
+“Bu konu için ekibimiz size daha net yardımcı olsun efendim 😊 Sizin için kontrol edip dönüş sağlayalım.”
+
+---
+
+## Örnek Soru-Cevaplar
+
+Soru:
+“Bunun fiyatı ne kadar?”
+
+Cevap:
+“Resimli Lazer Bileklik fiyatımız efendim 😊
+
+EFT / Havale veya sitemizden kart ile ödeme: 549 TL
+Kapıda ödeme: 599 TL’dir.”
+
+Soru:
+“Fotoğraf koyuluyor mu?”
+
+Cevap:
+“Evet efendim, istediğiniz fotoğraf bu modelin ön yüzüne lazer kazıma yöntemiyle işlenmektedir.”
+
+Soru:
+“Arkasına yazı yazılır mı?”
+
+Cevap:
+“Evet efendim, bu modelde arka yüze isim, tarih veya kısa yazı yazılabilmektedir.”
+
+Soru:
+“İsim de yazılır mı?”
+
+Cevap:
+“Evet efendim. Bu modelde fotoğraf ön yüze işlenir. Arka yüze ise isim, tarih veya kısa yazı yazılabilir.”
+
+Soru:
+“Gümüşü var mı?”
+
+Cevap:
+“Bu modelimizin gümüş renk seçeneği bulunmamaktadır efendim. Ürün altın rengidir.”
+
+Soru:
+“Kaç cm?”
+
+Cevap:
+“Ürünümüzün uzunluğu 20 cm’dir efendim. Ataç zincir yapısı sayesinde daha kısa şekilde de kullanılabilmektedir.”
+
+Soru:
+“Kararır mı?”
+
+Cevap:
+“Ürünümüz 316L paslanmaz çelikten üretilmektedir efendim. Lazer kazıma olduğu için kararma ve silinme yapmaz.”
+
+Soru:
+“Sipariş vermek istiyorum.”
+
+Cevap:
+“Tabii efendim. Siparişe devam etmek isterseniz bilekliğe işlenecek fotoğrafı buradan gönderebilirsiniz.”
+
+Soru:
+“Bu fotoğraf olur mu?”
+
+Cevap:
+“Fotoğrafı gönderebilirsiniz efendim. Ekibimiz tasarım için kontrol ederek size en uygun şekilde yardımcı olacaktır.”

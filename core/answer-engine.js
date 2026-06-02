@@ -3,7 +3,7 @@
 // Completed → SlotCommit → Info → Tone → ProductFlow → AI
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-import { TEXT, PRICE, STAGE, REPLY_CLASS, SUPPORT_REASON } from "./constants.js";
+import { TEXT, PRICE, STAGE, REPLY_CLASS, SUPPORT_REASON, PRODUCT } from "./constants.js";
 import { selectKnowledge } from "./knowledge-map.js";
 import { hasAny, truthy } from "./normalize.js";
 
@@ -409,8 +409,9 @@ function getDeterministicInfoResponse(intent, ctx) {
   // ── 4+ KİŞİ FOTOĞRAF ──
   if (hasAny(norm, ["4 kisi","4 kişi","5 kisi","5 kişi","6 kisi","6 kişi","dort kisi","dört kişi","bes kisi","beş kişi","kac kisi","kaç kişi"])) return "Evet efendim, fotoğrafa kaç kişi olursa olsun yapılabilir 😊 Çok kişili fotoğraflarda tek kare olması en idealidir.";
 
-  // ── BİLEKLİK/YÜZÜK YOK ──
-  if (hasAny(norm, ["bileklik yapiy","bileklik yapıy","bileklik var mi","bileklik var mı","yuzuk yapiy","yüzük yapıy"])) return "Şu anda sadece kolye modellerimiz bulunmaktadır efendim 😊";
+  // ── BİLEKLİK / DİĞER ÜRÜN SORULARI ──
+  if (hasAny(norm, ["bileklik yapiy","bileklik yapıy","bileklik var mi","bileklik var mı","bileklik istiyorum","bileklik fiyat"])) return TEXT.BILEKLIK_INFO;
+  if (hasAny(norm, ["yuzuk yapiy","yüzük yapıy","yuzuk var mi","yüzük var mı","kupe var mi","küpe var mı"])) return TEXT.OTHER_PRODUCT_REDIRECT;
 
   // ── KOPMA/SİLİNME ──
   if (hasAny(norm, ["kopma","kopar","silinme","silinir","silinecek","yazı silinir","resim silinir","silinme ihtimal"])) return "Lazer kazıma yöntemiyle hazırlanmaktadır efendim 😊 Silinme veya kopma olmaz, kalıcıdır.";
@@ -623,8 +624,10 @@ function getDeterministicInfoResponse(intent, ctx) {
       return `Ürünlerimiz paslanmaz çelik üzerine 14 ayar altın kaplamadır efendim 😊 Gümüş kaplama seçeneğimiz de mevcut, fiyatı aynıdır: EFT ${PRICE.LAZER_EFT} TL, kapıda ${PRICE.LAZER_KAPIDA} TL.`;
     }    // Kolye ucu / sadece uç → zincirle birlikte
     if (hasAny(norm, ["kolye ucu","sadece ucu","sadece uc","tek kolye ucu","tek ucu","zincirsiz"])) return "Ürünlerimiz zinciri ile birlikte sunulmaktadır efendim 😊";
-    // Out-of-scope ürün fiyatı soruluyorsa → kolye bilgisi
-    if (hasAny(norm, ["yuzuk","yüzük","kupe","küpe","bileklik fiyat","anahtarlik","anahtarlık","tesbih"])) return "Şu anda sadece kolye modellerimiz bulunmaktadır efendim 😊";
+    // Yeni / diğer ürün fiyatı soruluyorsa yanlış "sadece kolye" deme
+    if (hasAny(norm, ["bileklik fiyat","bileklik ne kadar","bileklik kaç tl","bileklik kac tl"])) return "Resimli lazer bileklik fiyatımız efendim 😊\n\nEFT / Havale veya sitemizden kart ile ödeme: 549 TL\nKapıda ödeme: 599 TL’dir.";
+    if (hasAny(norm, ["anahtarlik","anahtarlık"])) return "Kişiye özel fotoğraflı anahtarlık fiyatımız efendim 😊\n\nEFT / Havale veya sitemizden kart ile ödeme: 599 TL\nKapıda ödeme: 649 TL’dir.";
+    if (hasAny(norm, ["yuzuk","yüzük","kupe","küpe","tesbih"])) return TEXT.OTHER_PRODUCT_REDIRECT;
     // Arka foto fiyat → product-aware
     if (hasAny(norm, ["arkasina foto","arkasına foto","arka foto","arka yuze foto","arka yüze foto"]) && hasAny(norm, ["fiyat","ucret","ücret","ne kadar"])) {
       if ((ctx.fields?.ilgilenilen_urun || p) === "atac") return "Bu modelde fotoğraf kullanılmıyor efendim 😊 Resimli lazer kolyede ön ve arka yüze fotoğraf eklenebilmektedir, ek ücret alınmaz.";
@@ -937,8 +940,10 @@ function getDeterministicInfoResponse(intent, ctx) {
   // ── POST SALE (norm-based, intent post_sale'e düşmeyebilir) ──
   if (hasAny(norm, ["siparisim gelm","siparişim gelm","siparisim gelmedi","siparişim gelmedi","siparis verdim","sipariş verdim","siparis vermistim","sipariş vermiştim"]) && hasAny(norm, ["gelm","gelmedi","gelmiy","gelmey"])) return "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊";
 
-  // ── OUT-OF-SCOPE ÜRÜNLER ──
-  if (hasAny(norm, ["yuzuk","yüzük","kupe","küpe","bileklik istiyorum","anahtarlik","anahtarlık","tesbih","cerceve","çerçeve","tablo","cakmak","çakmak"]) && !hasAny(norm, ["hediye bileklik","bileklik uzunlug"])) return "Şu anda sadece kolye modellerimiz bulunmaktadır efendim 😊";
+  // ── OUT-OF-SCOPE / YENİ ÜRÜNLER ──
+  if (hasAny(norm, ["bileklik istiyorum","resimli bileklik","fotoğraflı bileklik","fotografli bileklik"])) return TEXT.BILEKLIK_INFO;
+  if (hasAny(norm, ["anahtarlik","anahtarlık"])) return TEXT.ANAHTARLIK_INFO;
+  if (hasAny(norm, ["yuzuk","yüzük","kupe","küpe","tesbih","cerceve","çerçeve","tablo","cakmak","çakmak"]) && !hasAny(norm, ["hediye bileklik","bileklik uzunlug"])) return TEXT.OTHER_PRODUCT_REDIRECT;
 
   // ── İADE (norm-based, trust intent'e düşmeyebilir) ──
   if (hasAny(norm, ["iade yapiliyor","iade yapılıyor","iade olur mu","iade edebilir","iade mumkun","iade mümkün","iade var mi","iade var mı"])) return "Kişiye özel üretim olduğu için keyfi iade bulunmamaktadır efendim 😊 Kalite kaynaklı sorunlarda ürün değiştirilir.";
@@ -954,15 +959,15 @@ function getDeterministicInfoResponse(intent, ctx) {
   // Plaka/renk/zincir örneği isteme → highlights linki
   if (hasAny(norm, ["plaka ornegi","plaka örneği","altin plaka orne","altın plaka örne","gumus plaka","gümüş plaka","mat celik nasil","mat çelik nasıl","mat celik ornek","mat çelik örnek","renk ornegi","renk örneği","nasil gorunuyor","nasıl görünüyor","nasil duruyor","nasıl duruyor","altin plaka","altın plaka","gumus ornek","gümüş örnek","zincir ornegi","zincir örneği"])) return "Tabi efendim, buradan inceleyebilirsiniz 😊\n\n📸 Örnek çalışmalar: https://www.instagram.com/stories/highlights/18084971893996144/";
   if (hasAny(norm, ["bileklik","bilezik"])) {
-    if (hasAny(norm, ["degil","değil","yerine","bileklik istiyorum","bileklik yapiy","bileklik yapıy"])) return "Şu anda sadece kolye modellerimiz bulunmaktadır efendim 😊";
-    // Prod logs fix: "Bileklik tarzında yapıyor musunuz" — kullanıcı bileklik satış soruyor
-    // (hediye bileklik cevabı yanlış cevap; önce "sadece kolye" de)
+    if (hasAny(norm, ["hediye","gelmedi","kac cm","kaç cm"]) && (ctx.product === "atac" || hasAny(norm, ["hediye bileklik"]))) {
+      return "Harfli ataç kolyede aynı model bileklik hediye olarak gönderilmektedir efendim 😊 Bileklik uzunluğu 20 cm'dir.";
+    }
     if (hasAny(norm, ["bileklik tarz","bileklik satiy","bileklik satıy","bileklik olarak yap","bilezik yapiy","bilezik yapıy","bileklik modeli yap","bileklik yapiy","bileklik yapıy"]) ||
         (hasAny(norm, ["bileklik","bilezik"]) && hasAny(norm, ["yapiyor musun","yapıyor musun","yapiyor musunuz","yapıyor musunuz","yapar mis","yapar mıs","mevcut mu","var mı","var mi"]))) {
-      return "Şu anda sadece kolye modellerimiz bulunmaktadır efendim 😊 Harfli ataç kolyemizde hediye olarak bileklik gönderilmektedir.";
+      return TEXT.BILEKLIK_INFO;
     }
     if (ctx.product === "atac" || hasAny(norm, ["hediye","gelmedi","kac cm","kaç cm"])) return "Harfli ataç kolyede aynı model bileklik hediye olarak gönderilmektedir efendim 😊 Bileklik uzunluğu 20 cm'dir.";
-    return "Harfli ataç kolyede hediye bileklik gönderilmektedir efendim 😊";
+    return TEXT.BILEKLIK_INFO;
   }
   if (hasAny(norm, ["yapim asama","yapım aşama","nasil yapiliyor","nasıl yapılıyor","surec nasil","süreç nasıl"])) return "Fotoğrafınızı alıyoruz, lazer kazıma yöntemiyle kolyeye işliyoruz ve kargo ile gönderiyoruz efendim 😊";
   if (hasAny(norm, ["yapay zeka","robot mu","bot mu","ai mi"]) && hasAny(norm, ["yapiy","yapıy","ile mi"])) return "Hayır efendim, lazer baskı yöntemiyle üretiyoruz 😊 Mesaj süreçlerinde yapay zekâ desteği kullanıyoruz ama ürünler el emeği ile hazırlanmaktadır.";
@@ -1306,6 +1311,22 @@ export async function generateAnswer(ctx) {
   const intent = ctx.intent;
   const stage = ctx.fields?.conversation_stage || "";
   const isCompleted = ctx.fields?.order_status === "completed" || ctx.fields?.siparis_alindi === "1" || stage === "order_completed";
+
+  // YENİ ÜRÜN KATLAMASI — anahtarlık / evcil hayvan mezar taşı aktif; diğerleri ekibe yönlenir.
+  if (!isCompleted) {
+    if (ctx.product === PRODUCT.ANAHTARLIK) {
+      return { text: TEXT.ANAHTARLIK_INFO, source: "new_product_anahtarlik", reply_class: REPLY_CLASS.SELLER_REQUIRED, support_mode_reason: SUPPORT_REASON.SELLER };
+    }
+    if (ctx.product === PRODUCT.MEZAR_TASI) {
+      return { text: TEXT.MEZAR_TASI_INFO, source: "new_product_mezar_tasi", reply_class: REPLY_CLASS.SELLER_REQUIRED, support_mode_reason: SUPPORT_REASON.SELLER };
+    }
+    if (ctx.product === PRODUCT.BILEKLIK) {
+      return { text: TEXT.BILEKLIK_INFO, source: "new_product_bileklik", reply_class: REPLY_CLASS.SELLER_REQUIRED, support_mode_reason: SUPPORT_REASON.SELLER };
+    }
+    if (ctx.product === PRODUCT.OTHER) {
+      return { text: TEXT.OTHER_PRODUCT_REDIRECT, source: "new_product_other", reply_class: REPLY_CLASS.SELLER_REQUIRED, support_mode_reason: SUPPORT_REASON.SELLER };
+    }
+  }
 
   // HUMAN SUPPORT — sadece stage human_support ise
   if (stage === "human_support") {

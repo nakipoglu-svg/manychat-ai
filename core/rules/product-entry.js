@@ -16,12 +16,20 @@ export function productEntry(ctx, state) {
   if (fresh) {
     if (product === PRODUCT.LAZER) return PE(TEXT.LAZER_PRICE);
     if (product === PRODUCT.ATAC) return PE(TEXT.ATAC_PRICE);
+    if (product === PRODUCT.ANAHTARLIK) return PE(TEXT.ANAHTARLIK_INFO);
+    if (product === PRODUCT.MEZAR_TASI) return PE(TEXT.MEZAR_TASI_INFO);
+    if (product === PRODUCT.BILEKLIK) return PE(TEXT.BILEKLIK_INFO);
+    if (product === PRODUCT.OTHER) return { text: TEXT.OTHER_PRODUCT_REDIRECT, reply_class: REPLY_CLASS.SELLER_REQUIRED, support_mode_reason: "seller_required" };
   }
 
   // Ürün switch: önceki vardı, yenisi farklı
   if (previousProduct && product !== previousProduct) {
     if (product === PRODUCT.LAZER) return PE(TEXT.LAZER_PRICE);
     if (product === PRODUCT.ATAC) return PE(TEXT.ATAC_PRICE);
+    if (product === PRODUCT.ANAHTARLIK) return PE(TEXT.ANAHTARLIK_INFO);
+    if (product === PRODUCT.MEZAR_TASI) return PE(TEXT.MEZAR_TASI_INFO);
+    if (product === PRODUCT.BILEKLIK) return PE(TEXT.BILEKLIK_INFO);
+    if (product === PRODUCT.OTHER) return { text: TEXT.OTHER_PRODUCT_REDIRECT, reply_class: REPLY_CLASS.SELLER_REQUIRED, support_mode_reason: "seller_required" };
   }
 
   return null;
