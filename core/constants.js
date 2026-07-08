@@ -1,0 +1,1272 @@
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CONSTANTS — Tek merkez, sıfır magic string
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ─── SITE URL — tek kaynak ──────────────────────────────────
+export const SITE_URL = "https://www.yudumjewels.com";
+
+// ─── PRODUCTS ───────────────────────────────────────────────
+export const PRODUCT = {
+  LAZER: "lazer",
+  ATAC: "atac",
+  YONCA: "yonca",
+  ANAHTARLIK: "anahtarlik",
+  MEZAR_TASI: "evcil_hayvan_mezar_tasi",
+  BILEKLIK: "resimli_lazer_bileklik",
+  OTHER: "other_product",
+};
+
+// ─── STAGES ─────────────────────────────────────────────────
+export const STAGE = {
+  WAITING_PRODUCT:   "waiting_product",
+  WAITING_PHOTO:     "waiting_photo",
+  WAITING_BACK_TEXT: "waiting_back_text",
+  WAITING_LETTERS:   "waiting_letters",
+  WAITING_PAYMENT:   "waiting_payment",
+  WAITING_ADDRESS:   "waiting_address",
+  ORDER_COMPLETED:   "order_completed",
+  HUMAN_SUPPORT:     "human_support",
+};
+
+export const VALID_STAGES = new Set(Object.values(STAGE));
+
+// ─── REPLY CLASS ────────────────────────────────────────────
+export const REPLY_CLASS = {
+  FIXED_INFO:            "fixed_info",
+  FLOW_PROGRESS:         "flow_progress",
+  SELLER_REQUIRED:       "seller_required",
+  OPERATIONAL_REQUIRED:  "operational_required",
+  FALLBACK:              "fallback",
+  MENU:                  "menu",
+  PRODUCT_ENTRY:         "product_entry",
+  ORDER_COMPLETE:        "order_complete",
+  PHOTO_REFERENCE:       "photo_reference_confirmed",
+};
+
+// ─── SUPPORT MODE REASON ────────────────────────────────────
+export const SUPPORT_REASON = {
+  SELLER:      "seller_required",
+  OPERATIONAL: "operational_required",
+  FALLBACK:    "true_fallback",
+  CANCEL:      "manual_cancel",
+  NONE:        "",
+};
+
+// ─── PAYMENT ────────────────────────────────────────────────
+export const PAYMENT = { EFT: "eft_havale", KAPIDA: "kapida_odeme" };
+
+// ─── ADDRESS STATUS ─────────────────────────────────────────
+export const ADDR = { RECEIVED: "received", ADDRESS_ONLY: "address_only" };
+
+// ─── BACK TEXT STATUS ───────────────────────────────────────
+export const BACK_TEXT = { RECEIVED: "received", SKIPPED: "skipped" };
+
+// ─── ORDER STATUS ───────────────────────────────────────────
+export const ORDER = { STARTED: "started", COMPLETED: "completed", CANCEL: "cancel_requested" };
+
+// ─── PRICES ─────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+// FACTS — TEK MERKEZ 🎯
+// Fiyat, zincir, plaka, iletişim, garanti... bir değer değişince SADECE
+// burayı güncelle. Aşağıdaki PRICE ve TEXT cevapları buradan okur.
+// (Knowledge dosyalarıyla bu değerlerin uyumlu olması gerekir.)
+// ══════════════════════════════════════════════════════════════════
+export const FACTS = {
+  // Fiyatlar (TL). Kapıda ödeme = EFT fiyatı + kapidaEk.
+  fiyat: { lazer: 649, bileklik: 499, yonca: 649, anahtarlik: 599, atac: 549, mezar: 2999 },
+  kapidaEk: 50,
+  atacEkHarf: 50,
+  // Zincir uzunlukları (cm) — knowledge 12
+  zincir: { kadin: 60, erkek: 55, bileklik: 20, atac: 50 },
+  // Plaka ölçüleri — knowledge 03
+  plaka: { yuvarlak: "2,5", kare: "3×3", kalp: "3", metalKalinlikMm: "0,8" },
+  // İletişim / ödeme
+  whatsapp: "0505 471 35 45",
+  iban: "TR34 0015 7000 0000 0076 2524 67",
+  ibanAlici: "Servet Cihan Nakipoğlu",
+  site: "www.yudumjewels.com",
+  adres: "Beykoz / İstanbul",
+  // Diğer
+  mezarGarantiYil: 5,
+};
+
+export const PRICE = {
+  LAZER_EFT: FACTS.fiyat.lazer, LAZER_KAPIDA: FACTS.fiyat.lazer + FACTS.kapidaEk,
+  ATAC_EFT: FACTS.fiyat.atac,   ATAC_KAPIDA: FACTS.fiyat.atac + FACTS.kapidaEk,
+  YONCA_EFT: FACTS.fiyat.yonca, YONCA_KAPIDA: FACTS.fiyat.yonca + FACTS.kapidaEk,
+  ATAC_EXTRA_LETTER: FACTS.atacEkHarf,
+};
+
+// ─── FIXED TEXTS ────────────────────────────────────────────
+export const TEXT = {
+  FALLBACK: "Ekibimize iletiyorum, en kısa sürede dönüş yapılacaktır 😊",
+
+  MAIN_MENU: "Merhaba efendim 😊\nHangi ürün ile ilgileniyorsunuz?\n\n1️⃣ Resimli Lazer Kolye\n2️⃣ Resimli Bileklik\n3️⃣ İsimli Yonca Kolye\n4️⃣ Anahtarlık\n5️⃣ Harfli Ataç Kolye + Bileklik Hediye\n6️⃣ Evcil Hayvan Mezar Taşı\n\nNumarasını yazmanız yeterli efendim 😊",
+
+  LAZER_PRICE: `Resimli Lazer Kolye fiyatımız ${FACTS.fiyat.lazer} TL'dir efendim 😊\n\nTüm ürünlerimizde kargo ücretsizdir. Kapıda ödeme seçeneğinde kargo firmasının tahsil ettiği +${FACTS.kapidaEk} TL ek ücret uygulanmaktadır.\n\nSiparişe devam etmek isterseniz fotoğrafınızı buradan gönderebilirsiniz.`,
+
+  ATAC_PRICE: `Harfli Ataç Kolye + Bileklik Hediye fiyatımız ${FACTS.fiyat.atac} TL'dir efendim 😊\n\nTüm ürünlerimizde kargo ücretsizdir. Kapıda ödeme seçeneğinde kargo firmasının tahsil ettiği +${FACTS.kapidaEk} TL ek ücret uygulanmaktadır.\n\nSiparişe devam etmek isterseniz istediğiniz harfleri yazabilirsiniz.`,
+
+  YONCA_PRICE: `İsimli Yonca Kolye fiyatımız ${FACTS.fiyat.yonca} TL'dir efendim 😊\n\nKolyemiz 4 yapraktan oluşur; her yaprağa bir isim veya sembol işlenebilir.\n\nTüm ürünlerimizde kargo ücretsizdir. Kapıda ödeme seçeneğinde kargo firmasının tahsil ettiği +${FACTS.kapidaEk} TL ek ücret uygulanmaktadır.\n\nSiparişe devam etmek isterseniz yapraklara yazılmasını istediğiniz isim ve/veya sembolleri yazabilirsiniz.`,
+
+  YONCA_INFO: "İsimli Yonca Kolyemiz 4 yapraktan oluşmaktadır efendim 😊 Her yaprağa bir isim veya sembol işlenebilir.\n\n4 yaprağa 4 isim yazdırabilir ya da 3 isimle birlikte kalp, sonsuzluk işareti gibi 1 sembol seçebilirsiniz.\n\nSiparişiniz için yapraklarda yer almasını istediğiniz isim ve/veya sembolleri iletmeniz yeterlidir.",
+
+  ANAHTARLIK_INFO: "Resimli Anahtarlık modelimiz kişiye özel olarak hazırlanmaktadır efendim 😊 Fotoğrafınızı ve varsa arka yüz yazınızı buradan iletebilirsiniz.",
+
+  MEZAR_TASI_INFO: "Evcil Hayvan Mezar Taşı ürünümüz traverten taş, üst fotoğraf plakası ve alt yazı plakasından oluşmaktadır efendim 😊 Sipariş sonrasında tasarım süreci sizinle birlikte ilerletilir. Bu üründe kapıda ödeme bulunmamaktadır.",
+
+  BILEKLIK_INFO: "Resimli Bileklik modelimiz kişiye özel olarak hazırlanmaktadır efendim 😊 Fotoğraf ön yüze işlenir, arka yüze isim, tarih veya kısa yazı yazılabilir.",
+
+  BILEKLIK_PRICE: `Resimli Bileklik fiyatımız ${FACTS.fiyat.bileklik} TL'dir efendim 😊 Kapıda ödeme seçeneğinde +${FACTS.kapidaEk} TL kargo tahsilat ücreti uygulanmaktadır.`,
+
+  AK_PRICE: `Resimli Anahtarlık fiyatımız ${FACTS.fiyat.anahtarlik} TL'dir efendim 😊 Kapıda ödeme seçeneğinde +${FACTS.kapidaEk} TL kargo tahsilat ücreti uygulanmaktadır.`,
+
+  PAYMENT_CHOICE: "EFT / Havale, web sitemizden kredi kartı veya kapıda ödeme",
+
+  OTHER_PRODUCT_REDIRECT: `Web sitemizde çok daha fazla ürün çeşidimiz mevcut efendim 😊 İncelemek isterseniz buradan göz atabilirsiniz:\n${FACTS.site}`,
+
+  EFT_INFO: `IBAN: ${FACTS.iban}\nAlıcı: ${FACTS.ibanAlici}`,
+
+  // Knowledge 03 - Ürün Ölçüleri (değerler FACTS.plaka / FACTS.zincir'den okunur)
+  OLCU_INFO: `Resimli kadın kolyemizde yuvarlak plaka ${FACTS.plaka.yuvarlak} cm'dir efendim 😊 Kare model ${FACTS.plaka.kare} cm, kalp model ${FACTS.plaka.kalp} cm çapındadır. Zincir uzunluğu ${FACTS.zincir.kadin} cm'dir.`,
+  // Knowledge 13 - Aksesuarlar ile birebir uyumlu (SADECE pembe kalp + nazar boncuğu)
+  AKSESUAR_INFO: "Resimli kadın kolye ve İsimli Yonca Kolyelerimizde pembe kalp veya nazar boncuğu aksesuarı takılabilmektedir efendim 😊 Aksesuar ücretsizdir, fiyat değişmiyor, fiyata dahildir.",
+
+  ORDER_DETAILS: "Siparişiniz için lütfen ad soyad, il / ilçe / mahalle / açık adres ve cep telefonu bilgilerinizi iletir misiniz?",
+
+  SHIPPING_TIME: "Kargo çıkışlarımız hafta içidir. Siparişiniz en geç takip eden iş günü PTT Kargo'ya teslim edilir efendim 😊 İstanbul içi 1-2 iş günü, diğer iller 2-3 iş günü içinde teslim edilir. Kargoya verildiğinde SMS bilgilendirmesi gelir.",
+
+  WHATSAPP: `WhatsApp iletişim numaramız: ${FACTS.whatsapp} 😊`,
+};
+
+// ─── INTENT NAMES ───────────────────────────────────────────
+export const INTENT = {
+  // Flow intents
+  PHOTO: "photo",
+  BACK_PHOTO_UPLOAD: "back_photo_upload",
+  BACK_TEXT: "back_text",
+  BACK_TEXT_CONTENT: "back_text_content",
+  BACK_TEXT_QUESTION: "back_text_question",
+  BACK_TEXT_FIT_QUESTION: "back_text_fit_question",
+  BACK_TEXT_SKIP: "back_text_skip",
+  LETTERS: "letters",
+  PAYMENT: "payment",
+  ADDRESS: "address",
+  PHONE: "phone",
+  NAME_ONLY: "name_only",
+  CANCEL: "cancel_order",
+  ORDER_START: "order_start",
+  // Info intents
+  PRICE: "price",
+  SHIPPING: "shipping",
+  SHIPPING_PRICE: "shipping_price",
+  TRUST: "trust",
+  MATERIAL: "material_question",
+  CHAIN: "chain_question",
+  LOCATION: "location",
+  PHOTO_QUESTION: "photo_question",
+  BACK_TEXT_INFO: "back_text_info",
+  BACK_PHOTO_INFO: "back_photo_info",
+  BACK_PHOTO_PRICE: "back_photo_price",
+  BACK_TEXT_EXAMPLES: "back_text_examples",
+  PHOTO_SUITABILITY: "photo_suitability_question",
+  BACK_PHOTO_SENT: "back_photo_already_sent",
+  PRODUCT_IMAGE_REF: "product_image_reference",
+  PHOTO_SENT_CONFIRM: "photo_sent_confirmation",
+  PAYMENT_INFO: "payment_info_question",
+  STORE_PICKUP: "store_pickup",
+  // ACK & confirmation intents
+  ACK: "ack",
+  PAYMENT_CONFIRMATION: "payment_confirmation",
+  PHOTO_REFERENCE: "photo_reference",
+  PHOTO_CHANGE: "photo_change_request",
+  // Meta intents
+  SMALLTALK: "smalltalk",
+  POST_SALE: "post_sale",
+  NEW_ORDER: "new_order",
+  EXAMPLE_REQUEST: "example_request",
+  DETAIL_REQUEST: "detail_request",
+  GENERAL: "general",
+  PREVIEW_REQUEST: "preview_request",
+  DECISION_SUPPORT: "decision_support",
+  COMPOSITION_QUESTION: "composition_question",
+  QUANTITY_ORDER: "quantity_order",
+  PRODUCT_STRUCTURE_REQUEST: "product_structure_request",
+  SINGLE_PENDANT_REQUEST: "single_pendant_request",
+  CHAIN_STRUCTURE_REQUEST: "chain_structure_request",
+};
+
+// ─── KEYWORDS ───────────────────────────────────────────────
+export const KW = {
+  product_lazer: [
+    "resimli", "resmli", "resimii", "resımlı", "fotografli", "foto", "fotolu", "lazer",
+    "resim kolye", "foto kolye", "fotografli kolye", "fotoğraflı kolye",
+    "resimli kolye", "resimli lazer", "resimli madalyon", "resimli olan",
+    "resimli model", "resimli urun", "resimli ürün", "fotoğraflı olan", "fotograflı olan",
+    "lazer resimli", "lazerle resimli", "resimli celik kolye", "resimli çelik kolye",
+  ],
+  product_atac: [
+    "atac", "ataç", "harfli", "harf kolye", "harfli kolye",
+    "3 harf", "uc harf", "isim harf", "harfli atac",
+    "ataş kolye", "atas kolye", "ataçlı kolye", "atacli kolye", "harfli olan", "harfli model",
+  ],
+  // NOT: "yonca" tek başına YASAK — yaygın bir kadın ismidir (Yonca Yılmaz gibi).
+  // Yanlış ürün switch'ini önlemek için mutlaka "kolye"/"yaprak"/"model" niteleyicisi gerekir.
+  product_yonca: [
+    "yonca kolye", "yonca kolyesi", "yonca kolyeye", "yonca kolyesine",
+    "isimli yonca", "yonca model", "yonca figur", "yonca figür", "yoncali kolye", "yoncalı kolye",
+    "isimli kolye", "isimli model", "yoca", "yonja", "yonc", "yonsa",
+    "dort yaprak", "dört yaprak", "4 yaprak", "dort yaprakli", "dört yapraklı",
+    "yaprakli kolye", "yapraklı kolye",
+  ],
+  product_anahtarlik: [
+    "anahtarlik", "anahtarlık", "anahtarli", "anahtarlı", "anahtar", "keychain", "kişiye özel anahtarlık", "kisiye ozel anahtarlik",
+  ],
+  product_mezar_tasi: [
+    "evcil hayvan mezar", "evcil hayvan mezar tasi", "evcil hayvan mezar taşı", "mezar tasi", "mezar taşı",
+    "pet mezar", "hayvan mezar", "kedi mezar", "köpek mezar", "kopek mezar", "pati mezar",
+    // "mezar" (5 harf → substring) "mezarlik", "mezarlık", "mezari", "mezarı", "mezartasi" hepsini yakalar
+    "mezar", "mezarlik", "mezarlık",
+  ],
+  product_bileklik: [
+    "resimli bileklik", "fotoğraflı bileklik", "fotografli bileklik", "lazer bileklik", "resimli lazer bileklik",
+    "fotoğraflı lazer bileklik", "fotografli lazer bileklik", "kişiye özel bileklik", "kisiye ozel bileklik",
+    "fotoğraflı çelik bileklik", "fotografli celik bileklik", "bileklik", "bilezik",
+  ],
+  product_other: [
+    "yuzuk", "yüzük", "kupe", "küpe", "piercing", "saat", "broş", "bros", "toka", "kemer", "cuzdan", "cüzdan", "kunye", "künye",
+    "erkek bileklik", "erkek bilezik", "bay bileklik", "bay bilezik",
+  ],
+
+  cancel: ["siparisi iptal", "siparişi iptal", "iptal", "vazgectim", "vazgeçtim"],
+
+  smalltalk: [
+    "merhaba", "selam", "slm", "mrb", "merhabalar",
+    "iyi aksamlar", "iyi akşamlar", "iyi gunler", "iyi günler",
+    "gunaydin", "günaydın", "iyi geceler",
+    "nasilsiniz", "nasılsınız",
+    "iyi misiniz", "iyimisiniz", "nasilsin", "nasılsın", "naber",
+    "tesekkur", "teşekkür", "tesekkurler", "teşekkürler", "tsk", "tşk", "tesekurler", "teşekürler",
+    "tesekur", "teşekür",
+    "sagolun", "sağolun", "saol", "sağol",
+    "sag olun", "sağ olun", "sag ol", "sağ ol",
+    "allah razi olsun", "allah razı olsun",
+    "kolay gelsin",
+    "emeginize saglik", "emeğinize sağlık", "ellerinize saglik", "ellerinize sağlık",
+    "cok begendik", "çok beğendik", "cok begendim", "çok beğendim",
+    "begendim", "beğendim", "bayildim", "bayıldım",
+    "tatli olmus", "tatlı olmuş", "guzel olmus", "güzel olmuş",
+    "elinize saglik", "elinize sağlık",
+    "cok guzel", "çok güzel", "cok guzel olmus", "çok güzel olmuş",
+    "super", "süper", "harika",
+    "cok iyi", "çok iyi", "mukemmel", "mükemmel",
+    "basiniz sagolsun", "başınız sağolsun", "basiniz sag olsun", "başınız sağ olsun",
+    "allah yardimciniz olsun", "allah yardımcınız olsun",
+    "hakkinizi helal edin", "hakkınızı helal edin",
+    "bol kazanclar", "bol kazançlar",
+    "hayirli isler", "hayırlı işler",
+    "insallah", "inşallah", "amin", "masallah", "maşallah", "eyvallah",
+    "bekliyorum", "haber bekliyorum", "bilginiz olsun",
+    "gecmis olsun", "geçmiş olsun", "cok gecmis olsun", "çok geçmiş olsun",
+    "rica ederim", "rica ederiz",
+    "liked a message", "reacted",
+    "hos bulduk", "hoş bulduk", "hos buldum", "hoş buldum",
+    "hayirli geceler", "hayırlı geceler",
+    "allah sabir versin", "allah sabır versin",
+    "donus yapacagim", "dönüş yapacağım", "donus yapicam", "dönüş yapıcam",
+    "sonra yazacagim", "sonra yazacağım", "sonra yazarim", "sonra yazarım",
+    "dusuneyim", "düşüneyim", "dusunecegim", "düşüneceğim",
+    "sonra donus yaparim", "sonra dönüş yaparım",
+    "sonra donecegim", "sonra döneceğim",
+    "geri donecegim", "geri döneceğim",
+    "donus yaparim", "dönüş yaparım",
+    "sonra yazsam olur mu", "sonra yazarim size", "sonra yazarım size",
+  ],
+
+  location: ["yeriniz nere","yeriniz nerede", "yeriniz neresi", "yeriniz nerde", "neredesiniz", "nereniz", "nereniz nerde", "neresiniz", "konum", "magaza", "mağaza", "eminonu", "eminönü", "subeniz", "şubeniz", "subesi", "şubesi", "istanbulda misiniz", "istanbulda mısınız", "hangi sehir", "hangi şehir", "hangi il", "fiziksel magaza", "fiziksel mağaza", "dukkan", "dükkan", "gelip alabilir", "elden teslim"],
+
+  shipping_price: [
+    "kargo ucreti", "kargo ücreti", "kargo ucreti ne kadar", "kargo ücreti ne kadar",
+    "kargo fiyati var mi", "kargo fiyatı var mı", "kargo fiyati", "kargo fiyatı",
+    "kargo dahil mi", "kargo ücretli mi", "kargo ucretli mi",
+    "kargo ucretlimi", "kargo ücretlimi",
+    "kargo ucretli mj", "kargo ücretli mj",
+    "kargo ucreti var mi", "kargo ücreti var mı",
+    "kargo birlikte mi", "kargo ile birlikte mi",
+    "kargo ucreti dahil mi", "kargo ücreti dahil mi",
+    "kargo fiyata dahil", "kargo dahil",
+    "kargo ucretsiz mi", "kargo ücretsiz mi",
+    "kargo parasi", "kargo parasI", "kargo parası",
+    "eve teslim", "kargo var mi", "kargo varmı", "kargo varmi",
+    "fiyata dahil mi", "fiyata dahil",
+    "ekstra ucret", "ekstra ücret", "ekstra ucret var mi", "ekstra ücret var mı",
+    "ek ucret var mi", "ek ücret var mı", "ek ucret", "ek ücret",
+    "kargo bedava mi", "kargo bedava mı", "bedava kargo", "ucretsiz kargo", "ücretsiz kargo",
+    "ayruca kargo", "ayrıca kargo",
+  ],
+
+  shipping: [
+    "kargo", "teslimat", "ne zaman gelir", "kac gunde", "kaç günde",
+    "kac gune", "kaç güne", "kac gun", "kaç gün",
+    "takip no", "kargom nerede", "ne zaman kargolarsiniz",
+    "ne zaman kargoya verilir", "kac gune gelir", "kaç güne gelir",
+    "ne zaman hazir", "ne zaman hazır", "kac gune hazir", "kaç güne hazır",
+    "ne zaman teslim", "teslim suresi", "teslim süresi",
+    "icinde gelir", "içinde gelir",
+    "ne kadar surede", "ne kadar sürede", "ne kadar sure", "ne kadar süre",
+    "ptt mi", "ptt ile", "hangi ptt", "ptt yolluyorsunuz", "ptt gonderiyorsunuz", "ptt gönderiyor",
+    "ne zaman elimde", "ne zaman elime", "elimde olur",
+    "elime ulasir", "elime ulaşır",
+    "kac is gunu", "kaç iş günü", "kac is gununde", "kaç iş gününde",
+    "sms gelir", "mesaj gelir", "bilgi gelir", "haber verir",
+  ],
+
+  trust: [
+    "guvenilir", "guven", "dolandirici", "orijinal", "saglam",
+    "kararma", "kararir mi", "kararma yapar mi", "kararma olur mu",
+    "kararır mı", "kararma yapar mı",
+    "karar ma", "kararma yapiyomu", "kararma yapıyomu",
+    "kararma yaparmi", "kararma yapiyormu", "kararma yapıyor mu",
+    "kararma oluyormu", "kararma oluyor mu",
+    "karariyormu", "kararıyormu", "kararirmi", "kararırmi",
+    "karariyor mu", "kararıyor mu",  // typo map sonrası boşluklu halleri
+    "karaa", "kararmi", "solma yapiyormu", "solma yapıyormu",
+    "renk atma", "renk atar", "renk atması", "renk bozul",
+    "rengi gidiyor", "rengi gider", "rengi aciyor", "rengi açıyor",
+    "silinme", "resim silin",
+    "solar", "solma", "paslan",
+    // H5 F6 hardening — silinir/bozulur/dayanikli durability
+    "silinir mi", "silinmez mi", "silinecek mi", "zamanla silin",
+    "kayboluyor", "soluyor", "solar mi", "solar mı",
+    "dagilir mi", "dağılır mı", "bozulur mu", "bozulurmu",
+    "dayanikli mi", "dayanıklı mı", "asiniyor", "aşınıyor",
+    "suya dayanikli", "suya dayanıklı", "duşta", "dusta", "denizde", "denizte", "terle",
+    "kaplama", "kaplamasi atar", "kaplaması atar",
+    "garanti",
+    "celik mi", "çelik mi", "celikmi", "çelikmi",
+    "urun celik mi", "ürün çelik mi",
+    "paslanmaz mi", "paslanmaz mı", "paslanmaz demi", "paslanmaz demı",
+    "malzeme ne", "malzemesi ne",
+    "ne malzeme", "hangi malzeme",
+    "gunluk kullanim", "günlük kullanım", "gunluk kullanima", "günlük kullanıma",
+    "bozulur mu", "bozulurmu", "bozulma yapar", "zamanla bozul",
+    "kaliteli mi", "kalitelimi", "kaliteli midir", "kalitesiz",
+    "garanti suresi", "garanti süresi", "ne kadar garanti", "garanti ne kadar",
+    "garantisi varmi", "garantisi var mı",
+    "dayanikli mi", "dayanıklı mı", "dayaniyor mu", "dayanıyor mu",
+    "uzun sure dayanir", "uzun süre dayanır",
+    "parfum sikil", "parfüm sıkıl", "parfum zarar", "parfüm zarar",
+    "ne kadar sure", "ne kadar süre",
+  ],
+
+  payment: [
+    "kapida odeme", "kapıda ödeme",
+    "kapida odeme olur mu", "kapıda ödeme olur mu",
+    "kapida odeme var mi", "kapıda ödeme var mı",
+    "kapida oderim", "kapıda öderim",
+    "kapida odeme olsun", "kapıda ödeme olsun",
+    "kapida olsun", "kapıda olsun",
+    "kapida", "kapıda",
+    "kalida", "nakit",
+    "eft", "havale",
+    "odeme", "ödeme",
+    "iban", "dekont", "aciklama", "açıklama",
+    "kredi karti", "kredi kartı", "kartla", "kart ile",
+    "taksit", "taksitle",
+  ],
+
+  price: ["fiyat", "fıyat", "fiat", "fyat", "ne kadar", "nekadar", "ucret", "ücret", "kac tl", "kaç tl", "kac lira", "kaç lira", "kac para", "kaç para", "kaca yapiyorsunuz", "kaça yapıyorsunuz", "parasi ne", "parası ne"],
+
+  chain: [
+    "zincir model", "zincir degisiyor mu", "zincir değişiyor mu",
+    "zincir kisalir mi", "zincir kısalır mı",
+    "zincir boyu", "zincir uzunlugu", "zincir uzunluğu",
+    "zincirin boyu", "zincirin uzunlugu", "zincirin uzunluğu",
+    "zincir ne kadar", "uzunlugu ne kadar", "uzunluğu ne kadar",
+    "uzunlugu nekadar", "uzunluğu nekadar",
+    "zincir kalinligi", "zincir kalınlığı", "zincir kalinlik", "zincir kalınlık",
+    "ne kadar kalin", "ne kadar kalın", "kalinligi ne", "kalınlığı ne",
+    "zincir kac cm", "zincir kaç cm",
+    "zincirlere bakabilir", "zincir secenekleri", "zincir seçenekleri",
+    "boyu ne kadar", "boyutu ne kadar", "boyutu nedir", "kac cm", "kaç cm",
+    "kac santim", "kaç santım", "kac santım", "kaç santim",
+    "zincir dahil", "zincir dayil",
+    "kisa zincir", "kısa zincir", "ince zincir", "kalin zincir", "kalın zincir",
+    "zincir degisir", "zincir değişir",
+    "plaka boyut", "plaka olcu", "plaka ölçü", "plakanin olcu", "plakanın ölçü",
+    "yuvarlak plaka", "yuvarlak bolum", "yuvarlak bölüm",
+    "zincir ne uzunluk", "zinciri ile beraber", "zincirle beraber", "zincir beraber",
+    "zinciri burma", "zincir beyaz", "zincir sari", "zincir sarı", "zincir gold",
+    "zincir ince", "ince zincir", "zincir kalin", "zincir kalın", "kalin zincir", "kalın zincir", "zincir burgulu",
+    "zincir tek tip", "zincir yapisi", "zincir yapısı",
+    "zincir seceneg", "zincir seçeneg", "zincirini sec", "zincirini seç",
+    "zincir tek tip", "zincir uzatma", "zincir uzalt", "zincir kisalt", "zincir kısalt",
+    "baska zincir", "başka zincir", "hangi zincir", "zincir var mi", "zincir var mı",
+    "zincir degil mi", "zincir değil mi", "zincir daha uzun", "zincir daha kisa", "zincir daha kısa",
+    "zincir katarma", "zincirde katarma", "zincir kisaliyor", "zincir kısalıyor",
+    "zincirde gumus", "zincirde gümüş", "zinciri istiyorum", "bu zinciri",
+    "zincir hangisi", "zinciri hangisi", "attigim zincir", "attığım zincir",
+    "zinciri sayfanizda bulamadim", "zinciri sayfanızda bulamadım",
+    "zinciri bulamadim", "zinciri bulamadım",
+    "zinciri uzat", "zinciri kisalt", "zinciri kısalt",
+    "zinciri ince", "zinciri kalin", "zinciri kalın",
+    "zincirde plaka", "zincirin rengi", "zincirin boyu",
+    "uzatme imkani", "uzatma imkanı", "uzatme imkanı",
+    "cerceve boyut", "çerçeve boyut", "madalyon boyut",
+    "olcusu nedir", "ölçüsü nedir", "olcusu ne", "ölçüsü ne",
+    "zincir kisalt", "zincir kısalt", "kisaltma", "kısaltma", "kisaltilabilir", "kısaltılabilir", "kisaltabilir", "kısaltabilir",
+    "kisaltin", "kısaltın", "uzatin", "uzatın", "uzatilabilir", "uzatılabilir",
+    "zincir uzat", "uzatma", "uzatilabilir", "uzatılabilir", "uzatabilir", "daha uzun zincir", "uzun zincir",
+    "daha uzun olmu", "daha kisa olmu", "daha kısa olmu", "daha uzun olur", "daha kisa olur", "daha kısa olur",
+    "kisa istemiyorum", "kısa istemiyorum", "gogse kadar", "göğse kadar", "gogus hizasi", "göğüs hizası",
+    "70 cm", "70cm",
+    "zincir secebilir", "zincir seçebilir", "zincir secebi", "zincir seçebi", "zincir secme", "zincir seçme",
+    "zinciri secebilir", "zinciri seçebilir", "zinciri secme", "zinciri seçme",
+  ],
+
+  order_start: [
+    "siparis vermek istiyorum", "sipariş vermek istiyorum",
+    "siparis verecegim", "sipariş vereceğim",
+    "siparis vercegiz", "sipariş vereceğiz", "siparis verecegiz",
+    "nasil siparis", "nasıl sipariş", "nasil sipariş", "nasıl siparis",
+    "siparis verebilir miyim", "sipariş verebilir miyim",
+    "nasil siparis verebilirim", "nasıl sipariş verebilirim",
+    "nasil siparis veriyoruz", "nasıl sipariş veriyoruz",
+    "nasil yaptir", "nasıl yaptır",
+    "almak istiyorum", "hazirlayalim", "hazırlayalım",
+    "yaptirmak istiyorum", "yaptırmak istiyorum",
+    "bende yaptirmak istiyorum", "ben de yaptırmak istiyorum",
+    "satin alabilir miyim", "satın alabilir miyim",
+    "urun satin alabilir miyim", "ürün satın alabilir miyim",
+    "siparis olustur", "sipariş oluştur",
+    "siparis olusturmak", "sipariş oluşturmak",
+    "siparis basla", "sipariş başla",
+    "bir urunun fiyatini kontrol edebilir misiniz", "bir ürünün fiyatını kontrol edebilir misiniz",
+    "fiyat alabilirmiyim", "fiyat alabilir miyim",
+    "fiyat bilgisi alabilir miyim",
+    "fiyat ogrenebilir miyim", "fiyat öğrenebilir miyim",
+    "fiyatini ogrenebilir miyim", "fiyatını öğrenebilir miyim",
+  ],
+
+  photo_question: [
+    "bu foto olur mu", "fotograf uygun mu", "foto uygun mu",
+    "nasil olsun foto", "nasil foto",
+    "hangi fotoyu atayim", "buradan mi atayim",
+    "whatsapptan mi", "nasil aticam", "nasil atacam",
+    "fotoyu nasil atayim", "foto atsam olur mu",
+    "fotograf atsam olur mu", "gondersem olur mu",
+    "fotoğraf atsam olur mu",
+    "fotoğrafı nasıl göndereceğim", "fotografi nasil gonderecegim",
+    "fotoğrafı nasıl gönderebilirim", "fotografi nasil gonderebilirim",
+    "resim nasıl gönderiyorum", "resim nasil gonderiyorum",
+    "resim nasil gonderirim", "resmi nasil gonderiyorum",
+    "resmi nasil gonderirim", "fotografi atsam olur mu",
+    "nasil gonderecegim", "nasıl göndereceğim",
+    "buradan gondereyim", "buradan göndereyim",
+    "buradan mi gonderecegim", "buradan mı göndereceğim",
+    "vesikalik mi", "vesikalık mı", "vesikalik olmali mi", "vesikalık olmalı mı",
+    "vesikalikmi", "vesikalıkmı", "vesikalikmi olmasi", "vesikalıkmı olması",
+    "nasil bir fotograf", "nasıl bir fotoğraf", "ne tur fotograf", "ne tür fotoğraf",
+    "hangi fotograf", "ne cesit", "ne çeşit", "selfie mi",
+    "fotograf nasil olmali", "fotoğraf nasıl olmalı", "foto nasil olmali", "foto nasıl olmalı",
+    "fotograf nasil olsun", "fotoğraf nasıl olsun", "foto nasil olsun", "foto nasıl olsun",
+    "fotografi nasil gonderecegiz", "fotoğrafı nasıl göndereceğiz",
+    "nasil bir resim", "nasıl bir resim", "fotograf nasil olacak", "fotoğraf nasıl olacak",
+    "bu olur mu", "bu olurmu", "bu foto olur mu", "bu fotograf olur mu",
+    "resimleri buradan mi atiyorum", "resmi buradan mi gondericez",
+    "tekli fotograf mi", "tekli mi olmali",
+    "eski fotograf olur mu", "eski fotoğraf olur mu", "eski foto olur mu",
+    "bulanik foto olur mu", "bulanık foto olur mu", "bulanik fotograf", "bulanık fotoğraf",
+    "net olmasi lazim mi", "net olması lazım mı", "net mi olmali", "net mi olmalı",
+    "net degil", "net değil", "net degil sanki", "net değil sanki",
+    "cok net degil", "çok net değil", "bulanik sanki", "bulanık sanki",
+    "selfi ceksem", "selfi çeksem", "selfie olur mu",
+  ],
+
+  back_photo_price: [
+    "arkasina fotograf ne kadar", "arkasına fotograf ne kadar",
+    "arkasina foto ne kadar", "arkasına foto ne kadar",
+    "arka tarafa fotograf koymak istesek ne kadar olacak",
+    "ek ucret", "ek ücret",
+    "arkasina foto koyarsam fiyat ne olur", "arkasına foto koyarsam fiyat ne olur",
+    "arka foto olursa fiyat", "arka foto fiyat",
+    "arka yuz fiyat", "arka yüz fiyat",
+  ],
+
+  // ─── PRODUCT STRUCTURE vs QUANTITY AİLESİ ──────────────────────
+
+  // Yapı sinyalleri — multi_order'dan ÖNCE kontrol edilmeli
+  product_structure_signals: [
+    "ucu iki tane", "iki tane uc", "iki tane uç",
+    "ucu iki", "uc iki", "üç uc",
+    "ust uste iki uc", "üst üste iki uç", "ust uste uc", "üst üste uç",
+    "ust uste", "üst üste",
+    "tek kolyede iki", "tek kolyeye iki",
+    "tek kolye iki uc", "tek kolye iki uç",
+    "tek olacak ucu iki", "kolye tek olacak ucu iki",
+    "tek kolyede iki plaka", "iki plaka olur mu",
+    "tek kolye ama iki", "bir kolye iki uc",
+    "kolye tek ama iki",
+    "cift uc", "çift uç", "cift tarafli uc", "çift taraflı uç",
+    "iki ic", "iki iç",
+  ],
+
+  // Tek uç / zincirsiz — structure ama ayrı policy
+  single_pendant_signals: [
+    "tek kolye ucu", "tek kolyeucu", "sadece ucu", "sadece uc", "sadece uç",
+    "kolye ucu fiyat", "kolye ucu ne kadar",
+    "zincirsiz olur mu", "zincirsiz gonderir misiniz", "zincirsiz gönderin",
+    "sadece kolye ucu", "tek kolye ucu fiyat",
+    "ucu satis", "uç satış", "kolye ucu satin", "kolye ucu satın",
+    "zincirsiz satis", "zincirsiz satış",
+    "kendi zincirime takacagim", "kendi zincirime takacağım",
+    "kendi zincirim var", "altın zincirim var",
+  ],
+
+  // Zincir yapı soruları — chain_question'dan ayrı policy için
+  chain_structure_signals: [
+    "zincir dahil mi", "zincir fiyata dahil",
+    "zincirsiz olur mu", "zincirsiz gonderir misiniz",
+    "zincir secebilir miyim", "zincir seçebilir miyim",
+    "baska zincir olur mu", "başka zincir olur mu",
+    "altin zincire takabilir miyim", "altın zincire takabilir miyim",
+    "kendi zincirime takacagim", "kendi zincirime takacağım",
+    "zinciri degistirebilir miyim", "zinciri değiştirebilir miyim",
+  ],
+
+  // Gerçek adet / quantity sinyalleri
+  quantity_signals: [
+    "iki kolye", "2 kolye", "iki adet", "2 adet",
+    "3 adet", "3 kolye", "4 adet", "4 kolye", "5 adet",
+    "coklu alim", "çoklu alım",
+    "ayni adrese iki", "aynı adrese iki",
+    "iki urun", "iki ürün", "iki urun ayni", "iki ürün aynı",
+    "toplu alim", "toplu alım", "toplu siparis", "toplu sipariş",
+    "20 adet",
+  ],
+
+  // ─── PREVIEW / KARAR DESTEĞİ AİLESİ ─────────────────────────
+  preview_request: [
+    "on izleme", "ön izleme", "onizleme", "önizleme",
+    "nasil olacagini gormek", "nasıl olacağını görmek",
+    "gorup karar", "görüp karar", "gorip karar",
+    "gormeden siparis", "görmeden sipariş",
+    "resim atsam nasil", "resim atsam nasıl",
+    "resim atarsam nasil", "resim atarsam nasıl",
+    "fikir icin resim", "fikir için resim",
+    "begenip begenme", "beğenip beğenme",
+    "gorsel olarak bakmak", "görsel olarak bakmak",
+    "bakip karar", "bakıp karar",
+    "on izleme var mi", "ön izleme var mı",
+    "taslak atar misiniz", "taslak atar mısınız",
+    "nasil gorunur", "nasıl görünür",
+    "nasil gozukur", "nasıl gözükür",
+    "nasil durur kolye", "nasıl durur kolye",
+    "deneme yapabilir misiniz", "ornek atar misiniz", "örnek atar mısınız",
+    "kolye uzerinde gormek", "kolye üzerinde görmek",
+    "hepsini gormek istiyorum", "hepsini görmek istiyorum",
+    // ━━━ H2 hardening ━━━
+    "hazirlanmis halini", "hazırlanmış halini", "hazirlanmis hal", "hazırlanmış hal",
+    "atacaktiniz", "atacaktınız", "atacak miydiniz",
+    "baskidan once", "baskıdan önce", "baski oncesi", "baskı öncesi",
+    "taslak atsam", "taslak atsaniz", "taslak atsanız", "taslagi atsam", "taslağı atsam",
+    "taslagi atsaniz", "taslağı atsanız", "taslak ata",
+    "taslagini", "taslağını", "taslak atar", "taslak ata",
+    "gorseli gorme sans", "görseli görme şans", "gorseli gorme sansim", "görseli görme şansım",
+    "gorseli gorme sansiniz", "görseli görme şansınız", "gorseli gorme sansim var", "görseli görme şanşım var",
+    "gorsel gorme sans", "görsel görme şans",
+    "fotograf atsam nasil", "fotoğraf atsam nasıl",
+    "nasil durduguna", "nasıl durduğuna",
+    "baskidan onceki", "baskıdan önceki", "baski oncesi hali",
+    "atilacakti", "atılacaktı",
+  ],
+
+  decision_support: [
+    "karar veremedim", "karar veremiyorum", "kararsiz kaldim", "kararsız kaldım",
+    "arasinda kaldim", "arasında kaldım", "arasinda karar veremedim",
+    "hangisi daha iyi", "hangisini sectim", "hangisini seçtim",
+    "sizce hangisi", "sizce hangi", "siz secebilir misiniz", "siz seçebilir misiniz",
+    "siz secin", "siz seçin", "yardimci olur musunuz resim", "yardımcı olur musunuz resim",
+    "hangi resmi seceyim", "hangi resmi seçeyim",
+    "hangini begendirsiniz", "hangini beğendirsiniz",
+    "karar vermeme yardim", "karar vermeme yardım",
+    "resim secemiyorum", "resim seçemiyorum",
+    "foto secemiyorum", "foto seçemiyorum",
+    "onceligim ne olsun", "önceliğim ne olsun",
+    "3 resim arasinda", "üç resim arasında", "uc resim arasinda",
+    "2 resim arasinda", "iki resim arasında",
+  ],
+
+  composition_question: [
+    "birlestirseniz", "birleştirseniz", "birlestirirseniz", "birleştirirseniz",
+    "birlestirme", "birleştirme", "birlestirerek", "birleştirerek",
+    "birlestirir misiniz", "birleştirir misiniz", "birlestirmek", "birleştirmek",
+    "tek kolyede iki foto", "tek kolyeye iki foto",
+    "tek kolyede uc foto", "tek kolyede üç foto",
+    "tek kolyede dort foto", "tek kolyede dört foto",
+    "ayni karede iki", "aynı karede iki",
+    "ayni kareye iki", "aynı kareye iki",
+    "iki foto tek kolye", "iki fotoğraf tek kolye",
+    "dort foto kolye", "dört foto kolye",
+    "arkalı önlü nasıl", "arkali onlu nasil",
+    "onlu arkali nasil", "önlü arkalı nasıl",
+    "iki tarafli nasil", "iki taraflı nasıl",
+    "nasil birlesiyor", "nasıl birleşiyor",
+    "fotoları birlestir", "fotoları birleştir",
+    "resimleri birlestir", "resimleri birleştir",
+    "iki cocuk ayni karede", "iki çocuk aynı karede",
+    "hepsi yan yana", "yan yana koyabil",
+    // ─── F5 genişletme ───
+    "iki resim","2 resim","üç resim","uc resim","3 resim","dort resim","dört resim","4 resim",
+    "iki foto","2 foto","üç foto","uc foto","3 foto",
+    "iki fotograf","iki fotoğraf","uc fotograf","üç fotoğraf","3 fotograf","3 fotoğraf",
+    "yan yana","yanyana","yan yana olmaz","yan yana olmuyor","yan yana olsa",
+    "bir yuzune","bir yüzüne","diger yuzune","diğer yüzüne","bir yuz","iki yuz",
+    "iki cocuk","iki çocuk","üç cocuk","uc cocuk","3 cocuk","3 çocuk","dort cocuk","dört çocuk",
+    "iki oglumun","iki oğlumun","iki kizimin","iki kızımın","iki kizim","iki kızım",
+    "uc cocugumun","üç çocuğumun","3 cocugumun","3 çocuğumun",
+    "ucunun fotograf","üçünün fotoğraf","ikisinin fotograf","ikisinin fotoğraf",
+    "iki ayri","iki ayrı","ayri ayri","ayrı ayrı",
+    "tek kolyede","tek kolyeye","bir kolyeye","bir kolyede","bir kolyenin ustune","bir kolyenin üstüne",
+    "kolyenin iki tarafina","kolyenin iki tarafına","iki yuzune","iki yüzüne",
+    "iki yuzunede","iki yüzünede","iki tarafina","iki tarafına","iki tarafta",
+    "aile resmi","aile foto","aile fotograf",
+    "ailem","ailemi","ailemle",
+    "5 kisi sigarmi","5 kişi sığar mı","5 kisi sigar","5 kişi sığar",
+    "birden fazla kisi","birden fazla kişi","birden fazla resim","birden fazla foto",
+    "cift taraf","çift taraf","cift fotograf","çift fotoğraf",
+    "bir cocugum diger","bir çocuğum diğer","bir kizim diger","bir kızım diğer",
+    "hepsi birlikte","hepsini birlikte",
+  ],
+
+  back_text_fit_question: [
+    "sigar mi", "sığar mi", "sığar mı", "sigarmi", "sığarmı",
+    "sigarmı", "sığar değil mi", "sıgar değil mi",
+    "uzun olmaz mi", "uzun olmaz mı", "cok uzun olmaz mi", "çok uzun olmaz mı",
+    "bu yazi olur mu", "bu yazı olur mu",
+    "bu dua olur mu", "bu dua sigar mi", "bu dua sığar mı",
+    "hepsi yazar mi", "hepsi yazılır mı", "bu kadar sigar mi",
+    "bu kadar yazar mi",
+  ],
+
+  back_text_question_explicit: [
+    "arkasina yazi yazabilir misiniz", "arkasına yazı yazabilir misiniz",
+    "resmin arkasina", "resmin arkasına",
+    "kolyenin arka kismina", "kolyenin arka kısmına",
+    "arka kismina yazi", "arka kısmına yazı",
+    "arkasina dua", "arkasına dua",
+    "arkaya dua basar misiniz", "arkaya dua basar mısınız",
+    "arkasina not", "arkasına not",
+    "arkasina tarih", "arkasına tarih",
+    "arkasina isim", "arkasına isim",
+    "yazilir mi", "yazılır mı",
+    "basabilir misiniz", "basabilir mısınız",
+    "yazabilir misiniz", "yazabilir mısınız",
+    "eklenebilir mi", "ekler misiniz",
+    "yazabilirmi", "yazılabilirmi", "yazılabilir mi", "yazilabilir mi",
+    "yazdırabilir miyim", "yazdirabilir miyim",
+    "yazi yaziyor musunuz", "yazı yazıyor musunuz",
+    "yazi basiyor musunuz", "yazı basıyor musunuz",
+    "isim veya tarihte arka", "tarih isim felan",
+    "saat yaziliyor", "saat yazılıyor",
+    "ne yazabiliriz", "ne yazılıyor genelde",
+    "arkasina ne yazilir", "arkasına ne yazılır",
+    "arka tarafa yazi yaziliyor", "arka tarafa yazı yazılıyor",
+    "yazi yazabilir misin", "yazı yazabilir misin",
+    "arkasina yazi yazilabil", "arkasına yazı yazılabil",
+    "resmin arkasina yazi", "resmin arkasına yazı",
+    "yazilabilir mi resim arkasina", "yazılabilir mi resim arkasına",
+    "isim veya tarihte arka kismina", "isim veya tarihte arka kısmına",
+  ],
+
+  back_text_info: [
+    "arka tarafina da mi yazabiliyoruz",
+    "arka tarafina da yazabiliyor muyuz",
+    "arkasina yazi oluyor mu", "arkasına yazı oluyor mu",
+    "arkasina yazi olur mu", "arkasına yazı olur mu",
+    "arkasina yazi yazabilir", "arkasına yazı yazabilir",
+    "arkasina yazı yazabiliyor", "arkasına yazı yazabiliyor",
+    "arkasina yazi yazamiyor", "arkasına yazı yazamıyor",
+    "arkasina yazi yaziliyor mu", "arkasına yazı yazılıyor mu",
+    "arka yuzune yazi oluyor mu", "arka yüzüne yazı oluyor mu",
+    "arkaya yazi yaziliyor mu", "arkaya yazı yazılıyor mu",
+    "arka tarafa yazi oluyor mu", "arka tarafa yazi olur mu",
+    "arka tarafa yazi yazabilir", "arka tarafa yazı yazabilir",
+    "dua yazilir mi", "dua yazılır mı",
+    "isim yazilir mi", "isim yazılır mı",
+    "ne yazabiliriz arkasina", "ne yazabiliriz arkasına",
+    "arkasina ne yazabiliriz", "arkasına ne yazabiliriz",
+    "arkasina ne yazilir", "arkasına ne yazılır",
+    "arkaya ne yazabiliriz", "arkaya ne yazılır",
+    "ne yaziliyor genelde", "ne yazılıyor genelde",
+    "genelde ne yaziliyor", "genelde ne yazılıyor",
+    "arkasina ne yazdirabilir", "arkasına ne yazdırabilir",
+    "arkasina ne yazalim", "arkasına ne yazalım",
+    "o zaman arkasina", "o zaman arkasına",
+    "arka yazi ne olsun", "arka yazı ne olsun",
+    "arka yuze ne yazilir", "arka yüze ne yazılır",
+    "arka tarafa isim yazilir", "arka tarafa isim yazılır",
+    "arkasina isim yazilir", "arkasına isim yazılır",
+    "arka yuz", "arka yüz",
+  ],
+
+  back_photo_info: [
+    "arkali onlu fotograf olur mu", "arkalı önlü fotoğraf olur mu",
+    "arkali onlu foto olur mu", "arkalı önlü foto olur mu",
+    "arkali onlu", "arkalı önlü",
+    "onlu arkali", "önlü arkalı",
+    "cift tarafli", "çift taraflı", "iki tarafli", "iki taraflı",
+    "iki tarafa resim", "iki tarafa da resim",
+    "iki yuzune resim", "iki yüzüne resim",
+    "on yuze bir fotograf arka yuze bir fotograf",
+    "arkasina fotograf olur mu", "arkasına fotoğraf olur mu",
+    "arkasina foto olur mu", "arkasına foto olur mu",
+    "arka yuzune fotograf olur mu", "arka yüzüne fotoğraf olur mu",
+    "arka yuzune fotograf koyabiliyor", "arka yüzüne fotoğraf koyabiliyor",
+    "kolyenin iki yuzune de resim yapabilir misiniz",
+    "iki yuzune de foto olur mu", "iki yüzüne de foto olur mu",
+    "arka tarafa foto olur mu", "arka tarafa fotograf olur mu",
+    "arka tarafa baska foto", "arka tarafa baska fotograf",
+    "arka tarafa foto", "arka tarafa fotograf",
+    "iki resim olur mu", "iki resim oluyor mu", "2 resim olur mu",
+    "iki foto olur mu", "iki foto oluyor mu", "2 foto olur mu",
+    "iki resim", "iki foto", "2 resim", "2 foto",
+    "birlestir", "birleştir", "birlestirme", "birleştirme",
+    "yan yana", "yanyana",
+    "ayri ayri fotograf", "ayrı ayrı fotoğraf", "ayri ayri foto",
+    "iki kisinin foto", "iki kişinin foto", "iki kisinin resim", "iki kişinin resim",
+    "iki cocuk", "iki çocuk", "iki oglum", "iki oğlum",
+    "sigar mi", "sığar mı", "sigarmi", "sığarmı",
+    "3 kisi", "3 kişi", "uc kisi", "üç kişi",
+    "3 cocuk", "3 çocuk", "uc cocuk", "üç çocuk",
+    "3 oglu", "3 oğlu",
+    "3 lu fotograf", "3 lü fotoğraf", "uclu foto", "üçlü foto",
+    "3 resim", "uc resim", "üç resim",
+    "iki kisi oluyor mu", "iki kişi oluyor mu",
+    "iki kisinin fotosu", "iki kişinin fotosu",
+    "iki kisinin resmi", "iki kişinin resmi",
+    "iki kisi olur mu", "iki kişi olur mu",
+    "iki resmi birlestir", "iki resmi birleştir",
+    "kac kisi olur", "kaç kişi olur", "kac kisilik", "kaç kişilik",
+    "kac kisi sigar", "kaç kişi sığar",
+    "kac resim koyabilir", "kaç resim koyabilir",
+    "kac foto koyabilir", "kaç foto koyabilir",
+    "kac resim olur", "kaç resim olur",
+    "kac foto olur", "kaç foto olur",
+    "en fazla kac resim", "en fazla kaç resim",
+    "en fazla kac foto", "en fazla kaç foto",
+    "tek resim mi", "tek foto mu",
+  ],
+
+  back_text_skip: [
+    "yok", "istemiyorum", "gerek yok",
+    "bos kalsin", "boş kalsın", "bos olsun", "boş olsun",
+    "arka bos kalsin", "arka boş kalsın",
+    "yazi olmasin", "yazı olmasın", "arka yazi yok", "arka yazı yok",
+  ],
+
+  back_text_direct: [
+    "arkasina yazi", "arkasına yazı", "arka yazi", "arka yazı",
+    "arkasina tarih", "arkasına tarih", "arkaya yazi", "arkaya yazı",
+    "arka tarafa yazi", "arka tarafa yazı",
+  ],
+
+  post_sale: [
+    "siparis ettigim urun gelmedi", "sipariş ettiğim ürün gelmedi",
+    "urun gelmedi", "ürün gelmedi",
+    "siparis ne oldu", "sipariş ne oldu",
+    "kargom gelmedi", "gelmedi", "ulasmadi", "ulaşmadı",
+    "kolyem hazir mi", "kolyem hazır mı",
+    "ne zaman hazir", "ne zaman hazır",
+    "siparisim ne durumda", "siparişim ne durumda",
+    "siparisim hazir mi", "siparişim hazır mı",
+    "kargoya verildi mi",
+    "yola cikti mi", "yola çıktı mı",
+    "fotografi degistirmek", "fotoğrafı değiştirmek",
+    "arka yaziyi degistirmek", "arka yazıyı değiştirmek",
+    "siparisi degistirmek", "siparişi değiştirmek",
+    "degisiklik yapmak", "değişiklik yapmak",
+    "degistirebilir miyim", "değiştirebilir miyim",
+    "neden cevap vermiyorsunuz", "neden cevap vermiyor",
+    "niye cevap vermiyor", "cevap vermiyorsunuz",
+    "cvp yok", "cvp yok mu", "cevap alamadim", "cevap alamıyorum",
+    "soruma cevap", "bir sey soruyorum", "bir şey soruyorum",
+    "ulasami", "ulaşamı",
+    "bakar misiniz", "bakar mısınız",
+    "siparisim geldi ama", "siparişim geldi ama",
+    "yanlis geldi", "yanlış geldi", "yanlis gonderilmis", "yanlış gönderilmiş",
+    "sari geldi", "sarı geldi", "gumus istemiştim", "gümüş istemiştim",
+    "renk yanlis", "renk yanlış", "yanlis renk", "yanlış renk",
+    "istedigim gibi degil", "istediğim gibi değil",
+    "hatali geldi", "hatalı geldi", "hatali urun", "hatalı ürün",
+    "kirik geldi", "kırık geldi", "kirilan", "kırılan",
+    "kopuk geldi", "kopmuş", "kopmus",
+    "eksik geldi", "eksik gonderilmis", "eksik gönderilmiş",
+    "siparisim ne oldu", "siparişim ne oldu",
+    "kargom nerede", "kargom nerde",
+    "memnun degilim", "memnun değilim",
+    "siparisim yola cikti mi", "siparişim yola çıktı mı",
+    "ne zaman hazir olur", "ne zaman hazır olur",
+    "siparis ne zaman gelir", "sipariş ne zaman gelir",
+    "siparisimin durumunu", "siparişimin durumunu",
+    "siparisim durumu", "siparişim durumu",
+    "koymamissiniz", "koymamışsınız", "koymadigi", "koymadığı", "koymadin", "koymadın",
+    "yapilmamis", "yapılmamış", "yapmamissiniz", "yapmamışsınız",
+    "hatali urun", "hatalı ürün", "hatali yapilmis", "hatalı yapılmış",
+    "yenisi gonderilecek", "yenisi gönderilecek",
+  ],
+
+  new_order: [
+    "daha siparis", "daha sipariş",
+    "bir tane daha", "bir siparis daha", "bir sipariş daha",
+    "tekrar siparis", "tekrar sipariş",
+    "yeni siparis", "yeni sipariş",
+    "baska kolye", "başka kolye", "baska bir kolye", "başka bir kolye",
+    "arkadaslar da alacak", "arkadaşlar da alacak",
+    "bir kolye daha", "ayni adreste bir tane", "aynı adreste bir tane",
+    "bir tane daha yaptiracagim", "bir tane daha yaptıracağım",
+    "tekrar siparis verecegim", "tekrar sipariş vereceğim",
+    "ek siparis", "ek sipariş",
+  ],
+
+  example_request: [
+    "ornek atabilir misiniz", "örnek atabilir misiniz",
+    "ornek gorebilir miyim", "örnek görebilir miyim",
+    "ornek gormek istiyorum", "örnek görmek istiyorum",
+    "ornek gormek", "örnek görmek",
+    "ornek atar misiniz", "örnek atar mısınız",
+    "ornek gonderir misiniz", "örnek gönderir misiniz",
+    "ornek foto", "örnek foto",
+    "ornek var mi", "örnek var mı", "ornekler var mi", "örnekler var mı",
+    "yapilmis ornek", "yapılmış örnek",
+    "yapilmis resim", "yapılmış resim", "yapilmis resimler", "yapılmış resimler",
+    "modeli gorebilir", "modeli görebilir", "modelini gorebilir", "modelini görebilir",
+    "nasil cikiyor", "nasıl çıkıyor",
+    "daha once yaptiklariniz", "daha önce yaptıklarınız",
+    "yaptiginiz urunler", "yaptığınız ürünler",
+    "ornek gorseller", "örnek görseller",
+    "ornek calisma", "örnek çalışma",
+    "kutu nasil", "kutu nasıl", "kutusu nasil", "kutusu nasıl",
+    "kutu fotografi", "kutu fotoğrafı", "kutu gorseli", "kutu görseli",
+    "kutu var mi", "kutu var mı", "kutu ornegi", "kutu örneği",
+    "kutuda mi geliyor", "kutuda mı geliyor", "kutuda mi", "kutuda mı",
+    "kutusu var mi", "kutusu var mı", "nasil bir kutu", "nasıl bir kutu",
+    "hediye kutusu", "kutu icinde mi", "kutu içinde mi",
+    "gumus plaka", "gümüş plaka", "gumus ornek", "gümüş örnek",
+    "gumus rengi nasil", "gümüş rengi nasıl", "gumus nasil duruyor", "gümüş nasıl duruyor",
+    "gumus gorebilir miyim", "gümüş görebilir miyim", "gumus ornegi", "gümüş örneği",
+    "silver ornek", "silver örnek", "gumus fotograf", "gümüş fotoğraf",
+    "arka yazi ornegi", "arka yazı örneği", "arka yuz ornegi", "arka yüz örneği",
+    "arka tarafi nasil", "arka tarafı nasıl", "arka yuz nasil", "arka yüz nasıl",
+    "arka yuz gorebilir miyim", "arka yüz görebilir miyim",
+    "arka tarafi gorebilir miyim", "arka tarafı görebilir miyim",
+    "arkasi nasil", "arkası nasıl", "arkasinda ne var", "arkasında ne var",
+    "arka yazi nasil duruyor", "arka yazı nasıl duruyor",
+    "zincir gorebilir miyim", "zincir görebilir miyim",
+    "zincir fotografi", "zincir fotoğrafı", "zincir gorseli", "zincir görseli",
+    "zincir nasil duruyor", "zincir nasıl duruyor", "zincir ornegi", "zincir örneği",
+    "kalp ornegi", "kalp örneği", "kalp nasil duruyor", "kalp nasıl duruyor",
+    "kalp gorebilir miyim", "kalp görebilir miyim",
+    "charm ornegi", "charm örneği", "charm nasil", "charm nasıl",
+    "nazar boncugu ornegi", "nazar boncuğu örneği",
+    "gercekte nasil duruyor", "gerçekte nasıl duruyor",
+    "gercek fotograf", "gerçek fotoğraf", "gercek gorsel", "gerçek görsel",
+    "musteri yorumlari", "müşteri yorumları", "musterilerden", "müşterilerden",
+    "sizden gelenler", "gelen fotograflar", "gelen fotoğraflar",
+    "fotograf atar misiniz", "fotoğraf atar mısınız",
+    "gorsel atar misiniz", "görsel atar mısınız",
+    "gorsel gonderir misiniz", "görsel gönderir misiniz",
+    "nasil bir sey", "nasıl bir şey", "nasil gorunuyor", "nasıl görünüyor",
+    "yapilmis var mi", "yapılmış var mı", "hazir var mi", "hazır var mı",
+    "onceki calisma", "önceki çalışma", "onceki urunler", "önceki ürünler",
+    "biten siparis", "biten sipariş", "bitmis urun", "bitmiş ürün",
+    "fotograf var mi", "fotoğraf var mı", "gorsel var mi", "görsel var mı",
+    "resim atabilir misiniz", "resim gonderir misiniz", "resim gönderir misiniz",
+    "gorebilir miyim", "görebilir miyim",
+    "gorselleri gonder", "görselleri gönder",
+    "urun gorseli", "ürün görseli", "urun fotografi", "ürün fotoğrafı",
+  ],
+
+  detail_request: ["detay", "detaylar", "bilgi alabilir", "bilgi istiyorum", "bilgi verir misiniz"],
+
+  material_question: [
+    "celik mi", "çelik mi", "celikmi", "çelikmi",
+    "urun celik mi", "ürün çelik mi",
+    "urunler celik", "ürünler çelik",
+    "paslanmaz mi", "paslanmaz mı",
+    "malzeme ne", "malzemesi ne", "materyali ne", "materyali nedir",
+    "materyal ne", "materyal nedir", "materyal nedirr", "materyal ne acaba",
+    "neyden yap", "neyden uret", "neyden üret", "neyden imal",
+    "hangi malzeme", "hangi materyal", "hangi metal",
+    "gumus mu", "gümüş mü", "gumusmu", "gümüşmü",
+    "gumus mudur", "gümüş müdür",
+    "kolye gumus", "kolye gümüş",
+    "urun gumus", "ürün gümüş",
+    "celik kolye", "çelik kolye",
+    "celikmi", "çelikmi", "celismi", "çelişmi",
+    "altin mi", "altın mı", "altinmi", "altınmı",
+    "celik mi gumus mu", "çelik mi gümüş mü",
+    "alerji", "alerjim", "alerjik",
+    "suya dayanikli", "suya dayanıklı",
+    "hassas cilt", "cildim hassas",
+    "altin kaplama mi", "altın kaplama mı",
+    "gercek altin mi", "gerçek altın mı",
+    "som altin", "som altın",
+    "925 gumus", "925 gümüş",
+    "altin degil mi", "altın değil mi", "altindan mi", "altından mı",
+    "altin midir", "altın mıdır", "altin mi degil", "altın mı değil",
+    "zincir altin mi", "zincir altın mı", "zincir gumus mu", "zincir gümüş mü",
+    "zincir celik mi", "zincir çelik mi",
+    "kolye altin mi", "kolye altın mı",
+    "plaka altin mi", "plaka altın mı",
+    "neden altin", "neden altın", "niye altin", "niye altın",
+    "ne malzemeden", "neyden yapiliyor", "neyden yapılıyor",
+    "hangi malzeme", "hangi materyal",
+    "kaplama mi", "kaplama mı", "kaplamasini", "kaplamasını",
+    "dusta takilir", "duşta takılır", "dusta cikarilir", "duşta çıkarılır",
+    "denize girerken", "denizde takilir", "denizde takılır",
+    "havuzda takilir", "havuzda takılır",
+    "parfum etkiler", "parfüm etkiler", "parfum zarar", "parfüm zarar",
+    "ne tur metal", "ne tür metal", "madeni ne", "madeni nedir",
+    "metal mi", "metalmi", "hangi metal", "metal cinsi", "metalin cinsi",
+    "metal",
+    "neden yapiliyor", "neden yapılıyor", "neyle yapiliyor", "neyle yapılıyor",
+  ],
+
+  payment_confirmation: [
+    "ucreti attim", "ücreti attım",
+    "eft attim", "eft attım",
+    "havale gonderdim", "havale gönderdim",
+    "odeme yaptim", "ödeme yaptım",
+    "parayi gonderdim", "parayı gönderdim",
+    "parayi yolladim", "parayı yolladım",
+    "havale attim", "havale attım",
+    "gonderdim parayi", "gönderdim parayı",
+    "kontrol eder misiniz odemeyi", "kontrol edebilir misiniz odemeyi",
+    "kontrol eder misiniz ucreti", "kontrol edebilir misiniz ucreti",
+    "odeme kontrol", "ödeme kontrol",
+    "dekont atiyorum", "dekont atıyorum",
+    "dekont gonderiyorum", "dekont gönderiyor",
+    "gonderdim ucreti", "gönderdim ücreti",
+    "attim parayi", "attım parayı",
+    "attim ucreti", "attım ücreti",
+    "yaptim odemeyi", "yaptım ödemeyi",
+    "odedim", "ödedim",
+    "fast gonderdim", "fast gönderdim",
+    "fast attim", "fast attım",
+  ],
+};
+
+// ─── LETTER STOPWORDS (ataç harf girişi false positive koruması) ──
+export const LETTER_STOPWORDS = new Set([
+  "devam", "tamam", "evet", "olur", "merhaba", "selam", "slm", "fiyat", "ucret", "ücret",
+  "kapida", "kapıda", "eft", "havale", "odeme", "ödeme", "hayir", "hayır", "gonder", "gönder",
+  "yok", "istemiyorum", "gerek", "bos", "boş", "tmm", "tamamdir", "tamamdır", "peki", "ok",
+  "detay", "bilgi", "super", "süper", "harika", "amin", "insallah", "inşallah",
+  "masallah", "maşallah", "eyvallah",
+]);
+
+// ─── NOT_A_NAME phrases ─────────────────────────────────────
+export const NOT_A_NAME = [
+  "resimli", "fotografli", "fotolu", "lazer", "kolye", "atac", "ataç", "harfli",
+  "celik mi", "çelik mi", "celikmi", "çelikmi", "paslanmaz",
+  "madalyon", "nazar", "boncuk", "boncuklu",
+  "begendim", "beğendim", "begendik", "beğendik", "cok guzel", "çok güzel", "ne guzel", "ne güzel",
+  "saglik", "sağlık", "elinize", "ellerinize", "emeginize", "emeğinize",
+  "bayildim", "bayıldım", "harika", "super", "süper", "mukemmel", "mükemmel",
+  "siparis", "sipariş", "kargo", "teslimat",
+  "hazir mi", "hazır mı", "hazir", "hazır",
+  "goreyim", "görebilir", "gorebilir",
+  "istiyorum", "ilgileniyorum", "alayim", "alayım",
+  "detay", "bilgi", "fiyat", "ucret", "ücret",
+  "olur mu", "olurmu", "var mi", "var mı",
+  "yapilir mi", "yapılır mı", "yapar mi", "yapar mı",
+  "bekliyorum", "gonderdim", "gönderdim", "gonderirim", "gönderirim",
+  "yaziyorum", "yazıyorum", "yaptirmak", "yaptırmak",
+  "gelmedi", "ulasmadi", "ulaşmadı", "tekrar", "daha",
+  "indirim", "kampanya", "kapida", "kapıda", "durun", "dur",
+  "bu olsun", "olsun", "bunu", "bundan",
+  "kusura", "pardon", "ozur", "özür",
+  "basimdan", "basımdan", "onceden", "önceden",
+  "hevesle", "merakla",
+  "belirtmistim", "belirtmiştim", "belirttim",
+  "ertesi", "yarin", "yarın", "bugun", "bugün",
+  "atmalık", "ciglik", "çığlık",
+  "bence", "bana", "beni", "bize",
+  "gorseli", "görseli", "fotografini", "fotoğrafını",
+  "resimleri", "okeyliyelim", "okeyliyelin",
+  "sayfaniza", "sayfanıza", "sayfaya",
+  "satislar", "satışlar", "dilerim",
+  "aglattiniz", "ağlattınız",
+  "anlamli", "anlamlı", "degerli", "değerli",
+  "okunusu", "okunuşu", "kullansak", "yazsak", "yapsak",
+  "arkasinda", "arkasında", "kalir", "kalır",
+  "tamam", "olur", "peki", "evet", "dogru", "doğru",
+  "dikkat", "etmedim", "sorun", "sıkıntı", "sikinti",
+  "tesekkur", "teşekkür", "sagol", "sağol", "saol",
+  "merhaba", "selam",
+  "aldi", "aldı", "aldim", "aldım",
+  "nasil", "nasıl", "neden", "nicin", "niçin",
+  "diyarbakir", "diyarbakır", "silvan", "istanbul",
+  "ankara", "izmir", "antalya", "bursa", "adana",
+  "trabzon", "samsun", "konya", "kayseri", "mersin",
+  "gaziantep", "sanliurfa", "şanlıurfa", "malatya", "elazig", "elazığ",
+  "batman", "mardin", "van", "agri", "ağrı", "bolu",
+  "mugla", "muğla", "aydin", "aydın", "denizli",
+  "eskisehir", "eskişehir", "afyon",
+  "merkez", "ilce", "ilçe",
+  "attigi", "attığı", "attim", "attım", "atti", "attı",
+  "yazdim", "yazdım", "yazdi", "yazdı",
+  "sorucam", "soracagim", "soracağım",
+  "dedim", "dedi", "diyor", "diyorum",
+  "hayir", "hayır", "istemiyorum",
+  "tamamdir", "tamamdır", "anladim", "anladım",
+  "acaba", "birsey", "birşey", "esimin", "eşimin", "resminimi", "resmimi",
+  "yaptirsam", "yaptırsam", "sorabilir", "sorunlu",
+  "bilgisayar", "robot", "otomatik", "mesaj",
+  "kontrol", "bakacak", "bakamiyor", "bakamıyor",
+  "cevap", "neden", "niye",
+  "evlilik", "numaram", "numaraniz", "numaranız",
+  "yanlis", "yanlış", "yazinmis", "yazılmış", "yazilmis",
+  "bayrama", "bayram", "yetismez", "yetişmez",
+  "bayiltmis", "bayıltmış", "bayiltmisti", "bayıltmıştı",
+  "onemli", "önemli", "degil", "değil",
+  "liked", "message", "shared", "story",
+  "inşallah", "insallah", "maşallah", "masallah",
+  "razı", "razi", "olsun",
+  "atim", "atım", "hocam",
+  "olum", "ölüm", "tarihi",
+  "canim", "canım", "babam", "annem", "abim", "ablam",
+];
+
+// ─── TURKEY CITIES ──────────────────────────────────────────
+export const TURKEY_CITIES = [
+  "adana","adiyaman","afyonkarahisar","agri","aksaray","amasya","ankara","antalya","ardahan","artvin","aydin",
+  "balikesir","bartin","batman","bayburt","bilecik","bingol","bitlis","bolu","burdur","bursa",
+  "canakkale","cankiri","corum","denizli","diyarbakir","duzce",
+  "edirne","elazig","erzincan","erzurum","eskisehir",
+  "gaziantep","giresun","gumushane","hakkari","hatay",
+  "igdir","isparta","istanbul","izmir",
+  "kahramanmaras","karabuk","karaman","kars","kastamonu","kayseri","kilis","kirikkale","kirklareli","kirsehir","kocaeli","konya","kutahya",
+  "malatya","manisa","mardin","mersin","mugla","mus",
+  "nevsehir","nigde","ordu","osmaniye","rize",
+  "sakarya","samsun","siirt","sinop","sivas","sanliurfa","sirnak",
+  "tekirdag","tokat","trabzon","tunceli","usak","van","yalova","yozgat","zonguldak",
+];
+
+export const DISTRICT_KEYWORDS = [
+  "kadikoy","kadıköy","beykoz","uskudar","üsküdar","besiktas","beşiktaş",
+  "sisli","şişli","fatih","moda","kavacik","kavacık","eminonu","eminönü",
+  "nusaybin","beyazit","beyazıt","kizilay","kızılay","cankaya","çankaya",
+  "beylikduzu","beylikdüzü","bagcilar","bağcılar","arnavutkoy","arnavutköy",
+  "esenyurt","avcilar","avcılar","bahcelievler","bahçelievler","bakirköy","bakırköy",
+  "maltepe","kartal","pendik","tuzla","sultanbeyli","umraniye","ümraniye",
+  "atasehir","ataşehir","sancaktepe","cekmekoy","çekmeköy","sultangazi",
+  "gaziosmanpasa","gaziosmanpaşa","eyup","eyüp","sariyer","sarıyer",
+  "kemerburgaz","buyukcekmece","büyükçekmece","kucukcekmece","küçükçekmece",
+  "basaksehir","başakşehir","zeytinburnu","gungoren","güngören",
+];
+
+// ─── ADDRESS KEYWORDS ───────────────────────────────────────
+export const ADDRESS_KEYWORDS = [
+  "mahalle","mah","sokak","sk","cadde","cd","bulvar","bulvari","no","daire","apt",
+  "apartman","apart","ap","kat","site","sitesi","blok","ilce","ilçe",
+  "mahallesi","ic kapi","iç kapı",
+  "konutlari","konutları","evleri","toki",
+  "caddesi","sokagi","sokağı","apartmani","apartmanı",
+];
+
+// ─── EXPLICIT PRODUCT SWITCH ────────────────────────────────
+export const EXPLICIT_SWITCH_PHRASES = [
+  "yok ben", "onun yerine", "degistirelim", "degistirmek istiyorum",
+  "değiştirelim", "değiştirmek istiyorum",
+  "ben atac alayim", "ben ataç alayım", "ben resimli istiyorum",
+  "ben lazer istiyorum", "ataç alayım", "atac alayim",
+  "fikrimi degistirdim", "fikrimi değiştirdim",
+];
+
+// ─── PRODUCT CONTEXT SWITCH — sinyal listeleri ─────────────────
+// Lazer lehine GÜÇLÜ sinyaller (tek başına switch yeterli)
+export const LAZER_STRONG_SIGNALS = [
+  "resim atacagim", "resim atacağım", "resim atcam", "resm atcam",
+  "foto atacagim", "foto atacağım", "fotoyu atiyim", "fotoyu atayım",
+  "resim gonderecegim", "resim göndereceğim", "gondercegim resmi", "göndereceğim resmi",
+  "foto gondericegim", "foto göndereceğim",
+  "resimli kolye istiyorum", "resimli istiyom", "resimli istiyorum",
+  "cocuklarimin resmi", "çocuklarımın resmi", "cocuklarim icin resim", "çocuklarım için resim",
+  "canim oglum", "canım oğlum", "canim kizim", "canım kızım",
+  "canim annem", "canım annem", "canim babam", "canım babam",
+  "on izleme resimli", "ön izleme resimli",
+  "lazer kolye istiyorum", "resimli lazer",
+  "arkaya dua", "arkasina dua", "arkasına dua",
+  // Prod logs fix: composition combo patterns (ataç stage'de foto/resim + kişi/sayı → lazer)
+  "iki foto", "iki fotograf", "iki fotoğraf", "iki resim",
+  "uc foto", "üç foto", "3 foto", "3 fotograf", "3 fotoğraf", "3 resim",
+  "4 foto", "4 fotograf", "4 fotoğraf", "4 resim",
+  "iki kisi resim", "iki kişi resim", "iki kisi foto", "iki kişi foto",
+  "uc kisi resim", "üç kişi resim", "3 kisi resim", "3 kişi resim",
+  "aile fotograf", "aile fotoğraf", "aile resmi",
+  "yan yana foto", "yan yana fotograf", "yan yana fotoğraf", "yan yana resim",
+  "2 tarafli resim", "2 taraflı resim", "iki tarafa resim", "iki tarafa foto", "iki tarafa fotograf",
+  "cok kisi foto", "çok kişi foto", "coklu foto", "çoklu foto", "coklu resim", "çoklu resim",
+  "uc kardes", "üç kardeş", "3 kardes", "3 kardeş",
+];
+
+// Lazer lehine ORTA sinyaller (birden fazlası bir arada switch yapar)
+export const LAZER_MEDIUM_SIGNALS = [
+  "resim", "foto", "fotograf", "fotoğraf", "gorsel", "görsel",
+  "on izleme", "ön izleme", "onizleme", "önizleme",
+  "resimli", "fotografli", "fotoğraflı",
+  "canim", "canım",
+  "cocuk resmi", "çocuk resmi", "bebek resmi", "cocugumun", "cocuklarimin", "cocugum",
+  "dua", "ayet", "sure", "isim tarih",
+  "arkaya yazi", "arkasina yazi", "arkasına yazı",
+];
+
+// Ataç lehine GÜÇLÜ sinyaller
+export const ATAC_STRONG_SIGNALS = [
+  "harf istiyorum", "harf kolye istiyorum", "harfli kolye istiyorum",
+  "uc harf", "üç harf", "3 harf",
+  "benim harflerim", "harflerimi yazin", "harflerimi yazın",
+  "atac istiyorum", "ataç istiyorum",
+];
+
+// Ambiguous — switch yapılmamalı
+export const PRODUCT_AMBIGUOUS_SIGNALS = [
+  "atac dusunuyorum ama resimli de", "ataç düşünüyorum ama resimli de",
+  "ikisine de bakiyorum", "ikisine de bakıyorum",
+  "resimli fiyati ne", "resimli fiyatı ne",
+  "ablam resimli ben harfli", "ablam icin resimli ben harfli",
+  "ikisi arasinda karar veremedim",
+  "fotograf gibi duruyor mu", "fotoğraf gibi duruyor mu",
+  "harfli mi resimli mi", "resimli mi harfli mi",
+  "atac mi lazer mi", "ataç mı lazer mi", "atacli mi resimli mi",
+  "ikisini de merak ettim",
+  "harfli istiyorum ama foto", "harfli ama resimli", "harfli ama foto",
+  "atac ama resimli", "ataç ama resimli",
+  "ben harfli dusun", "ben harfli düşün",
+];
+
+// ─── CRITICAL KNOWLEDGE FILES (AI fallback safety check) ────
+export const CRITICAL_KNOWLEDGE = [
+  "01 - Ortak Urun Bilgileri.txt",
+  "02 - Fiyat Listesi.txt",
+  "05 - Kargo.txt",
+  "06 - Odeme.txt",
+  "08 - Siparis.txt",
+];
+
+// ─── SIRA 6: SLOT CLAIM / PARTIAL SLOT / FULL BUNDLE ────────────────────────
+
+// Güçlü completed-claim sinyalleri (past tense — future değil)
+export const SLOT_CLAIM_SIGNALS = [
+  // Geçmiş zaman gönderim — spesifik (tek başına "ilettim"/"yazdım" çok geniş)
+  "attim","attım","atmistim","atmıştım",
+  "gonderdim","gönderdim","yolladim","yolladım","gondermistim","göndermistim",
+  "zaten attim","zaten attım","zaten yazdim","zaten yazdım",
+  "daha once attim","daha önce attım","demin attim","demin attım",
+  "hepsini attim","hepsini attım","hepsini yazdim","hepsini yazdım","hepsini ilettim",
+  "bilgileri ilettim","bilgileri yazdim","bilgileri gönderdim",
+  // Konum göstergeleri
+  "yukardaki","yukarda var","yukarida var","yukarda","yukarida","yukariya",
+  "ustte var","üstte var","ustte","üstte","ustteki","üstteki",
+  // "yazdım" kombinasyonları
+  "yazdim bilgileri","yazdım bilgileri","yazdim adres","yazdım adres","yazdim adim","yazdım adım",
+  "yazdim zaten","yazdım zaten","yazdim iste","yazdım işte",
+  "yazdim size","yazdım size","yazdim sana","yazdım sana","yazdim da","yazdım da",
+  "yazdim mi","yazdım mı","yazdimmiki","yazdımmıkı",
+  // Belirtme + standalone yazdım (waiting_product bağlamında general_claim için)
+  "iletmistim","iletmiştim","telefonu ilettim","adresi ilettim","bilgileri ilettim","belirttim",
+  "yazdim","yazdım",
+];
+
+// Future-intent sinyalleri — claim DEĞİL
+export const FUTURE_INTENT_SIGNALS = [
+  "atacagim","atacağım","atcam","gondericegim","göndereceğim","yollarim","yollarım",
+  "yazacagim","yazacağım","yazarim","yazarım","sonra yazarim","sonra yazarım",
+  "simdi aticam","birazdan yazarim","gonderecegim","göndereceğim","iletecegim",
+];
+
+// Claim target sinyalleri
+export const CLAIM_TARGET_PHOTO   = ["resmi attim","resmi attım","resmi gonderdim","fotoyu attim","fotoyu attım","foto gonderdim","resim yukarda","resim yukarida","resim yukarid","fotoyu yolladim","yukarda var","yukarida var","yukarta var"];
+export const CLAIM_TARGET_ADDRESS = ["adres attim","adres attım","adresi attim","adresi attım","adresi yazdim","adresi yazdım","adresi ilettim","adres yukarda","adres yukarida"];
+export const CLAIM_TARGET_PHONE   = ["telefonu attim","telefonu attım","telefonu yazdim","telefonu yazdım","telefonu ilettim","numarayi attim","numarayı attım","teli attim","teli attım"];
+export const CLAIM_TARGET_ALL     = ["hepsini attim","hepsini attım","hepsini yazdim","hepsini yazdım","hepsini ilettim","tum bilgileri","tüm bilgileri"];
+
+// Partial address sinyalleri
+export const PARTIAL_ADDRESS_SIGNALS = [
+  "istanbul","ankara","izmir","bursa","antalya","adana","konya","kayseri",
+  "trabzon","samsun","gaziantep","diyarbakir","mersin","eskisehir","afyonkarahisar",
+  "afyon","balikesir","manisa","malatya","erzurum","van","denizli","ordu","sakarya",
+  "kocaeli","gebze","mahallesi","mah ","cadde","cad ","sokak","sok ","bulvar",
+];
+
+// Phone regex
+export const PHONE_REGEX = /(?:0\s*5\d{2}[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}|0\s*5\d{9}|\+\s*90\s*5\d{9}|\+\s*905\d{9})/;
+
+// ─── SIRA 7: COMPLETED EDGE-CASE POLICY ─────────────────────────────────────
+
+// Completed stage neutral ack sinyalleri
+export const COMPLETED_NEUTRAL_ACK = [
+  "tmm","tmo","okay",
+  "anladim","anladım","anladik","anladık",
+  "tamam efendim","peki efendim","anladım efendim","oldu efendim",
+];
+
+// Completed stage gratitude sinyalleri
+export const COMPLETED_GRATITUDE = [
+  "tesekkur ederim","teşekkür ederim","tesekkurler","teşekkürler","cok tesekkur","çok teşekkür",
+  "elinize saglik","elinize sağlık","ellerinize saglik","ellerinize sağlık",
+  "allah razi olsun","allah razı olsun","allah razi etsin","hayirli olsun","hayırlı olsun",
+  "cok mutlu oldum","çok mutlu oldum","cok begendim","çok beğendim",
+  "gule gule","güle güle","hayirla kullanacagim","hayırla kullanacağım",
+  "iyi aksamlar","iyi akşamlar","iyi geceler","bol kazanclar","bol kazançlar",
+  "sagolun","sağolun","cok sagol","çok sağol",
+  "memnun kaldim","memnun kaldım","memnunum","cok memnun","çok memnun",
+];
+
+// Completed stage photo share request
+export const COMPLETED_PHOTO_SHARE_REQ = [
+  "hazirlaninca","hazırlanınca","hazir olunca","hazır olunca","bitince paylas","bitince paylaş",
+  "gondermeden once","göndermeden önce","kargoya vermeden","urun bitince","ürün bitince",
+  "yapinca foto","yapınca foto","gorsel paylas","görsel paylaş","foto atar misin","foto atar mısın",
+  "fotosunu atar","fotoğrafını atar","gorsel gelir mi","görsel gelir mi","paylaşır mısınız",
+  "photo paylasir","paylaşıyor musunuz","gorsel gonderir","görsel gönderir",
+  // ─── F4 genişletme ───
+  "hazirlanmis","hazırlanmış","hazirlanmis hal","hazırlanmış hal",
+  "hazirlanmis halini","hazırlanmış halini","hazirlanmis goru","hazırlanmış görü",
+  "atma sansiniz","atma şansınız","atma sansi","atma şansı","atma sans",
+  "gonderebilir misiniz","gönderebilir misiniz","gonderirseniz","gönderirseniz",
+  "gormek isterim","görmek isterim","gormek istiyorum","görmek istiyorum",
+  "gorebilir miyim","görebilir miyim","goremez miyim","göremez miyim",
+  "goremezmiyim","görebilirmiyim","gorebilirmiyim","görebilirmiyim",
+  "baskidan once","baskıdan önce","baski oncesi","baskı öncesi",
+  "nasil oldu","nasıl oldu","nasıl olmuş","nasil olmus","nasil olur","nasıl olur","nasil oöur","nasıl oöur",
+  "gormeden","görmeden","gormeden siparis","görmeden sipariş",
+  "onizleme","önizleme","on izleme","ön izleme","taslagini","taslağını",
+  "sipariş görseli","siparis gorseli","görsel atilacakti","görsel atılacaktı",
+  "gorsel atacakti","görsel atacaktı","resim atacakti","resim atacaktı",
+  "rica etsem atma","atmadiniz","atmadınız","donmediniz","dönmediniz",
+  "kolyenin yapilmis","kolyenin yapılmış","yapılmış hali","yapilmis hali",
+  "zinciri de atarsin","zinciri de atarsınız","bi bakayim","bı bakayım",
+  "nasil durdu","nasıl durdu","nasil durduguna bak","nasıl durduğuna bak",
+  "urunu goreme","ürünü göreme","urunu gorebil","ürünü görebil",
+  "hazirlandigini gorebil","hazırlandığını görebil",
+  "attigimiz gorseli","attığımız görseli","gonderdigimiz gorseli","gönderdiğimiz görseli",
+  "sipairs gorseli","sipariş gorseli",
+  "gorsel iletebilir","görsel iletebilir","gorsel iletir","görsel iletir",
+  "gorsel atabilir","görsel atabilir","gorsel ata","görsel ata",
+  "teyit icin mj","teyit için mj","teyit icin mjk","teyit için mjk",
+  "taslak atsam","taslak atsaniz","taslak atsanız","taslagi atsam","taslağı atsam",
+  "ala bilirmiyim","ala bilir miyim","alabilir miyim",
+];
+
+// Completed stage change request
+export const COMPLETED_CHANGE_REQ = [
+  "adresi degistir","adresi değiştir","adres yanlis","adres yanlış","adres hata","adres duzelt","adres düzelt",
+  "telefon yanlis","telefon yanlış","numara yanlis","numara yanlış","telefonu degistir","telefonu değiştir",
+  "isim yanlis","isim yanlış","isim degistir","isim değiştir",
+  "iptal etmek","siparisi iptal","siparişi iptal",
+  "arkasina bunu yaz","arkasına bunu yaz","arka yazi degis","arka yazı değiş",
+  "degistirmek istiyorum","değiştirmek istiyorum",
+];

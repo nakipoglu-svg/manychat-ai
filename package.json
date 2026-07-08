@@ -1,0 +1,8 @@
+{
+  "type": "module",
+  "scripts": {
+    "test": "node tests/regression-CURRENT-KNOWLEDGE.js && node tests/flow-CURRENT-KNOWLEDGE.js && node tests/product-selection-CURRENT-KNOWLEDGE.js && node tests/policy-v2-CURRENT-KNOWLEDGE.js && node tests/policy-env-CURRENT-KNOWLEDGE.js",
+    "test:current": "node tests/regression-CURRENT-KNOWLEDGE.js && node tests/flow-CURRENT-KNOWLEDGE.js && node tests/product-selection-CURRENT-KNOWLEDGE.js",
+    "test:policy-v2": "node tests/policy-v2-CURRENT-KNOWLEDGE.js"
+  }
+}

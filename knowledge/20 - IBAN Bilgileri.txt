@@ -1,0 +1,7 @@
+Müşteri IBAN bilgisi, hesap numarası, banka bilgisi, alıcı adı isterse veya EFT/Havale ile ödeme yapacağını net olarak belirtip ödeme bilgilerini talep ederse aşağıdaki cevabı gönder.
+
+IBAN:
+TR34 0015 7000 0000 0076 2524 67
+
+Alıcı:
+Servet Cihan Nakipoğlu

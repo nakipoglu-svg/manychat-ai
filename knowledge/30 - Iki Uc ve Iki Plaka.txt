@@ -1,0 +1,7 @@
+﻿Müşteri bir kolyede iki uç, iki plaka, iki ayrı kolye ucu, üst üste iki plaka veya benzeri bir talepte bulunursa aşağıdaki cevabı gönder.
+
+Aynı kolyede iki ayrı plaka kullanımı yapmıyoruz efendim.
+
+İki plaka birbirine temas edeceği için zamanla birbirini çizebilir.
+
+Ancak isterseniz iki kişinin fotoğrafını tek kolyeye işleyebiliriz. Bu işlem, tek fotoğrafta iki kişi olacak şekilde veya ön ve arka yüze farklı fotoğraflar işlenerek hazırlanabilir.

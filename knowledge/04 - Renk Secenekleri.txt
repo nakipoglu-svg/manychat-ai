@@ -1,0 +1,30 @@
+﻿Müşteri ürünün renk seçeneklerini, hangi renklerde hazırlandığını, model rengini, zincir rengini, plaka rengini, rose renk olup olmadığını veya kalp modelinin hangi renklerde bulunduğunu sorarsa aşağıdaki cevabı gönder.
+
+Renk Seçenekleri
+
+• Resimli Lazer Kolye - KADIN:
+  - Yuvarlak: Altın, Gümüş
+  - Kare: Altın, Gümüş
+  - Kalp: Altın
+
+• Resimli Lazer Kolye - ERKEK:
+  - Yuvarlak: Altın, Gümüş
+  - Künye: Altın, Gümüş
+
+• Resimli Bileklik: Altın
+
+• Resimli Anahtarlık:
+  - Gümüş plaka + Siyah zincir
+  - Gümüş plaka + Altın zincir
+  - Altın plaka + Altın zincir
+
+• Harfli Ataç Kolye + Bileklik Hediye: Altın
+
+• İsimli Yonca Kolye: Altın
+
+• Evcil Hayvan Mezar Taşı:
+  - Kaplamasız Çelik Plaka
+  - Antrasit Traverten Taş
+  - Krem Traverten Taş
+
+Renk seçenekleri ürüne göre değişiklik göstermektedir.

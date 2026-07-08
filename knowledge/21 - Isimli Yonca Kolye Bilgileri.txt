@@ -1,0 +1,9 @@
+Müşteri İsimli Yonca Kolye için kaç isim yazılacağını, yapraklara ne yazılabileceğini, isim yerine sembol eklenip eklenemeyeceğini veya sipariş için hangi bilgilerin gerektiğini sorarsa aşağıdaki cevabı gönder.
+
+İsimli Yonca Kolyemiz 4 yapraktan oluşmaktadır.
+
+Her yaprağa bir isim veya sembol işlenebilir.
+
+4 yaprağa 4 isim yazdırabilir ya da 3 isimle birlikte kalp, sonsuzluk işareti gibi 1 sembol seçebilirsiniz.
+
+Siparişiniz için yapraklarda yer almasını istediğiniz isim ve/veya sembolleri iletmeniz yeterlidir.

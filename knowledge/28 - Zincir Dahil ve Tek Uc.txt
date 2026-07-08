@@ -1,0 +1,7 @@
+﻿Müşteri ürünün zincirle birlikte gönderilip gönderilmediğini, sadece kolye ucu alıp alamayacağını, tek uç fiyatını, zincirin dahil olup olmadığını veya ürünün fotoğraftaki gibi gelip gelmeyeceğini sorarsa aşağıdaki cevabı gönder.
+
+Ürünlerimiz zinciriyle birlikte gönderilmektedir efendim.
+
+Sadece kolye ucu olarak gönderim yapmıyoruz.
+
+Ürünlerimiz web sitemizde ve profilimizde görünen ürün fotoğraflarındaki model yapısına uygun şekilde hazırlanıp gönderilmektedir.

@@ -1,0 +1,14 @@
+node_modules/
+.git/
+.github/
+.claude/
+_backup_*/
+.env
+.env.*
+tests/
+archive-unused/
+work/
+outputs/
+logs.xlsx
+*.zip
+*.log

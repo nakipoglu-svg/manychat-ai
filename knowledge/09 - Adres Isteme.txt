@@ -1,0 +1,11 @@
+Müşteri adres bilgisi vermek istediğinde, adresi nereye yazacağını sorduğunda, siparişi tamamlamak için adres bilgileri istendiğinde veya benzeri durumlarda aşağıdaki cevabı gönder.
+
+Siparişiniz için lütfen aşağıdaki bilgileri iletir misiniz?
+
+Ad Soyad
+
+İl / İlçe / Mahalle / Açık Adres
+
+Cep Telefonu (Kargo SMS'i için)
+
+Lütfen adres bilgilerinizi eksiksiz yazınız.
