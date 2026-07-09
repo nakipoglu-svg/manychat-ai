@@ -4,7 +4,7 @@
 // Gerekirse veto edip güvenli fallback verir.
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-import { PRICE, STAGE, REPLY_CLASS, SUPPORT_REASON, TEXT } from "./constants.js";
+import { PRICE, STAGE, REPLY_CLASS, SUPPORT_REASON, TEXT, FACTS } from "./constants.js";
 import { hasAny } from "./normalize.js";
 
 export function guardReply(reply, ctx, filledSlots, missingSlots) {
@@ -52,15 +52,20 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
     text = "Lazer kolyede zincir 60 cm standarttır efendim 😊";
   }
 
-  // Fiyat: sadece bilinen fiyatlar geçerli
+  // Fiyat: sadece bilinen fiyatlar geçerli — TEK KAYNAK: FACTS'ten türetilir.
+  // Zam yapıldığında constants.js/FACTS.fiyat değişince bu liste OTOMATİK güncellenir.
   const prices = text.match(/(\d{1,2}[.,]\d{3}|\d{3,4})\s*TL/g) || [];
-  const validPrices = new Set(["499","549","599","649","699","2999"]);
+  const eftPrices = Object.values(FACTS.fiyat);                                   // EFT/kart fiyatları
+  const kapidaPrices = Object.entries(FACTS.fiyat)
+    .filter(([k]) => k !== "mezar")                                               // mezar taşında kapıda yok
+    .map(([, v]) => v + FACTS.kapidaEk);                                          // kapıda = eft + ek ücret
+  const validPrices = new Set([...eftPrices, ...kapidaPrices].map(String));
   for (const p of prices) {
     const num = p.match(/(\d[\d.,]*)/)?.[1]?.replace(/[.,]/g, "");
     if (num && !validPrices.has(num) && !["50","300","25","20"].includes(num)) {
       console.log("[GUARD] VETO: invalid price", num);
-      if (product === "lazer") text = `EFT / Havale ile ${PRICE.LAZER_EFT} TL, kapıda ödeme ile ${PRICE.LAZER_KAPIDA} TL'dir efendim 😊`;
-      else if (product === "atac") text = `EFT / Havale ile ${PRICE.ATAC_EFT} TL, kapıda ödeme ile ${PRICE.ATAC_KAPIDA} TL'dir efendim 😊`;
+      if (product === "lazer") text = TEXT.LAZER_PRICE;
+      else if (product === "atac") text = TEXT.ATAC_PRICE;
       break;
     }
   }
