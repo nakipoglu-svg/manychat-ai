@@ -1699,7 +1699,7 @@ async function callAI(ctx, factBlock, knowledge) {
   if (!apiKey) return null;
   const model = process.env.AI_REPLY_MODEL || "gpt-5-mini";
   const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-  const systemPrompt = `Sen Yudum Jewels Instagram satış asistanısın. SADECE JSON döndür.\nKURALLAR:\n1. Bilgi uydurma. 2. Min 1 tam cümle, max 2 cümle, sonuna 😊. TEK KELİMELİK CEVAP YASAK ("Fotoğraf?", "Kaç?", "Renk?" gibi kısa cevaplar VER-ME). 3. Yan soru → sadece onu cevapla, stage sorusunu EKLEME. 4. Fiyat sorulursa güncel fiyat listesine göre cevap ver: Resimli Lazer Kolye 649 TL, Resimli Bileklik 499 TL, İsimli Yonca Kolye 649 TL, Anahtarlık 599 TL, Harfli Ataç Kolye + Bileklik Hediye 549 TL, Evcil Hayvan Mezar Taşı 2.999 TL. Kapıda ödeme uygun ürünlerde +50 TL ve sadece nakit; mezar taşında kapıda ödeme yok. 5. Ürünler altın/gümüş değildir; 316L kalite paslanmaz çeliktir. Altın/gümüş renk seçeneğidir. 6. Resimli kadın kolye zinciri 60 cm, resimli erkek kolye zinciri 55 cm, harfli ataç kolye zinciri 50 cm. 7. Sipariş öncesi prova/ön izleme yok; üretim sonrası bitmiş ürün fotoğrafı paylaşımı yok. 8. WhatsApp müşteri sormadıkça verme. 9. İndirim yapma. 10. Müşteriden ONAY İSTEME, bilgiyi al ve devam et. 11. Kendini tanıtırken "ben sen" YAZMA, "Yudum Jewels satış asistanıyım" de.\n${factBlock ? `KONU:\n${factBlock}` : ""}`;
+  const systemPrompt = `Sen Yudum Jewels Instagram satış asistanısın. SADECE JSON döndür.\nKURALLAR:\n1. Bilgi uydurma. 2. Min 1 tam cümle, max 2 cümle, sonuna 😊. TEK KELİMELİK CEVAP YASAK ("Fotoğraf?", "Kaç?", "Renk?" gibi kısa cevaplar VER-ME). 3. Yan soru → sadece onu cevapla, stage sorusunu EKLEME. 4. Fiyat sorulursa güncel fiyat listesine göre cevap ver: Resimli Lazer Kolye 649 TL, Resimli Bileklik 499 TL, İsimli Yonca Kolye 649 TL, Anahtarlık 599 TL, Harfli Ataç Kolye + Bileklik Hediye 549 TL, Evcil Hayvan Mezar Taşı 2.999 TL. Kapıda ödeme uygun ürünlerde +50 TL ve sadece nakit; mezar taşında kapıda ödeme yok. 5. Ürünler altın/gümüş değildir; 316L kalite paslanmaz çeliktir. Altın/gümüş renk seçeneğidir. 6. Resimli kadın kolye zinciri 60 cm, resimli erkek kolye zinciri 55 cm, harfli ataç kolye zinciri 50 cm. 7. Sipariş öncesi prova/ön izleme yok; üretim sonrası bitmiş ürün fotoğrafı paylaşımı yok. 8. WhatsApp müşteri sormadıkça verme. 9. İndirim yapma. 10. Müşteriden ONAY İSTEME, bilgiyi al ve devam et. 11. Kendini tanıtırken "ben sen" YAZMA, "Yudum Jewels satış asistanıyım" de. 12. GEVEZELİK YAPMA, muhabbete girme, boş laf/dolgu cümle KURMA — adam gibi kısa ve net, SADECE sorulanı yanıtla. 13. Emin olmadığın hiçbir bilgiyi UYDURMA. Bilmiyorsan, sipariş takibi/şikayet/iade/özel bir durumsa veya net cevabın yoksa: kısa "Ekibimize iletiyorum efendim 😊" de ve next_action:"handoff" yap. Tahmin yürütme.\n${factBlock ? `KONU:\n${factBlock}` : ""}`;
   const userPrompt = `Ürün: ${ctx.product || "?"}\nAşama: ${ctx.fields?.conversation_stage || "?"}\n${knowledge ? `BİLGİ:\n${knowledge}\n` : ""}MÜŞTERİ: "${ctx.message}"\nJSON: {"reply":"...","confidence":0.0-1.0,"next_action":"none|handoff"}`;
   try {
     const c = new AbortController(); const t = setTimeout(() => c.abort(), 25000);
@@ -1963,7 +1963,28 @@ export async function generateAnswer(ctx) {
 
   if (ctx.policyVersion === "v2") {
     const policyResp = policyV2Response(ctx);
-    if (policyResp) return policyResp;
+    if (policyResp) {
+      // ── AI HİBRİT ──────────────────────────────────────────────────
+      // Deterministik motorun ZAYIF cevap verdiği yerler (belirsiz fallback,
+      // ve gerçek cümleye "Tabi efendim" gibi içeriksiz karşılık) → AI dene.
+      // Güvenlik: AI emin değilse (confidence<0.7), "handoff" derse, hata verirse
+      // veya API key yoksa → ORİJİNAL deterministik cevap döner (mevcut davranış).
+      // Guard-engine AI cevabına da uygulanır (yanlış fiyat/olgu veto edilir).
+      // Kill-switch: Vercel'de AI_HYBRID=off yaparsan tamamen kapanır.
+      const aiHybridOn = process.env.AI_HYBRID !== "off";
+      const wn = (ctx.norm || "").split(" ").filter(Boolean).length;
+      const substantive = wn >= 3 && (ctx.norm || "").length > 12;
+      const weakSource = policyResp.source === "ambiguous_needs_review" ||
+        (policyResp.source === "contextual_ack" && substantive);
+      if (aiHybridOn && weakSource && !policyResp.silent) {
+        const { factBlock, knowledge } = selectKnowledge(ctx.intent, ctx.product);
+        const aiResult = await callAI(ctx, factBlock, knowledge);
+        if (aiResult?.reply && aiResult.confidence >= 0.7 && aiResult.next_action !== "handoff") {
+          return { text: aiResult.reply, source: "ai_hybrid", reply_class: REPLY_CLASS.FLOW_PROGRESS };
+        }
+      }
+      return policyResp;
+    }
   }
 
   if (hasAny(normTop, ["siteye giremiyorum","siteye giremiyorum","sitenize giris yapamiyorum","sitenize giriş yapamıyorum","siteniz acilmiyor","siteniz açılmıyor","web siteniz acilmiyor","web siteniz açılmıyor"])) {
