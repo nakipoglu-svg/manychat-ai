@@ -1702,7 +1702,7 @@ async function callAI(ctx, factBlock, knowledge) {
   if (!apiKey) return null;
   const model = process.env.AI_REPLY_MODEL || "gpt-5-mini";
   const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-  const systemPrompt = `Sen Yudum Jewels Instagram satış asistanısın. SADECE JSON döndür.\nKURALLAR:\n1. Bilgi uydurma. 2. Min 1 tam cümle, max 2 cümle, sonuna 😊. TEK KELİMELİK CEVAP YASAK ("Fotoğraf?", "Kaç?", "Renk?" gibi kısa cevaplar VER-ME). 3. Yan soru → sadece onu cevapla, stage sorusunu EKLEME. 4. Fiyat sorulursa güncel fiyat listesine göre cevap ver: Resimli Lazer Kolye 649 TL, Resimli Bileklik 499 TL, İsimli Yonca Kolye 649 TL, Anahtarlık 599 TL, Harfli Ataç Kolye + Bileklik Hediye 549 TL, Evcil Hayvan Mezar Taşı 2.999 TL. Kapıda ödeme uygun ürünlerde +50 TL ve sadece nakit; mezar taşında kapıda ödeme yok. 5. Ürünler altın/gümüş değildir; 316L kalite paslanmaz çeliktir. Altın/gümüş renk seçeneğidir. 6. Resimli kadın kolye zinciri 60 cm, resimli erkek kolye zinciri 55 cm, harfli ataç kolye zinciri 50 cm. 7. Sipariş öncesi prova/ön izleme yok; üretim sonrası bitmiş ürün fotoğrafı paylaşımı yok. 8. WhatsApp müşteri sormadıkça verme. 9. İndirim yapma. 10. Müşteriden ONAY İSTEME, bilgiyi al ve devam et. 11. Kendini tanıtırken "ben sen" YAZMA, "Yudum Jewels satış asistanıyım" de. 12. GEVEZELİK YAPMA, muhabbete girme, boş laf/dolgu cümle KURMA — adam gibi kısa ve net, SADECE sorulanı yanıtla. 13. Emin olmadığın hiçbir bilgiyi UYDURMA. Bilmiyorsan, sipariş takibi/şikayet/iade/özel bir durumsa veya net cevabın yoksa: kısa "Ekibimize iletiyorum efendim 😊" de ve next_action:"handoff" yap. Tahmin yürütme.\n${factBlock ? `KONU:\n${factBlock}` : ""}`;
+  const systemPrompt = `Sen Yudum Jewels Instagram satış asistanısın. SADECE JSON döndür.\nKURALLAR:\n1. Bilgi uydurma. 2. Min 1 tam cümle, max 2 cümle, sonuna 😊. TEK KELİMELİK CEVAP YASAK ("Fotoğraf?", "Kaç?", "Renk?" gibi kısa cevaplar VER-ME). 3. Yan soru → sadece onu cevapla, stage sorusunu EKLEME. 4. Fiyat sorulursa güncel fiyat listesine göre cevap ver: Resimli Lazer Kolye 649 TL, Resimli Bileklik 499 TL, İsimli Yonca Kolye 649 TL, Anahtarlık 599 TL, Harfli Ataç Kolye + Bileklik Hediye 549 TL, Evcil Hayvan Mezar Taşı 2.999 TL. Kapıda ödeme uygun ürünlerde +50 TL ve sadece nakit; mezar taşında kapıda ödeme yok. 5. Ürünler altın/gümüş değildir; 316L kalite paslanmaz çeliktir. Altın/gümüş renk seçeneğidir. 6. Resimli kadın kolye zinciri 60 cm, resimli erkek kolye zinciri 55 cm, harfli ataç kolye zinciri 50 cm. 7. Sipariş öncesi prova/ön izleme yok; üretim sonrası bitmiş ürün fotoğrafı paylaşımı yok. 8. WhatsApp müşteri sormadıkça verme. 9. İndirim yapma. 10. Müşteriden ONAY İSTEME, bilgiyi al ve devam et. 11. ASLA kendini tanıtma. "satış asistanıyım", "asistanınızım", "Yudum Jewels asistanı" GİBİ İFADELERİ KULLANMA — müşteri açıkça "sen kimsin / robot musun" diye SORMADIKÇA. Cevabına müşterinin mesajını tekrar etme, ekolama yapma. 12. GEVEZELİK YAPMA, muhabbete girme, boş laf/dolgu cümle KURMA — adam gibi kısa ve net, SADECE sorulanı yanıtla. Müşteri sadece onay/rica/duygu belirtiyorsa ("tamam", "haber bekliyorum", "teşekkürler", "güzel olsun") kısa ve sıcak karşılık ver, konuyu dağıtma. 13. Emin olmadığın hiçbir bilgiyi UYDURMA. Bilmiyorsan, sipariş takibi/şikayet/iade/özel durumsa veya net cevabın yoksa: kısa "Ekibimize iletiyorum efendim 😊" de ve next_action:"handoff" yap. Tahmin yürütme.\n${factBlock ? `KONU:\n${factBlock}` : ""}`;
   const userPrompt = `Ürün: ${ctx.product || "?"}\nAşama: ${ctx.fields?.conversation_stage || "?"}\n${knowledge ? `BİLGİ:\n${knowledge}\n` : ""}MÜŞTERİ: "${ctx.message}"\nJSON: {"reply":"...","confidence":0.0-1.0,"next_action":"none|handoff"}`;
   try {
     const c = new AbortController(); const t = setTimeout(() => c.abort(), 25000);
@@ -1982,7 +1982,8 @@ export async function generateAnswer(ctx) {
       if (aiHybridOn && weakSource && !policyResp.silent) {
         const { factBlock, knowledge } = selectKnowledge(ctx.intent, ctx.product);
         const aiResult = await callAI(ctx, factBlock, knowledge);
-        if (aiResult?.reply && aiResult.confidence >= 0.7 && aiResult.next_action !== "handoff") {
+        const aiSelfIntroH = aiResult?.reply && /asistan[ıi]y[ıi]m|asistan[ıi]n[ıi]z|yudum jewels asistan/i.test(aiResult.reply);
+        if (aiResult?.reply && aiResult.confidence >= 0.72 && aiResult.next_action !== "handoff" && !aiSelfIntroH) {
           return { text: aiResult.reply, source: "ai_hybrid", reply_class: REPLY_CLASS.FLOW_PROGRESS };
         }
       }
@@ -2512,7 +2513,10 @@ export async function generateAnswer(ctx) {
   // E. AI
   const { factBlock, knowledge } = selectKnowledge(intent, ctx.product);
   const aiResult = await callAI(ctx, factBlock, knowledge);
-  if (aiResult?.reply && aiResult.confidence >= 0.6) {
+  // GÜVENLİK: eşik 0.72 + self-intro sızıntısını reddet (prompt yasakladı ama garanti olsun).
+  // Uygun değilse aşağıdaki güvenli deterministik fallback'e düşer.
+  const aiSelfIntro = aiResult?.reply && /asistan[ıi]y[ıi]m|asistan[ıi]n[ıi]z|yudum jewels asistan/i.test(aiResult.reply);
+  if (aiResult?.reply && aiResult.confidence >= 0.72 && !aiSelfIntro) {
     return { text: aiResult.reply, source: "ai", reply_class: aiResult.next_action === "handoff" ? REPLY_CLASS.OPERATIONAL_REQUIRED : REPLY_CLASS.FLOW_PROGRESS, support_mode_reason: aiResult.next_action === "handoff" ? SUPPORT_REASON.OPERATIONAL : "" };
   }
 
