@@ -677,6 +677,11 @@ export function detectIntent(ctx) {
   // Shipping BEFORE trust — only explicit delivery questions
   if (hasAny(norm, ["kargo","teslimat","takip no","kargom nerede","teslim","sms gelir","mesaj gelir","bilgi gelir","haber verir"])) return "shipping";
   if (hasAny(norm, ["ne zaman gelir","kac gunde","kaç günde","ne zaman elimde","elime ulasir","elime ulaşır","ne kadar surede gelir","ne kadar sürede gelir","ne kadar surede ulasir","ne kadar sürede ulaşır","ne kadar surede elime","ne kadar sürede elime"])) return "shipping";
+  // İADE/GERİ GÖNDERME (soru VE talep/beyan) → return_policy (price/back_text'ten ÖNCE).
+  // "Ücreti iade edin", "sonra geri gönderirim" gibi ifadeler fiyat/back_text'e düşmesin.
+  if (hasAny(norm, ["iade", "degisim", "değişim", "begenmez", "beğenmez", "memnun kalmaz", "memnun olmaz",
+      "geri gonder", "geri gönder", "param iade", "paramı iade", "ucreti iade", "ücreti iade",
+      "iade istiyorum", "iade edin", "iade edecegim", "iade edeceğim", "iade ederim"])) return "return_policy_question";
   if (hasAny(norm, KW.chain)) return "chain_question";
   if (hasAny(norm, KW.material_question)) return "material_question";
   // Sağlam malzeme yakalama (typo/serbest ifade): "malzeme/materyal" + soru/eylem bağlamı → material.
