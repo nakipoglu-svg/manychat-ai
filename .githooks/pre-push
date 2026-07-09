@@ -1,0 +1,26 @@
+#!/bin/sh
+# ─────────────────────────────────────────────────────────────
+# DEPLOY GÜVENLİK KAPICISI
+# git push'tan ÖNCE testleri çalıştırır. Testler geçmezse push DURUR.
+# Böylece bozuk kod GitHub'a → Vercel'e → canlıya gidemez.
+# (Zorunlu bypass gerekirse: git push --no-verify)
+# ─────────────────────────────────────────────────────────────
+
+echo ""
+echo "🔍 Deploy öncesi testler çalışıyor (npm test)..."
+echo ""
+
+npm test
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ TESTLER GEÇMEDİ — push İPTAL edildi."
+  echo "   Bozuk kod canlıya gitmesin diye durdurdum abi."
+  echo "   Testleri düzelt, tekrar dene."
+  echo ""
+  exit 1
+fi
+
+echo ""
+echo "✅ Testler geçti — push devam ediyor, canlıya gidebilir."
+echo ""
+exit 0
