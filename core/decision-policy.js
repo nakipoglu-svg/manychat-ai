@@ -342,6 +342,18 @@ function classifyEmptyContextRecovery(ctx) {
     };
   }
 
+  // ARKA YAZI / ARKA FOTOĞRAF BİLGİ SORUSU — cevabı hazır, insana DEVRETME.
+  // "olur mu / yazılıyor mu / ücretli mi" gibi sorular. İçerik ("Anne 2020 yazsın")
+  // ayrı intent (back_text) ve slot akışında kalır; buraya düşmez.
+  if (["back_text_info", "back_text_question", "back_text_fit_question", "back_photo_info"].includes(ctx.intent)) {
+    return {
+      decision: POLICY_DECISION.FAQ_QUESTION,
+      behavior_category: BEHAVIOR_CATEGORY.FAQ_ANSWERED,
+      handoff_reason: "",
+      trace: ["matched:back_text_faq"],
+    };
+  }
+
   // ÖDEME YÖNTEMİ SORUSU — site/kart/kapıda ödeme sorularını insana DEVRETME, bot cevaplasın.
   // "Ödemeyi yaptım / sipariş oluşturdum / dekont" gibi tamamlanmış-sipariş beyanları
   // isOperational'da zaten yakalanıp insana gider; buraya yalnızca satış ÖNCESİ soru/niyet düşer.
