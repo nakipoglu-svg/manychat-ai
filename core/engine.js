@@ -5,7 +5,7 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import {
-  REPLY_CLASS, SUPPORT_REASON, TEXT, STAGE, PRODUCT,
+  REPLY_CLASS, SUPPORT_REASON, TEXT, STAGE, PRODUCT, SITE_URL,
   EXPLICIT_SWITCH_PHRASES, KW,
   LAZER_STRONG_SIGNALS, LAZER_MEDIUM_SIGNALS, ATAC_STRONG_SIGNALS, PRODUCT_AMBIGUOUS_SIGNALS,
 } from "./constants.js";
@@ -461,6 +461,30 @@ export async function processChat(body = {}) {
     output._debug = { intent: ctx.intent, source: meta.replySource, product: ctx.product };
     output.behavior_category = ctx.policyDecision?.behavior_category || categorizeCurrentBehavior(output);
     output.policy_version = ctx.policyVersion;
+
+    // ═══ DÖNGÜ KIRICI ═══
+    // Bot art arda AYNI TİP cevabı tekrarlıyorsa (müşteri takılmış, ilerleme yok),
+    // verbatim tekrar yerine ALTERNATİF yol öner (web sitesi + insan yardımı) — çıkmazı kır.
+    // Sadece aktif akışta; ilk mesajda (önceki cevap yok) tetiklenmez.
+    if (!reply.silent && output.ai_reply) {
+      const prevN = normalizeText(ctx.fields?.ai_reply || "");
+      const currN = normalizeText(output.ai_reply);
+      const stLoop = output.conversation_stage || "";
+      // BİREBİR tekrar: bot art arda tıpatıp aynı cevabı veriyor → müşteri takılmış.
+      // (Fuzzy eşleşme yanlış-pozitif veriyordu; exact-match hem kesin hem güvenli.)
+      const isRepeat = prevN && currN && prevN === currN;
+      const activeLoop = ["waiting_photo", "waiting_letters", "waiting_payment", "waiting_address"].includes(stLoop);
+      if (isRepeat && activeLoop) {
+        if (/fotograf/.test(currN)) {
+          output.ai_reply = `Fotoğrafınızı göndermekte bir sorun mu yaşıyorsunuz efendim? 😊 Dilerseniz siparişinizi web sitemizden de çok kolay oluşturabilirsiniz:\n${SITE_URL}\n\nİsterseniz sizi ekibimize de aktarabilirim.`;
+        } else if (/odeme/.test(currN)) {
+          output.ai_reply = `Ödeme konusunda yardımcı olmamı ister misiniz efendim? 😊 Web sitemizden kartla ya da kapıda ödeme ile çok kolay ilerleyebilirsiniz:\n${SITE_URL}\n\nDilerseniz sizi ekibimize de aktarabilirim.`;
+        } else {
+          output.ai_reply = `Size daha iyi yardımcı olabilmek isterim efendim 😊 Dilerseniz siparişinizi web sitemizden kolayca oluşturabilir ya da sizi ekibimize aktarabilirim:\n${SITE_URL}`;
+        }
+        output._debug.loop_break = true;
+      }
+    }
     output._trace = {
       policy_version: ctx.policyVersion,
       decision: ctx.policyDecision?.decision || "current_policy",
