@@ -1819,6 +1819,21 @@ function policyV2Response(ctx) {
     }
   }
 
+  // ÖDEME TERCİHİ — foto/harf/adres beklenirken bile "EFT/kapıda/nakit" denirse ONAYLA + KAYDET.
+  // expected_slot_reminder ("fotoğraf bekliyorum") veya handoff ile GÖRMEZDEN GELME.
+  // getSlotCommitResponse tüm state'leri doğru ele alıyor (foto eksik → "... foto sonra" vb.).
+  // Tamamlanmış sipariş ve human_support hariç — onlar doğru şekilde insana gider.
+  if (ctx.intent === "payment" && ctx.extracted?.payment) {
+    const stP = ctx.fields?.conversation_stage || "";
+    // Yalnızca AKTİF sipariş akışında onayla. Boş state / waiting_product'ta (aktif sipariş yok)
+    // ödeme detayı bağlamsız → mevcut recovery/handoff davranışı korunur.
+    const activeFlow = ["waiting_photo", "waiting_letters", "waiting_address", "waiting_payment"];
+    if (activeFlow.includes(stP)) {
+      const sc = getSlotCommitResponse("payment", ctx);
+      if (sc) return { text: sc, source: "slot_commit", reply_class: REPLY_CLASS.FLOW_PROGRESS };
+    }
+  }
+
   if (decision === POLICY_DECISION.SERIOUS_COMPLAINT) {
     return {
       text: "Çok özür dileriz efendim, sizi hemen bir insan temsilcimize yönlendiriyorum 😊",
