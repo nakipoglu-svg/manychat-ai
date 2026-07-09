@@ -271,7 +271,8 @@ function buildContext(body) {
 }
 
 function buildOutput(ctx, reply, committed, meta) {
-  let replyText = cleanReply(reply?.text || "") || TEXT.FALLBACK;
+  // SESSİZLİK: motor bilinçli olarak boş cevap döndüyse (saf onay/emoji), fallback ile DOLDURMA.
+  let replyText = reply?.silent ? "" : (cleanReply(reply?.text || "") || TEXT.FALLBACK);
   const s = committed;
   let stage = s._nextStage || s.conversation_stage || ctx.fields.conversation_stage || "";
   let orderStatus = s.order_status || "";
@@ -285,7 +286,7 @@ function buildOutput(ctx, reply, committed, meta) {
     supportMode = "";
     supportReason = "";
   }
-  if (!replyText || replyText === TEXT.FALLBACK) { supportMode = "1"; supportReason = SUPPORT_REASON.FALLBACK; replyClass = REPLY_CLASS.FALLBACK; }
+  if (!reply?.silent && (!replyText || replyText === TEXT.FALLBACK)) { supportMode = "1"; supportReason = SUPPORT_REASON.FALLBACK; replyClass = REPLY_CLASS.FALLBACK; }
   if (reply?.support_mode_reason) { supportReason = reply.support_mode_reason; supportMode = "1"; }
   if (replyText.includes("Hangi model ile ilgileniyorsunuz")) { menuShown = "evet"; if (!s.product) stage = STAGE.WAITING_PRODUCT; }
   if (s._nextStage === STAGE.ORDER_COMPLETED) { orderStatus = "completed"; siparisAlindi = "1"; }
@@ -375,8 +376,8 @@ export async function processChat(body = {}) {
     let reply = await generateAnswer(ctx);
     meta.replySource = reply.source || "none";
 
-    // Fallback
-    if (!reply.text) {
+    // Fallback (silent = bilinçli sessizlik, fallback doldurma)
+    if (!reply.text && !reply.silent) {
       const st = ctx.fields.conversation_stage;
       if (st === STAGE.WAITING_PHOTO) reply.text = "Fotoğrafınızı buradan iletebilirsiniz efendim 😊";
       else if (st === STAGE.WAITING_PAYMENT) reply.text = "EFT / Havale veya kapıda ödeme seçeneklerimiz mevcuttur efendim 😊";
@@ -386,8 +387,8 @@ export async function processChat(body = {}) {
       meta.replySource = "fallback";
     }
 
-    // Guard
-    reply = guardReply(reply, ctx, filledSlots, missingSlots);
+    // Guard (silent cevapta denetlenecek metin yok — atla)
+    if (!reply.silent) reply = guardReply(reply, ctx, filledSlots, missingSlots);
 
     // ═══ MERKEZİ POST-PROCESS: waiting_product menu-suffix ═══
     // Kök yapısal durum: info/material/color/shipping/accessory/trust/kararma/engraving/warranty

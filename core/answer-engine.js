@@ -1768,6 +1768,29 @@ function isPolicyV2PhotoCompositionQuestion(ctx) {
   ]);
 }
 
+// SESSİZLİK KRİTERİ — bot cevap vermeyip sussun mu?
+// Kural (onaylı): saf onay/emoji + BOŞTA (akış ortası/insan değil) → sus.
+//                 teşekkür/minnet VEYA akış ortası → normal cevap ver.
+function isSilenceEligible(ctx) {
+  const stage = ctx.fields?.conversation_stage || "";
+  // Akış ortası (foto/harf/ödeme/adres/ürün bekleniyor) → cevapla, susma.
+  if (["waiting_product", "waiting_photo", "waiting_letters", "waiting_payment", "waiting_address"].includes(stage)) return false;
+  // İnsan desteğindeyse dokunma (zaten operatöre gidiyor).
+  if (stage === STAGE.HUMAN_SUPPORT) return false;
+  const n = (ctx.norm || "").trim();
+  const raw = String(ctx.message || "").trim();
+  // Teşekkür / minnet → sıcak cevap, susma.
+  if (hasAny(n, ["tesekkur", "tesekkurler", "sagol", "saol", "saolun", "eyvallah", "minnet", "rica", "allah razi", "emegine", "elinize saglik"])) return false;
+  // Saf onay kelimeleri (tek başına)
+  const pureAck = ["tamam", "tamamdir", "ok", "okey", "oki", "peki", "anladim", "evet", "olur", "tmm", "tmmm", "tamamm"];
+  if (pureAck.includes(n)) return true;
+  // Saf emoji/noktalama (harf/rakam yok) — ama minnet emojisi (🙏 ❤ 🤍 😊 🥰) DEĞİL.
+  const onlyEmojiPunct = raw.length > 0 && !/[a-zA-Z0-9çğıöşüÇĞİÖŞÜ]/.test(raw);
+  const gratitudeEmoji = /[\u{1F64F}\u{2764}\u{FE0F}\u{1F90D}\u{1F60A}\u{1F970}]/u; // 🙏 ❤️ 🤍 😊 🥰
+  if (onlyEmojiPunct && !gratitudeEmoji.test(raw)) return true;
+  return false;
+}
+
 function policyV2Response(ctx) {
   const decision = ctx.policyDecision?.decision || "";
   if (!decision || decision === POLICY_DECISION.EXPECTED_SLOT_VALUE) return null;
@@ -1860,6 +1883,11 @@ function policyV2Response(ctx) {
   }
 
   if (decision === POLICY_DECISION.SHORT_CONTEXT_REPLY) {
+    // SESSİZLİK: saf onay/emoji + boşta (akış ortası değil) → cevap verme.
+    // Teşekkür/minnet ve akış-ortası → normal sıcak cevap.
+    if (isSilenceEligible(ctx)) {
+      return { text: "", source: "silent", reply_class: "silent", silent: true };
+    }
     return { text: "Tabi efendim 😊", source: "contextual_ack", reply_class: REPLY_CLASS.FIXED_INFO };
   }
 
