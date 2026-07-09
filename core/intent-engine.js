@@ -875,6 +875,10 @@ export function detectIntent(ctx) {
     return "chain_question";
   }
 
+  // TESLİMAT SÜRESİ — "ne kadar sürede/kaç günde/ne zaman gelir/ulaşır" → kargo (price'tan ÖNCE).
+  // "ne kadar" fiyat kelimesi olduğu için price'a düşüyordu; teslimat bağlamında kargo olmalı.
+  if (hasAny(norm, ["ne kadar sure","ne kadar süre","kac gunde","kaç günde","kac gune","kaç güne","ne zaman gel","ne zaman ulas","ne zaman ulaş","surede gel","sürede gel","kacta gel","kaçta gel","kac gun sur","kaç gün sür","gun icinde gel","gün içinde gel","ne zaman kargo","kac gunde gel","kaç günde gel","elime ne zaman","elime kac","kargoya ne zaman"])) return "shipping";
+
   if (hasAny(norm, KW.price)) return "price";
 
   // ═══ 8. BACK TEXT (waiting_payment, explicit signal) ═══

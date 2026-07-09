@@ -446,6 +446,9 @@ export async function processChat(body = {}) {
         !/amin efendim|sağlıkla kullansın/i.test(replyText) &&
         !/otomatik mesajla yardımcı oluyoruz|ekibimiz de gerekli durumlarda/i.test(replyText) &&
         !/tüm ürünlerimizin örnekleri profilimizde|modellerimizi ve ürün detaylarımızı/i.test(replyText) &&
+        // Fiyat listesi zaten TÜM ürünleri gösteriyor → "Hangi model?" eklemek gereksiz/rahatsız edici
+        !/Güncel Fiyat Listemiz/i.test(replyText) &&
+        ctx.intent !== "price" && ctx.intent !== "price_confirmation" &&
         // Cevap çok kısa nötr ise ekleme
         replyText.length > 25;
 
