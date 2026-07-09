@@ -908,7 +908,7 @@ function getDeterministicInfoResponse(intent, ctx) {
       const compBase = `Fotoğraf birleştirme hizmetimiz bulunmamaktadır efendim. Ancak tek fotoğrafta birden fazla kişi varsa işleyebiliriz; ayrıca ön ve arka yüze farklı fotoğraf yapılabilir.`;
       // Mesajda fiyat ipuçları varsa fiyatla birlikte menüyü ver
       if (hasAny(norm, ["ne kadar","kac tl","kaç tl","fiyat","ucret","ücret"])) {
-        return `${compBase}\n\nFiyatlarımız:\n\n📸 Resimli Lazer Kolye: EFT / Sitemizden Kartla Ödeme: ${PRICE.LAZER_EFT} TL, Kapıda Ödeme: ${PRICE.LAZER_KAPIDA} TL\n✨ Harfli Ataç Kolye: EFT / Sitemizden Kartla Ödeme: ${PRICE.ATAC_EFT} TL, Kapıda Ödeme: ${PRICE.ATAC_KAPIDA} TL\n\nHangi model ile ilgileniyorsunuz efendim?`;
+        return `${compBase}\n\n${CURRENT_PRICE_LIST}`;
       }
       return `${compBase}\n\nResimli Lazer Kolye: EFT / Sitemizden Kartla Ödeme: ${PRICE.LAZER_EFT} TL, Kapıda Ödeme: ${PRICE.LAZER_KAPIDA} TL. Hangi model ile ilgileniyorsunuz efendim?`;
     }
@@ -1045,7 +1045,7 @@ function getDeterministicInfoResponse(intent, ctx) {
     if (effectiveProduct === "lazer") return `EFT / Sitemizden Kartla Ödeme: ${PRICE.LAZER_EFT} TL, kapıda ödeme ${PRICE.LAZER_KAPIDA} TL'dir efendim 😊`;
     if (effectiveProduct === "atac") return `EFT / Sitemizden Kartla Ödeme: ${PRICE.ATAC_EFT} TL, kapıda ödeme ${PRICE.ATAC_KAPIDA} TL'dir efendim 😊`;
     if (effectiveProduct === "yonca") return `EFT / Sitemizden Kartla Ödeme: ${PRICE.YONCA_EFT} TL, kapıda ödeme ${PRICE.YONCA_KAPIDA} TL'dir efendim 😊`;
-    return `Fiyatlarımız:\n\n📸 Resimli Lazer Kolye: EFT / Sitemizden Kartla Ödeme: ${PRICE.LAZER_EFT} TL, Kapıda Ödeme: ${PRICE.LAZER_KAPIDA} TL\n✨ Harfli Ataç Kolye: EFT / Sitemizden Kartla Ödeme: ${PRICE.ATAC_EFT} TL, Kapıda Ödeme: ${PRICE.ATAC_KAPIDA} TL\n\nHangi model ile ilgileniyorsunuz efendim? 😊`;
+    return CURRENT_PRICE_LIST;
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -1554,9 +1554,9 @@ function getToneResponse(intent, ctx) {
     if (hasAny(norm, ["nasilsin","nasılsın","nasilsiniz","nasılsınız","naber","nabersin","ne haber","iyi misin","iyimisin","iyi misiniz","iyimisiniz","keyifler","ne yapiyorsun","ne yapıyorsun"])) {
       return isFirstMessage ? "İyiyiz efendim, teşekkür ederiz 😊 Size nasıl yardımcı olabilirim?" : "İyiyiz efendim, teşekkür ederiz 😊";
     }
-    if (hasAny(norm, ["tesekkur","teşekkür","tsk","tşk","tesekurler","teşekkürler","tesekur","teşekür"])) return isFirstMessage ? `Rica ederiz efendim 😊 Hangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye` : "Rica ederiz efendim 😊";
+    if (hasAny(norm, ["tesekkur","teşekkür","tsk","tşk","tesekurler","teşekkürler","tesekur","teşekür"])) return isFirstMessage ? `Rica ederiz efendim 😊\n\nHangi ürün ile ilgileniyorsunuz?\n\n1️⃣ Resimli Lazer Kolye\n2️⃣ Resimli Bileklik\n3️⃣ İsimli Yonca Kolye\n4️⃣ Anahtarlık\n5️⃣ Harfli Ataç Kolye + Bileklik Hediye\n6️⃣ Evcil Hayvan Mezar Taşı` : "Rica ederiz efendim 😊";
     if (hasAny(norm, ["basiniz sagolsun","başınız sağolsun","basiniz sag olsun","başınız sağ olsun"])) return "Teşekkür ederiz efendim 🤍";
-    if (hasAny(norm, ["sagol","sağol","sag ol","sağ ol","sagolun","sağolun","saol","saolun","sağ olun","cok saolun","çok sağolun","cok sagolun"])) return isFirstMessage ? `Rica ederiz efendim 😊 Hangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye` : "Rica ederiz efendim 😊";
+    if (hasAny(norm, ["sagol","sağol","sag ol","sağ ol","sagolun","sağolun","saol","saolun","sağ olun","cok saolun","çok sağolun","cok sagolun"])) return isFirstMessage ? `Rica ederiz efendim 😊\n\nHangi ürün ile ilgileniyorsunuz?\n\n1️⃣ Resimli Lazer Kolye\n2️⃣ Resimli Bileklik\n3️⃣ İsimli Yonca Kolye\n4️⃣ Anahtarlık\n5️⃣ Harfli Ataç Kolye + Bileklik Hediye\n6️⃣ Evcil Hayvan Mezar Taşı` : "Rica ederiz efendim 😊";
     if (hasAny(norm, ["iyi gunler","iyi günler"])) return "Size de iyi günler efendim 😊";
     if (hasAny(norm, ["iyi aksamlar","iyi akşamlar"])) return "İyi akşamlar efendim 😊";
     if (hasAny(norm, ["iyi geceler"])) return "İyi geceler efendim 😊";
@@ -1677,7 +1677,7 @@ function getProductFlowResponse(intent, ctx) {
     if (st === STAGE.ORDER_COMPLETED || st === "order_completed") return TEXT.MAIN_MENU;
     // waiting_product/boş: fiyat bilgisini de içeren menu (yeni sipariş = price signal)
     // waiting_payment/waiting_address'te de testler menu bekliyor (siparişe ek devam değil, yeni ürün seçimi).
-    return `Tabi efendim 😊\n\nFiyatlarımız:\n\n📸 Resimli Lazer Kolye: EFT ${PRICE.LAZER_EFT} TL, kapıda ${PRICE.LAZER_KAPIDA} TL\n✨ Harfli Ataç Kolye: EFT ${PRICE.ATAC_EFT} TL, kapıda ${PRICE.ATAC_KAPIDA} TL\n\nHangi model ile ilgileniyorsunuz efendim?`;
+    return `Tabi efendim 😊\n\n${CURRENT_PRICE_LIST}`;
   }
   if (intent === "cancel_order") return "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊";
   if (intent === "photo_reference") return "Tabi efendim 😊 Belirttiğiniz fotoğrafı kullanacağız.";
