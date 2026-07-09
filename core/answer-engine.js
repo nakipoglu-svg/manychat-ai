@@ -980,9 +980,14 @@ function getDeterministicInfoResponse(intent, ctx) {
     return TEXT.WHATSAPP;
   }
   
-  // photo_format_question: "Vesikalık çektirsem mi", "Nasıl gönderiyoruz"
+  // photo_format_question: "Vesikalık çektirsem mi", "Nasıl gönderiyoruz", "Hangi yolla göndereyim"
   if (intent === "photo_format_question") {
-    return "Normal fotoğraf yeterlidir efendim 😊 Vesikalık olması gerekmez, net ve kaliteli olsun yeter. Buradan direkt iletebilirsiniz.";
+    // Vesikalık sorusu → net "vesikalık gerekmez" cevabı
+    if (hasAny(norm, ["vesikalik","vesikalık"])) {
+      return "Vesikalık olması gerekmez efendim 😊 Normal, net ve kaliteli bir fotoğraf yeterlidir. Fotoğrafınızı buradan direkt gönderebilirsiniz.";
+    }
+    // "Nasıl / hangi yolla göndereyim" → gönderme yöntemi (buradan + web sitesi)
+    return "Fotoğrafınızı buradan direkt iletebilirsiniz efendim 😊 Dilerseniz web sitemizden sipariş oluştururken de yükleyebilirsiniz. Normal, net bir fotoğraf yeterli; vesikalık olması gerekmez.";
   }
   
   // future_order_intent: "Yarın sipariş vereceğim"
@@ -1542,6 +1547,10 @@ function getToneResponse(intent, ctx) {
       }
       return "Merhaba efendim 😊 Size nasıl yardımcı olabilirim?";
     }
+    // Hal hatır: "Nasılsınız / naber / iyi misiniz" → sıcak karşılık
+    if (hasAny(norm, ["nasilsin","nasılsın","nasilsiniz","nasılsınız","naber","nabersin","ne haber","iyi misin","iyimisin","iyi misiniz","iyimisiniz","keyifler","ne yapiyorsun","ne yapıyorsun"])) {
+      return isFirstMessage ? "İyiyiz efendim, teşekkür ederiz 😊 Size nasıl yardımcı olabilirim?" : "İyiyiz efendim, teşekkür ederiz 😊";
+    }
     if (hasAny(norm, ["tesekkur","teşekkür","tsk","tşk","tesekurler","teşekkürler","tesekur","teşekür"])) return isFirstMessage ? `Rica ederiz efendim 😊 Hangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye` : "Rica ederiz efendim 😊";
     if (hasAny(norm, ["basiniz sagolsun","başınız sağolsun","basiniz sag olsun","başınız sağ olsun"])) return "Teşekkür ederiz efendim 🤍";
     if (hasAny(norm, ["sagol","sağol","sag ol","sağ ol","sagolun","sağolun","saol","saolun","sağ olun","cok saolun","çok sağolun","cok sagolun"])) return isFirstMessage ? `Rica ederiz efendim 😊 Hangi model ile ilgileniyorsunuz?\n\n• Resimli Lazer Kolye\n• Harfli Ataç Kolye` : "Rica ederiz efendim 😊";
@@ -1795,6 +1804,21 @@ function policyV2Response(ctx) {
   const decision = ctx.policyDecision?.decision || "";
   if (!decision || decision === POLICY_DECISION.EXPECTED_SLOT_VALUE) return null;
 
+  // SELAM / HAL-HATIR — karar ne olursa olsun (handoff bile olsa) selam insana ATILMAZ.
+  // Kısa ve saf selam/hal-hatır mesajları smalltalk handler'ının sıcak cevabını alsın.
+  {
+    const ng = ctx.norm || "";
+    const isShortGreeting = ng.length < 28 &&
+      hasAny(ng, ["nasilsin", "nasılsın", "naber", "nabersin", "ne haber", "iyi misin", "iyimisin", "keyifler",
+        "gunaydin", "günaydın", "iyi gunler", "iyi günler", "iyi aksamlar", "iyi akşamlar", "iyi geceler",
+        "kolay gelsin", "tesekkur", "teşekkür", "sagol", "sağol", "saol", "eyvallah"]) &&
+      !hasAny(ng, ["fiyat", "kac", "kaç", "ne kadar", "siparis", "sipariş", "kargo", "iade", "sorun", "problem"]);
+    if (isShortGreeting) {
+      const sm = getToneResponse("smalltalk", { ...ctx, intent: "smalltalk" });
+      if (sm) return { text: stripFlowPrompt(sm), source: "smalltalk", reply_class: REPLY_CLASS.FIXED_INFO };
+    }
+  }
+
   if (decision === POLICY_DECISION.SERIOUS_COMPLAINT) {
     return {
       text: "Çok özür dileriz efendim, sizi hemen bir insan temsilcimize yönlendiriyorum 😊",
@@ -1887,6 +1911,13 @@ function policyV2Response(ctx) {
     // Teşekkür/minnet ve akış-ortası → normal sıcak cevap.
     if (isSilenceEligible(ctx)) {
       return { text: "", source: "silent", reply_class: "silent", silent: true };
+    }
+    // Selam / hal-hatır / iyi günler gibi GERÇEK cevabı olan smalltalk → "Tabi efendim" yerine
+    // smalltalk handler'ının uygun cevabını ver (Nasılsınız → sıcak karşılık, Merhaba → menü/aşama).
+    const nSc = ctx.norm || "";
+    if (hasAny(nSc, ["nasilsin", "nasılsın", "nasilsiniz", "nasılsınız", "naber", "nabersin", "ne haber", "iyi misin", "iyimisin", "keyifler", "merhaba", "selam", "slm", "mrb", "gunaydin", "günaydın", "iyi gunler", "iyi günler", "iyi aksamlar", "iyi akşamlar", "iyi geceler", "kolay gelsin"])) {
+      const sm = getToneResponse("smalltalk", { ...ctx, intent: "smalltalk" });
+      if (sm) return { text: stripFlowPrompt(sm), source: "smalltalk", reply_class: REPLY_CLASS.FIXED_INFO };
     }
     return { text: "Tabi efendim 😊", source: "contextual_ack", reply_class: REPLY_CLASS.FIXED_INFO };
   }

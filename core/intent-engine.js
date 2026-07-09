@@ -147,11 +147,11 @@ export function detectIntent(ctx) {
       return "contact_channel_question";
     }
     
-    // ─── J14: Photo format / vesikalık (SADECE soru formatında) ───
-    // "Vesikalık mı olmalı" / "Vesikalık çektirsem mi"
-    if (hasQ && /(vesikalik|vesikalık)/i.test(norm) && 
-        /\b(mi|mı|mu|mü)\b/i.test(raw) && 
-        !/(yok|yokk|olmaz)/i.test(norm)) {
+    // ─── J14: Photo format / vesikalık ───
+    // "Vesikalık mı olmalı", "Vesikalık gerekiyor mu", "Vesikalık olması lazım mı" vb.
+    // "vesikalık" geçen her mesaj (olumsuzlama hariç) → vesikalık cevabı ("gerekmez").
+    // Soru işareti/"mı" şartı KALDIRILDI — müşteri çoğu zaman ? koymuyor.
+    if (/(vesikalik|vesikalık)/i.test(norm) && !/(yok|yokk|olmaz|olması gerekmez|gerek yok)/i.test(norm)) {
       return "photo_format_question";
     }
     
@@ -221,6 +221,13 @@ export function detectIntent(ctx) {
     
     // "Bir de buradan mi gonderiyorhz" / "buradan mı göndereyim" → photo_format
     if (hasQ && /(buradan|buraya).*(gonder|gönder|iletec|ilet m|mi gon|mi ilet)/i.test(norm)) {
+      return "photo_format_question";
+    }
+
+    // "Nasıl göndereceğim / hangi yolla göndereyim / nereden yükleyeyim" → foto gönderme yöntemi.
+    // Bu blok yalnızca bekleme aşamalarında çalışır → foto bağlamı. Ödeme verbleri yok, karışmaz.
+    if (/(nasil|nasıl|hangi yol|hangi yoldan|nereden|ne sekilde|ne şekilde)/i.test(norm) &&
+        /(gonder|gönder|ilet|yolla|at[iı]yor|atar|atac|atıc|paylas|paylaş|yukle|yükle)/i.test(norm)) {
       return "photo_format_question";
     }
     
