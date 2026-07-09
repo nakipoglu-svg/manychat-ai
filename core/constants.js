@@ -895,6 +895,8 @@ export const KW = {
     "urunler celik", "ürünler çelik",
     "paslanmaz mi", "paslanmaz mı",
     "malzeme ne", "malzemesi ne", "materyali ne", "materyali nedir",
+    "malzeme olarak", "malzeme kullan", "ne malzeme kullan", "materyal olarak", "materyal kullan",
+    "hangi malzemeden", "hangi materyalden", "neden yapiliyor", "neden yapılıyor", "nden yapiliyor",
     "materyal ne", "materyal nedir", "materyal nedirr", "materyal ne acaba",
     "neyden yap", "neyden uret", "neyden üret", "neyden imal",
     "hangi malzeme", "hangi materyal", "hangi metal",
