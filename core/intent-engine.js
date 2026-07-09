@@ -429,7 +429,10 @@ export function detectIntent(ctx) {
     "savciliga gidecegim","savcılığa gideceğim","savciliga gideceğim","savcılığa gidecegim",
     "savciliga verecegim","savcılığa vereceğim","savciya verecegim","savcıya vereceğim",
     "avukatim","avukatım","nitelikli dolandiricilik","nitelikli dolandırıcılık",
-    "sana ne soruyorum sen ne cevap veriyorsun","ne soruyorum sen ne cevap veriyorsun"
+    "sana ne soruyorum sen ne cevap veriyorsun","ne soruyorum sen ne cevap veriyorsun",
+    "ayni mesaj","aynı mesaj","ayni seyi yaziyor","aynı şeyi yazıyor","ayni seyleri yaziyor","aynı şeyleri yazıyor",
+    "ayni seyi yazip","aynı şeyi yazıp","yazip duruyor","yazıp duruyor","ayni cevap","aynı cevap",
+    "surekli ayni","sürekli aynı","ayni seyi tekrar","aynı şeyi tekrar","kopya mesaj","robot gibi"
   ])) return "frustration";
 
   // ═══════════════════════════════════════════════════════════════════════
