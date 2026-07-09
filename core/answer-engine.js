@@ -1938,7 +1938,13 @@ function policyV2Response(ctx) {
   }
 
   if (decision === POLICY_DECISION.EXPECTED_SLOT_REMINDER) {
-    return { text: expectedSlotReminder(ctx), source: "expected_slot_reminder", reply_class: REPLY_CLASS.FLOW_PROGRESS };
+    // Erken verilen adres/telefon KAYDEDİLİYOR ama cevap onu görmezden geliyordu.
+    // Bilgi verildiyse önce "aldım" de, sonra bekleyen adımı hatırlat.
+    let reminder = expectedSlotReminder(ctx);
+    if ((ctx.extracted?.hasAddress || ctx.extracted?.phone) && !/aldım|aldim/i.test(reminder)) {
+      reminder = `Bilgilerinizi aldım efendim 😊 ${reminder}`;
+    }
+    return { text: reminder, source: "expected_slot_reminder", reply_class: REPLY_CLASS.FLOW_PROGRESS };
   }
 
   if (decision === POLICY_DECISION.AMBIGUOUS) {
