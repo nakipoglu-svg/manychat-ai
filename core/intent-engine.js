@@ -676,6 +676,10 @@ export function detectIntent(ctx) {
   if (hasAny(norm, ["ne zaman gelir","kac gunde","kaç günde","ne zaman elimde","elime ulasir","elime ulaşır","ne kadar surede gelir","ne kadar sürede gelir","ne kadar surede ulasir","ne kadar sürede ulaşır","ne kadar surede elime","ne kadar sürede elime"])) return "shipping";
   if (hasAny(norm, KW.chain)) return "chain_question";
   if (hasAny(norm, KW.material_question)) return "material_question";
+  // Sağlam malzeme yakalama (typo/serbest ifade): "malzeme/materyal" + soru/eylem bağlamı → material.
+  // "Malzeme olarok ne kullanılıyor" gibi typo'ları da yakalar (AI wall-of-text'e düşmesin).
+  if ((norm.includes("malzeme") || norm.includes("materyal")) &&
+      hasAny(norm, ["ne ", " ne", "nedir", "kullan", "olar", "hangi", "mi", "mı", "neden", "yapi", "yapı", "uret", "üret", "imal"])) return "material_question";
   if (hasAny(norm, KW.trust)) return "trust";
   if (hasAny(norm, KW.location)) return "location";
   // Şubeden teslim
