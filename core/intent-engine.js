@@ -656,6 +656,11 @@ export function detectIntent(ctx) {
   // Dönüş/bekleme — shipping'den ÖNCE (birkaç gün → "kac gun" false match engeli)
   if (hasAny(norm, ["donus yapacagim","dönüş yapacağım","donus yapicam","dönüş yapıcam","tekrar donecegim","tekrar döneceğim","dusunup","düşünüp","dusuneyim","düşüneyim","dusunuyorum","düşünüyorum","sonra yazacagim","sonra yazacağım"])) return "general";
   
+  // Arka yazı ÜCRET/DAHİL sorusu → back_text_info (shipping_price ve price'tan ÖNCE).
+  // "arka yazı fiyata dahil mi / ücretli mi / ekstra para mı" → cevap: ücretsiz.
+  if (hasAny(norm, ["arka yazi","arka yazı","arkaya yazi","arkaya yazı","arkasina yazi","arkasına yazı","arka yuze yazi","arka yüze yazı","arka yuz yazi","arka taraf yazi","arkaya isim","arkasina isim","arka yuze isim"]) &&
+      hasAny(norm, ["ucret","ücret","ucretli","ücretli","para mi","para mı","ek ucret","ek ücret","ekstra","fark var","dahil mi","fiyata dahil","ucreti var","ücreti var","parali","paralı"])) return "back_text_info";
+
   if (hasAny(norm, KW.shipping_price)) return "shipping_price";
   // Shipping BEFORE trust — only explicit delivery questions
   if (hasAny(norm, ["kargo","teslimat","takip no","kargom nerede","teslim","sms gelir","mesaj gelir","bilgi gelir","haber verir"])) return "shipping";
@@ -748,6 +753,9 @@ export function detectIntent(ctx) {
   if (hasAny(norm, KW.back_text_info)) return "back_text_info";
   // Ek back_text_info: "arkasına" + soru kalıbı (tarih/isim/yazı atiyor mu vs)
   if (hasAny(norm, ["arkasina","arka kismina","arka kısmına","arka yuze","arka yüze"]) && hasAny(norm, ["atiyor","atıyor","yaziyor","yazıyor","olur mu","oluyor mu","yapiliyor","yapılıyor","yazilir","yazılır","eklenebilir","yazabilir","yazabiliyor","koyabiliyor","yazdir","yazdır","olabilir","yazalim","yazalım","basabilir","koyabilir"])) return "back_text_info";
+  // Arka yazı ÜCRET sorusu → back_text_info (price'a düşmesin; cevap: ücretsiz)
+  if (hasAny(norm, ["arkasina","arkasına","arka yuze","arka yüze","arka yuz","arka yüz","arkaya","arka taraf","arka yazi","arka yazı","arka yazinin","arka yazının"]) &&
+      hasAny(norm, ["ucret","ücret","ucretli","ücretli","para mi","para mı","ek ucret","ek ücret","ekstra","fark var","dahil mi","fiyata dahil","ucreti var","ücreti var","parali","paralı"])) return "back_text_info";
 
   // ━━━ FIX F5: composition_question back_photo_info'dan ÖNCE ━━━
   // KW.composition_question genişletilmiş olduğundan artık geniş yakalıyor
