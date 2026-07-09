@@ -170,9 +170,9 @@ const cases = [
     notIncludes: "0505 471 35 45",
   },
   {
-    name: "Çoklu adet fiyat uydurmaz",
+    name: "Çoklu adet → sepet %15 indirimini söyler, fiyat uydurmaz",
     input: lazer("2 tane istiyorum fiyat ne olur?"),
-    includes: ["çoklu adet", "ekibimize iletiyorum"],
+    includes: ["%15 indirim", "iki ve üzeri"],
     notIncludes: ["1298", "1398", "1000"],
   },
   {

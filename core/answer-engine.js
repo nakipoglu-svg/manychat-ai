@@ -41,6 +41,11 @@ Dilerseniz buradan da yardımcı olabiliriz; ancak en hızlı ve kolay sipariş 
 
 ${FACTS.site}`;
 
+// SEPET İNDİRİMİ — TEK KAYNAK. Yalnızca soran/çok alan müşteriye gösterilir; başka yere serpilmez.
+// Kural: sitede sepete 2+ ürün eklenince toplam tutara OTOMATİK %15 indirim.
+const MULTI_DISCOUNT_INFO = `Sitemizde sepetinize iki ve üzeri ürün eklediğinizde toplam tutara otomatik %15 indirim uygulanıyor efendim 😊 Kolayca oluşturabilirsiniz:\n${FACTS.site}`;
+const BARGAIN_WITH_DISCOUNT = `Tek üründe fiyatımız sabittir efendim 😊 Ancak sitemizden sepetinize ikinci bir ürün eklerseniz toplam tutara otomatik %15 indirim uygulanıyor:\n${FACTS.site}`;
+
 const CURRENT_SHIPPING_INFO = `Tüm ürünlerimizde kargo ücretsizdir efendim. Gönderimlerimiz PTT Kargo ile yapılmaktadır.
 
 Kargo çıkışlarımız hafta içidir. Siparişiniz en geç takip eden iş günü kargoya teslim edilir.
@@ -325,7 +330,7 @@ function getDeterministicInfoResponse(intent, ctx) {
   if (hasAny(norm, ["zincir uzunluk","zincir kac cm","zincir kaç cm","zincir boyu","uzunlugu nasil","uzunluğu nasıl","zincir ne kadar","kac cm zincir","kaç cm zincir","zincir uzunlugu","zincir uzunluğu","kisa istemiyorum","kısa istemiyorum","gogse kadar","göğse kadar","gogus hizasi","göğüs hizası","uzun olsun","daha uzun olsun"])) return getChainInfo(p);
 
   // ── NORM-BASED BARGAIN (intent ne olursa olsun, indirim kelimesi varsa sabit) ──
-  if (hasAny(norm, ["indirimli olur","indirimli olsun","biraz indirimli"])) return "Fiyatlarımız sabit olarak belirlenmiştir efendim 😊";
+  if (hasAny(norm, ["indirimli olur","indirimli olsun","biraz indirimli"])) return BARGAIN_WITH_DISCOUNT;
 
   // ── SABRSIZLIK: ??? veya sadece soru işaretleri ──
   if (/^\?+$/.test((message||'').trim())) return "En kısa sürede dönüş sağlanacaktır efendim 😊";
@@ -1082,12 +1087,12 @@ function getDeterministicInfoResponse(intent, ctx) {
 
   // ── quantity_order: gerçek adet siparişi ──
   if (intent === "quantity_order") {
-    return "Tabi efendim, çoklu adet talebinizi ekibimize iletiyorum 😊 Adet ve ürün bilgisine göre en doğru fiyat bilgisini paylaşalım.";
+    return MULTI_DISCOUNT_INFO;
   }
 
   // ── MULTI ORDER ──
   if (intent === "multi_order") {
-    return "Tabi efendim, çoklu adet talebinizi ekibimize iletiyorum 😊 Adet ve ürün bilgisine göre en doğru fiyat bilgisini paylaşalım.";
+    return MULTI_DISCOUNT_INFO;
   }
 
   // ── SHIPPING ──
@@ -1315,9 +1320,7 @@ function getDeterministicInfoResponse(intent, ctx) {
 
   // ── BARGAIN ──
   if (intent === "bargain") {
-    if (hasAny(norm, ["cok pahali","çok pahalı"])) return "Fiyatlarımız sabit olarak belirlenmiştir efendim 😊";
-    if (hasAny(norm, ["indirim var mi","indirim var mı","indirim yapiyor","indirim yapıyor"])) return "Fiyatlarımız sabit olarak belirlenmiştir efendim 😊";
-    return "Fiyatlarımız sabit olarak belirlenmiştir efendim 😊";
+    return BARGAIN_WITH_DISCOUNT;
   }
 
   // ── POST SALE (norm-based, intent post_sale'e düşmeyebilir) ──
@@ -1685,7 +1688,7 @@ function getProductFlowResponse(intent, ctx) {
   if (p === "atac" && hasAny(norm, ["arkasina yazi","arkasına yazı","arka yuze","arka yüze","arka yazi","arka yazı"])) return "Bu modelde arka yüze yazı yapılmıyor efendim 😊";
 
   // Bargain (product flow'da da yakalansın)
-  if (intent === "bargain") return "Fiyatlarımız sabit olarak belirlenmiştir efendim 😊";
+  if (intent === "bargain") return BARGAIN_WITH_DISCOUNT;
 
   // WhatsApp
   if (hasAny(norm, ["whatsapp","numara alab","telefon alab","tel alab"])) return TEXT.WHATSAPP;

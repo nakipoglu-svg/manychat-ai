@@ -67,6 +67,10 @@ const FAQ_INTENTS = new Set([
   "general_question",
   "future_order_intent",
   "contact_channel_question",
+  // İndirim/çoklu alım soruları FAQ'dır — bot sepet %15 indirimini söyler, insana atmaz.
+  "bargain",
+  "quantity_order",
+  "multi_order",
 ]);
 
 const OPERATIONAL_INTENTS = new Set([
@@ -194,7 +198,7 @@ function isOperational(ctx) {
     "yardimci olursaniz", "yardımcı olursanız", "yardimci olur musunuz", "yardımcı olur musunuz",
     "mesajlarimi okur", "mesajlarımı okur", "dalga gectiniz", "dalga geçtiniz",
     "isim yanlis", "isim yanlış", "yanlis olmasin", "yanlış olmasın",
-    "indirim", "pahali", "pahalı", "cok fazla", "çok fazla",
+    "cok fazla", "çok fazla",
     "tirnak takiliyor", "tırnak takılıyor", "sorunu net anlars", "urun sorunu", "ürün sorunu",
     "urun anlayacaksiniz", "ürün anlayacaksınız", "kanaat vereceksiniz",
     "bakin siz kendiniz yazdiniz", "bakın siz kendiniz yazdınız",
