@@ -163,7 +163,9 @@ export function detectIntent(ctx) {
     if (/^(lutfen|lütfen|artik|artık)?\s*(soru.*cevap|cevap ver).*\b(mi|mı|musun|musunuz)/i.test(rawTrim)) {
       return "human_request";
     }
-    if (/\b(ortakl[ıi]k|bayi|toptan)\b/i.test(norm) && hasQ) {
+    // bayi/ortaklık = gerçek bayilik talebi → insana. "toptan" ise retail çoklu alım
+    // sinyali (müşteri "toptan alsam indirim?" diyor) → aşağıda multi_order'a düşer, %15 alır.
+    if (/\b(ortakl[ıi]k|bayi)\b/i.test(norm) && hasQ) {
       return "human_request";
     }
     // "Ya artık biri yardımcı olabilir mi"
@@ -853,6 +855,10 @@ export function detectIntent(ctx) {
         !hasPersonContext) return "multi_order";
     if (/\d\s*(li|lü|lu|lı)\s*(alim|alım|siparis|sipariş)/i.test(norm)) return "multi_order";
     if (hasAny(norm, ["toplu","coklu","çoklu"]) && hasAny(norm, ["indirim","fiyat"])) return "multi_order";
+    // "Toptan alabilir miyim" (toptan=her zaman çoklu) + "birden fazla alırsam" (satın-alma fiiliyle,
+    // 'birden fazla kişi/fotoğraf' kompozisyonu ile karışmasın diye).
+    if (hasAny(norm, ["toptan"]) && !hasPersonContext) return "multi_order";
+    if (norm.includes("birden fazla") && hasAny(norm, ["alir","alır","alsa","alsam","alsak","alacak","alacag","alabilir","siparis","sipariş","urun alir","ürün alır","adet"]) && !hasPersonContext) return "multi_order";
   }
 
   // Price confirmation (fiyat teyidi — pazarlık DEĞİL)
