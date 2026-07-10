@@ -1684,7 +1684,13 @@ function getProductFlowResponse(intent, ctx) {
     return `Tabi efendim 😊\n\n${CURRENT_PRICE_LIST}`;
   }
   if (intent === "cancel_order") return "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊";
-  if (intent === "photo_reference") return "Tabi efendim 😊 Belirttiğiniz fotoğrafı kullanacağız.";
+  if (intent === "photo_reference") {
+    // Aşama-duyarlı: ödeme/adres beklerken foto onayı verip AKIŞI ilerlet, öyle bırakma.
+    const stPr = ctx.fields?.conversation_stage || "";
+    if (stPr === STAGE.WAITING_PAYMENT) return "Tabi efendim, belirttiğiniz fotoğrafı kullanacağız 😊 Ödeme tercihinizi belirtebilir misiniz? EFT / Sitemizden Kartla Ödeme veya kapıda ödeme.";
+    if (stPr === STAGE.WAITING_ADDRESS) return "Tabi efendim, belirttiğiniz fotoğrafı kullanacağız 😊 Açık adres bilgileriniz ile devam edelim.";
+    return "Tabi efendim 😊 Belirttiğiniz fotoğrafı kullanacağız.";
+  }
   if (intent === "photo_change_request") return "Tabi efendim, değiştirmek istediğiniz görseli buradan paylaşabilirsiniz 😊";
 
   // Ataç foto/back_text block
@@ -2306,6 +2312,8 @@ export async function generateAnswer(ctx) {
             "saolun","sağolun","tesekkur","teşekkür","maşallah","masallah","insallah","inşallah",
             // smalltalk
             "merhaba","selam","nasil","nasıl","aksam","akşam","gunaydin","günaydın",
+            // nezaket/rica (isim değil — "İsim bilginizi aldım" yanlış beyanını önle)
+            "rica","saglik","sağlık","eline","elinize","saolun","sagol","sağol","helal","valla","canim","canım","efenim","nazar","boncuk","estagfurullah","eyvallah",
             // generic verb
             "neden","niye","nerede","ne zaman","nasilsin","nasılsın","bekliyorum","cevap"
           ])) {
