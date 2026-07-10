@@ -46,6 +46,10 @@ ${FACTS.site}`;
 const MULTI_DISCOUNT_INFO = `Sitemizde sepetinize iki ve üzeri ürün eklediğinizde toplam tutara otomatik %15 indirim uygulanıyor efendim 😊 Kolayca oluşturabilirsiniz:\n${FACTS.site}`;
 const BARGAIN_WITH_DISCOUNT = `Tek üründe fiyatımız sabittir efendim 😊 Ancak sitemizden sepetinize ikinci bir ürün eklerseniz toplam tutara otomatik %15 indirim uygulanıyor:\n${FACTS.site}`;
 
+// KAPIDA +50 NOTU — TEK KAYNAK. Müşteri kapıda ödemeyi seçince mutlaka söylenir
+// (fiyatı atlayıp direkt "kapıda ödeme" diyen müşteri +50'yi kapıda öğrenip küsmesin).
+const KAPIDA_EK_NOTE = ` Kapıda ödeme seçeneğinde +${FACTS.kapidaEk} TL kargo tahsilat ücreti uygulanmaktadır.`;
+
 const CURRENT_SHIPPING_INFO = `Tüm ürünlerimizde kargo ücretsizdir efendim. Gönderimlerimiz PTT Kargo ile yapılmaktadır.
 
 Kargo çıkışlarımız hafta içidir. Siparişiniz en geç takip eden iş günü kargoya teslim edilir.
@@ -156,7 +160,7 @@ function getSlotCommitResponse(intent, ctx) {
         return "EFT ile ilerleyebiliriz efendim 😊 Fotoğrafınızı gönderdikten sonra siparişe devam edelim.";
       }
       if (ctx.extracted?.payment === "kapida_odeme") {
-        return "Kapıda ödeme ile ilerleyebiliriz efendim 😊 Sadece nakit geçerlidir. Fotoğrafınızı gönderdikten sonra siparişe devam edelim.";
+        return `Kapıda ödeme ile ilerleyebiliriz efendim 😊 Sadece nakit geçerlidir.${KAPIDA_EK_NOTE} Fotoğrafınızı gönderdikten sonra siparişe devam edelim.`;
       }
       return "Ödeme tercihinizi aldım efendim 😊 Fotoğrafınızı gönderdikten sonra siparişe devam edelim.";
     }
@@ -184,9 +188,9 @@ function getSlotCommitResponse(intent, ctx) {
     if (ctx.product === PRODUCT.MEZAR_TASI) return `Mezar taşı siparişlerimizde kapıda ödeme bulunmamaktadır efendim 🙏 Ödeme EFT / havale ile alınmaktadır.\n${TEXT.EFT_INFO}${comboNote}`;
     // Kapıda + kartla → nakit uyarısı
     if (hasAny(norm, ["kart","kartla","kredi"])) return `Kapıda ödemede kredi kartı geçerli değildir efendim 😊 Kapıda ödeme yalnızca nakit olarak yapılmaktadır. Kredi kartı ile ödeme yapmak isterseniz web sitemizi kullanabilirsiniz.${comboNote}`;
-    if (addrDone) return `Kapıda ödeme ile ilerleyebiliriz efendim 😊 Sadece nakit geçerlidir.${comboNote}`;
-    if (phoneDone) return `Kapıda ödeme ile ilerleyebiliriz efendim 😊 Sadece nakit geçerlidir. Açık adres bilgileriniz ile devam edelim.${comboNote}`;
-    return `Kapıda ödeme ile ilerleyebiliriz efendim 😊 Sadece nakit geçerlidir. Ad soyad, cep telefonu ve açık adres bilgilerinizi yazabilirsiniz.${comboNote}`;
+    if (addrDone) return `Kapıda ödeme ile ilerleyebiliriz efendim 😊 Sadece nakit geçerlidir.${KAPIDA_EK_NOTE}${comboNote}`;
+    if (phoneDone) return `Kapıda ödeme ile ilerleyebiliriz efendim 😊 Sadece nakit geçerlidir.${KAPIDA_EK_NOTE} Açık adres bilgileriniz ile devam edelim.${comboNote}`;
+    return `Kapıda ödeme ile ilerleyebiliriz efendim 😊 Sadece nakit geçerlidir.${KAPIDA_EK_NOTE} Ad soyad, cep telefonu ve açık adres bilgilerinizi yazabilirsiniz.${comboNote}`;
   }
   if (intent === "payment_confirmation") {
     const isComp = ctx.fields?.order_status === "completed" || ctx.fields?.siparis_alindi === "1";

@@ -80,19 +80,20 @@ Notlar:
 async function judge(msg, stage, reply) {
   const userPrompt = `MÜŞTERİ: "${msg}"\nAŞAMA: ${stage || "yeni"}\nBOT CEVABI: "${reply}"\nDeğerlendir. JSON:`;
   try {
-    const c = new AbortController(); const to = setTimeout(() => c.abort(), 30000);
+    const c = new AbortController(); const to = setTimeout(() => c.abort(), 60000);
     const r = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       signal: c.signal,
-      body: JSON.stringify({ model, max_completion_tokens: 300, messages: [{ role: "system", content: JUDGE_SYSTEM }, { role: "user", content: userPrompt }] }),
+      // gpt-5* reasoning modelleri cevaptan ÖNCE token harcar; JSON'a yer kalması için bol ver
+      body: JSON.stringify({ model, max_completion_tokens: 2000, messages: [{ role: "system", content: JUDGE_SYSTEM }, { role: "user", content: userPrompt }] }),
     });
     clearTimeout(to);
     if (!r.ok) return { verdict: "HATA", reason: `api ${r.status}` };
     const d = await r.json();
     const txt = (d.choices?.[0]?.message?.content || "").replace(/```json|```/g, "").trim();
     let p; try { p = JSON.parse(txt); } catch { const m = txt.match(/"verdict"\s*:\s*"(\w+)"/); p = m ? { verdict: m[1], reason: txt.slice(0, 80) } : null; }
-    if (!p?.verdict) return { verdict: "HATA", reason: "parse" };
+    if (!p?.verdict) return { verdict: "HATA", reason: txt ? "parse:" + txt.slice(0, 40) : "bos(finish=" + (d.choices?.[0]?.finish_reason || "?") + ")" };
     return { verdict: String(p.verdict).toUpperCase(), reason: p.reason || "" };
   } catch (e) { return { verdict: "HATA", reason: String(e).slice(0, 60) }; }
 }
