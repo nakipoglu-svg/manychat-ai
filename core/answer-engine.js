@@ -320,6 +320,13 @@ function getDeterministicInfoResponse(intent, ctx) {
   const { product: p, norm, message } = ctx;
   const stage = ctx.fields?.conversation_stage || "";
 
+  // "Hangi fotoğrafımı aldınız / hangisini kullanacaksınız" — müşteri birden fazla foto attı,
+  // hangisi diye soruyor. Boş "Tabi efendim" YASAK → net cevap ver.
+  if (/hangi\s*(foto|fotograf|fotoğraf|resim|gorsel|görsel)/i.test(norm) &&
+      /(aldi|aldı|kullan|isle|işle|sec|seç|gonder|gönder|basa|basi|hangisi)/i.test(norm)) {
+    return "Gönderdiğiniz fotoğrafı aldık efendim 😊 Birden fazla gönderdiyseniz ekibimiz en net ve uygun olanı kullanır; belirli bir fotoğrafın kullanılmasını isterseniz yazmanız yeterlidir.";
+  }
+
   // ── YAYGIN BİLGİ SORULARI (kısa/konuşma dili) — general/order_start'a düşmeden yakala ──
   // Dayanıklılık / kararma / solma
   if (hasAny(norm, ["bozulmaz","bozulmuyor","bozulmuyo","bozulur mu","bozuluyor mu","kararmaz","kararir mi","kararır mı","kararma yapar","solmaz","solar mi","solar mı","paslanmaz mi","paslanmaz mı","dayanikli mi","dayanıklı mı","dayanir mi","dayanır mı"])) return CURRENT_TRUST_INFO;
