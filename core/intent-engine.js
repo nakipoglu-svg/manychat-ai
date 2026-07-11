@@ -432,7 +432,14 @@ export function detectIntent(ctx) {
     "sana ne soruyorum sen ne cevap veriyorsun","ne soruyorum sen ne cevap veriyorsun",
     "ayni mesaj","aynı mesaj","ayni seyi yaziyor","aynı şeyi yazıyor","ayni seyleri yaziyor","aynı şeyleri yazıyor",
     "ayni seyi yazip","aynı şeyi yazıp","yazip duruyor","yazıp duruyor","ayni cevap","aynı cevap",
-    "surekli ayni","sürekli aynı","ayni seyi tekrar","aynı şeyi tekrar","kopya mesaj","robot gibi"
+    "surekli ayni","sürekli aynı","ayni seyi tekrar","aynı şeyi tekrar","kopya mesaj","robot gibi",
+    // Döngü/anlaşmazlık eskalasyonu (tulay-tipi kızgın müşteri: kapıda dediği halde bot ısrarla soruyor)
+    "boyle anlasmadik","böyle anlaşmadık","boyle anlasmamistik","böyle anlaşmamıştık",
+    "dakika basi","dakika başı","surekli ayni sey","sürekli aynı şey",
+    "ne diyorsunuz ya","ne diyorsunuz siz","sen ne diyorsun","siz ne diyorsunuz",
+    "hala bana kart","hâlâ bana kart","kart mart","ben anlamadim ya","ben anlamadım ya",
+    "bir haftadir yazisiyorum","bir haftadır yazışıyorum","bir haftadir sizinle","bir haftadır sizinle",
+    "boyle bir sey gormedim","böyle bir şey görmedim","kac defa soyledim","kaç defa söyledim","kac kere soyledim","kaç kere söyledim"
   ])) return "frustration";
 
   // ═══════════════════════════════════════════════════════════════════════
