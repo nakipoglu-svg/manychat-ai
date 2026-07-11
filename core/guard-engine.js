@@ -102,6 +102,21 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
     text = "Tabi efendim 😊";
   }
 
+  // ERKEN ÜRETİM/KARGO BEYANI VETO — ödeme alınmadan "üretime geçtik/sipariş alındı/
+  // kargoya verildi/teslim tarihi" DEME. (AI ara ara waiting_photo/payment'ta bunu uyduruyor.)
+  {
+    const orderDoneStage = stage === STAGE.ORDER_COMPLETED || ctx.fields?.order_status === "completed" || ctx.fields?.siparis_alindi === "1";
+    const prematureClaim = /uretime (gec|basl|al)|üretime (geç|başl|al)|uretim(e|i) basl|üretim(e|i) başl|siparisiniz al[iı]nm|siparişiniz alınm|siparisiniz olustur|siparişiniz oluştur|kargoya veril|kargoya ver[iı]lecek|hazirlan[iı]yor|hazırlanıyor|uretime gec[iı]yor|üretime geçiyor/i.test(text);
+    if ((stage === STAGE.WAITING_PHOTO || stage === STAGE.WAITING_PAYMENT) && !orderDoneStage && prematureClaim) {
+      console.log("[GUARD] VETO: premature production/shipping claim in " + stage);
+      if (stage === STAGE.WAITING_PHOTO && ctx.fields?.photo_received !== "1") {
+        text = "Fotoğrafınızı bekliyoruz efendim 😊 Görselinizi buradan iletebilirsiniz, siparişinizi hemen oluşturuyoruz.";
+      } else {
+        text = "Ödeme tercihinizi belirtebilir misiniz efendim? EFT / Sitemizden Kartla Ödeme veya kapıda ödeme 😊";
+      }
+    }
+  }
+
   // ═══ 4. VALIDATE POLICY ═══
 
   // WhatsApp sızması
