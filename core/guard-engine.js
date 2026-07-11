@@ -14,6 +14,24 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
   const product = ctx.product;
   const stage = ctx.fields?.conversation_stage || "";
 
+  // ═══ 0. SELF-INTRO SIZINTISI ═══
+  // AI ara ara "Yudum Jewels satış asistanıyım..." diye kendini tanıtıyor.
+  // Müşteri "sen kimsin / robot musun" SORMADIKÇA bu ifadeyi cümle başından sök.
+  if (/asistan[ıi]y[ıi]m|satış asistan|satis asistan|yudum jewels asistan/i.test(text) &&
+      !hasAny(ctx.norm, ["kimsin","kim siniz","robot","bot musun","gercek misin","gerçek misin","insan misin","makine misin","yapay zeka","asistan mi"])) {
+    const before = text;
+    text = text
+      .replace(/^\s*(yudum\s*jewels\s*)?(sat[ıi]ş|satis)?\s*asistan[ıi](n[ıi]z)?y[ıi]m[.,;!]?\s*/i, "")
+      .replace(/(yudum\s*jewels\s*)?(sat[ıi]ş|satis)?\s*asistan[ıi](n[ıi]z)?y[ıi]m[.,;!]?\s*/i, "")
+      .trim();
+    if (text && text !== before) {
+      // Cümle başına düşen küçük harfi büyüt
+      text = text.replace(/^([a-zçğıöşü])/, (m, c) => c.toLocaleUpperCase("tr"));
+      if (text.length < 4) text = "Tabi efendim 😊";
+      console.log("[GUARD] STRIP: self-intro removed");
+    }
+  }
+
   // ═══ 1. FRUSTRATION HARD STOP ═══
   if (hasAny(ctx.norm, [
     "otomatik mesaj istemiyorum","robot musunuz","aptal misiniz","salak misiniz",
@@ -119,7 +137,10 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
   // Slot zaten doluyken cevap onu tekrar soruyorsa → onaya çevir, gerçek eksik slotu iste.
   // "aldım/aldik" içeren cevaplar zaten onay verdiği için dokunma.
   {
-    const alreadyAck = /ald[iı]m|aldik|aldık|ulasti|ulaşt/i.test(norm_text);
+    // IBAN/ödeme-commit cevabı ("EFT ile ilerleyebiliriz + IBAN") tekrar-sorma sayılmaz;
+    // müşteri EFT seçtiyse telefon dolu olsa bile IBAN'ı YUTMA.
+    const isPaymentInfo = /iban|ilerleyebiliriz/i.test(norm_text);
+    const alreadyAck = /ald[iı]m|aldik|aldık|ulasti|ulaşt/i.test(norm_text) || isPaymentInfo;
     const asksPhone = /telefon|cep numara|numaranizi (ilet|yaz|da)|cep numaranizi/i.test(norm_text);
     const asksAddress = /acik adres|adresinizi (ilet|yaz)|adres bilginizi/i.test(norm_text);
     const phoneFilled = !!filledSlots?.phone;

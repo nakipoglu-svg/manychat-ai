@@ -2292,8 +2292,11 @@ export async function generateAnswer(ctx) {
       // M1: Sadece isim-soyisim (Büyük harf başlayan, 2-3 kelime) — EN SON gelsin
       // DAR pattern: sadece GERÇEK isim/soyisim gibi görünen mesajlar
       // Negative: sipariş/ürün/problem/ödeme içeren tüm kelimeler → isim değil
-      if (/^[A-ZÇĞİÖŞÜ][a-zçğıöşü]{2,}(\s+[A-ZÇĞİÖŞÜa-zçğıöşü]{2,}){1,2}$/.test(rawAnswer) && 
+      if (/^[A-ZÇĞİÖŞÜ][a-zçğıöşü]{2,}(\s+[A-ZÇĞİÖŞÜa-zçğıöşü]{2,}){1,2}$/.test(rawAnswer) &&
           rawAnswer.split(/\s+/).length >= 2 && rawAnswer.split(/\s+/).length <= 3 &&
+          // Soru sinyali varsa isim DEĞİL → null döner, AI cevaplar ("Görselini atıyormusunuz", "Bugün verilirmiş" vb.)
+          // NOT: Türkçe "ı" ASCII \b ile çalışmaz; sonu/boşluk ile kontrol ediyoruz.
+          !/\?|m[ıiuü]($|\s)|m[ıiuü]s[uüıi]n|miyim|misin|midir|verilir|at[ıi]yor|g[öo]nder|g[öo]rebil|yap[ıi]l|olur mu/i.test(rawAnswer) &&
           !hasAny(norm, [
             // ack/onay
             "tamam","olur","peki","evet","hayir","yok","istemiy","olacak","oldu",
