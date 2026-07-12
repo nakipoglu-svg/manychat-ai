@@ -341,6 +341,18 @@ function getDeterministicInfoResponse(intent, ctx) {
     return "Tekrar açıklayayım efendim 😊 Hangi konuda yardımcı olmamı istersiniz — fiyat, ödeme, kargo veya sipariş adımları?";
   }
 
+  // "Resmi mail/e-posta ile mi atıyoruz" — AI ara ara "e-posta ile gönderin" UYDURUYOR (mail almıyoruz).
+  // Foto SADECE bu sohbet üzerinden gelir.
+  if (/(mail|e-?posta|eposta|e-?mail)/i.test(norm) && /(mi|mı|gonder|gönder|at[iı]yor|yollu|nas[iı]l|nereye)/i.test(norm)) {
+    return "Fotoğrafınızı e-posta ile değil, doğrudan buradan bu sohbet üzerinden gönderebilirsiniz efendim 😊 Görselinizi mesaj olarak iletmeniz yeterlidir.";
+  }
+
+  // ÜRÜN ŞİKAYETİ (teslim alınan ürün bozuk) — trust/malzeme pazarlamasından ÖNCE yakala,
+  // "kararma yapmaz" ukalalığı YASAK; özür dile + ekibe ilet.
+  if (intent === "complaint") {
+    return "Çok üzgünüz efendim 🙏 Yaşadığınız durumu ekibimize hemen iletiyorum, en kısa sürede sizinle ilgilenip çözüm sağlayacağız.";
+  }
+
   // ── YAYGIN BİLGİ SORULARI (kısa/konuşma dili) — general/order_start'a düşmeden yakala ──
   // Dayanıklılık / kararma / solma
   if (hasAny(norm, ["bozulmaz","bozulmuyor","bozulmuyo","bozulur mu","bozuluyor mu","kararmaz","kararir mi","kararır mı","kararma yapar","solmaz","solar mi","solar mı","paslanmaz mi","paslanmaz mı","dayanikli mi","dayanıklı mı","dayanir mi","dayanır mı"])) return CURRENT_TRUST_INFO;

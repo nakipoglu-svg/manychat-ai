@@ -442,6 +442,23 @@ export function detectIntent(ctx) {
     "boyle bir sey gormedim","böyle bir şey görmedim","kac defa soyledim","kaç defa söyledim","kac kere soyledim","kaç kere söyledim"
   ])) return "frustration";
 
+  // ═══ 3.1. AÇIK İNSAN TALEBİ ═══ (dijital asistan istemiyorum, gerçek kişi bağlansın)
+  if (hasAny(norm, [
+    "dijital asistan istemiyorum","asistan istemiyorum","robotla konusmak istemiyorum","robotla konuşmak istemiyorum",
+    "ekipten biri","ekipten birisi","ekipten birinin","gercek kisi","gerçek kişi","gercek biri","gerçek biri",
+    "canli biri","canlı biri","canli birine","canlı birine","biriyle gorusmek","biriyle görüşmek","biri ilgilensin","birisi ilgilensin",
+    "yetkili biri","yetkiliyle","muhatap","insanla gorus","insanla görüş","insan baglayin","insan bağlayın","biri baksin","biri baksın"
+  ])) return "human_request";
+
+  // ═══ 3.2. ÜRÜN ŞİKAYETİ (teslim alınan ürün bozuk) ═══ — trust pazarlaması YERİNE insana
+  // "kararma yapmaz dediniz kolyem böyle oldu", "bu soyulma yaptı", "boyası çıktı", "paslandı"
+  if (hasAny(norm, ["kolyem boyle","kolyem böyle","urunum boyle","ürünüm böyle","kolyem karar","kolyem soyul","kolyem pasla","kolyem bozul",
+    "soyulma yapti","soyulma yaptı","soyuldu","boyasi cikti","boyası çıktı","boyasi gitti","boyası gitti","karardi","karardı","paslandi","paslandı",
+    "boyle geldi","böyle geldi","boyle oldu","böyle oldu","bozuk geldi","kirik geldi","kırık geldi","hasarli geldi","hasarlı geldi"]) &&
+    !/(yapar mi|yapar mı|olur mu|olurmu|yapiyor mu|yapıyor mu|mi kolye|mı kolye)/i.test(norm)) {
+    return "complaint";
+  }
+
   // ═══════════════════════════════════════════════════════════════════════
   // 3.5. BACK_TEXT SUPREMACY — 3 subtype, tüm kritik stage'lerde override
   // Sırası: back_text_fit_question → back_text_question → back_text_content
@@ -683,7 +700,7 @@ export function detectIntent(ctx) {
   if (hasAny(norm, KW.shipping_price)) return "shipping_price";
   // Shipping BEFORE trust — only explicit delivery questions
   if (hasAny(norm, ["kargo","teslimat","takip no","kargom nerede","teslim","sms gelir","mesaj gelir","bilgi gelir","haber verir"])) return "shipping";
-  if (hasAny(norm, ["ne zaman gelir","kac gunde","kaç günde","ne zaman elimde","elime ulasir","elime ulaşır","ne kadar surede gelir","ne kadar sürede gelir","ne kadar surede ulasir","ne kadar sürede ulaşır","ne kadar surede elime","ne kadar sürede elime"])) return "shipping";
+  if (hasAny(norm, ["ne zaman gelir","kac gunde","kaç günde","ne zaman elimde","elime ulasir","elime ulaşır","ne kadar surede gelir","ne kadar sürede gelir","ne kadar surede ulasir","ne kadar sürede ulaşır","ne kadar surede elime","ne kadar sürede elime","elimde olur","elimde olcak","elimde olacak","surede elimde","sürede elimde","ne zaman elime","ne kadar surede elimde","ne kadar sürede elimde","kac gunde gelir","kaç günde gelir","kac gune gelir","kaç güne gelir","ne zaman ulasir","ne zaman ulaşır"])) return "shipping";
   // İADE/GERİ GÖNDERME (soru VE talep/beyan) → return_policy (price/back_text'ten ÖNCE).
   // "Ücreti iade edin", "sonra geri gönderirim" gibi ifadeler fiyat/back_text'e düşmesin.
   if (hasAny(norm, ["iade", "degisim", "değişim", "begenmez", "beğenmez", "memnun kalmaz", "memnun olmaz",
