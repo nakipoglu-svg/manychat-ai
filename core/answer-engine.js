@@ -2341,14 +2341,14 @@ export async function generateAnswer(ctx) {
             // generic verb
             "neden","niye","nerede","ne zaman","nasilsin","nasılsın","bekliyorum","cevap"
           ])) {
-        return { text: "İsim bilginizi aldım efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+        return { text: "Not aldım efendim 😊 Ekibimiz bilginizi siparişinize ekliyor.", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
       }
 
       // ══ AILE M+ residual ══
       
       // M11: UPPER-case isim-soyisim ("RECEP AKDEMİR", "EDIZ METEM")
       if (/^[A-ZÇĞİÖŞÜ]{2,}(\s+[A-ZÇĞİÖŞÜ]{2,}){1,3}$/.test(rawAnswer) && rawAnswer.length < 40) {
-        return { text: "İsim bilginizi aldım efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+        return { text: "Not aldım efendim 😊 Ekibimiz bilginizi siparişinize ekliyor.", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
       }
       
       // M12: isim + ve + isim ("Ediz Metem ve Erol'um") → back_text/isim note
