@@ -327,6 +327,20 @@ function getDeterministicInfoResponse(intent, ctx) {
     return "Gönderdiğiniz fotoğrafı aldık efendim 😊 Birden fazla gönderdiyseniz ekibimiz en net ve uygun olanı kullanır; belirli bir fotoğrafın kullanılmasını isterseniz yazmanız yeterlidir.";
   }
 
+  // "Bu fotoğraf olur mu / uygun mu / bu resim yeterli mi" — foto uygunluk teyidi.
+  // Boş "Tabi efendim" YASAK → müşteriyi güvenceye al.
+  // (Bulanıklık/netlik ENDİŞESİ hariç → o mevcut düzenleme cevabına düşsün.)
+  if (/(bu|su|şu|bunlar|gonderdigim|gönderdiğim|attigim|attığım)\s*(foto|fotograf|fotoğraf|resim|gorsel|görsel)/i.test(norm) &&
+      /(olur mu|olurmu|olur mi|uygun mu|uygunmu|yeterli mi|yeterlimi|guzel mi|güzel mi)/i.test(norm) &&
+      !/(net degil|net değil|bulanik|bulanık|netsiz|silik|puslu|kalitesiz)/i.test(norm)) {
+    return "Fotoğrafınız uygundur efendim 😊 Ekibimiz gerekli netleştirme ve düzenlemeleri yaparak en güzel şekilde işler. Yüzlerin net göründüğü fotoğraflar sorunsuz çıkmaktadır.";
+  }
+
+  // "Anlamadım / nasıl yani anlamadım" — TÜM aşamalarda boş "Tabi efendim" YASAK → açıklama iste.
+  if (/anlamad[iı]m/i.test(norm) && (message || "").length < 30) {
+    return "Tekrar açıklayayım efendim 😊 Hangi konuda yardımcı olmamı istersiniz — fiyat, ödeme, kargo veya sipariş adımları?";
+  }
+
   // ── YAYGIN BİLGİ SORULARI (kısa/konuşma dili) — general/order_start'a düşmeden yakala ──
   // Dayanıklılık / kararma / solma
   if (hasAny(norm, ["bozulmaz","bozulmuyor","bozulmuyo","bozulur mu","bozuluyor mu","kararmaz","kararir mi","kararır mı","kararma yapar","solmaz","solar mi","solar mı","paslanmaz mi","paslanmaz mı","dayanikli mi","dayanıklı mı","dayanir mi","dayanır mı"])) return CURRENT_TRUST_INFO;
