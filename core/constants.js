@@ -16,6 +16,41 @@ export const PRODUCT = {
   OTHER: "other_product",
 };
 
+// ─── DM→SİTE PİVOTU (2026-07): bot artık DM'den sipariş ALMAZ, siteye yönlendirir ───
+// Ürün → doğrudan ürün sayfası linki (tümü HTTP 200 doğrulandı). Bilinmeyen → ana site.
+export const PRODUCT_LINKS = {
+  [PRODUCT.LAZER]:      "https://www.yudumjewels.com/lazer-resimli-kolye",
+  [PRODUCT.BILEKLIK]:   "https://www.yudumjewels.com/lazer-resimli-bileklik",
+  [PRODUCT.YONCA]:      "https://www.yudumjewels.com/isimli-yonca-kolye",
+  [PRODUCT.ANAHTARLIK]: "https://www.yudumjewels.com/kisiye-ozel-fotografli-lazer-anahtarlik",
+  [PRODUCT.ATAC]:       "https://www.yudumjewels.com/harfli-atac-kolye-bileklik-hediye",
+  [PRODUCT.MEZAR_TASI]: "https://www.yudumjewels.com/evcil-hayvan-mezar-tasi",
+};
+export function productLink(productKey) {
+  return PRODUCT_LINKS[productKey] || SITE_URL;
+}
+// Ortak alt satırlar (ödeme + kargo + link) — "üyelik gerektirmeden ~30 saniye" cümlesi KISALTILMAZ.
+function _siteFooter(productKey) {
+  return `💳 EFT/Havale, Kredi Kartı veya Kapıda Ödeme ile ödeyebilirsiniz.\n🚚 Tüm ürünlerde kargo ücretsiz.\n👉 ${productLink(productKey)}`;
+}
+const _siteClose = "\n\nÜrünle ilgili tüm sorularınıza buradan seve seve yardımcı oluruz efendim 😊";
+// Kademe 2 — ALIM NİYETİ (sipariş vermek istiyorum / nasıl alırım): tam blok.
+export function siteOrderBlock(productKey) {
+  return `Harika efendim 😊 Siparişlerinizi web sitemiz üzerinden alıyoruz — çok kolay, üyelik gerektirmeden yaklaşık 30 saniyede oluşturabilirsiniz.\n${_siteFooter(productKey)}${_siteClose}`;
+}
+// Müşteri DM'ye FOTOĞRAF atarsa.
+export function sitePhotoRedirect(productKey) {
+  return `Fotoğrafınız için teşekkürler efendim 😊 Siparişinizi web sitemizden çok kolay, üyelik gerektirmeden yaklaşık 30 saniyede oluşturabilir, fotoğrafınızı orada yükleyebilirsiniz.\n${_siteFooter(productKey)}${_siteClose}`;
+}
+// Müşteri DM'de adres/telefon/isim yazarsa (alışkanlıktan).
+export function siteContactRedirect(productKey) {
+  return `Teşekkürler efendim 😊 Siparişlerinizi web sitemiz üzerinden alıyoruz — çok kolay, üyelik gerektirmeden yaklaşık 30 saniyede oluşturabilirsiniz.\n${_siteFooter(productKey)}${_siteClose}`;
+}
+// Kademe 1 — BİLGİ SORUSU sonuna eklenen tek yumuşak satır (blok değil).
+export function siteSoftLink(productKey) {
+  return ` Dilerseniz web sitemizden çok kolay, üyeliksiz şekilde inceleyip sipariş oluşturabilirsiniz 👉 ${productLink(productKey)}`;
+}
+
 // ─── STAGES ─────────────────────────────────────────────────
 export const STAGE = {
   WAITING_PRODUCT:   "waiting_product",
