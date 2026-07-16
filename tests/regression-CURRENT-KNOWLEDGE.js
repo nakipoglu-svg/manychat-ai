@@ -49,14 +49,14 @@ const cases = [
     includes: ["Kapıda Ödeme seçeneğimiz web sitemizde de aktif", "ödeme adımında Kapıda Ödeme", "yalnızca nakit"],
   },
   {
-    name: "Nasıl sipariş verilir siteyi kolay yol olarak anlatır",
+    name: "Nasıl sipariş verilir siteye yönlendirir (DM sipariş almaz)",
     input: { message: "Nasıl sipariş verebilirim?" },
-    includes: ["web sitemiz üzerinden çok kolay", "Kapıda Ödeme seçeneği de web sitemizde aktif", "www.yudumjewels.com"],
+    includes: ["web sitemiz üzerinden", "üyelik gerektirmeden", "yudumjewels.com"],
   },
   {
-    name: "Nasıl sipariş veririm siteyi kolay yol olarak anlatır",
+    name: "Nasıl sipariş veririm siteye yönlendirir (DM sipariş almaz)",
     input: { message: "Nasıl sipariş veririm?" },
-    includes: ["web sitemiz üzerinden çok kolay", "Kapıda Ödeme seçeneği de web sitemizde aktif", "www.yudumjewels.com"],
+    includes: ["web sitemiz üzerinden", "üyelik gerektirmeden", "yudumjewels.com"],
   },
   {
     name: "IBAN isteyen müşteriye site yönlendirmesi yapılmaz",
@@ -257,11 +257,12 @@ const cases = [
     includes: ["Gerekli netleştirmeyi", "net fotoğraf göndermeniz yeterlidir"],
   },
   {
-    name: "Havale seçimi adres cümlesini kırpmaz",
+    name: "Havale seçimi (ödeme commit) siteye yönlendirir",
     input: lazer("Ücreti havale ödeyeceğim", {
       conversation_stage: "waiting_address",
     }),
-    includes: ["EFT ile ilerleyebiliriz", "açık adresinizi iletebilirsiniz"],
+    includes: ["web sitemiz üzerinden", "üyelik gerektirmeden", "yudumjewels.com"],
+    notIncludes: ["IBAN", "TR34"],
   },
   {
     name: "Aksesuar fiyat farkı yok",
@@ -514,11 +515,11 @@ const cases = [
     notIncludes: ["Rica ederiz", "siparişiniz alınmıştır"],
   },
   {
-    name: "Siteye giremiyorum sorusu ödeme/adres akışına ezilmez",
+    name: "Siteye giremiyorum insana yönlendirir (yardım eder)",
     input: lazer("Sitenize giriş yapamiyorum", {
       conversation_stage: "waiting_payment",
     }),
-    includes: ["www.yudumjewels.com", "Instagram üzerinden"],
+    includes: ["ekibimize iletiyorum"],
     notIncludes: ["Ödeme tercihinizi", "Ad soyad"],
   },
   {

@@ -3,7 +3,8 @@
 // Completed → SlotCommit → Info → Tone → ProductFlow → AI
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-import { TEXT, PRICE, STAGE, REPLY_CLASS, SUPPORT_REASON, PRODUCT, SITE_URL, FACTS } from "./constants.js";
+import { TEXT, PRICE, STAGE, REPLY_CLASS, SUPPORT_REASON, PRODUCT, SITE_URL, FACTS,
+  siteOrderBlock, sitePhotoRedirect, siteContactRedirect, siteSoftLink, productLink } from "./constants.js";
 import { selectKnowledge } from "./knowledge-map.js";
 import { hasAny, truthy, isUnsupportedProductVariant } from "./normalize.js";
 import { POLICY_DECISION } from "./decision-policy.js";
@@ -2006,6 +2007,43 @@ export async function generateAnswer(ctx) {
   const stage = ctx.fields?.conversation_stage || "";
   const isCompleted = ctx.fields?.order_status === "completed" || ctx.fields?.siparis_alindi === "1" || stage === "order_completed";
   const normTop = ctx.norm || "";
+
+  // ═══ DM→SİTE PİVOTU — SİPARİŞ AKSİYONU GATE ═══════════════════════════
+  // Bot artık DM'den sipariş ALMAZ. "Sipariş verme" aksiyonları (foto/adres/
+  // telefon/isim/ödeme-seçimi/harf/arka-yazı-içeriği/order) → SİTEYE yönlendir.
+  // "Adres alındı / Resminiz ulaştı / Ödeme alındı" gibi slot cevapları ARTIK YOK.
+  // FAQ (kargo/kararma/zincir/fiyat) ve insana-yönlendirme (şikayet/öfke) dokunulmaz.
+  if (stage !== "human_support") {
+    const gp = ctx.product;
+    // Soru sinyali: SORU ise sipariş aksiyonu DEĞİL → FAQ'ya bırak (yönlendirme).
+    const isQ = /\?|olur\s?m[uü]|olabilir\s?mi|olur\s?mi|m[ıiuü]($|\s)|midir|mudur|nas[ıi]l/i.test(normTop);
+    // "Siteden yapamıyorum / giremiyorum" → İNSAN (siteye yönlendirmek ironik olur).
+    if (hasAny(normTop, ["yapamiyorum","yapamıyorum","giremiyorum","giris yapamiyorum","giriş yapamıyorum","sitede yapamiyorum","sitede yapamıyorum","siteye giremiyorum","siteyi kullanamiyorum","siteyi kullanamıyorum","site acilmiyor","site açılmıyor","beceremiyorum","beceremedim","siteden yapamiyorum","siteden yapamıyorum","siteyi beceremiyorum"])) {
+      return { text: "Elbette efendim, ekibimize iletiyorum 😊 En kısa sürede size yardımcı olacağız.", source: "site_help_human", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
+    }
+    // Ham iletişim dökümü (adres token + telefon) → intent "general"e düşse bile siteye.
+    {
+      const msgRaw = String(ctx.message || "").replace(/\s+/g, " ");
+      const hasAddrTok = /mahalle|mahallesi|sokak|soka[gğ]|cadde|caddesi|\bno[:\s]|daire|apartman|\bblok\b|\bkat\b/i.test(normTop);
+      const hasPhone = /(\d[ .]?){10,}/.test(msgRaw) || /\[phone\]/i.test(msgRaw);
+      if (hasAddrTok && hasPhone) return { text: siteContactRedirect(gp), source: "site_redirect_contact", reply_class: REPLY_CLASS.FIXED_INFO };
+    }
+    // Veri/commit aksiyonları (foto, adres/telefon/isim, ödeme seçimi) → her zaman siteye.
+    const PHOTO_ACT   = new Set(["photo","back_photo_upload","photo_reference","photo_change_request","photo_claim"]);
+    const CONTACT_ACT = new Set(["address","address_claim","address_provide_full","address_provide_partial","phone","phone_claim","phone_provide","name_only","identity_provide","full_contact_bundle","partial_name_phone"]);
+    if (PHOTO_ACT.has(intent))   return { text: sitePhotoRedirect(gp),   source: "site_redirect_photo",   reply_class: REPLY_CLASS.FIXED_INFO };
+    if (CONTACT_ACT.has(intent)) return { text: siteContactRedirect(gp), source: "site_redirect_contact", reply_class: REPLY_CLASS.FIXED_INFO };
+    // Ödeme SEÇİMİ (commit) → siteye; ödeme SORUSU ("kapıda kart var mı") → FAQ cevaplasın.
+    if (intent === "payment" && !isQ) return { text: siteOrderBlock(gp),  source: "site_redirect_order",   reply_class: REPLY_CLASS.FIXED_INFO };
+    // İçerik-benzeri (harf/arka yazı) → SORU DEĞİLSE siteye ("Öykü 11.11.2020"). Soruysa FAQ'ya bırak.
+    const CONTENT_ACT = new Set(["letters","back_text","back_text_content","completed_back_text_content"]);
+    if (CONTENT_ACT.has(intent) && !isQ) return { text: siteOrderBlock(gp), source: "site_redirect_order", reply_class: REPLY_CLASS.FIXED_INFO };
+    // Sipariş başlatma → gerçek sipariş fiili varsa YA DA soru değilse siteye. (FAQ soruları hariç.)
+    const orderVerb = hasAny(normTop, ["siparis ver","sipariş ver","siparis vereyim","sipariş vereyim","siparis olustur","sipariş oluştur","siparis verebilir","sipariş verebilir","nasil siparis","nasıl sipariş","almak istiyorum","satin al","satın al","satin almak","satın almak","urun almak","ürün almak","siparis vermek","sipariş vermek"]);
+    if ((intent === "order_start" || intent === "new_order") && (orderVerb || !isQ)) {
+      return { text: siteOrderBlock(gp), source: "site_redirect_order", reply_class: REPLY_CLASS.FIXED_INFO };
+    }
+  }
 
   if (ctx.policyVersion === "v2") {
     const policyResp = policyV2Response(ctx);

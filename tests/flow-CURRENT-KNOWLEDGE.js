@@ -20,7 +20,7 @@ const KEEP_FIELDS = [
 ];
 
 const fullAddress =
-  "Cihan Nakipoğlu 0505 471 35 45 Beykoz mahallesi örnek sokak no 12 daire 3 İstanbul";
+  "Cihan Nakipoğlu 0505 471 35 45 Beykoz mahallesi çınar sokak no 12 daire 3 İstanbul";
 
 function norm(s) {
   return String(s || "")
@@ -82,158 +82,71 @@ async function runFlow(name, steps) {
   return failures;
 }
 
+// ── DM→SİTE PİVOTU: bot artık DM'den sipariş ALMAZ. Her sipariş adımı siteye yönlenir;
+//    "Fotoğrafınız ulaştı / Ad soyad / Siparişiniz oluşturuldu / Adres alındı" ARTIK YOK. ──
 const flows = [
   {
-    name: "Lazer normal siparis akisi",
+    name: "Ürün ilgisi ve sipariş adımları siteye yönlenir",
     steps: [
       {
         message: "resimli lazer kolye",
-        expect: { ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo", order_status: "started" },
-        includes: ["649", "Fotoğraf"],
+        includes: ["web sitemiz üzerinden", "üyelik gerektirmeden", "yudumjewels.com"],
       },
       {
         message: "https://example.com/photo.jpg",
-        expect: { photo_received: "1", conversation_stage: "waiting_payment" },
-        includes: ["Fotoğrafınız ulaştı", "Ödeme tercihiniz"],
+        includes: ["Fotoğrafınız için teşekkürler", "üyelik gerektirmeden", "yudumjewels.com"],
+        notIncludes: ["Fotoğrafınız ulaştı", "Ödeme tercihiniz"],
       },
       {
         message: "kapıda ödeme olsun",
-        expect: { payment_method: "kapida_odeme", conversation_stage: "waiting_address" },
-        includes: ["Ad soyad", "cep telefonu", "açık adres"],
+        includes: ["web sitemiz üzerinden", "üyelik gerektirmeden"],
+        notIncludes: ["Ad soyad", "açık adres bilgilerinizi"],
       },
       {
         message: fullAddress,
-        expect: {
-          conversation_stage: "order_completed",
-          order_status: "completed",
-          siparis_alindi: "1",
-          address_status: "received",
-          phone_received: "1",
-          name_received: "1",
-        },
-        includes: ["Siparişiniz oluşturulmuştur", "SMS"],
-        notIncludes: ["profilimizde", "www.yudumjewels.com"],
+        includes: ["web sitemiz üzerinden", "üyelik gerektirmeden"],
+        notIncludes: ["Bilgilerinizi aldım", "Siparişiniz oluşturulmuştur", "Adres bilginizi aldım"],
       },
     ],
   },
   {
-    name: "Yan soru akisi stage atlatmaz",
+    name: "Yan sorular eskisi gibi cevaplanir (siteye ezilmez)",
     steps: [
-      {
-        message: "resimli lazer kolye",
-        expect: { ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo" },
-      },
-      {
-        message: "Zincir kaç cm?",
-        expect: { conversation_stage: "waiting_photo", photo_received: "" },
-        includes: ["60 cm", "55 cm"],
-      },
+      { message: "resimli lazer kolye", includes: ["yudumjewels.com"] },
+      { message: "Zincir kaç cm?", includes: ["60 cm"], notIncludes: ["üyelik gerektirmeden"] },
+      { message: "Kararma yapar mı?", includes: ["316L", "paslanmaz çelik"], notIncludes: ["üyelik gerektirmeden"] },
+      { message: "Arkalı önlü olur mu?", includes: ["arka yüz"], notIncludes: ["üyelik gerektirmeden"] },
+      { message: "Ne kadar sürede gelir?", includes: ["iş günü"], notIncludes: ["üyelik gerektirmeden"] },
+    ],
+  },
+  {
+    name: "Foto atinca slot cevabi degil site yonlendirme",
+    steps: [
       {
         message: "https://example.com/photo.jpg",
-        expect: { photo_received: "1", conversation_stage: "waiting_payment" },
-      },
-      {
-        message: "Kapıda kart olur mu?",
-        expect: { payment_method: "", conversation_stage: "waiting_payment" },
-        includes: ["kredi kartı geçerli değildir", "yalnızca nakit"],
-      },
-      {
-        message: "Kapıda ödeme olsun",
-        expect: { payment_method: "kapida_odeme", conversation_stage: "waiting_address" },
+        includes: ["Fotoğrafınız için teşekkürler", "yudumjewels.com"],
+        notIncludes: ["Fotoğrafınız ulaştı", "Hangi ürünümüz", "Ödeme tercihiniz"],
       },
     ],
   },
   {
-    name: "Atac harf odeme adres akisi",
+    name: "Adres/telefon yazinca alindi demez siteye yonlendirir",
     steps: [
       {
-        message: "harfli ataç kolye",
-        expect: { ilgilenilen_urun: "atac", conversation_stage: "waiting_letters" },
-        includes: ["549", "harf"],
-      },
-      {
-        message: "A C N",
-        expect: { letters_received: "1", conversation_stage: "waiting_payment" },
-        includes: ["Harflerinizi aldım", "Ödeme tercihiniz"],
-      },
-      {
-        message: "EFT ile ödeyeceğim",
-        expect: { payment_method: "eft_havale", conversation_stage: "waiting_address" },
-        includes: ["IBAN"],
-      },
-      {
         message: fullAddress,
-        expect: {
-          conversation_stage: "order_completed",
-          order_status: "completed",
-          siparis_alindi: "1",
-          letters_received: "1",
-        },
-        includes: ["Siparişiniz oluşturulmuştur"],
-        notIncludes: ["profilimizde", "Fotoğraf"],
+        includes: ["web sitemiz üzerinden", "yudumjewels.com"],
+        notIncludes: ["Bilgilerinizi aldım", "Adres bilginizi aldım", "Telefon numaranızı", "Siparişiniz oluşturulmuştur"],
       },
     ],
   },
   {
-    name: "Bileklik foto odeme adres akisi",
+    name: "Siteden yapamiyorum insana gider (siteye degil)",
     steps: [
+      { message: "resimli lazer kolye", includes: ["yudumjewels.com"] },
       {
-        message: "resimli bileklik",
-        expect: { ilgilenilen_urun: "resimli_lazer_bileklik", conversation_stage: "waiting_photo" },
-      },
-      {
-        message: "https://example.com/photo.jpg",
-        expect: { photo_received: "1", conversation_stage: "waiting_payment" },
-      },
-      {
-        message: "EFT olsun",
-        expect: { payment_method: "eft_havale", conversation_stage: "waiting_address" },
-      },
-      {
-        message: fullAddress,
-        expect: {
-          conversation_stage: "order_completed",
-          order_status: "completed",
-          siparis_alindi: "1",
-        },
-        includes: ["Siparişiniz oluşturulmuştur"],
-        notIncludes: ["profilimizde"],
-      },
-    ],
-  },
-  {
-    name: "Mezar tasi kapida odeme kabul etmez",
-    steps: [
-      {
-        message: "evcil hayvan mezar taşı",
-        expect: { ilgilenilen_urun: "evcil_hayvan_mezar_tasi", conversation_stage: "waiting_photo" },
-      },
-      {
-        message: "https://example.com/photo.jpg",
-        expect: { photo_received: "1", conversation_stage: "waiting_payment" },
-        includes: ["Kapıda ödeme bulunmamaktadır"],
-        notIncludes: ["kapıda ödeme mi olacak"],
-      },
-      {
-        message: "kapıda ödeme olsun",
-        expect: { payment_method: "", conversation_stage: "waiting_payment" },
-        includes: ["kapıda ödeme bulunmamaktadır"],
-      },
-      {
-        message: "EFT ile ödeyeceğim",
-        expect: { payment_method: "eft_havale", conversation_stage: "waiting_address" },
-      },
-      {
-        message: fullAddress,
-        expect: {
-          conversation_stage: "waiting_address",
-          address_status: "received",
-          phone_received: "1",
-          name_received: "1",
-          support_mode: "1",
-        },
-        includes: ["tasarım sürecini başlatacaktır"],
-        notIncludes: ["Siparişiniz oluşturulmuştur"],
+        message: "Ben siteden yapamıyorum yardım eder misiniz",
+        includes: ["ekibimize iletiyorum"],
+        notIncludes: ["üyelik gerektirmeden"],
       },
     ],
   },
