@@ -90,7 +90,8 @@ const flows = [
     steps: [
       {
         message: "resimli lazer kolye",
-        includes: ["web sitemiz üzerinden", "üyelik gerektirmeden", "yudumjewels.com"],
+        includes: ["Resimli Lazer Kolye", "yudumjewels.com"],
+        notIncludes: ["fotoğrafınızı buradan gönder", "Ödeme tercihiniz"],
       },
       {
         message: "https://example.com/photo.jpg",

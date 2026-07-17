@@ -2021,6 +2021,16 @@ export async function generateAnswer(ctx) {
     if (hasAny(normTop, ["yapamiyorum","yapamıyorum","giremiyorum","giris yapamiyorum","giriş yapamıyorum","sitede yapamiyorum","sitede yapamıyorum","siteye giremiyorum","siteyi kullanamiyorum","siteyi kullanamıyorum","site acilmiyor","site açılmıyor","beceremiyorum","beceremedim","siteden yapamiyorum","siteden yapamıyorum","siteyi beceremiyorum"])) {
       return { text: "Elbette efendim, ekibimize iletiyorum 😊 En kısa sürede size yardımcı olacağız.", source: "site_help_human", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
     }
+    // TAMAMLANMIŞ siparişte sipariş-aksiyonu (foto/adres/ödeme/değişiklik/durum) → İNSAN.
+    // (Mevcut siparişle ilgili — "siteye git" demek yanlış olur.)
+    if (isCompleted) {
+      const COMPLETED_TO_HUMAN = new Set(["photo","back_photo_upload","photo_reference","photo_change_request","photo_claim","address","address_claim","address_provide_full","address_provide_partial","phone","phone_claim","phone_provide","name_only","identity_provide","full_contact_bundle","partial_name_phone","payment","letters","back_text","back_text_content","completed_back_text_content","order_status_question","post_sale","completed_change_request","payment_confirmation"]);
+      // Mevcut siparişe atıf ("verdiğim siparişimle ilgili", "siparişim ne durumda") → yeni sipariş değil, insana.
+      const refersOwnOrder = /verdi[gğ]im sipari[şs]|sipari[şs]imle ilgili|mevcut sipari[şs]|sipari[şs]imi (nerede|ne zaman|kontrol)|sipari[şs]im ne (oldu|durumda|zaman|asamada|aşamada)/i.test(normTop);
+      if (COMPLETED_TO_HUMAN.has(intent) || refersOwnOrder) {
+        return { text: "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊", source: "completed_order_human", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
+      }
+    }
     // Ham iletişim dökümü (adres token + telefon) → intent "general"e düşse bile siteye.
     {
       const msgRaw = String(ctx.message || "").replace(/\s+/g, " ");
@@ -2038,9 +2048,10 @@ export async function generateAnswer(ctx) {
     // İçerik-benzeri (harf/arka yazı) → SORU DEĞİLSE siteye ("Öykü 11.11.2020"). Soruysa FAQ'ya bırak.
     const CONTENT_ACT = new Set(["letters","back_text","back_text_content","completed_back_text_content"]);
     if (CONTENT_ACT.has(intent) && !isQ) return { text: siteOrderBlock(gp), source: "site_redirect_order", reply_class: REPLY_CLASS.FIXED_INFO };
-    // Sipariş başlatma → gerçek sipariş fiili varsa YA DA soru değilse siteye. (FAQ soruları hariç.)
-    const orderVerb = hasAny(normTop, ["siparis ver","sipariş ver","siparis vereyim","sipariş vereyim","siparis olustur","sipariş oluştur","siparis verebilir","sipariş verebilir","nasil siparis","nasıl sipariş","almak istiyorum","satin al","satın al","satin almak","satın almak","urun almak","ürün almak","siparis vermek","sipariş vermek"]);
-    if ((intent === "order_start" || intent === "new_order") && (orderVerb || !isQ)) {
+    // Sipariş başlatma: AÇIK sipariş fiili varsa tam blok. Düz ÜRÜN ADI ("yonca kolye")
+    // ise → tam bloğa çevirme; ürün tanıtımına aksın, sonuna yumuşak site linki eklenir (Kademe 1).
+    const orderVerb = hasAny(normTop, ["siparis ver","sipariş ver","siparis vereyim","sipariş vereyim","siparis olustur","sipariş oluştur","siparis verebilir","sipariş verebilir","nasil siparis","nasıl sipariş","almak istiyorum","satin al","satın al","satin almak","satın almak","urun almak","ürün almak","siparis vermek","sipariş vermek","satin alabilir","satın alabilir","siparis alabilir","sipariş alabilir"]);
+    if ((intent === "order_start" || intent === "new_order") && orderVerb) {
       return { text: siteOrderBlock(gp), source: "site_redirect_order", reply_class: REPLY_CLASS.FIXED_INFO };
     }
   }
