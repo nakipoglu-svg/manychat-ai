@@ -31,7 +31,7 @@ export function productLink(productKey) {
 }
 // Ortak alt satırlar (ödeme + kargo + link) — "üyelik gerektirmeden ~30 saniye" cümlesi KISALTILMAZ.
 function _siteFooter(productKey) {
-  return `💳 EFT/Havale, Kredi Kartı veya Kapıda Ödeme ile ödeyebilirsiniz.\n🚚 Tüm ürünlerde kargo ücretsiz.\n👉 ${productLink(productKey)}`;
+  return `💳 EFT/Havale, Kredi Kartı veya Kapıda Ödeme\n🚚 Tüm ürünlerde kargo ücretsiz\n\n🛒 Siparişinizi buradan oluşturabilirsiniz 👇\n${productLink(productKey)}`;
 }
 const _siteClose = "\n\nÜrünle ilgili tüm sorularınıza buradan seve seve yardımcı oluruz efendim 😊";
 // Kademe 2 — ALIM NİYETİ (sipariş vermek istiyorum / nasıl alırım): tam blok.
@@ -48,7 +48,7 @@ export function siteContactRedirect(productKey) {
 }
 // Kademe 1 — BİLGİ SORUSU sonuna eklenen tek yumuşak satır (blok değil).
 export function siteSoftLink(productKey) {
-  return ` Dilerseniz web sitemizden çok kolay, üyeliksiz şekilde inceleyip sipariş oluşturabilirsiniz 👉 ${productLink(productKey)}`;
+  return `\n\nSiparişinizi web sitemizden üyeliksiz, ~30 saniyede oluşturabilirsiniz 👇\n${productLink(productKey)}`;
 }
 
 // ─── STAGES ─────────────────────────────────────────────────

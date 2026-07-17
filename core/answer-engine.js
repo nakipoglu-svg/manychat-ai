@@ -2021,6 +2021,11 @@ export async function generateAnswer(ctx) {
     if (hasAny(normTop, ["yapamiyorum","yapamıyorum","giremiyorum","giris yapamiyorum","giriş yapamıyorum","sitede yapamiyorum","sitede yapamıyorum","siteye giremiyorum","siteyi kullanamiyorum","siteyi kullanamıyorum","site acilmiyor","site açılmıyor","beceremiyorum","beceremedim","siteden yapamiyorum","siteden yapamıyorum","siteyi beceremiyorum"])) {
       return { text: "Elbette efendim, ekibimize iletiyorum 😊 En kısa sürede size yardımcı olacağız.", source: "site_help_human", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
     }
+    // "Sipariş verdim ama gelmedi/ulaşmadı" → İNSAN (sipariş takibi) — ürün tespitine bakma.
+    if (hasAny(normTop, ["siparis verdim","sipariş verdim","siparis vermistim","sipariş vermiştim","siparisim var","siparişim var","urun aldim","ürün aldım","siparis gectim","sipariş geçtim"]) &&
+        hasAny(normTop, ["gelmedi","ulasmadi","ulaşmadı","hala elime","hâlâ elime","nerede kaldi","nerede kaldı","kargoya verildi mi","ne zaman gelir","ne zaman ulasir","ne zaman ulaşır","teslim olmadi","teslim olmadı","elime ulasmadi","elime ulaşmadı","hala gelmedi","hâlâ gelmedi"])) {
+      return { text: "Ekibimize iletiyorum, siparişinizi hemen kontrol edip size dönüş sağlıyoruz efendim 😊", source: "order_status_human", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
+    }
     // TAMAMLANMIŞ siparişte sipariş-aksiyonu (foto/adres/ödeme/değişiklik/durum) → İNSAN.
     // (Mevcut siparişle ilgili — "siteye git" demek yanlış olur.)
     if (isCompleted) {
