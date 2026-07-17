@@ -63,10 +63,9 @@ const cases = [
     expect: { behavior_category: "contextual_ack", conversation_stage: "waiting_photo", photo_received: "" },
   },
   {
-    name: "V2 waiting_photo gerçek fotoğraf URL slot commit eder",
+    name: "V2 waiting_photo foto siteye yönlenir",
     input: waitingPhoto("https://example.com/photo.jpg"),
-    includes: "Fotoğrafınız ulaştı",
-    expect: { behavior_category: "slot_committed", conversation_stage: "waiting_payment", photo_received: "1" },
+    includes: ["Fotoğrafınız için teşekkürler", "yudumjewels.com"],
   },
   {
     name: "V2 waiting_payment ödeme zamanı FAQ adres promptu eklemez",
@@ -89,15 +88,9 @@ const cases = [
     expect: { behavior_category: "faq_answered", conversation_stage: "waiting_address" },
   },
   {
-    name: "V2 waiting_address gerçek adres slot commit eder",
+    name: "V2 waiting_address adres siteye yönlenir",
     input: waitingAddress("Ayşe Yılmaz 0505 111 22 33 İstanbul Kadıköy Caferağa Mahallesi Moda Caddesi No 10 Daire 3"),
-    includes: "Siparişiniz oluşturulmuştur",
-    expect: {
-      behavior_category: "slot_committed",
-      conversation_stage: "order_completed",
-      address_status: "received",
-      phone_received: "1",
-    },
+    includes: ["web sitemiz üzerinden", "yudumjewels.com"],
   },
   {
     name: "V2 order_completed aksesuar FAQ knowledge cevabı verir",
@@ -163,11 +156,10 @@ const cases = [
     expect: { behavior_category: "contextual_ack", conversation_stage: "waiting_photo", photo_received: "" },
   },
   {
-    name: "V2 kısa bağlam ona göre slot commit etmez",
+    name: "V2 kısa bağlam ona göre slot commit etmez (siteye yönlenir)",
     input: waitingPayment("ona göre"),
-    includes: "Tabi efendim",
-    notIncludes: "Ödeme tercihinizi",
-    expect: { behavior_category: "contextual_ack", conversation_stage: "waiting_payment", payment_method: "" },
+    includes: "web sitemiz üzerinden",
+    notIncludes: ["Ödeme tercihinizi belirt", "Fotoğrafınız ulaştı"],
   },
   {
     name: "V2 kısa bağlam gönderiyorum slot commit etmez",
@@ -312,12 +304,11 @@ const cases = [
     expect: { behavior_category: "operational_handoff", support_mode: "1" },
   },
   {
-    name: "V2 boş state önceki ürün bağlamında EFT detayı recovery handoff olur",
+    name: "V2 boş state önceki ürün bağlamında EFT detayı siteye yönlenir",
     input: emptyV2("Eft yaparım siz iban gönderin", {
       ai_reply: "Kişiye özel anahtarlık modelimiz için yardımcı olalım efendim 😊 Fotoğraf / yazı detayınızı buradan iletebilirsiniz.",
     }),
-    includes: "ekibimize iletiyorum",
-    expect: { behavior_category: "recovered_context_handoff", support_mode: "1" },
+    includes: ["web sitemiz üzerinden", "yudumjewels.com"],
   },
   {
     name: "V2 boş state önceki ürün bağlamında arka yazı recovery handoff olur",
@@ -336,26 +327,24 @@ const cases = [
     expect: { behavior_category: "operational_handoff", support_mode: "1" },
   },
   {
-    name: "V2 waiting_product önceki ürün bağlamında foto link recovery handoff olur",
+    name: "V2 waiting_product foto link siteye yönlenir",
     input: base("https://amojo.kommo.com/v2/demo/attachments/image-123.jpe", {
       conversation_stage: "waiting_product",
       ilgilenilen_urun: "",
       user_product: "",
       ai_reply: "Resimli lazer bileklik modelimiz için yardımcı olalım efendim 😊 Fotoğraf ön yüze işlenir.",
     }),
-    includes: "ekibimize iletiyorum",
-    expect: { behavior_category: "recovered_context_handoff", support_mode: "1" },
+    includes: ["Fotoğrafınız için teşekkürler", "yudumjewels.com"],
   },
   {
-    name: "V2 waiting_product önceki ürün bağlamında ödeme detayı recovery handoff olur",
+    name: "V2 waiting_product ödeme detayı siteye yönlenir",
     input: base("eft olsun", {
       conversation_stage: "waiting_product",
       ilgilenilen_urun: "",
       user_product: "",
       ai_reply: "Kişiye özel anahtarlık modelimiz için yardımcı olalım efendim 😊 Fotoğraf / yazı detayınızı buradan iletebilirsiniz.",
     }),
-    includes: "ekibimize iletiyorum",
-    expect: { behavior_category: "recovered_context_handoff", support_mode: "1" },
+    includes: ["web sitemiz üzerinden", "yudumjewels.com"],
   },
   {
     name: "V2 waiting_photo karar verip döneyim contextual ack olur",

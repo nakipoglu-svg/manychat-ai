@@ -49,14 +49,14 @@ const cases = [
     includes: ["Kapıda Ödeme seçeneğimiz web sitemizde de aktif", "ödeme adımında Kapıda Ödeme", "yalnızca nakit"],
   },
   {
-    name: "Nasıl sipariş verilir siteyi kolay yol olarak anlatır",
+    name: "Nasıl sipariş verilir siteye yönlendirir (DM sipariş almaz)",
     input: { message: "Nasıl sipariş verebilirim?" },
-    includes: ["web sitemiz üzerinden çok kolay", "Kapıda Ödeme seçeneği de web sitemizde aktif", "www.yudumjewels.com"],
+    includes: ["web sitemiz üzerinden", "üyelik gerektirmeden", "yudumjewels.com"],
   },
   {
-    name: "Nasıl sipariş veririm siteyi kolay yol olarak anlatır",
+    name: "Nasıl sipariş veririm siteye yönlendirir (DM sipariş almaz)",
     input: { message: "Nasıl sipariş veririm?" },
-    includes: ["web sitemiz üzerinden çok kolay", "Kapıda Ödeme seçeneği de web sitemizde aktif", "www.yudumjewels.com"],
+    includes: ["web sitemiz üzerinden", "üyelik gerektirmeden", "yudumjewels.com"],
   },
   {
     name: "IBAN isteyen müşteriye site yönlendirmesi yapılmaz",
@@ -257,11 +257,12 @@ const cases = [
     includes: ["Gerekli netleştirmeyi", "net fotoğraf göndermeniz yeterlidir"],
   },
   {
-    name: "Havale seçimi adres cümlesini kırpmaz",
+    name: "Havale seçimi (ödeme commit) siteye yönlendirir",
     input: lazer("Ücreti havale ödeyeceğim", {
       conversation_stage: "waiting_address",
     }),
-    includes: ["EFT ile ilerleyebiliriz", "açık adresinizi iletebilirsiniz"],
+    includes: ["web sitemiz üzerinden", "üyelik gerektirmeden", "yudumjewels.com"],
+    notIncludes: ["IBAN", "TR34"],
   },
   {
     name: "Aksesuar fiyat farkı yok",
@@ -506,19 +507,19 @@ const cases = [
     notIncludes: ["Fotoğrafınızı buradan iletebilirsiniz", "Ödeme tercihinizi"],
   },
   {
-    name: "Siparişim alındı mı sorusu teşekkür cevabına düşmez",
+    name: "Siparişim alındı mı (waiting_address) slot toplamaz siteye yönlenir",
     input: lazer("Teşekkürler. Siparisim alindi mi yani", {
       conversation_stage: "waiting_address",
     }),
-    includes: ["Siparişinizi tamamlamak", "ad soyad", "cep telefonu", "açık adres"],
-    notIncludes: ["Rica ederiz", "siparişiniz alınmıştır"],
+    includes: ["web sitemiz üzerinden", "yudumjewels.com"],
+    notIncludes: ["ad soyad, cep telefonu", "açık adres bilgileriniz", "Siparişinizi tamamlamak"],
   },
   {
-    name: "Siteye giremiyorum sorusu ödeme/adres akışına ezilmez",
+    name: "Siteye giremiyorum insana yönlendirir (yardım eder)",
     input: lazer("Sitenize giriş yapamiyorum", {
       conversation_stage: "waiting_payment",
     }),
-    includes: ["www.yudumjewels.com", "Instagram üzerinden"],
+    includes: ["ekibimize iletiyorum"],
     notIncludes: ["Ödeme tercihinizi", "Ad soyad"],
   },
   {
@@ -597,13 +598,13 @@ const cases = [
     expect: { support_mode: "1", reply_class: "operational_required" },
   },
   {
-    name: "Replay: fotoğraf talimatındaki kemer ürünü akışı bozmaz",
+    name: "Foto talimatı (waiting_payment) slot sormaz siteye yönlenir",
     input: lazer("Kemerler gorunmicek sekilde yapabilirmisiniz", {
       conversation_stage: "waiting_payment",
       photo_received: "1",
     }),
-    includes: "Ödeme tercihinizi",
-    notIncludes: ["www.yudumjewels.com", "çok daha fazla ürün çeşidimiz"],
+    includes: ["web sitemiz üzerinden", "yudumjewels.com"],
+    notIncludes: ["Ödeme tercihinizi belirt"],
     expect: { ilgilenilen_urun: "lazer", conversation_stage: "waiting_payment" },
   },
 ];

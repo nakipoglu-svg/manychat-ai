@@ -416,7 +416,9 @@ export function detectIntent(ctx) {
   // "Kapıda ödeme ile" / "eft ile" — yalnız başına "ile" commit sinyali (kısa mesajda)
   const paymentPureCommit = /^(kapida|kapıda|kapida odeme|kapıda ödeme|eft|havale|eft havale|nakit)\s*(ile)?\s*$/i.test(norm.trim());
   // Payment confirmation (dekont, ödeme yaptım) — payment commit'ten ÖNCE
-  if (hasAny(norm, ["dekont attim","dekont attım","dekont gonderdim","dekont gönderdim","eft attim","eft attım","eft gonderdim","eft gönderdim","havale gonderdim","havale gönderdim","havale attim","havale attım","odeme yaptim","ödeme yaptım","odemeyi yaptim","ödemeyi yaptım","odeme gonderdim","ödeme gönderdim","hesaba attim","hesaba attım","ekran goruntusu","ekran görüntüsü","dekont atayim","dekont atayım","ucreti attim","ücreti attım"])) return "payment_confirmation";
+  // DM→site: müşteri SİTEDEN aldıysa/ödediyse → zaten sipariş vermiş, İNSANA (kontrol) gitmeli.
+  if (hasAny(norm, ["dekont attim","dekont attım","dekont gonderdim","dekont gönderdim","eft attim","eft attım","eft gonderdim","eft gönderdim","havale gonderdim","havale gönderdim","havale attim","havale attım","odeme yaptim","ödeme yaptım","odemeyi yaptim","ödemeyi yaptım","odeme gonderdim","ödeme gönderdim","hesaba attim","hesaba attım","ekran goruntusu","ekran görüntüsü","dekont atayim","dekont atayım","ucreti attim","ücreti attım",
+    "siteden aldim","siteden aldım","siteden yaptim","siteden yaptım","siteden odedim","siteden ödedim","siteden siparis verdim","siteden sipariş verdim","siteden verdim","siteden satin aldim","siteden satın aldım","alisveris yaptim","alışveriş yaptım","uye olmadan yaptim","üye olmadan yaptım","uye olmadan aldim","üye olmadan aldım","sitede yaptim","sitede yaptım","siparis verdim zaten","sipariş verdim zaten","siteden odeme yaptim","siteden ödeme yaptım"])) return "payment_confirmation";
   // Payment commit: verb varsa her yerde, w_payment'ta verb olmadan da kabul et
   // Fiyat teyidi (650 tl kapıda dimi) commit değil → price_confirmation'a kalsın
   if (extracted.payment && !isPriceConfirm && (paymentVerb || paymentPureCommit || stage === STAGE.WAITING_PAYMENT)) return "payment";

@@ -79,8 +79,8 @@ const cases = [
   {
     name: "Fotoğraflı kolye Resimli Lazer seçer",
     input: { message: "fotograflı kolye" },
-    includes: ["Resimli Lazer Kolye", "fotoğrafınızı"],
-    expect: { ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo" },
+    includes: ["Resimli Lazer Kolye", "yudumjewels.com"],
+    expect: { ilgilenilen_urun: "lazer" },
   },
   {
     name: "Fotoğrafli yazımı Resimli Lazer seçer",
@@ -127,8 +127,8 @@ const cases = [
   {
     name: "Harfli kolye Ataç seçer",
     input: { message: "harfli kolye" },
-    includes: ["Harfli Ataç Kolye", "harfleri"],
-    expect: { ilgilenilen_urun: "atac", conversation_stage: "waiting_letters" },
+    includes: ["Harfli Ataç Kolye", "yudumjewels.com"],
+    expect: { ilgilenilen_urun: "atac" },
   },
   {
     name: "Ataş kolye yazımı Ataç seçer",
