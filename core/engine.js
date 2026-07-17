@@ -8,6 +8,7 @@ import {
   REPLY_CLASS, SUPPORT_REASON, TEXT, STAGE, PRODUCT, SITE_URL,
   EXPLICIT_SWITCH_PHRASES, KW,
   LAZER_STRONG_SIGNALS, LAZER_MEDIUM_SIGNALS, ATAC_STRONG_SIGNALS, PRODUCT_AMBIGUOUS_SIGNALS,
+  siteOrderBlock,
 } from "./constants.js";
 import {
   normalizeText, unwrap, normalizeProduct, normalizeStage,
@@ -324,6 +325,20 @@ function buildOutput(ctx, reply, committed, meta) {
     "decision_support": "preview_request", "composition_question": "back_photo_info",
     "example_request": "preview_request",
   };
+
+  // ═══ DM→SİTE — SON GÜVENLİK AĞI (kesin garanti) ═══════════════════════
+  // Hangi yoldan gelirse gelsin (eski/legacy slot state dahil), nihai cevap bir
+  // SİPARİŞ-İŞLEME (slot toplama/onay) ifadesi içeriyorsa → ZORLA siteye çevir.
+  // Bot ASLA DM'den sipariş almasın. (FAQ ifadeleri bu listede YOK.)
+  if (replyText && !reply?.silent) {
+    const SELLING = /[öo]deme tercihini(zi)? belirt|[öo]deme tercihiniz eft|[öo]deme tercihinizi ald[iı]m|ad soyad,? cep telefonu ve a[çc][iı]k adres|a[çc][iı]k adres bilgileriniz ile devam|a[çc][iı]k adresiniz(i| ile)|cep telefonu numaran[iı]z[iı]? (da )?(iletebilir|yaz)|foto[ğg]raf(ınız)? ula[şs]t[iı]|foto[ğg]raf[iı] ald[iı]m|arka foto[ğg]raf[iı] ald[iı]m|harflerinizi ald[iı]m|telefonunuzu ald[iı]m|adres bilginizi ald[iı]m|bilgilerinizi ald[iı]m|telefon numaran[iı]z[iı]? (not )?ald[iı]m|sipari[şs]iniz olu[şs]turulmu[şs]tur|isim bilginizi ald[iı]m/i;
+    if (SELLING.test(replyText)) {
+      replyText = siteOrderBlock(s.product);
+      replyClass = REPLY_CLASS.FIXED_INFO;
+      supportMode = ""; supportReason = "";
+    }
+  }
+
   return {
     success: true, ai_reply: replyText, ilgilenilen_urun: s.product, user_product: s.product,
     last_intent: LAST_INTENT_MAP[ctx.intent] || ctx.intent, conversation_stage: stage, photo_received: s.photo_received || "",
