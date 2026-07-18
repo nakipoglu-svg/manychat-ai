@@ -234,11 +234,11 @@ const cases = [
     notIncludes: ["adres", "Ad soyad"],
   },
   {
-    name: "Arka yüze ikinci fotoğraf arka yazıya karışmaz",
+    name: "Arka yüze ikinci fotoğraf +25 TL ek ücret",
     input: lazer("Arkasına başka resim olabilir mi?", {
       conversation_stage: "waiting_payment",
     }),
-    includes: ["arka yüze", "ikinci bir fotoğraf", "ek ücret alınmamaktadır"],
+    includes: ["arka yüze", "ikinci bir fotoğraf", "+25 TL"],
     notIncludes: ["arka yazı notu", "Ödeme tercihinizi"],
   },
   {
@@ -301,9 +301,9 @@ const cases = [
     includes: ["3 harf", "her ek harf", "+50"],
   },
   {
-    name: "İki resim ön arka fotoğrafa düşer",
+    name: "İki resim ön arka fotoğrafa düşer (+25 TL)",
     input: lazer("Peki ben 1 tane zincire 2 tane resim bastırsam olur mu"),
-    includes: ["ön ve arka yüze", "farklı fotoğraf", "ek ücret alınmamaktadır"],
+    includes: ["ön ve arka yüze", "farklı fotoğraf", "+25 TL"],
     notIncludes: ["Güncel Fiyat Listemiz", "Kapıda Ödeme: 699"],
   },
   {

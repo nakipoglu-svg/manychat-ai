@@ -32,6 +32,30 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
     }
   }
 
+  // ═══ 0.5 ARKA YÜZE İKİNCİ FOTOĞRAF = +25 TL ═══
+  // Cevap arka yüze İKİNCİ FOTOĞRAF'tan bahsedip ONU ÜCRETSİZ gösteriyorsa → +25 TL'ye düzelt.
+  // Arka yüze YAZI ücretsiz KALIR (yazı bağlamındaki ücretsiz iddiasına dokunma).
+  {
+    const backPhoto = /(ön ve arka yüz|arka yüze ikinci|arka yüzüne ikinci|iki taraf|iki yüze|çift taraf|önlü arkalı|arkalı önlü|birden fazla fotoğraf|ön ve arka yüze fotoğraf|ön ve arka yüze ayrı)/i.test(text) && /(foto|fotograf|fotoğraf)/i.test(text);
+    const freeClaim = /(ek ücret alınmama|ek ücret almadan|ek ücret alınmaz|fiyat farkı yok|fiyat farkı olmaz|fiyat farkı bulunma|ücret alınmaz|ücret alınmamakta)/i.test(text);
+    const aboutTextOnly = /yaz[ıi] (işlenmesi|için|eklenmesi)[^.]*ek ücret/i.test(text); // "arka yüze YAZI için ek ücret alınmaz" → koru
+    if (backPhoto && freeClaim && !aboutTextOnly) {
+      text = text
+        .replace(/Bu işlem için (herhangi bir )?ek ücret alınmama(ktadır)?\.?/gi, "Arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.")
+        .replace(/(yüz[üu]ne )ek ücret almadan (farklı fotoğraflar)/gi, "$1$2 (arka yüze ikinci fotoğraf +25 TL ek ücret)")
+        .replace(/,? ?ek ücret almadan (yapılabilir|işlenebilir)/gi, " $1; arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır")
+        .replace(/[Ff]iyat farkı (yoktur|olmaz|yok|bulunmamaktadır|olmuyor)\.?/gi, "Arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.")
+        .replace(/,? ?ek ücret alınmaz\.?/gi, " (arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır).")
+        .replace(/,? ?fiyat farkı olmaz\.?/gi, " Arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.");
+      console.log("[GUARD] arka foto +25 TL düzeltildi");
+    }
+    // Arka fotodan bahsedip HİÇ fiyat söylemeyen cevaba +25 notu ekle (yazı hariç, zaten +25 varsa ekleme).
+    else if (backPhoto && !/\+25/.test(text) && !aboutTextOnly) {
+      text = text.trimEnd() + " Not: Arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.";
+      console.log("[GUARD] arka foto +25 TL notu eklendi");
+    }
+  }
+
   // ═══ 1. FRUSTRATION HARD STOP ═══
   if (hasAny(ctx.norm, [
     "otomatik mesaj istemiyorum","robot musunuz","aptal misiniz","salak misiniz",
