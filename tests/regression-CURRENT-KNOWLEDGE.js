@@ -119,7 +119,7 @@ const cases = [
   {
     name: "Trendyol ve pazar yeri yok",
     input: { message: "Trendyol mağazanız var mı?" },
-    includes: ["Instagram", "web"],
+    includes: ["web", "yudumjewels.com"],
     notIncludes: ["Trendyol'dan alabilirsiniz", "mağazamız var"],
   },
   {
@@ -172,7 +172,7 @@ const cases = [
   {
     name: "Çoklu adet → sepet %15 indirimini söyler, fiyat uydurmaz",
     input: lazer("2 tane istiyorum fiyat ne olur?"),
-    includes: ["%15 indirim", "iki ve üzeri"],
+    includes: ["ikinci ürünü eklediğinizde", "sepete toplam %15 indirim"],
     notIncludes: ["1298", "1398", "1000"],
   },
   {
@@ -205,9 +205,9 @@ const cases = [
     notIncludes: ["Tabi efendim", "0505"],
   },
   {
-    name: "Ürün örnekleri site ve profil cevabına düşer",
+    name: "Ürün örnekleri lazer örnek linkine düşer",
     input: { message: "Ürün örnekleri var mı?" },
-    includes: ["profilimizde", "www.yudumjewels.com"],
+    includes: ["Atölyemizden çıkmış ürün fotoğraflarını", "https://yudumjewels.com/lazer-resimli-kolye?renk=altin-kaplama"],
     notIncludes: "Hangi model",
   },
   {
@@ -405,9 +405,9 @@ const cases = [
     expect: { ilgilenilen_urun: "atac", conversation_stage: "waiting_letters" },
   },
   {
-    name: "Harfli model görsel talebi site/profil örneklerine gider",
+    name: "Harfli model görsel talebi örnek linkine gider",
     input: atac("Harfli modeli görebilir miyim?"),
-    includes: ["profilimizde", "www.yudumjewels.com"],
+    includes: ["Atölyemizden çıkmış ürün fotoğraflarını", "https://yudumjewels.com/lazer-resimli-kolye?renk=altin-kaplama"],
     notIncludes: ["ön izleme", "hazırlayamıyoruz"],
     expect: { ilgilenilen_urun: "atac", conversation_stage: "waiting_letters" },
   },
@@ -436,9 +436,9 @@ const cases = [
     notIncludes: "Ad soyad",
   },
   {
-    name: "Fotoğrafı buradan mı sorusu WhatsApp sızdırmaz",
+    name: "Fotoğrafı buradan mı sorusu siteye yönlendirir ve WhatsApp sızdırmaz",
     input: lazer("Fotoğrafı buradan mı göndereceğim?"),
-    includes: ["Buradan direkt iletebilirsiniz"],
+    includes: ["web sitemizden", "fotoğraf yükleme"],
     notIncludes: ["0505 471 35 45", "WhatsApp"],
   },
   {
@@ -466,9 +466,9 @@ const cases = [
     notIncludes: ["takabiliriz", "iki uç olur"],
   },
   {
-    name: "Yapılmış resimler örnek/site cevabına düşer",
+    name: "Yapılmış resimler örnek linkine düşer",
     input: lazer("Yapılmış resimleriniz var mı bakabilir miyim?"),
-    includes: ["profilimizde", "www.yudumjewels.com"],
+    includes: ["Atölyemizden çıkmış ürün fotoğraflarını", "https://yudumjewels.com/lazer-resimli-kolye?renk=altin-kaplama"],
     notIncludes: ["ön izleme", "hazırlayamıyoruz"],
   },
   {
@@ -531,9 +531,9 @@ const cases = [
     notIncludes: ["Ödeme tercihinizi", "Ad soyad"],
   },
   {
-    name: "Harfli olanlar nasıl sorusu örnek/site cevabına düşer",
+    name: "Harfli olanlar nasıl sorusu örnek linkine düşer",
     input: atac("Harfli olanlr nasillar"),
-    includes: ["profilimizde", "www.yudumjewels.com"],
+    includes: ["Atölyemizden çıkmış ürün fotoğraflarını", "https://yudumjewels.com/lazer-resimli-kolye?renk=altin-kaplama"],
     notIncludes: ["Yapılmasını istediğiniz harfleri", "EFT"],
     expect: { ilgilenilen_urun: "atac", conversation_stage: "waiting_letters" },
   },
@@ -611,3 +611,5 @@ const cases = [
 
 const result = await runSuite("CURRENT_KNOWLEDGE", cases);
 process.exit(result.fail > 0 ? 1 : 0);
+
+

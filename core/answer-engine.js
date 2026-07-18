@@ -44,8 +44,8 @@ ${FACTS.site}`;
 
 // SEPET İNDİRİMİ — TEK KAYNAK. Yalnızca soran/çok alan müşteriye gösterilir; başka yere serpilmez.
 // Kural: sitede sepete 2+ ürün eklenince toplam tutara OTOMATİK %15 indirim.
-const MULTI_DISCOUNT_INFO = `Sitemizde sepetinize iki ve üzeri ürün eklediğinizde toplam tutara otomatik %15 indirim uygulanıyor efendim 😊 Kolayca oluşturabilirsiniz:\n${FACTS.site}`;
-const BARGAIN_WITH_DISCOUNT = `Tek üründe fiyatımız sabittir efendim 😊 Ancak sitemizden sepetinize ikinci bir ürün eklerseniz toplam tutara otomatik %15 indirim uygulanıyor:\n${FACTS.site}`;
+const MULTI_DISCOUNT_INFO = `Sitemizde ikinci ürünü eklediğinizde sepete toplam %15 indirim uygulanıyor efendim 😊`;
+const BARGAIN_WITH_DISCOUNT = `Sitemizde ikinci ürünü eklediğinizde sepete toplam %15 indirim uygulanıyor efendim 😊`;
 
 // KAPIDA +50 NOTU — TEK KAYNAK. Müşteri kapıda ödemeyi seçince mutlaka söylenir
 // (fiyatı atlayıp direkt "kapıda ödeme" diyen müşteri +50'yi kapıda öğrenip küsmesin).
@@ -69,19 +69,19 @@ const CURRENT_STORE_INFO = `Beykoz / İstanbul'dayız efendim.
 
 Biz atölye olarak çalışıyoruz; fiziki mağazamız ve elden teslim hizmetimiz bulunmamaktadır.
 
-Siparişlerinizi Instagram üzerinden veya web sitemizden güvenle oluşturabilirsiniz.
+Siparişlerinizi web sitemizden güvenle oluşturabilirsiniz.
 
 www.yudumjewels.com`;
 
-const CURRENT_EXAMPLES_INFO = `Tüm ürünlerimizin örnekleri profilimizde mevcuttur efendim 😊
+const CURRENT_EXAMPLES_INFO = `Atölyemizden çıkmış ürün fotoğraflarını sayfamızda görebilirsiniz efendim 😊
 
-Modellerimizi ve ürün detaylarımızı web sitemizden de inceleyebilirsiniz:
+https://yudumjewels.com/lazer-resimli-kolye?renk=altin-kaplama`;
 
-www.yudumjewels.com`;
+const CURRENT_PHOTO_INFO = `Siparişinizi web sitemiz üzerinden oluştururken fotoğrafınızı ürün sayfasındaki fotoğraf yükleme alanından ekleyebilirsiniz efendim 😊
 
-const CURRENT_PHOTO_INFO = `Siparişinizi buradan oluşturmak isterseniz fotoğrafınızı buradan gönderebilirsiniz.
+${productLink(PRODUCT.LAZER)}
 
-Kredi kartı ile sipariş vermek isterseniz fotoğrafınızı web sitemiz üzerinden sipariş sırasında yükleyebilirsiniz.
+Kredi kartı, EFT/Havale veya Kapıda Ödeme seçenekleriyle web sitemizden kolayca sipariş oluşturabilirsiniz.
 
 Gerekli netleştirme, arka plan temizliği ve düzenlemeleri biz yapıyoruz. Tek ricamız; fotoğraftaki kişilerin kafalarının tamamının görünmesi ve fotoğrafın mümkün olduğunca net olmasıdır.`;
 
@@ -106,7 +106,7 @@ Göndermiş olduğunuz fotoğraf, profesyonel lazer işleme tekniği ile metal y
 Bu işlem baskı, sticker, boya veya çıkartma değildir.`;
 
 const POLICY_V2_PHOTO_COMPOSITION_INFO =
-  "Aynı fotoğrafta kaç kişi varsa işleyebiliyoruz efendim 😊 Fotoğraf birleştirme hizmetimiz bulunmamaktadır. Ayrı fotoğraflar için uygun ürünlerde ön ve arka yüze farklı fotoğraf işlenebilir.";
+  "Aynı fotoğrafta kaç kişi varsa işleyebiliyoruz efendim 😊 Fotoğraf birleştirme hizmetimiz bulunmamaktadır. Ayrı fotoğraflar için uygun ürünlerde ön ve arka yüze farklı fotoğraf işlenebilir. Arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.";
 
 // ═══ A. SLOT COMMIT ═══
 function getSlotCommitResponse(intent, ctx) {
@@ -117,17 +117,14 @@ function getSlotCommitResponse(intent, ctx) {
     return "Paket içine ayrıca not ekleme uygulamamız bulunmamaktadır efendim 😊";
   }
   if (hasAny(ctx.norm || "", ["arkasına başka resim","arkasina baska resim","arkasına baska resim","arkasina başka resim","arka yüze resim","arka yuze resim","arka yüzüne resim","arka yuzune resim","arkasına fotoğraf","arkasina fotograf","arkasına foto","arkasina foto"])) {
-    return "Evet efendim, arka yüze ikinci bir fotoğraf işleyebiliyoruz 😊 Bu işlem için ek ücret alınmamaktadır.";
+    return "Evet efendim, arka yüze ikinci bir fotoğraf işleyebiliyoruz 😊 Arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.";
   }
   if (hasAny(ctx.norm || "", ["boncuk","nazar","kalp","aksesuar","figur","figür"]) && hasAny(ctx.norm || "", ["koy","ekle","olur mu","var mi","var mı","şansınız","sansiniz","fiyat"])) {
     return TEXT.AKSESUAR_INFO;
   }
 
   if (intent === "full_contact_bundle") {
-    if (ctx.product === PRODUCT.MEZAR_TASI) {
-      return "Bilgilerinizi aldım efendim 😊 Mezar taşı siparişiniz için ekibimiz en kısa sürede sizinle iletişime geçip tasarım sürecini başlatacaktır.";
-    }
-    return "Bilgilerinizi aldım efendim 😊 Siparişiniz oluşturulmuştur. Kargoya verildiğinde SMS ile bilgilendirme yapılacaktır.";
+    return siteContactRedirect(ctx.product);
   }
 
   if (intent === "photo") {
@@ -136,21 +133,21 @@ function getSlotCommitResponse(intent, ctx) {
     if (!ctx.product) {
       // Ürün seçilmeden foto/model geldi → lazer VARSAYMA, hangi ürün olduğunu numaralı sor.
       // (Müşteri katalogdan bir model fotosu atıp "bunu istiyorum" diyebilir.)
-      return "Fotoğrafınızı aldım efendim 😊 Hangi ürünümüz için hazırlayalım? Numarasını yazmanız yeterli:\n\n1️⃣ Resimli Lazer Kolye\n2️⃣ Resimli Bileklik\n3️⃣ İsimli Yonca Kolye\n4️⃣ Anahtarlık\n5️⃣ Harfli Ataç Kolye + Bileklik Hediye\n6️⃣ Evcil Hayvan Mezar Taşı";
+      return sitePhotoRedirect(ctx.product);
     }
     const st = ctx.fields?.conversation_stage || "";
     // w_address'ta ek fotoğraf → kabul et + adres sor
     if (st === STAGE.WAITING_ADDRESS) {
       const hasPhone = ctx.fields?.phone_received === "1";
       const hasAddr = ctx.fields?.address_status === "address_only";
-      if (hasAddr && !hasPhone) return "Fotoğrafı aldım efendim 😊 Cep telefonu numaranız ile devam edelim.";
-      if (hasPhone && !hasAddr) return "Fotoğrafı aldım efendim 😊 Açık adres bilginiz ile devam edelim.";
-      return "Fotoğrafı aldım efendim 😊 Ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim.";
+      if (hasAddr && !hasPhone) return sitePhotoRedirect(ctx.product);
+      if (hasPhone && !hasAddr) return sitePhotoRedirect(ctx.product);
+      return sitePhotoRedirect(ctx.product);
     }
     if (ctx.product === PRODUCT.MEZAR_TASI) {
-      return "Fotoğrafınız ulaştı efendim 😊 Mezar taşı siparişinizde ödeme EFT / havale veya web sitemizden kredi kartı ile alınmaktadır. Kapıda ödeme bulunmamaktadır.";
+      return sitePhotoRedirect(ctx.product);
     }
-    return "Fotoğrafınız ulaştı efendim 😊 Siparişiniz bu fotoğraf üzerinden hazırlanacaktır.\n\nÖdeme tercihiniz EFT / Sitemizden Kartla Ödeme mi, kapıda ödeme mi olacak efendim?"; 
+    return sitePhotoRedirect(ctx.product); 
   }
   if (intent === "payment") {
     const { norm } = ctx;
@@ -215,7 +212,7 @@ function getSlotCommitResponse(intent, ctx) {
     }
     if (st === STAGE.ORDER_COMPLETED || st === "order_completed") return "Tabi efendim 😊";
     // waiting_photo: arka yazıyı sessizce al, fotoğrafa yönlendir (henüz foto yok)
-    if (st === STAGE.WAITING_PHOTO) return "Tabi efendim 😊 Fotoğrafınızı buradan iletebilirsiniz.";
+    if (st === STAGE.WAITING_PHOTO) return "Tabi efendim 😊 Siparişinizi web sitemizden oluştururken fotoğrafınızı ürün sayfasında yükleyebilirsiniz.";
     return "Tabi efendim 😊";
   }
   // ── back_text_question: yapılabilir mi soruları ──
@@ -253,7 +250,7 @@ function getSlotCommitResponse(intent, ctx) {
   }
   if (intent === "back_photo_upload") {
     const st = ctx.fields?.conversation_stage || "";
-    if (st === STAGE.WAITING_PAYMENT) return "Arka fotoğrafı aldım efendim 😊 Ödeme tercihinizi belirtebilir misiniz? EFT / Sitemizden Kartla Ödeme veya kapıda ödeme.";
+    if (st === STAGE.WAITING_PAYMENT) return sitePhotoRedirect(ctx.product);
     return null;
   }
   if (["phone","address","name_only"].includes(intent)) {
@@ -264,15 +261,15 @@ function getSlotCommitResponse(intent, ctx) {
       // İsim daha önce alındı mı? Alındıysa "ad soyad" tekrar sorulmaz.
       const hasName = ctx.fields?.name_received === "1" || intent === "name_only" || ctx.extracted?.hasName;
       // Her ikisi de tamam → sipariş teyidi
-      if (hasAddr && hasPhone) return "Bilgilerinizi aldım efendim 😊 Siparişiniz oluşturulmuştur, en kısa sürede hazırlanacaktır.";
-      if (hasAddr && !hasPhone) return "Adres bilginizi aldım efendim 😊 Cep telefonu numaranızı da yazabilir misiniz?";
+      if (hasAddr && hasPhone) return siteContactRedirect(ctx.product);
+      if (hasAddr && !hasPhone) return siteContactRedirect(ctx.product);
       // Solo telefon: isim varsa sadece adres iste, yoksa isim+adres iste
       if (hasPhone && !hasAddr && intent === "phone") {
         return hasName
-          ? "Telefonunuzu aldım efendim 😊 Açık adresinizi de iletir misiniz?"
-          : "Telefonunuzu aldım efendim 😊 Ad soyad ve açık adresinizi de iletir misiniz?";
+          ? siteContactRedirect(ctx.product)
+          : siteContactRedirect(ctx.product);
       }
-      if (hasPhone && !hasAddr) return "Telefonunuzu aldım efendim 😊 Açık adres bilginiz ile devam edelim.";
+      if (hasPhone && !hasAddr) return siteContactRedirect(ctx.product);
       // ━━━ FIX F7: name_only → isim aldık, açık adres ve telefon iste ━━━
       if (intent === "name_only") return "İsim bilginizi aldım efendim 😊 Diğer bilgilerinizi — açık adres ve cep telefonu numaranızı — iletirseniz devam edelim.";
     }
@@ -280,7 +277,7 @@ function getSlotCommitResponse(intent, ctx) {
   }
   // Instagram "Ara" butonu / okunamayan sistem mesajı → sessizce geç (akışı bozma).
   // Numara gelmediyse normal akış zaten tekrar sorar; müşteriye "yazıyla yazın" DEME.
-  if (intent === "system_message") return "Tabi efendim 😊";
+  if (intent === "system_message") return "";
   // ── LETTERS/İSİM alındı → onayla ve ödemeye yönlendir (ataç harf / yonca isim) ──
   if (intent === "letters") {
     const prod = ctx.product || ctx.fields?.ilgilenilen_urun || "";
@@ -440,7 +437,7 @@ function getDeterministicInfoResponse(intent, ctx) {
     return CURRENT_EXAMPLES_INFO;
   }
   if (hasAny(norm, ["trendyol","hepsiburada","n11","amazon","cicek sepeti","çiçek sepeti"])) {
-    return "Trendyol veya benzeri pazaryerlerinde satışımız bulunmamaktadır efendim.\n\nSiparişlerinizi Instagram üzerinden veya web sitemizden güvenle oluşturabilirsiniz.\n\nwww.yudumjewels.com";
+    return "Trendyol veya benzeri pazaryerlerinde satışımız bulunmamaktadır efendim.\n\nSiparişlerinizi web sitemizden güvenle oluşturabilirsiniz.\n\nwww.yudumjewels.com";
   }
   if (hasAny(norm, ["elden teslim","gelip al","gelip teslim","magazadan","mağazadan","subeden","şubeden","dukkandan","dükkandan","yerinden al"])) {
     return CURRENT_STORE_INFO;
@@ -523,10 +520,10 @@ function getDeterministicInfoResponse(intent, ctx) {
     // Adet/sayı sorusu → net limit cevabı
     if (hasAny(norm, ["kac foto","kaç foto","kac resim","kaç resim","kac adet","kaç adet","kac tane foto","kaç tane foto","kac tane resim","kaç tane resim","en fazla kac","en fazla kaç","kac gorsel","kaç görsel"]) &&
         hasAny(norm, ["koyabil","koyar","koyma","olur","ekleyebil","yapabil","basabil","islenebil","işlenebil","kullanabil","alir","alır","sigar","sığar","fazla"])) {
-      return "En fazla 3 fotoğraf koyabiliyoruz efendim 😊";
+      return POLICY_V2_PHOTO_COMPOSITION_INFO;
     }
     if (hasAny(norm, ["birlestir","birleştir","montaj","ayri foto","ayrı foto","farkli foto","farklı foto"])) {
-      return "Fotoğraf birleştirme hizmetimiz bulunmamaktadır efendim.\n\nAncak Resimli Lazer Kolye, Resimli Bileklik ve Resimli Anahtarlık ürünlerimizin ön ve arka yüzüne ek ücret almadan farklı fotoğraflar işleyebiliyoruz.\n\nDilerseniz bu şekilde hazırlayabiliriz.";
+      return POLICY_V2_PHOTO_COMPOSITION_INFO;
     }
     if (hasAny(norm, ["kac kisi","kaç kişi","kisi sayisi","kişi sayısı","4 kisi","4 kişi","5 kisi","5 kişi"])) {
       return "Fotoğraftaki kişi sayısında herhangi bir sınır yoktur. Fotoğrafınızda kaç kişi varsa aynı şekilde işleyebiliriz.";
@@ -536,16 +533,16 @@ function getDeterministicInfoResponse(intent, ctx) {
 
   if (intent === "composition_question") {
     if (hasAny(norm, ["iki tane resim","2 tane resim","iki resim","2 resim","iki foto","2 tane foto","2 foto","bir yüzünde","bir yuzunde","öbür yüzünde","obur yuzunde","digeri öbür","diğeri öbür","arka yuz de de foto","arka yüz de de foto","arkali onlu","arkalı önlü","yaziya gerek yok","yazıya gerek yok"])) {
-      return "Evet efendim, ön ve arka yüze farklı fotoğraf işleyebiliyoruz 😊 Bu işlem için ek ücret alınmamaktadır. Aynı yüzeyde hem fotoğraf hem yazı bulunamaz.";
+      return "Evet efendim, ön ve arka yüze farklı fotoğraf işleyebiliyoruz 😊 Arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır. Aynı yüzeyde hem fotoğraf hem yazı bulunamaz.";
     }
     if (hasAny(norm, ["fiyat degis","fiyat değiş","fiyat fark","ek ucret","ek ücret"]) && hasAny(norm, ["oglum","oğlum","kizim","kızım","annem","babam","iki kisi","iki kişi","2 kisi","2 kişi","beraber","birlikte"])) {
-      return "Hayır efendim, tek kolyeye birden fazla kişi işlenince fiyat değişmiyor 😊 Aynı fotoğrafta birlikteyseler ön yüze işleriz. İsterseniz ön ve arka yüze farklı fotoğraf da ek ücret almadan yapılabilir.";
+      return "Hayır efendim, aynı fotoğrafta birlikte olan kişi sayısında fiyat değişmiyor 😊 Ayrı fotoğraflar için uygun ürünlerde ön ve arka yüze farklı fotoğraf işlenebilir; arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.";
     }
     if (hasAny(norm, ["on yuz","ön yüz","on yuze","ön yüze","on yuzde","ön yüzde","ikisi de on","ikisi de ön","aynı yüzde","ayni yuzde"])) {
       return "Tabii efendim, tek fotoğrafta ikisi de varsa ön yüze aynı şekilde işleyebiliriz 😊 İki ayrı fotoğrafı birleştirme hizmetimiz bulunmamaktadır; ayrı fotoğraflar için ön ve arka yüze farklı fotoğraf yapılabilir.";
     }
     if (hasAny(norm, ["birlestir","birleştir","montaj","ayri foto","ayrı foto","farkli foto","farklı foto"])) {
-      return "Fotoğraf birleştirme hizmetimiz bulunmamaktadır efendim.\n\nAncak Resimli Lazer Kolye, Resimli Bileklik ve Resimli Anahtarlık ürünlerimizin ön ve arka yüzüne ek ücret almadan farklı fotoğraflar işleyebiliyoruz.\n\nDilerseniz bu şekilde hazırlayabiliriz.";
+      return POLICY_V2_PHOTO_COMPOSITION_INFO;
     }
     if (hasAny(norm, ["iki kisi","iki kişi","2 kisi","2 kişi","birden fazla kisi","birden fazla kişi","kac kisi","kaç kişi"])) {
       return "Evet efendim, birden fazla kişi tek kolyeye işlenebilir.\n\nTek fotoğrafta iki kişi varsa aynı şekilde işleriz. İsterseniz ön ve arka yüze farklı fotoğraf da yapılabilir.";
@@ -557,9 +554,9 @@ function getDeterministicInfoResponse(intent, ctx) {
   }
   if (intent === "back_photo_info") {
     if (hasAny(norm, ["birlestir","birleştir","montaj","ayri foto","ayrı foto","farkli foto","farklı foto"])) {
-      return "Fotoğraf birleştirme hizmetimiz bulunmamaktadır efendim.\n\nAncak Resimli Lazer Kolye, Resimli Bileklik ve Resimli Anahtarlık ürünlerimizin ön ve arka yüzüne ek ücret almadan farklı fotoğraflar işleyebiliyoruz.\n\nDilerseniz bu şekilde hazırlayabiliriz.";
+      return POLICY_V2_PHOTO_COMPOSITION_INFO;
     }
-    return "Resimli lazer kolye, resimli bileklik ve resimli anahtarlık ürünlerimizin arka yüzüne ikinci bir fotoğraf da işleyebiliyoruz.\n\nBu işlem için herhangi bir ek ücret alınmamaktadır.\n\nBir yüzeyde aynı anda hem fotoğraf hem de yazı bulunamaz. Her yüzeyde ya fotoğraf ya da yazı yer alabilir.";
+    return "Resimli lazer kolye, resimli bileklik ve resimli anahtarlık ürünlerimizin arka yüzüne ikinci bir fotoğraf da işleyebiliyoruz.\n\nArka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.\n\nBir yüzeyde aynı anda hem fotoğraf hem de yazı bulunamaz. Her yüzeyde ya fotoğraf ya da yazı yer alabilir.";
   }
 
   if (intent === "chain_question" || intent === "chain_structure_request") {
@@ -789,7 +786,7 @@ function getDeterministicInfoResponse(intent, ctx) {
 
   // F5 composition — "Tek resim mi yoksa istediğiniz kadar" clarify
   if (hasAny(norm, ["tek resim mi","istediginiz kadar","istediğiniz kadar","kac resim koy","kaç resim koy","kac foto koy","kaç foto koy","kac tane resim","kaç tane resim"])) {
-    return "Tek kolyede en fazla 3 fotoğraf kullanabiliyoruz efendim 😊 Birleştirme veya ön-arka yüz olarak yerleştiriyoruz.";
+    return POLICY_V2_PHOTO_COMPOSITION_INFO;
   }
 
   // F3 back_text clarify — "İsmi mi yazıcak" / "Birşey yazmama gerek var mı" / "ne yazılacak"
@@ -835,14 +832,14 @@ function getDeterministicInfoResponse(intent, ctx) {
   if (hasAny(norm, ["4 kisi","4 kişi","5 kisi","5 kişi","6 kisi","6 kişi","dort kisi","dört kişi","bes kisi","beş kişi","kac kisi","kaç kişi"])) return "Evet efendim, fotoğrafa kaç kişi olursa olsun yapılabilir 😊 Çok kişili fotoğraflarda tek kare olması en idealidir.";
 
   // ── BİLEKLİK / DİĞER ÜRÜN SORULARI ──
-  if (hasAny(norm, ["bileklik yapiy","bileklik yapıy","bileklik var mi","bileklik var mı","bileklik istiyorum"])) return TEXT.BILEKLIK_INFO;
+  if (hasAny(norm, ["bileklik yapiy","bileklik yapıy","bileklik var mi","bileklik var mı","bileklik istiyorum"])) return TEXT.BILEKLIK_PRICE + siteSoftLink(PRODUCT.BILEKLIK);
   if (hasAny(norm, ["yuzuk yapiy","yüzük yapıy","yuzuk var mi","yüzük var mı","kupe var mi","küpe var mı"])) return TEXT.OTHER_PRODUCT_REDIRECT;
 
   // ── KOPMA/SİLİNME ──
   if (hasAny(norm, ["kopma","kopar","silinme","silinir","silinecek","yazı silinir","resim silinir","silinme ihtimal"])) return "Lazer kazıma yöntemiyle hazırlanmaktadır efendim 😊 Silinme veya kopma olmaz, kalıcıdır.";
 
   // ── X RESİM/FOTO TEK KOLYEDE → EVET YAPILIR ──
-  if (hasAny(norm, ["ayni kolyeye","aynı kolyeye","ayni kolyede","aynı kolyede","tek kolyede","tek kolyeye","1 kolyede","1 kolyeye","bir kolyede","bir kolyeye"]) && hasAny(norm, ["resim","resmi","foto","fotoğraf","kisi","kişi","fotograf"])) return "Evet efendim, tek kolyeye birden fazla fotoğraf yapabiliyoruz 😊 Fiyat farkı yoktur.";
+  if (hasAny(norm, ["ayni kolyeye","aynı kolyeye","ayni kolyede","aynı kolyede","tek kolyede","tek kolyeye","1 kolyede","1 kolyeye","bir kolyede","bir kolyeye"]) && hasAny(norm, ["resim","resmi","foto","fotoğraf","kisi","kişi","fotograf"])) return "Aynı fotoğrafta kaç kişi varsa işleyebiliyoruz efendim 😊 Ayrı fotoğrafları birleştirme hizmetimiz bulunmamaktadır; uygun ürünlerde ön ve arka yüze farklı fotoğraf işlenebilir. Arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.";
 
   // ── ALERJİ ──
   if (hasAny(norm, ["alerji","alerjim","hassasiyet","hassas cild","hassas cilt"])) return "Ürünlerimiz 316L kalite paslanmaz çelikten üretilmektedir efendim 😊 Cilt dostu bir malzemedir.";
@@ -857,13 +854,13 @@ function getDeterministicInfoResponse(intent, ctx) {
   if (hasAny(norm, ["odeme sonrasi hazir","ödeme sonrası hazır","odeme yapildiktan sonra","ödeme yapıldıktan sonra","odeme sonrasi mi","ödeme sonrası mı","odeme yapinca","ödeme yapınca"])) return "Evet efendim, ödeme yapıldıktan sonra siparişiniz hazırlanmaya başlıyor 😊";
 
   // ── ARKASINA BAŞKA RESİM ──
-  if (hasAny(norm, ["arkasina baska resim","arkasına başka resim","arkasina da resim","arkasına da resim","arkasina resim","arkasına resim","arka yuze resim","arka yüze resim","arkasina da baski","arkasına da baskı"])) return "Evet efendim, arka yüze de fotoğraf veya yazı yapabiliyoruz 😊 Ücretsizdir.";
+  if (hasAny(norm, ["arkasina baska resim","arkasına başka resim","arkasina da resim","arkasına da resim","arkasina resim","arkasına resim","arka yuze resim","arka yüze resim","arkasina da baski","arkasına da baskı"])) return "Evet efendim, arka yüze fotoğraf veya yazı yapılabilir 😊 Arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır; arka yazı ücretsizdir.";
 
   // ── ARKA YAZDIRIM İSTEĞİ: "yazılsın/basabilir/yazabilir/sığar" ──
   if (hasAny(norm, ["yazilsin","yazılsın","basabilir misiniz","yazabilir misiniz","yazabilirmisiniz","sigar","sığar","sigdirir","sığdırır","sigar mi","sığar mı"]) && !hasAny(norm, ["ucret","ücret","fiyat"])) return "Tabi efendim, yazarız 😊 Ücretsizdir.";
 
   // ── İKİ TARAFLI RESİM ──
-  if (hasAny(norm, ["iki tarafina","iki tarafına","2 tarafina","2 tarafına","iki tarafi","iki tarafı","iki yuze","iki yüze","2 tarafli","2 taraflı","iki tarafli","iki taraflı","cift taraf","çift taraf"])) return "Evet efendim, ön ve arka yüze ayrı fotoğraf yapabiliyoruz 😊 Fiyat farkı yoktur.";
+  if (hasAny(norm, ["iki tarafina","iki tarafına","2 tarafina","2 tarafına","iki tarafi","iki tarafı","iki yuze","iki yüze","2 tarafli","2 taraflı","iki tarafli","iki taraflı","cift taraf","çift taraf"])) return "Evet efendim, ön ve arka yüze ayrı fotoğraf yapabiliyoruz 😊 Arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.";
 
   // ── SİYAH BEYAZ / RENKLİ ──
   if (hasAny(norm, ["siyah beyaz","siyah beyaz mi","renkli mi","renkli olur","renkli de olur"])) return "İstediğiniz fotoğrafı gönderebilirsiniz efendim 😊 Gerekli düzenlemeyi biz yapıyoruz. Siyah beyaz veya renkli farketmez.";
@@ -962,20 +959,20 @@ function getDeterministicInfoResponse(intent, ctx) {
     const compPriceLine = `Resimli Lazer Kolye: EFT / Sitemizden Kartla Ödeme: ${PRICE.LAZER_EFT} TL, Kapıda Ödeme: ${PRICE.LAZER_KAPIDA} TL.`;
     // Arkalı önlü (ön + arka yüze ayrı resim)
     if (hasAny(norm, ["arkali onlu","arkalı önlü","onlu arkali","önlü arkalı","iki yuzune","iki yüzüne","iki tarafina","iki tarafına","iki tarafta","2 tarafta","bir yuzune","bir yüzüne","diger yuzune","diğer yüzüne","kolyenin iki tarafina","kolyenin iki tarafına"]))
-      return `Evet efendim, ön ve arka yüze ayrı ayrı fotoğraf yapabiliyoruz 😊 Fiyat farkı olmaz. ${compPriceLine}`;
+      return `Evet efendim, ön ve arka yüze ayrı ayrı fotoğraf yapabiliyoruz 😊 Arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır. ${compPriceLine}`;
     // Yan yana / aynı karede
     if (hasAny(norm, ["yan yana","yanyana","ayni karede","aynı karede","ayni kareye","aynı kareye","tek karede","tek kare"]))
       return `Evet efendim, birden fazla kişiyi aynı karede yan yana basabiliyoruz 😊 Fiyat farkı olmaz. ${compPriceLine}`;
     // İki+ kişi / çocuk / aile
     if (hasAny(norm, ["iki cocuk","iki çocuk","2 cocuk","2 çocuk","uc cocuk","üç çocuk","3 cocuk","3 çocuk","dort cocuk","dört çocuk","iki kisi","iki kişi","2 kisi","2 kişi","uc kisi","üç kişi","3 kisi","3 kişi","5 kisi","5 kişi","aile","iki oglum","iki oğlum","iki kizim","iki kızım","cocuklarim","çocuklarım"]))
-      return `Evet efendim, birden fazla kişi tek kolyede olabilir 😊 Fiyat farkı olmaz; yan yana veya ön-arka yüz tercihinize göre basıyoruz. ${compPriceLine}`;
+      return `Evet efendim, aynı fotoğrafta birden fazla kişi olabilir 😊 Aynı fotoğraftaki kişi sayısı fiyatı değiştirmez. Ayrı fotoğraflar için ön ve arka yüz kullanılabilir; arka yüze ikinci fotoğraf +25 TL ek ücrettir. ${compPriceLine}`;
     // İki+ resim / foto — cevap "yan yana veya ön-arka yüz" + fiyat
     if (hasAny(norm, ["iki resim","2 resim","uc resim","üç resim","3 resim","iki foto","2 foto","3 foto","iki fotograf","iki fotoğraf","iki ayri","iki ayrı","ayri ayri","ayrı ayrı","birden fazla resim","birden fazla foto"]))
-      return `Fotoğraf birleştirme hizmetimiz bulunmamaktadır efendim. Ancak ön ve arka yüze farklı fotoğraf işleyebiliyoruz; bu işlemde fiyat farkı olmaz. ${compPriceLine}`;
+      return `Fotoğraf birleştirme hizmetimiz bulunmamaktadır efendim. Ayrı fotoğraflar için ön ve arka yüze farklı fotoğraf işleyebiliyoruz; arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır. ${compPriceLine}`;
     // Completed stage'de genel
     if (st === STAGE.ORDER_COMPLETED || st === "order_completed")
-      return "Fotoğraf birleştirme hizmetimiz bulunmamaktadır efendim. Ancak ön ve arka yüze farklı fotoğraf işleyebiliyoruz.";
-    return `Fotoğraf birleştirme hizmetimiz bulunmamaktadır efendim. Ancak tek fotoğrafta birden fazla kişi varsa işleyebiliriz; ayrıca ön ve arka yüze farklı fotoğraf yapılabilir. ${compPriceLine}`;
+      return "Fotoğraf birleştirme hizmetimiz bulunmamaktadır efendim. Ayrı fotoğraflar için ön ve arka yüze farklı fotoğraf işleyebiliyoruz; arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.";
+    return `Fotoğraf birleştirme hizmetimiz bulunmamaktadır efendim. Aynı fotoğrafta kaç kişi varsa işleyebiliriz; ayrı fotoğraflar için ön ve arka yüze farklı fotoğraf yapılabilir. Arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır. ${compPriceLine}`;
   }
 
   // ── PRICE ──
@@ -1005,7 +1002,7 @@ function getDeterministicInfoResponse(intent, ctx) {
   if (intent === "photo_status_check") {
     const photoGot = truthy(ctx.fields?.photo_received);
     if (photoGot) return "Fotoğrafınızı aldık efendim 😊 Siparişiniz hazırlanmaktadır.";
-    return "Henüz fotoğrafınız ulaşmadı efendim 😊 Fotoğrafınızı buradan iletebilirsiniz.";
+    return "Henüz fotoğrafınız ulaşmadı efendim 😊 Siparişinizi web sitemizden oluştururken fotoğrafınızı ürün sayfasında yükleyebilirsiniz.";
   }
   
   // human_request: "Yardımcı olur musunuz"
@@ -1027,10 +1024,10 @@ function getDeterministicInfoResponse(intent, ctx) {
   if (intent === "photo_format_question") {
     // Vesikalık sorusu → net "vesikalık gerekmez" cevabı
     if (hasAny(norm, ["vesikalik","vesikalık"])) {
-      return "Vesikalık olması gerekmez efendim 😊 Normal, net ve kaliteli bir fotoğraf yeterlidir. Fotoğrafınızı buradan direkt gönderebilirsiniz.";
+      return "Vesikalık olması gerekmez efendim 😊 Normal, net ve kaliteli bir fotoğraf yeterlidir. Siparişinizi web sitemizden oluştururken fotoğrafınızı ürün sayfasında yükleyebilirsiniz.";
     }
     // "Nasıl / hangi yolla göndereyim" → gönderme yöntemi (buradan + web sitesi)
-    return "Fotoğrafınızı buradan direkt iletebilirsiniz efendim 😊 Dilerseniz web sitemizden sipariş oluştururken de yükleyebilirsiniz. Normal, net bir fotoğraf yeterli; vesikalık olması gerekmez.";
+    return CURRENT_PHOTO_INFO;
   }
   
   // future_order_intent: "Yarın sipariş vereceğim"
@@ -1060,8 +1057,8 @@ function getDeterministicInfoResponse(intent, ctx) {
     if (hasAny(norm, ["yuzuk","yüzük","kupe","küpe","tesbih"])) return TEXT.OTHER_PRODUCT_REDIRECT;
     // Arka foto fiyat → product-aware
     if (hasAny(norm, ["arkasina foto","arkasına foto","arka foto","arka yuze foto","arka yüze foto"]) && hasAny(norm, ["fiyat","ucret","ücret","ne kadar"])) {
-      if ((ctx.fields?.ilgilenilen_urun || p) === "atac") return "Bu modelde fotoğraf kullanılmıyor efendim 😊 Resimli lazer kolyede ön ve arka yüze fotoğraf eklenebilmektedir, ek ücret alınmaz.";
-      return "Arka yüze fotoğraf eklemek ücretsizdir efendim 😊 Ek ücret alınmaz.";
+      if ((ctx.fields?.ilgilenilen_urun || p) === "atac") return "Bu modelde fotoğraf kullanılmıyor efendim 😊 Resimli lazer kolyede ön ve arka yüze fotoğraf eklenebilmektedir; arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.";
+      return "Arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır efendim 😊";
     }
     // Cross-product: mesajda açıkça diğer ürün adı geçiyorsa o ürünün fiyatını ver
     const askingLazer = hasAny(norm, ["lazer","resimli"]);
@@ -1217,7 +1214,7 @@ function getDeterministicInfoResponse(intent, ctx) {
   if (intent === "location") {
     // Prod logs fix: "Trendyolda mağazanız varmi" — marketplace sorusu location'dan önce
     if (hasAny(norm, ["trendyol","hepsiburada","n11","amazon","cicek sepeti","çiçek sepeti"])) {
-      return "Satışlarımızı doğrudan Instagram üzerinden gerçekleştiriyoruz efendim 😊 Trendyol, Hepsiburada gibi platformlarda satış yapmıyoruz.";
+      return "Trendyol, Hepsiburada gibi platformlarda satışımız bulunmamaktadır efendim 😊 Siparişlerinizi web sitemizden güvenle oluşturabilirsiniz:\nwww.yudumjewels.com";
     }
     return CURRENT_STORE_INFO;
   }
@@ -1231,7 +1228,7 @@ function getDeterministicInfoResponse(intent, ctx) {
     // Ödeme zaten seçilmiş + w_address → teyit ver + adres iste
     const pmDone = ctx.fields?.payment_method;
     const addrStage = ctx.fields?.conversation_stage === STAGE.WAITING_ADDRESS;
-    if (pmDone && addrStage) return "Tamamdır efendim, ödemeniz kaydedildi 😊 Ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim.";
+    if (pmDone && addrStage) return siteOrderBlock(p);
     const eft = p === "atac" ? PRICE.ATAC_EFT : PRICE.LAZER_EFT;
     const kapida = p === "atac" ? PRICE.ATAC_KAPIDA : PRICE.LAZER_KAPIDA;
     if (hasAny(norm, ["taksit","taksitle"])) return `Taksit seçeneğimiz bulunmuyor efendim 😊 EFT / Sitemizden Kartla Ödeme: ${eft} TL veya kapıda ödeme: ${kapida} TL.`;
@@ -1281,15 +1278,15 @@ function getDeterministicInfoResponse(intent, ctx) {
   }
   // Arka foto fiyat sorusu (price intent'e düşebilir)
   if (hasAny(norm, ["arkasina foto","arkasına foto","arka foto"]) && hasAny(norm, ["fiyat","ucret","ücret","ne kadar"])) {
-    if ((ctx.fields?.ilgilenilen_urun || ctx.product) === "atac") return "Bu modelde fotoğraf kullanılmıyor efendim 😊 Resimli lazer kolyede ön ve arka yüze fotoğraf eklenebilmektedir, ek ücret alınmaz.";
-    return "Arka yüze fotoğraf eklemek ücretsizdir efendim 😊 Ek ücret alınmaz.";
+    if ((ctx.fields?.ilgilenilen_urun || ctx.product) === "atac") return "Bu modelde fotoğraf kullanılmıyor efendim 😊 Resimli lazer kolyede ön ve arka yüze fotoğraf eklenebilmektedir; arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.";
+    return "Arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır efendim 😊";
   }
   if (intent === "back_text_info") {
     const origProduct = ctx.previousProduct || ctx.fields?.ilgilenilen_urun || ctx.product;
     if (origProduct === "atac") return "Bu modelde arka yüze yazı yapılmıyor efendim 😊 Resimli lazer kolyede arka yüze yazı eklenebilmektedir.";
     if (hasAny(norm, ["ne yazilir","ne yazılır","genelde","ornek","örnek","ne yazabiliriz","neler yaziliyor","neler yazılıyor"])) return "Arka yüze genelde isim, tarih, kısa bir not veya dua yazılıyor efendim 😊 Ücretsizdir.";
     if (hasAny(norm, ["dua","isim yazilir","isim yazılır","tarih yazilir","tarih yazılır"])) return "Tabi efendim, arka yüze yazılabilir 😊 Ücretsizdir.";
-    if (hasAny(norm, ["ucret","ücret","ekstra"])) return "Arka yüze yazı veya fotoğraf eklemek ücretsizdir efendim 😊";
+    if (hasAny(norm, ["ucret","ücret","ekstra"])) return "Arka yüze yazı ücretsizdir efendim 😊 Arka yüze ikinci fotoğraf isterseniz +25 TL ek ücret uygulanır.";
     if (hasAny(norm, ["olur mu","oluyor mu","yapiliyor mu","yapılıyor mu","var mi","var mı"])) return "Tabi efendim, arka yüze yazı olur 😊 Ücretsizdir.";
     return "Evet efendim, arka yüze yazı yazabiliyoruz 😊 Ücretsizdir.";
   }
@@ -1302,15 +1299,15 @@ function getDeterministicInfoResponse(intent, ctx) {
     // waiting_product + ürün seçilmedi: composition bilgisi + menu prompt (derived state'e güvenme)
     // Kullanıcı henüz lazer/ataç seçmedi; signal-based upgrade aşılmalı.
     if (!rawProd && (stage === STAGE.WAITING_PRODUCT || stage === "waiting_product" || stage === "")) {
-      return `Fotoğraf birleştirme hizmetimiz bulunmamaktadır efendim. Ancak ön ve arka yüze farklı fotoğraf işleyebiliyoruz.\n\nResimli Lazer Kolye: EFT ${PRICE.LAZER_EFT} TL, kapıda ${PRICE.LAZER_KAPIDA} TL. Hangi model ile ilgileniyorsunuz efendim?`;
+      return `Fotoğraf birleştirme hizmetimiz bulunmamaktadır efendim. Ayrı fotoğraflar için ön ve arka yüze farklı fotoğraf işleyebiliyoruz; arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.\n\nResimli Lazer Kolye: EFT ${PRICE.LAZER_EFT} TL, kapıda ${PRICE.LAZER_KAPIDA} TL. Hangi model ile ilgileniyorsunuz efendim?`;
     }
     if (origProduct === "atac") return "Bu modelde fotoğraf kullanılmıyor efendim 😊 Resimli lazer kolyede ön ve arka yüze fotoğraf eklenebilmektedir.";
-    if (hasAny(norm, ["onlu arkali","önlü arkalı","arkali onlu","arkalı önlü","iki farkli foto","iki farklı foto"])) return "Tabi efendim, birden fazla kişi olabilir 😊 Ön yüze bir fotoğraf, arka yüze başka bir fotoğraf yapabiliyoruz. Aynı fiyattan.";
+    if (hasAny(norm, ["onlu arkali","önlü arkalı","arkali onlu","arkalı önlü","iki farkli foto","iki farklı foto"])) return "Tabi efendim, birden fazla kişi olabilir 😊 Ön yüze bir fotoğraf, arka yüze başka bir fotoğraf yapabiliyoruz. Arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.";
     // Birleştirme sorusu (tek yüz, iki ayrı resim)
-    if (hasAny(norm, ["birlestir","birleştir","iki ayri resim","iki ayrı resim","iki resim gonder","iki resim gönder"])) return "Fotoğraf birleştirme hizmetimiz bulunmamaktadır efendim 😊 Ancak ön ve arka yüze farklı fotoğraf işleyebiliyoruz.";
+    if (hasAny(norm, ["birlestir","birleştir","iki ayri resim","iki ayrı resim","iki resim gonder","iki resim gönder"])) return "Fotoğraf birleştirme hizmetimiz bulunmamaktadır efendim 😊 Ayrı fotoğraflar için ön ve arka yüze farklı fotoğraf işleyebiliyoruz; arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.";
     // İki fotoğraf bir kolyede
-    if (hasAny(norm, ["iki fotograf","iki fotoğraf","2 fotograf","2 fotoğraf","iki resim"])) return "Evet efendim, bir kolyeye iki fotoğraf yapabiliyoruz 😊 Fiyat farkı olmuyor.";
-    return "Tabi efendim, arka yüze de fotoğraf yapabiliyoruz 😊 Fiyat farkı olmuyor.";
+    if (hasAny(norm, ["iki fotograf","iki fotoğraf","2 fotograf","2 fotoğraf","iki resim"])) return "Evet efendim, uygun ürünlerde ön ve arka yüze farklı fotoğraf işleyebiliyoruz 😊 Arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.";
+    return "Tabi efendim, arka yüze de fotoğraf yapabiliyoruz 😊 Arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.";
   }
 
   // ── PHOTO QUESTION ──
@@ -1321,21 +1318,21 @@ function getDeterministicInfoResponse(intent, ctx) {
       return "Bu modelde fotoğraf kullanılmıyor efendim, sadece harf ile hazırlanıyor 😊 Fotoğraflı kolye için resimli lazer kolye modelimiz bulunmaktadır.";
     }
     // Vesikalık sorusu
-    if (hasAny(norm, ["vesikalik","vesikalık"])) return "Vesikalık olmasına gerek yok efendim 😊 İstediğiniz fotoğrafı buradan gönderebilirsiniz.";
+    if (hasAny(norm, ["vesikalik","vesikalık"])) return "Vesikalık olmasına gerek yok efendim 😊 Siparişinizi web sitemizden oluştururken istediğiniz fotoğrafı ürün sayfasında yükleyebilirsiniz.";
     // Combo: iki kişi + aynı kare → birleştir
     if (hasAny(norm, ["iki kisi","iki kişi","2 kisi","2 kişi"]) && hasAny(norm, ["ayni kare","aynı kare","tek kare"])) return "Evet efendim, birden fazla kişi aynı karede olabilir 😊 Tek fotoğraftaysa aynı şekilde işleyebiliriz.";
     if (hasAny(norm, ["iki kisi","iki kişi","2 kisi","2 kişi","kac kisi","kaç kişi","kac kisilik","kaç kişilik","birden fazla","iki kisi olur","iki kişi olur","ikisini"])) return "Evet efendim, birden fazla kişi olabilir 😊 Fotoğrafta kaç kişi olursa olsun basıyoruz.";
-    if (hasAny(norm, ["3 resim","3 foto","uc resim","üç resim"])) return "Evet efendim, en fazla 3 fotoğraf koyabiliyoruz 😊";
+    if (hasAny(norm, ["3 resim","3 foto","uc resim","üç resim"])) return POLICY_V2_PHOTO_COMPOSITION_INFO;
     if (hasAny(norm, ["ayni kare","aynı kare","tek kare","yan yana","birlikte foto"])) return "Evet efendim, tek fotoğrafta yan yana olan kişileri aynı şekilde işleyebiliriz 😊 Ayrı fotoğrafları birleştirme hizmetimiz bulunmamaktadır.";
     if (hasAny(norm, ["ikili resim","ikili foto"])) {
-      if (hasAny(norm, ["fiyat","ucret","ücret","ne kadar"])) return `Ön ve arka yüze farklı fotoğraf işleyebiliyoruz; fiyat farkı yoktur efendim 😊 EFT ${PRICE.LAZER_EFT} TL, kapıda ${PRICE.LAZER_KAPIDA} TL.`;
+      if (hasAny(norm, ["fiyat","ucret","ücret","ne kadar"])) return `Ön ve arka yüze farklı fotoğraf işleyebiliyoruz efendim 😊 Arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır. EFT ${PRICE.LAZER_EFT} TL, kapıda ${PRICE.LAZER_KAPIDA} TL.`;
       return "Ön ve arka yüze farklı fotoğraf işleyebiliyoruz efendim 😊 Ayrı fotoğrafları tek görselde birleştirme hizmetimiz bulunmamaktadır.";
     }
-    if (hasAny(norm, ["iki foto","2 foto","iki resim","2 resim","kac foto","kaç foto","kac resim","kaç resim","en fazla kac","en fazla kaç","kac resim koyabil","kaç resim koyabil","kac fotograf koyabil","kaç fotoğraf koyabil","kac resim koyabili","kaç resim koyabili","3 lu yapiy","3 lü yapıy","3lu yapiy","3lü yapıy"])) return "En fazla 3 fotoğraf koyabiliyoruz efendim 😊";
-    if (hasAny(norm, ["birlestir","birleştir","birlestirme","birleştirme","3 farkli foto","3 farklı foto","fotoğrafları birleştir"])) return "Fotoğraf birleştirme hizmetimiz bulunmamaktadır efendim 😊 Ancak ön ve arka yüze farklı fotoğraf işleyebiliyoruz.";
+    if (hasAny(norm, ["iki foto","2 foto","iki resim","2 resim","kac foto","kaç foto","kac resim","kaç resim","en fazla kac","en fazla kaç","kac resim koyabil","kaç resim koyabil","kac fotograf koyabil","kaç fotoğraf koyabil","kac resim koyabili","kaç resim koyabili","3 lu yapiy","3 lü yapıy","3lu yapiy","3lü yapıy"])) return POLICY_V2_PHOTO_COMPOSITION_INFO;
+    if (hasAny(norm, ["birlestir","birleştir","birlestirme","birleştirme","3 farkli foto","3 farklı foto","fotoğrafları birleştir"])) return "Fotoğraf birleştirme hizmetimiz bulunmamaktadır efendim 😊 Ayrı fotoğraflar için ön ve arka yüze farklı fotoğraf işleyebiliyoruz; arka yüze ikinci fotoğraf için +25 TL ek ücret uygulanır.";
     if (hasAny(norm, ["3 kisi","3 kişi","uc kisi","üç kişi","5 kisi","5 kişi","aile foto","3 kisilik","3 kişilik"])) return "Evet efendim, birden fazla kişi olabilir 😊 Kaç kişi olursa olsun basıyoruz.";
     if (hasAny(norm, ["tek yuze","tek yüze"])) return "Evet efendim, tek yüze birden fazla kişi basabiliyoruz 😊";
-    if (hasAny(norm, ["arkali onlu","arkalı önlü","iki cocugum","iki çocuğum"])) return "Evet efendim, birden fazla kişi olabilir 😊 Arkalı önlü de yapabiliyoruz, aynı fiyattan.";
+    if (hasAny(norm, ["arkali onlu","arkalı önlü","iki cocugum","iki çocuğum"])) return "Evet efendim, birden fazla kişi olabilir 😊 Aynı fotoğraftaysa kişi sayısı fiyatı değiştirmez. Ayrı fotoğraflar için ön ve arka yüz yapılabilir; arka yüze ikinci fotoğraf +25 TL ek ücrettir.";
     return "Siz gönderin efendim, kontrol edip bilgi verelim 😊";
   }
   if (intent === "photo_suitability_question") return "Gönderin efendim, kontrol edelim 😊";
@@ -1365,7 +1362,7 @@ function getDeterministicInfoResponse(intent, ctx) {
   if (hasAny(norm, ["siparisim gelm","siparişim gelm","siparisim gelmedi","siparişim gelmedi","siparis verdim","sipariş verdim","siparis vermistim","sipariş vermiştim"]) && hasAny(norm, ["gelm","gelmedi","gelmiy","gelmey"])) return "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊";
 
   // ── OUT-OF-SCOPE / YENİ ÜRÜNLER ──
-  if (hasAny(norm, ["bileklik istiyorum","resimli bileklik","fotoğraflı bileklik","fotografli bileklik"])) return TEXT.BILEKLIK_INFO;
+  if (hasAny(norm, ["bileklik istiyorum","resimli bileklik","fotoğraflı bileklik","fotografli bileklik"])) return TEXT.BILEKLIK_PRICE + siteSoftLink(PRODUCT.BILEKLIK);
   // Anahtarlık keyword: PRODUCT.ANAHTARLIK için generateAnswer intent-handler'ları devreye girer.
   // Bu satır yalnızca no-product veya mezar/bileklik bağlamında ve norm'da anahtar kelime varsa çalışır.
   if (hasAny(norm, ["anahtarlik","anahtarlık"]) && ctx.product !== PRODUCT.LAZER && ctx.product !== PRODUCT.ATAC && ctx.product !== PRODUCT.ANAHTARLIK) return TEXT.ANAHTARLIK_INFO;
@@ -1375,7 +1372,7 @@ function getDeterministicInfoResponse(intent, ctx) {
   if (hasAny(norm, ["iade yapiliyor","iade yapılıyor","iade olur mu","iade edebilir","iade mumkun","iade mümkün","iade var mi","iade var mı"])) return "Kişiye özel üretim olduğu için keyfi iade bulunmamaktadır efendim 😊 Kalite kaynaklı sorunlarda ürün değiştirilir.";
 
   // ── PLATFORM / STORE / LINK / PENDANT / PLAKA / AKSESUAR / BİLEKLİK ──
-  if (hasAny(norm, ["trendyol","hepsiburada","n11","amazon"])) return "Satışlarımızı doğrudan Instagram üzerinden gerçekleştiriyoruz efendim 😊";
+  if (hasAny(norm, ["trendyol","hepsiburada","n11","amazon"])) return "Trendyol veya benzeri pazaryerlerinde satışımız bulunmamaktadır efendim 😊 Siparişlerinizi web sitemizden güvenle oluşturabilirsiniz:\nwww.yudumjewels.com";
   // Site fotoğraf / arka yazı yükleme soruları (site keyword + upload/photo/back_text intent)
   if (hasAny(norm, ["siteden","siteye","site üzerinden","sitemizden","web sitesi"]) && hasAny(norm, ["fotograf","fotoğraf","resim","foto","arka yazi","arka yazı","yükle","yukle","nereye yukle","nereden yukle","nasil yukle"])) {
     const isMezar = p === PRODUCT.MEZAR_TASI;
@@ -1453,9 +1450,9 @@ function getDeterministicInfoResponse(intent, ctx) {
         const priceLine = p === "atac"
           ? `Harfli Ataç Kolye: EFT ${PRICE.ATAC_EFT} TL, kapıda ${PRICE.ATAC_KAPIDA} TL.`
           : `Resimli Lazer Kolye: EFT ${PRICE.LAZER_EFT} TL, kapıda ${PRICE.LAZER_KAPIDA} TL.`;
-        return `Tabii efendim 😊 Fotoğrafınızı buradan iletebilirsiniz, siparişinizi hemen oluşturuyoruz. ${priceLine}`;
+        return `Tabii efendim 😊 Siparişinizi web sitemiz üzerinden oluştururken fotoğrafınızı ürün sayfasındaki fotoğraf yükleme alanından ekleyebilirsiniz. ${priceLine}`;
       }
-      return "Tabii efendim 😊 Fotoğrafınızı buradan iletebilirsiniz, siparişinizi hemen oluşturuyoruz.";
+      return "Tabii efendim 😊 Siparişinizi web sitemiz üzerinden oluştururken fotoğrafınızı ürün sayfasındaki fotoğraf yükleme alanından ekleyebilirsiniz.";
     }
     if (stage === STAGE.WAITING_LETTERS) return "Tabii efendim 😊 Yapılmasını istediğiniz harfleri yazabilirsiniz.";
     if (!p) return CURRENT_ORDER_INFO;
@@ -1483,7 +1480,7 @@ function getToneResponse(intent, ctx) {
 
   // ── COMPLAINT ──
   if (intent === "complaint") {
-    if (stage === STAGE.WAITING_ADDRESS || stage === STAGE.WAITING_PAYMENT) return "Özür dileriz efendim 😊 Bilgilerinizi aldım, kontrol ediyorum.";
+    if (stage === STAGE.WAITING_ADDRESS || stage === STAGE.WAITING_PAYMENT) return "Özür dileriz efendim 😊 Ekibimize iletiyorum, kontrol edip dönüş sağlayacağız.";
     return "Özür dileriz efendim 😊 Bilgilerinizi kontrol ediyorum.";
   }
 
@@ -1495,14 +1492,14 @@ function getToneResponse(intent, ctx) {
   if (intent === "full_contact_bundle") {
     const st = ctx.fields?.conversation_stage || "";
     if (st === STAGE.WAITING_ADDRESS || st === STAGE.WAITING_PAYMENT || st === STAGE.WAITING_PHOTO) {
-      return "Bilgilerinizi aldım efendim 😊 Siparişinizi işleme alıyoruz, kargoya verilince bilgilendirme yapacağız.";
+      return siteContactRedirect(ctx.product);
     }
-    return "Bilgilerinizi aldım efendim, teşekkürler 😊";
+    return siteContactRedirect(ctx.product);
   }
 
   // ━━━ EXTRA-15 E11: partial_name_phone — isim+telefon var, adres yok ━━━
   if (intent === "partial_name_phone") {
-    return "İsim ve cep telefonunuzu aldım efendim 😊 Açık adres bilginiz ile devam edelim.";
+    return siteContactRedirect(ctx.product);
   }
 
   // phone_provide: sadece telefon → telefonu aldım + adres iste
@@ -1521,13 +1518,13 @@ function getToneResponse(intent, ctx) {
   // address_provide_full: açık adres var → aldım
   if (intent === "address_provide_full") {
     const st = ctx.fields?.conversation_stage || "";
-    if (st === STAGE.WAITING_ADDRESS) return "Adres bilgilerinizi aldım efendim 😊 Siparişinizi hazırlıyoruz.";
+    if (st === STAGE.WAITING_ADDRESS) return siteContactRedirect(ctx.product);
     return "Adres bilgilerinizi not aldım efendim 😊";
   }
 
   // identity_provide: isim → aldım + telefon/adres iste
   if (intent === "identity_provide") {
-    return "İsim bilgisini aldım efendim 😊 Cep telefonu ve açık adresiniz ile devam edelim.";
+    return siteContactRedirect(ctx.product);
   }
 
   // slot_claim (generic): claim var ama target belli değil
@@ -1538,10 +1535,10 @@ function getToneResponse(intent, ctx) {
     if (st === STAGE.ORDER_COMPLETED || st === "order_completed") return "Siparişiniz alınmıştır efendim 😊 Ekibimize iletiyorum, kontrol edip dönüş sağlayacağız.";
     const hasPhone = f.phone_received === "1";
     const hasAddr = f.address_status === "received";
-    if (hasPhone && hasAddr) return "Bilgilerinizi aldım efendim, teşekkürler 😊";
-    if (!hasPhone) return "Bilgilerinizi not aldım efendim 😊 Cep telefonu ve açık adres bilgilerinizi de paylaşabilir misiniz?";
-    if (!hasAddr) return "Not aldım efendim 😊 Açık adres bilgilerinizi de yazabilirsiniz.";
-    return "Tabi efendim, bilgilerinizi aldım 😊";
+    if (hasPhone && hasAddr) return siteContactRedirect(ctx.product);
+    if (!hasPhone) return siteContactRedirect(ctx.product);
+    if (!hasAddr) return siteContactRedirect(ctx.product);
+    return siteContactRedirect(ctx.product);
   }
 
   // address_claim: "adresi attım" claim
@@ -1558,8 +1555,8 @@ function getToneResponse(intent, ctx) {
     return "Telefon bilginizi aldım efendim 😊 Kontrol edip dönüş sağlayacağız.";
   }
 
-  if (intent === "info_claim") return "Bilgilerinizi aldım efendim 😊";
-  if (intent === "general_claim") return "Tabi efendim, bilgilerinizi aldım 😊";
+  if (intent === "info_claim") return "Teşekkürler efendim 😊 Sipariş için web sitemiz üzerinden ilerleyebilirsiniz.";
+  if (intent === "general_claim") return "Tabi efendim 😊 Sipariş için web sitemiz üzerinden ilerleyebilirsiniz.";
 
   // ── SMALLTALK ──
   if (intent === "smalltalk") {
@@ -1568,7 +1565,7 @@ function getToneResponse(intent, ctx) {
       if (isFirstMessage) return TEXT.MAIN_MENU;
       // ══ AILE N FIX: Flow içindeyken selam — stage'e göre hatırlatma ekle ══
       if (stage === STAGE.WAITING_PHOTO || stage === "waiting_photo") {
-        return "Merhaba efendim 😊 Fotoğrafınızı iletmenizi bekliyoruz, kolyenize işlenecek fotoğrafı buradan paylaşabilirsiniz.";
+        return "Merhaba efendim 😊 Siparişinizi web sitemizden oluştururken kolyenize işlenecek fotoğrafı ürün sayfasında yükleyebilirsiniz.";
       }
       if (stage === STAGE.WAITING_PAYMENT || stage === "waiting_payment") {
         return "Merhaba efendim 😊 Ödeme tercihinizi belirterek devam edelim — EFT / Sitemizden Kartla Ödeme veya kapıda ödeme.";
@@ -1578,7 +1575,7 @@ function getToneResponse(intent, ctx) {
         const hasAddr = ctx.fields?.address_status === "address_only";
         if (hasAddr && !hasPhone) return "Merhaba efendim 😊 Cep telefonu numaranızı iletebilir misiniz?";
         if (hasPhone && !hasAddr) return "Merhaba efendim 😊 Açık adresinizi iletebilir misiniz?";
-        return "Merhaba efendim 😊 Ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim.";
+        return siteContactRedirect(ctx.product);
       }
       if (stage === STAGE.WAITING_LETTERS || stage === "waiting_letters") {
         return "Merhaba efendim 😊 Yapılmasını istediğiniz harfleri yazabilirsiniz.";
@@ -1635,14 +1632,14 @@ function getToneResponse(intent, ctx) {
     else if (isOlur) prefix = "Tamam efendim 😊 ";
     else if (isPeki) prefix = "Tamam efendim 😊 ";
     
-    if (stage === STAGE.WAITING_PHOTO) return prefix ? prefix + "fotoğrafınızı buradan iletebilirsiniz 😊" : "Fotoğrafınızı buradan iletebilirsiniz efendim 😊";
+    if (stage === STAGE.WAITING_PHOTO) return prefix ? prefix + "siparişinizi web sitemizden oluştururken fotoğrafınızı ürün sayfasında yükleyebilirsiniz 😊" : "Siparişinizi web sitemizden oluştururken fotoğrafınızı ürün sayfasında yükleyebilirsiniz efendim 😊";
     if (stage === STAGE.WAITING_PAYMENT) return prefix ? prefix + "ödeme tercihinizi belirtebilir misiniz? EFT / Sitemizden Kartla Ödeme veya kapıda ödeme 😊" : "Ödeme tercihinizi belirtebilir misiniz efendim? EFT / Sitemizden Kartla Ödeme veya kapıda ödeme 😊";
     if (stage === STAGE.WAITING_ADDRESS) {
       const hasPhone = ctx.fields?.phone_received === "1";
       const hasAddr = ctx.fields?.address_status === "address_only";
       if (hasAddr && !hasPhone) return prefix ? prefix + "cep telefonu numaranızı iletebilir misiniz? 😊" : "Cep telefonu numaranızı iletebilir misiniz efendim? 😊";
       if (hasPhone && !hasAddr) return prefix ? prefix + "açık adresinizi iletebilir misiniz? 😊" : "Açık adresinizi iletebilir misiniz efendim? 😊";
-      return prefix ? prefix + "ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim 😊" : "Ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim efendim 😊";
+      return siteContactRedirect(ctx.product);
     }
     if (stage === STAGE.WAITING_LETTERS) return prefix ? prefix + "yapılmasını istediğiniz harfleri yazabilirsiniz 😊" : "Yapılmasını istediğiniz harfleri yazabilirsiniz efendim 😊";
     return "Tabi efendim 😊";
@@ -1671,7 +1668,7 @@ function getProductFlowResponse(intent, ctx) {
       if (p === PRODUCT.MEZAR_TASI) return "Tabi efendim 😊 Mezar taşı siparişinde ödeme EFT / havale veya web sitemizden kredi kartı ile alınmaktadır.";
       return "Tabi efendim 😊 Ödeme tercihinizi belirtebilir misiniz? EFT / Sitemizden Kartla Ödeme veya kapıda ödeme.";
     }
-    if (stage === STAGE.WAITING_ADDRESS) return "Tabi efendim 😊 Ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim.";
+    if (stage === STAGE.WAITING_ADDRESS) return siteContactRedirect(ctx.product);
     // Price ekleme sadece **explicit price query** varsa. "sipariş vermek istiyorum"
     // tek başına fiyat talebi değildir — kullanıcı zaten akış içinde.
     // Price keywords: "fiyat", "tl", "kaç para", "ne kadar", "ücret", "fark"
@@ -1688,10 +1685,10 @@ function getProductFlowResponse(intent, ctx) {
         const priceLine = p === "atac"
           ? `Harfli Ataç Kolye: EFT ${PRICE.ATAC_EFT} TL, kapıda ${PRICE.ATAC_KAPIDA} TL.`
           : `Resimli Lazer Kolye: EFT ${PRICE.LAZER_EFT} TL, kapıda ${PRICE.LAZER_KAPIDA} TL.`;
-        return `Tabii efendim 😊 Fotoğrafınızı buradan iletebilirsiniz, siparişinizi hemen oluşturuyoruz. ${priceLine}`;
+        return `Tabii efendim 😊 Siparişinizi web sitemiz üzerinden oluştururken fotoğrafınızı ürün sayfasındaki fotoğraf yükleme alanından ekleyebilirsiniz. ${priceLine}`;
       }
       // Default: fiyat yasak, sadece fotoğraf daveti
-      return "Tabii efendim 😊 Fotoğrafınızı buradan iletebilirsiniz, siparişinizi hemen oluşturuyoruz.";
+      return "Tabii efendim 😊 Siparişinizi web sitemiz üzerinden oluştururken fotoğrafınızı ürün sayfasındaki fotoğraf yükleme alanından ekleyebilirsiniz.";
     }
     if (stage === STAGE.WAITING_LETTERS) {
       if (p === "yonca") return "Tabii efendim 😊 Yapraklara yazılmasını istediğiniz isim ve/veya sembolleri yazabilirsiniz.";
@@ -1703,9 +1700,9 @@ function getProductFlowResponse(intent, ctx) {
     if (p === "atac") return TEXT.ATAC_PRICE;
     if (p === "yonca") return TEXT.YONCA_PRICE;
     // Bileklik / Anahtarlık / Mezar Taşı — fiyat/info + foto daveti (arka yazı zorlamadan belirtilir)
-    if (p === PRODUCT.BILEKLIK) return TEXT.BILEKLIK_PRICE + "\n\nSiparişe devam etmek isterseniz fotoğrafınızı buradan gönderebilirsiniz. İsterseniz arka yüze isim/tarih de ekleyebilirsiniz.";
-    if (p === PRODUCT.ANAHTARLIK) return TEXT.AK_PRICE + "\n\nSiparişe devam etmek isterseniz fotoğrafınızı buradan gönderebilirsiniz. İsterseniz arka yüze isim/tarih de ekleyebilirsiniz.";
-    if (p === PRODUCT.MEZAR_TASI) return TEXT.MEZAR_TASI_INFO + "\n\nSiparişe devam etmek isterseniz fotoğrafınızı buradan gönderebilirsiniz.";
+    if (p === PRODUCT.BILEKLIK) return TEXT.BILEKLIK_PRICE + siteSoftLink(p);
+    if (p === PRODUCT.ANAHTARLIK) return TEXT.AK_PRICE + siteSoftLink(p);
+    if (p === PRODUCT.MEZAR_TASI) return TEXT.MEZAR_TASI_INFO + siteSoftLink(p);
     return TEXT.MAIN_MENU;
   }
   if (intent === "post_sale") return "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊";
@@ -1778,12 +1775,12 @@ function expectedSlotReminder(ctx) {
   const missing = ctx.policyMissingSlots || ctx.missingSlots || [];
   if (missing.includes("product") && hasAny(ctx.norm || "", ["siparis nasil","sipariş nasıl","nasil siparis","nasıl sipariş","siparis verme","sipariş verme","siparis vermek","sipariş vermek","nasil siparis verebilirim","nasıl sipariş verebilirim","nasil siparis veririm","nasıl sipariş veririm"])) return CURRENT_ORDER_INFO;
   if (missing.includes("product")) return TEXT.MAIN_MENU;
-  if (missing.includes("photo")) return "Fotoğrafınızı buradan iletebilirsiniz efendim 😊";
+  if (missing.includes("photo")) return "Siparişinizi web sitemizden oluştururken fotoğrafınızı ürün sayfasında yükleyebilirsiniz efendim 😊";
   if (missing.includes("letters")) return "Yapılmasını istediğiniz harfleri yazabilirsiniz efendim 😊";
   if (missing.includes("payment")) return "Ödeme tercihinizi belirtebilir misiniz efendim? EFT / Sitemizden Kartla Ödeme veya kapıda ödeme 😊";
   if (missing.includes("phone") && !missing.includes("address")) return "Cep telefonu numaranızı iletebilir misiniz efendim? 😊";
   if (missing.includes("address") && !missing.includes("phone")) return "Açık adresinizi iletebilir misiniz efendim? 😊";
-  if (missing.includes("address") || missing.includes("phone")) return "Ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim efendim 😊";
+  if (missing.includes("address") || missing.includes("phone")) return siteContactRedirect(ctx.product);
   return "Nasıl yardımcı olabiliriz efendim? 😊";
 }
 
@@ -1847,7 +1844,48 @@ function isSilenceEligible(ctx) {
   return false;
 }
 
+function isPhotoUploadLocationQuestion(ctx) {
+  const n = ctx.norm || "";
+  return hasAny(n, ["foto", "fotograf", "fotoğraf", "resim", "gorsel", "görsel"]) &&
+    hasAny(n, ["buradanmi", "buradan mi", "buradan mı", "buraya mi", "buraya mı", "nereden", "nereye", "nasil yukle", "nasıl yükle", "yukleyecegim", "yükleyeceğim", "siteye mi", "foto yukle", "foto yükle", "resim yukle", "resim yükle"]);
+}
+
+function isAtacLetterInfoQuestion(ctx) {
+  const n = ctx.norm || "";
+  return hasAny(n, ["bas harf", "baş harf", "bas harfin", "baş harfin", "harfli kolye", "harfli atac", "harfli ataç", "harfin oldugu", "harfin olduğu", "harf kolye"]) &&
+    hasAny(n, ["yapiyor", "yapıyor", "yapiliyor", "yapılıyor", "var mi", "var mı", "olur mu", "model", "msnz", "musunuz", "mısınız"]);
+}
+
+function isReferenceLinkOrSameModel(ctx) {
+  const raw = String(ctx.message || "");
+  const n = ctx.norm || "";
+  return /instagram\.com\/(reel|p|stories)\//i.test(raw) ||
+    hasAny(n, ["ayni model", "aynı model", "bu model", "su model", "şu model", "bunun aynisi", "bunun aynısı", "fotograftaki model", "fotoğraftaki model"]);
+}
+
+function isCompletedStatusFollowup(ctx) {
+  if (!(ctx.fields?.order_status === "completed" || ctx.fields?.siparis_alindi === "1" || ctx.fields?.conversation_stage === "order_completed")) return false;
+  const n = ctx.norm || "";
+  return hasAny(n, ["yapim asama", "yapım aşama", "asamasina girdi", "aşamasına girdi", "ne asamada", "ne aşamada", "ne durumda", "gelisme var", "gelişme var", "donus olmadi", "dönüş olmadı", "donus yapilmadi", "dönüş yapılmadı", "hazir mi", "hazır mı", "ne yaptiniz", "ne yaptınız"]);
+}
+
 function policyV2Response(ctx) {
+  if (ctx.intent === "completed_gratitude") {
+    return { text: "Çok teşekkür ederiz efendim 😊 Rica ederiz, güle güle kullanın inşallah 🤍", source: "completed_gratitude", reply_class: REPLY_CLASS.FIXED_INFO };
+  }
+  if (isPhotoUploadLocationQuestion(ctx)) {
+    return { text: CURRENT_PHOTO_INFO, source: "faq_answered", reply_class: REPLY_CLASS.FIXED_INFO };
+  }
+  if (isAtacLetterInfoQuestion(ctx)) {
+    return { text: `${TEXT.ATAC_PRICE}\n\nHarfli Ataç Kolye modelimizde standart zincir uzunluğu 50 cm'dir ve tek zincir seçeneği bulunmaktadır.${siteSoftLink(PRODUCT.ATAC)}`, source: "faq_answered", reply_class: REPLY_CLASS.FIXED_INFO };
+  }
+  if (isReferenceLinkOrSameModel(ctx)) {
+    return { text: `Resimli Lazer Kolye modelimizi buradan inceleyip siparişinizi kolayca oluşturabilirsiniz efendim 😊\n\n${productLink(PRODUCT.LAZER)}`, source: "reference_model_lazer_link", reply_class: REPLY_CLASS.FIXED_INFO };
+  }
+  if (isCompletedStatusFollowup(ctx)) {
+    return { text: "Ekibimize iletiyorum efendim 😊 Sipariş bilginiz kontrol edilip size dönüş sağlanacaktır.", source: "operational_handoff", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
+  }
+
   const decision = ctx.policyDecision?.decision || "";
   if (!decision || decision === POLICY_DECISION.EXPECTED_SLOT_VALUE) return null;
 
@@ -1935,8 +1973,8 @@ function policyV2Response(ctx) {
   if (decision === POLICY_DECISION.PRODUCT_CONTEXT_RECOVERED) {
     const recoveredProduct = ctx.policyDecision?.recovered_product || ctx.product || "";
     const productText = {
-      [PRODUCT.ANAHTARLIK]: TEXT.ANAHTARLIK_INFO,
-      [PRODUCT.BILEKLIK]: TEXT.BILEKLIK_INFO,
+      [PRODUCT.ANAHTARLIK]: TEXT.AK_PRICE + siteSoftLink(PRODUCT.ANAHTARLIK),
+      [PRODUCT.BILEKLIK]: TEXT.BILEKLIK_PRICE + siteSoftLink(PRODUCT.BILEKLIK),
       [PRODUCT.YONCA]: TEXT.YONCA_INFO,
       [PRODUCT.ATAC]: TEXT.ATAC_PRICE,
       [PRODUCT.MEZAR_TASI]: TEXT.MEZAR_TASI_INFO,
@@ -1989,7 +2027,7 @@ function policyV2Response(ctx) {
     // Bilgi verildiyse önce "aldım" de, sonra bekleyen adımı hatırlat.
     let reminder = expectedSlotReminder(ctx);
     if ((ctx.extracted?.hasAddress || ctx.extracted?.phone) && !/aldım|aldim/i.test(reminder)) {
-      reminder = `Bilgilerinizi aldım efendim 😊 ${reminder}`;
+      reminder = `Teşekkürler efendim 😊 ${reminder}`;
     }
     return { text: reminder, source: "expected_slot_reminder", reply_class: REPLY_CLASS.FLOW_PROGRESS };
   }
@@ -2003,6 +2041,10 @@ function policyV2Response(ctx) {
 
 // ═══ MAIN ═══
 export async function generateAnswer(ctx) {
+  if (ctx.intent === "system_message") {
+    return { text: "", source: "system_message", reply_class: "silent", silent: true };
+  }
+
   const intent = ctx.intent;
   const stage = ctx.fields?.conversation_stage || "";
   const isCompleted = ctx.fields?.order_status === "completed" || ctx.fields?.siparis_alindi === "1" || stage === "order_completed";
@@ -2089,7 +2131,7 @@ export async function generateAnswer(ctx) {
   }
 
   if (hasAny(normTop, ["siteye giremiyorum","siteye giremiyorum","sitenize giris yapamiyorum","sitenize giriş yapamıyorum","siteniz acilmiyor","siteniz açılmıyor","web siteniz acilmiyor","web siteniz açılmıyor"])) {
-    return { text: `Web sitemiz: ${SITE_URL}\n\nDilerseniz siparişinizi Instagram üzerinden de oluşturabiliriz efendim 😊`, source: "site_access_info", reply_class: REPLY_CLASS.FIXED_INFO };
+    return { text: `Web sitemiz: ${SITE_URL}\n\nSiteye girişte sorun yaşıyorsanız ekibimize iletiyorum efendim 😊 Ekibimiz size yardımcı olacaktır.`, source: "site_access_info", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
   }
 
   if (hasAny(normTop, ["siparisim alindi mi","siparişim alındı mı","siparisim alindi mi yani","siparişim alındı mı yani","siparisim tamam mi","siparişim tamam mı"])) {
@@ -2097,13 +2139,13 @@ export async function generateAnswer(ctx) {
       return { text: "Evet efendim, siparişiniz alınmıştır 😊 Ekibimiz en kısa sürede ürününüzü hazırlayacaktır.", source: "order_status_info", reply_class: REPLY_CLASS.FIXED_INFO };
     }
     if (stage === STAGE.WAITING_ADDRESS || stage === "waiting_address") {
-      return { text: "Siparişinizi tamamlamak için ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim efendim 😊", source: "order_status_info", reply_class: REPLY_CLASS.FLOW_PROGRESS };
+      return { text: "Siparişlerinizi web sitemiz üzerinden alıyoruz efendim 😊 Ürün sayfasından kolayca sipariş oluşturabilirsiniz:\nwww.yudumjewels.com", source: "order_status_info", reply_class: REPLY_CLASS.FLOW_PROGRESS };
     }
     if (stage === STAGE.WAITING_PAYMENT || stage === "waiting_payment") {
-      return { text: "Siparişinizi tamamlamak için ödeme tercihinizi belirtebilir misiniz efendim? EFT / Sitemizden Kartla Ödeme veya kapıda ödeme 😊", source: "order_status_info", reply_class: REPLY_CLASS.FLOW_PROGRESS };
+      return { text: "Siparişlerinizi web sitemiz üzerinden alıyoruz efendim 😊 Ödeme adımında EFT/Havale, Kredi Kartı veya Kapıda Ödeme seçeneklerinden birini seçebilirsiniz:\nwww.yudumjewels.com", source: "order_status_info", reply_class: REPLY_CLASS.FLOW_PROGRESS };
     }
     if (stage === STAGE.WAITING_PHOTO || stage === "waiting_photo") {
-      return { text: "Siparişinizi tamamlamak için fotoğrafınızı buradan iletebilirsiniz efendim 😊", source: "order_status_info", reply_class: REPLY_CLASS.FLOW_PROGRESS };
+      return { text: "Siparişinizi web sitemiz üzerinden oluştururken fotoğrafınızı ürün sayfasındaki fotoğraf yükleme alanından ekleyebilirsiniz efendim 😊\nwww.yudumjewels.com", source: "order_status_info", reply_class: REPLY_CLASS.FLOW_PROGRESS };
     }
   }
 
@@ -2216,7 +2258,7 @@ export async function generateAnswer(ctx) {
 
     // Tam bundle — direkt kabul
     if (_bundleScore >= 2) {
-      return { text: "Bilgilerinizi aldım efendim 😊 Ekibimize iletiyoruz, siparişinizde ilgili güncelleme yapılacaktır.", source: "completed_bundle", reply_class: REPLY_CLASS.FIXED_INFO };
+      return { text: "Bilginizi ekibimize iletiyorum efendim 😊 Ekibimiz sipariş detayınızı kontrol edip dönüş sağlayacaktır.", source: "completed_bundle", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
     }
     // Sadece telefon — telefon aldık
     if (_hasPhoneCompl && !_hasAddressCompl && _raw.trim().length < 30) {
@@ -2224,7 +2266,7 @@ export async function generateAnswer(ctx) {
     }
     // Sadece adres (tek mesajda uzun adres)
     if (_hasAddressCompl && !_hasPhoneCompl && _raw.trim().length > 30) {
-      return { text: "Adres bilginizi aldım efendim 😊 Ekibimize iletiyoruz.", source: "completed_address", reply_class: REPLY_CLASS.FIXED_INFO };
+      return { text: "Bilginizi ekibimize iletiyorum efendim 😊 Ekibimiz sipariş detayınızı kontrol edip dönüş sağlayacaktır.", source: "completed_address", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
     }
     
     // Yeni sipariş isteği completed'da → menü göster (sadece gerçek sipariş isteği)
@@ -2497,7 +2539,7 @@ export async function generateAnswer(ctx) {
       // Siparişiniz oluşturuldu (satıcı onayı)
       if (hasAny(norm, ["siparisiniz olusturuldu","siparişiniz oluşturuldu","siparisiniz alindi","siparişiniz alındı"])) return { text: "Siparişiniz onaylanmıştır efendim 😊 Ekibimiz en kısa sürede ürününüzü hazırlayacaktır.", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
       // Photo/claim/phone in completed → teyit
-      if (intent === "phone" || intent === "name_only") return { text: "Bilgilerinizi aldım efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      if (intent === "phone" || intent === "name_only") return { text: "Bilginizi ekibimize iletiyorum efendim 😊 Ekibimiz sipariş detayınızı kontrol edip dönüş sağlayacaktır.", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
       // Completed'da payment commit → EFT ise MUTLAKA IBAN ver (müşteri ödeme yapacak!), kapıda ise teyit et.
       if (intent === "payment") {
         const pm = ctx.extracted?.payment || ctx.fields?.payment_method || "";
@@ -2507,7 +2549,7 @@ export async function generateAnswer(ctx) {
       if (intent === "payment_confirmation" || intent === "photo" || intent === "photo_claim" || intent === "general_claim" || intent === "address_claim" || intent === "info_claim" || intent === "slot_claim" || intent === "phone_claim" || intent === "full_contact_bundle") return { text: "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
       if (intent === "post_sale" || intent === "cancel_order") return { text: "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
       // Phone/short info in completed → basit teyit (ekibimize DEĞİL)
-      if (intent === "phone" || intent === "name_only") return { text: "Bilgilerinizi aldım efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
+      if (intent === "phone" || intent === "name_only") return { text: "Bilginizi ekibimize iletiyorum efendim 😊 Ekibimiz sipariş detayınızı kontrol edip dönüş sağlayacaktır.", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
       if (intent === "general" && norm.length < 10) return { text: "Tabi efendim 😊", source: "completed", reply_class: REPLY_CLASS.FIXED_INFO };
       // Foto uygunluk completed'da
       if (hasAny(norm, ["foto uygun","fotoğraf uygun","fotograf uygun"])) return { text: "Ekibimize iletiyorum, kontrol edip hemen dönüş sağlıyorum efendim 😊", source: "completed", reply_class: REPLY_CLASS.OPERATIONAL_REQUIRED, support_mode_reason: SUPPORT_REASON.OPERATIONAL };
@@ -2623,14 +2665,14 @@ export async function generateAnswer(ctx) {
   }
 
   // F. Stage-aware fallback (guard-safe wording)
-  if (stage === STAGE.WAITING_PHOTO) return { text: "Fotoğrafınızı buradan iletebilirsiniz efendim 😊", source: "fallback", reply_class: REPLY_CLASS.FLOW_PROGRESS };
+  if (stage === STAGE.WAITING_PHOTO) return { text: "Siparişinizi web sitemizden oluştururken fotoğrafınızı ürün sayfasında yükleyebilirsiniz efendim 😊", source: "fallback", reply_class: REPLY_CLASS.FIXED_INFO };
   if (stage === STAGE.WAITING_PAYMENT) return { text: "Ödeme tercihinizi belirtebilir misiniz efendim? EFT / Sitemizden Kartla Ödeme veya kapıda ödeme 😊", source: "fallback", reply_class: REPLY_CLASS.FLOW_PROGRESS };
   if (stage === STAGE.WAITING_ADDRESS) {
     const hasPhone = ctx.fields?.phone_received === "1";
     const hasAddr = ctx.fields?.address_status === "address_only";
     if (hasAddr && !hasPhone) return { text: "Cep telefonu numaranızı iletebilir misiniz efendim? 😊", source: "fallback", reply_class: REPLY_CLASS.FLOW_PROGRESS };
     if (hasPhone && !hasAddr) return { text: "Açık adresinizi iletebilir misiniz efendim? 😊", source: "fallback", reply_class: REPLY_CLASS.FLOW_PROGRESS };
-    return { text: "Ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim efendim 😊", source: "fallback", reply_class: REPLY_CLASS.FLOW_PROGRESS };
+    return { text: siteOrderBlock(ctx.product), source: "fallback", reply_class: REPLY_CLASS.FIXED_INFO };
   }
   if (stage === STAGE.WAITING_LETTERS) return { text: "Yapılmasını istediğiniz harfleri yazabilirsiniz efendim 😊", source: "fallback", reply_class: REPLY_CLASS.FLOW_PROGRESS };
   
@@ -2639,3 +2681,15 @@ export async function generateAnswer(ctx) {
 
   return { text: null, source: "none" };
 }
+
+
+
+
+
+
+
+
+
+
+
+

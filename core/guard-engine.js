@@ -85,7 +85,7 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
     console.log("[GUARD] FIX: 45cm → 60cm");
     text = text.replace(/45\s*cm/gi, "60 cm");
   }
-  if (/50\s*cm/i.test(text) && product === "lazer") {
+  if (/50\s*cm/i.test(text) && product === "lazer" && !/Harfli\s+Ataç|Harfli\s+Atac|Ataç\s+Kolye|Atac\s+Kolye/i.test(text)) {
     console.log("[GUARD] FIX: 50cm → 60cm (lazer)");
     text = text.replace(/50\s*cm/gi, "60 cm");
   }
@@ -136,7 +136,7 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
     if ((stage === STAGE.WAITING_PHOTO || stage === STAGE.WAITING_PAYMENT) && !orderDoneStage && prematureClaim) {
       console.log("[GUARD] VETO: premature production/shipping claim in " + stage);
       if (stage === STAGE.WAITING_PHOTO && ctx.fields?.photo_received !== "1") {
-        text = "Fotoğrafınızı bekliyoruz efendim 😊 Görselinizi buradan iletebilirsiniz, siparişinizi hemen oluşturuyoruz.";
+        text = "Siparişinizi web sitemizden oluştururken görselinizi ürün sayfasındaki fotoğraf yükleme alanından ekleyebilirsiniz efendim 😊";
       } else {
         text = "Ödeme tercihinizi belirtebilir misiniz efendim? EFT / Sitemizden Kartla Ödeme veya kapıda ödeme 😊";
       }
@@ -191,13 +191,13 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
     if (!alreadyAck && !orderDone && ((phoneFilled && asksPhone) || (addrFilled && asksAddress))) {
       if (phoneFilled && addrFilled) {
         console.log("[GUARD] ANTI-REPEAT: phone+address already received");
-        text = "Bilgilerinizi aldım efendim 😊 Siparişiniz oluşturulmuştur, en kısa sürede hazırlanacaktır.";
+        text = TEXT.ORDER_DETAILS;
       } else if (phoneFilled && !addrFilled) {
         console.log("[GUARD] ANTI-REPEAT: phone already received, asking address");
-        text = "Telefonunuzu aldım efendim 😊 Açık adres bilginiz ile devam edelim.";
+        text = TEXT.ORDER_DETAILS;
       } else if (addrFilled && !phoneFilled) {
         console.log("[GUARD] ANTI-REPEAT: address already received, asking phone");
-        text = "Adres bilginizi aldım efendim 😊 Cep telefonu numaranızı da yazabilir misiniz?";
+        text = TEXT.ORDER_DETAILS;
       }
     }
   }
@@ -221,7 +221,7 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
   // Preview/decision/composition intentleri için trim yapma — cevap kasıtlı fotoğraf içeriyor
   const TRIM_EXEMPT_INTENTS = ["preview_request","decision_support","composition_question","back_text_question","back_text_fit_question","product_structure_request","single_pendant_request","back_photo_info","photo_acceptance_question","photo_suitability_question","photo_question",
     // Slot-ack intent'leri: isim/telefon/adres aldı cevabı kasıtlı olarak "devam edelim" içerir
-    "name_only","phone","address","address_provide_partial","phone_only"];
+    "name_only","phone","address","address_provide_partial","phone_only","photo_format_question"];
   // waiting_photo/waiting_letters'ta order_start/new_order cevabı kasıtlı olarak stage-prompt içerir
   const STAGE_INVITE_EXEMPT = ctx.intent === "order_start" || ctx.intent === "new_order" || ctx.intent === "photo_offer";
   // High-intent mesajlarda CTA kasıtlı — TRIM'leme (EXTRA-15 E10)
@@ -269,9 +269,9 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
   if (/^[A-ZÇĞİÖŞÜa-zçğıöşü]{2,15}\?\s*😊?\s*$/.test(text.trim())) {
     console.log("[GUARD] AI_LEAK: short question stripped → ", text.trim());
     const stage = ctx.fields?.conversation_stage || "";
-    if (stage === "waiting_photo") text = "Fotoğrafınızı buradan iletebilirsiniz efendim 😊";
+    if (stage === "waiting_photo") text = "Siparişinizi web sitemizden oluştururken görselinizi ürün sayfasındaki fotoğraf yükleme alanından ekleyebilirsiniz efendim 😊";
     else if (stage === "waiting_payment") text = "Ödeme tercihinizi belirtebilir misiniz efendim? EFT / Havale veya kapıda ödeme 😊";
-    else if (stage === "waiting_address") text = "Ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim efendim 😊";
+    else if (stage === "waiting_address") text = TEXT.ORDER_DETAILS;
     else text = "Tabi efendim 😊";
   }
   // "Tam efendim..." gibi LLM'in mesajı KESMİŞ cümleleri yakala (müşteri "Tamam" dedi, bot "Tam" diye parse etti)
@@ -279,7 +279,7 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
   if (/^(Tam|Evt|Hyr|Pek|Tem|Ank)\s+efendim/i.test(text.trim())) {
     console.log("[GUARD] AI_LEAK: truncated word stripped → ", text.substring(0, 40));
     const stage = ctx.fields?.conversation_stage || "";
-    if (stage === "waiting_photo") text = "Tamam efendim, fotoğrafınızı bekliyorum 😊";
+    if (stage === "waiting_photo") text = "Tamam efendim 😊 Siparişinizi web sitemizden oluştururken görselinizi ürün sayfasındaki fotoğraf yükleme alanından ekleyebilirsiniz.";
     else text = "Tabi efendim 😊";
   }
 
@@ -298,10 +298,10 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
       const seed = (ctx.message || ctx.norm || "").split("").reduce((a, c) => a + c.charCodeAt(0), 0);
       const POOLS = [
         { test: /fotoğraf.*(ilet|gönder|bekl)|fotoğrafınızı buradan/i, variants: [
-          "Fotoğrafınızı buradan iletebilirsiniz efendim 😊",
-          "Hazır olduğunuzda fotoğrafınızı buradan gönderebilirsiniz efendim 😊",
-          "Fotoğrafınızı bekliyorum efendim, dilediğinizde buradan iletebilirsiniz 😊",
-          "Kullanmak istediğiniz fotoğrafı buradan gönderebilirsiniz efendim 😊",
+          "Siparişinizi web sitemizden oluştururken görselinizi ürün sayfasındaki fotoğraf yükleme alanından ekleyebilirsiniz efendim 😊",
+          "Hazır olduğunuzda siparişinizi web sitemizden oluşturup görselinizi ürün sayfasında yükleyebilirsiniz efendim 😊",
+          "Siparişinizi web sitemizden oluştururken görselinizi ürün sayfasındaki fotoğraf yükleme alanından ekleyebilirsiniz efendim 😊",
+          "Kullanmak istediğiniz görseli web sitemizde sipariş sırasında yükleyebilirsiniz efendim 😊",
         ]},
         { test: /ödeme terci|hangisini tercih|eft.*kapıda|kapıda ödeme mi|ödeme.*belirt/i, variants: [
           "Ödeme tercihinizi belirtebilir misiniz efendim? EFT / Sitemizden Kartla Ödeme veya kapıda ödeme.",
@@ -357,3 +357,6 @@ export function guardReply(reply, ctx, filledSlots, missingSlots) {
   reply.text = text;
   return reply;
 }
+
+
+

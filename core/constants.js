@@ -1,4 +1,4 @@
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+﻿// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // CONSTANTS — Tek merkez, sıfır magic string
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -31,7 +31,7 @@ export function productLink(productKey) {
 }
 // Ortak alt satırlar (ödeme + kargo + link) — "üyelik gerektirmeden ~30 saniye" cümlesi KISALTILMAZ.
 function _siteFooter(productKey) {
-  return `💳 EFT/Havale, Kredi Kartı veya Kapıda Ödeme\n🚚 Tüm ürünlerde kargo ücretsiz\n\n🛒 Siparişinizi buradan oluşturabilirsiniz 👇\n${productLink(productKey)}`;
+  return `💳 EFT/Havale, Kredi Kartı veya Kapıda Ödeme\n🚚 Tüm ürünlerde kargo ücretsiz\n\n🛒 Siparişinizi buradan oluşturabilirsiniz 👇\n\n${productLink(productKey)}`;
 }
 const _siteClose = "\n\nÜrünle ilgili tüm sorularınıza buradan seve seve yardımcı oluruz efendim 😊";
 // Kademe 2 — ALIM NİYETİ (sipariş vermek istiyorum / nasıl alırım): tam blok.
@@ -48,7 +48,7 @@ export function siteContactRedirect(productKey) {
 }
 // Kademe 1 — BİLGİ SORUSU sonuna eklenen tek yumuşak satır (blok değil).
 export function siteSoftLink(productKey) {
-  return `\n\nSiparişinizi web sitemizden üyeliksiz, ~30 saniyede oluşturabilirsiniz 👇\n${productLink(productKey)}`;
+  return `\n\nSiparişinizi web sitemizden üyeliksiz, ~30 saniyede oluşturabilirsiniz 👇\n\n${productLink(productKey)}`;
 }
 
 // ─── STAGES ─────────────────────────────────────────────────
@@ -138,15 +138,21 @@ export const TEXT = {
 
   MAIN_MENU: "Merhaba efendim 😊\nHangi ürün ile ilgileniyorsunuz?\n\n1️⃣ Resimli Lazer Kolye\n2️⃣ Resimli Bileklik\n3️⃣ İsimli Yonca Kolye\n4️⃣ Anahtarlık\n5️⃣ Harfli Ataç Kolye + Bileklik Hediye\n6️⃣ Evcil Hayvan Mezar Taşı\n\nNumarasını yazmanız yeterli efendim 😊",
 
-  LAZER_PRICE: `Resimli Lazer Kolye fiyatımız ${FACTS.fiyat.lazer} TL'dir efendim 😊\n\nTüm ürünlerimizde kargo ücretsizdir. Kapıda ödeme seçeneğinde kargo firmasının tahsil ettiği +${FACTS.kapidaEk} TL ek ücret uygulanmaktadır.\n\nSiparişe devam etmek isterseniz fotoğrafınızı buradan gönderebilirsiniz.`,
+  LAZER_PRICE: `Resimli Lazer Kolye fiyatımız ${FACTS.fiyat.lazer} TL'dir efendim 😊\n\nTüm ürünlerimizde kargo ücretsizdir. Kapıda ödeme seçeneğinde kargo firmasının tahsil ettiği +${FACTS.kapidaEk} TL ek ücret uygulanmaktadır.\n\nSiparişinizi web sitemizden üyelik gerektirmeden kolayca oluşturabilirsiniz:
 
-  ATAC_PRICE: `Harfli Ataç Kolye + Bileklik Hediye fiyatımız ${FACTS.fiyat.atac} TL'dir efendim 😊\n\nTüm ürünlerimizde kargo ücretsizdir. Kapıda ödeme seçeneğinde kargo firmasının tahsil ettiği +${FACTS.kapidaEk} TL ek ücret uygulanmaktadır.\n\nSiparişe devam etmek isterseniz istediğiniz harfleri yazabilirsiniz.`,
+${PRODUCT_LINKS[PRODUCT.LAZER]}`,
 
-  YONCA_PRICE: `İsimli Yonca Kolye fiyatımız ${FACTS.fiyat.yonca} TL'dir efendim 😊\n\nKolyemiz 4 yapraktan oluşur; her yaprağa bir isim veya sembol işlenebilir.\n\nTüm ürünlerimizde kargo ücretsizdir. Kapıda ödeme seçeneğinde kargo firmasının tahsil ettiği +${FACTS.kapidaEk} TL ek ücret uygulanmaktadır.\n\nSiparişe devam etmek isterseniz yapraklara yazılmasını istediğiniz isim ve/veya sembolleri yazabilirsiniz.`,
+  ATAC_PRICE: `Harfli Ataç Kolye + Bileklik Hediye fiyatımız ${FACTS.fiyat.atac} TL'dir efendim 😊\n\nTüm ürünlerimizde kargo ücretsizdir. Kapıda ödeme seçeneğinde kargo firmasının tahsil ettiği +${FACTS.kapidaEk} TL ek ücret uygulanmaktadır.\n\nSiparişinizi web sitemizden üyelik gerektirmeden kolayca oluşturabilirsiniz:
 
-  YONCA_INFO: "İsimli Yonca Kolyemiz 4 yapraktan oluşmaktadır efendim 😊 Her yaprağa bir isim veya sembol işlenebilir.\n\n4 yaprağa 4 isim yazdırabilir ya da 3 isimle birlikte kalp, sonsuzluk işareti gibi 1 sembol seçebilirsiniz.\n\nSiparişiniz için yapraklarda yer almasını istediğiniz isim ve/veya sembolleri iletmeniz yeterlidir.",
+${PRODUCT_LINKS[PRODUCT.ATAC]}`,
 
-  ANAHTARLIK_INFO: "Resimli Anahtarlık modelimiz kişiye özel olarak hazırlanmaktadır efendim 😊 Fotoğrafınızı ve varsa arka yüz yazınızı buradan iletebilirsiniz.",
+  YONCA_PRICE: `İsimli Yonca Kolye fiyatımız ${FACTS.fiyat.yonca} TL'dir efendim 😊\n\nKolyemiz 4 yapraktan oluşur; her yaprağa bir isim veya sembol işlenebilir.\n\nTüm ürünlerimizde kargo ücretsizdir. Kapıda ödeme seçeneğinde kargo firmasının tahsil ettiği +${FACTS.kapidaEk} TL ek ücret uygulanmaktadır.\n\nSiparişinizi web sitemizden üyelik gerektirmeden kolayca oluşturabilirsiniz:
+
+${PRODUCT_LINKS[PRODUCT.YONCA]}`,
+
+  YONCA_INFO: "İsimli Yonca Kolyemiz 4 yapraktan oluşmaktadır efendim 😊 Her yaprağa bir isim veya sembol işlenebilir.\n\n4 yaprağa 4 isim yazdırabilir ya da 3 isimle birlikte kalp, sonsuzluk işareti gibi 1 sembol seçebilirsiniz.\n\nSiteden sipariş verirken yapraklarda yer almasını istediğiniz isim ve/veya sembolleri ilgili alana yazabilirsiniz.",
+
+  ANAHTARLIK_INFO: "Resimli Anahtarlık modelimiz kişiye özel olarak hazırlanmaktadır efendim 😊 Siteden sipariş verirken fotoğrafınızı yükleyebilir, varsa arka yüz yazınızı ilgili alana yazabilirsiniz.",
 
   MEZAR_TASI_INFO: "Evcil Hayvan Mezar Taşı ürünümüz traverten taş, üst fotoğraf plakası ve alt yazı plakasından oluşmaktadır efendim 😊 Sipariş sonrasında tasarım süreci sizinle birlikte ilerletilir. Bu üründe kapıda ödeme bulunmamaktadır.",
 
@@ -167,7 +173,7 @@ export const TEXT = {
   // Knowledge 13 - Aksesuarlar ile birebir uyumlu (SADECE pembe kalp + nazar boncuğu)
   AKSESUAR_INFO: "Resimli kadın kolye ve İsimli Yonca Kolyelerimizde pembe kalp veya nazar boncuğu aksesuarı takılabilmektedir efendim 😊 Aksesuar ücretsizdir, fiyat değişmiyor, fiyata dahildir.",
 
-  ORDER_DETAILS: "Siparişiniz için lütfen ad soyad, il / ilçe / mahalle / açık adres ve cep telefonu bilgilerinizi iletir misiniz?",
+  ORDER_DETAILS: "Siparişlerinizi web sitemiz üzerinden alıyoruz efendim. Adres ve telefon bilgilerinizi sipariş sırasında teslimat alanına yazabilirsiniz.",
 
   SHIPPING_TIME: "Kargo çıkışlarımız hafta içidir. Siparişiniz en geç takip eden iş günü PTT Kargo'ya teslim edilir efendim 😊 İstanbul içi 1-2 iş günü, diğer iller 2-3 iş günü içinde teslim edilir. Kargoya verildiğinde SMS bilgilendirmesi gelir.",
 
@@ -1307,3 +1313,8 @@ export const COMPLETED_CHANGE_REQ = [
   "arkasina bunu yaz","arkasına bunu yaz","arka yazi degis","arka yazı değiş",
   "degistirmek istiyorum","değiştirmek istiyorum",
 ];
+
+
+
+
+

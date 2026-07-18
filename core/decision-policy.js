@@ -1,4 +1,4 @@
-// Decision policy v2 — stage-aware route classification.
+﻿// Decision policy v2 — stage-aware route classification.
 // This module decides what the user's message means inside the current state;
 // it does not mutate state or commit slots.
 
@@ -388,6 +388,15 @@ function classifyEmptyContextRecovery(ctx) {
     }
   }
 
+  if (ctx.fields?.ad_default_product === "1" && ["gumus", "gümüş", "altin", "altın", "siyah", "gold"].includes(n.trim())) {
+    return {
+      decision: POLICY_DECISION.FAQ_QUESTION,
+      behavior_category: BEHAVIOR_CATEGORY.FAQ_ANSWERED,
+      handoff_reason: "",
+      trace: ["matched:ad_default_single_color_faq"],
+    };
+  }
+
   if (recoveredProduct && (
     ctx.extracted?.photoLink ||
     ctx.extracted?.payment ||
@@ -475,6 +484,15 @@ function classifyWaitingProductRecovery(ctx) {
       behavior_category: BEHAVIOR_CATEGORY.PRODUCT_CONTEXT_RECOVERED,
       recovered_product: recoveredProduct,
       trace: [`matched:waiting_product_context_recovered:${recoveredProduct}`],
+    };
+  }
+
+  if (ctx.fields?.ad_default_product === "1" && ["gumus", "gümüş", "altin", "altın", "siyah", "gold"].includes(n.trim())) {
+    return {
+      decision: POLICY_DECISION.FAQ_QUESTION,
+      behavior_category: BEHAVIOR_CATEGORY.FAQ_ANSWERED,
+      handoff_reason: "",
+      trace: ["matched:ad_default_single_color_faq"],
     };
   }
 
@@ -851,3 +869,7 @@ export function shouldReviewBehavior(category) {
 export function isPolicyV2(value) {
   return String(value || "").toLowerCase() === "v2";
 }
+
+
+
+

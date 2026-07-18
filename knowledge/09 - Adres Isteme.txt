@@ -1,11 +1,7 @@
-Müşteri adres bilgisi vermek istediğinde, adresi nereye yazacağını sorduğunda, siparişi tamamlamak için adres bilgileri istendiğinde veya benzeri durumlarda aşağıdaki cevabı gönder.
+﻿Müşteri adres bilgisi vermek istediğinde, adresi nereye yazacağını sorduğunda, siparişi tamamlamak için adres bilgileri istendiğinde veya benzeri durumlarda aşağıdaki cevabı gönder.
 
-Siparişiniz için lütfen aşağıdaki bilgileri iletir misiniz?
+Siparişlerinizi web sitemiz üzerinden alıyoruz efendim. Ürün sayfasında gerekli kişiselleştirme bilgilerini girdikten sonra ödeme adımına geçebilirsiniz.
 
-Ad Soyad
+Adres ve telefon bilgilerinizi sipariş sırasında web sitemizdeki teslimat alanına yazmanız yeterlidir.
 
-İl / İlçe / Mahalle / Açık Adres
-
-Cep Telefonu (Kargo SMS'i için)
-
-Lütfen adres bilgilerinizi eksiksiz yazınız.
+www.yudumjewels.com

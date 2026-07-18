@@ -49,6 +49,33 @@ const addressPrompt = "Ad soyad, cep telefonu ve açık adres bilgilerinizi yaza
 
 const cases = [
   {
+    name: "V2 reklam varsayımı ürün yokken lazer kolye bağlamı verir",
+    input: emptyV2("Nasıl sipariş verebilirim?"),
+    includes: ["web sitemiz", "lazer-resimli-kolye"],
+    notIncludes: ["Hangi ürün ile ilgileniyorsunuz", "Hangi model ile ilgileniyorsunuz"],
+    expect: { policy_version: "v2", ilgilenilen_urun: "lazer", conversation_stage: "waiting_photo" },
+  },
+  {
+    name: "V2 fiyat listesi isteyen müşteriye genel liste kalır",
+    input: emptyV2("Fiyat listesi var mı?"),
+    includes: ["Güncel Fiyat Listemiz", "Resimli Bileklik", "Evcil Hayvan Mezar Taşı"],
+    expect: { policy_version: "v2", ilgilenilen_urun: "" },
+  },
+  {
+    name: "V2 lazer varsayımından açık bileklik isteğine geçer",
+    input: emptyV2("Bileklik istiyorum"),
+    includes: ["Resimli Bileklik", "499", "lazer-resimli-bileklik"],
+    notIncludes: ["Resimli Lazer Kolye fiyatımız 649"],
+    expect: { policy_version: "v2", ilgilenilen_urun: "resimli_lazer_bileklik" },
+  },
+  {
+    name: "V2 lazer bağlamındayken bileklik fiyatı açık ürün değiştirir",
+    input: emptyV2("bileklik fiyatı nedir", { ilgilenilen_urun: "lazer", user_product: "lazer", conversation_stage: "waiting_photo" }),
+    includes: ["Resimli Bileklik", "499"],
+    notIncludes: "Resimli Lazer Kolye fiyatımız 649",
+    expect: { policy_version: "v2", ilgilenilen_urun: "resimli_lazer_bileklik" },
+  },
+  {
     name: "V2 waiting_photo FAQ sadece materyal cevabı verir",
     input: waitingPhoto("Gümüş var mı?"),
     includes: ["altın veya gümüş değildir", "316L"],
@@ -208,10 +235,10 @@ const cases = [
     expect: { behavior_category: "recovered_context_handoff", support_mode: "1" },
   },
   {
-    name: "V2 boş state bağlamsız gümüş ambiguous kalır",
+    name: "V2 reklam varsayımında tek gümüş renk/malzeme bilgisi verir",
     input: emptyV2("gümüş"),
-    includes: "Ekibimize iletiyorum",
-    expect: { behavior_category: "ambiguous_needs_review" },
+    includes: ["altın veya gümüş değildir", "316L"],
+    expect: { behavior_category: "faq_answered", ilgilenilen_urun: "lazer" },
   },
   {
     name: "V2 order_completed adresim sizde post-order handoff olur",
@@ -567,7 +594,7 @@ const cases = [
   {
     name: "V2 order_completed kolyenin resmi varsa FAQ olur",
     input: completed("Elinizde kolyenin resmi varsa bana atar mısınız"),
-    includes: "profilimizde",
+    includes: ["Atölyemizden çıkmış ürün fotoğraflarını", "https://yudumjewels.com/lazer-resimli-kolye?renk=altin-kaplama"],
     expect: { behavior_category: "faq_answered", support_mode: "" },
   },
   {
@@ -741,7 +768,77 @@ const cases = [
     notIncludes: ["En fazla 3 fotoğraf", "en fazla 3 fotoğraf", "birleştirebiliyoruz", "Birleştirme veya ön-arka"],
     expect: { behavior_category: "faq_answered", support_mode: "" },
   },
-];
+  {
+    name: "V2 örnek isteyen lazer örnek linkini alır",
+    input: waitingPhoto("Örnek atar mısınız"),
+    includes: ["Atölyemizden çıkmış ürün fotoğraflarını", "https://yudumjewels.com/lazer-resimli-kolye?renk=altin-kaplama"],
+    notIncludes: ["Tüm ürünlerimizin örnekleri profilimizde", "www.yudumjewels.com"],
+    expect: { behavior_category: "faq_answered", support_mode: "" },
+  },
+  {
+    name: "V2 fotoğrafı nereden yükleyeceğim site yükleme alanına gider",
+    input: waitingPhoto("Fotoğrafı buradan mı atıyoruz kolye için"),
+    includes: ["fotoğrafınızı ürün sayfasındaki fotoğraf yükleme alanından", "https://www.yudumjewels.com/lazer-resimli-kolye"],
+    notIncludes: "Evet, kolye için",
+    expect: { behavior_category: "faq_answered", support_mode: "" },
+  },
+  {
+    name: "V2 arka yüze ikinci fotoğraf +25 TL kalır",
+    input: waitingPayment("İki foto bir kolyede olsun"),
+    includes: ["Arka yüze ikinci fotoğraf", "+25 TL"],
+    notIncludes: ["Ek ücret alınmaz", "Fiyat farkı olmuyor", "Aynı fiyattan"],
+    expect: { behavior_category: "faq_answered", support_mode: "" },
+  },
+  {
+    name: "V2 sipariş sonrası yapım aşaması sorusu operasyona gider",
+    input: completed("Merhaba siparişim yapım aşamasına girdi mi"),
+    includes: "Sipariş bilginiz kontrol edilip size dönüş sağlanacaktır",
+    expect: { behavior_category: "operational_handoff", support_mode: "1" },
+  },
+  {
+    name: "V2 teslim sonrası teşekkür insana düşmez",
+    input: completed("Merhaba kargom geldi çok beğendim teşekkür ederim"),
+    includes: ["Çok teşekkür ederiz", "güle güle kullanın"],
+    notIncludes: "Ekibimize iletiyorum",
+    expect: { behavior_category: "contextual_ack", support_mode: "" },
+  },
+  {
+    name: "V2 sistem mesajı sessiz kalır",
+    input: waitingPhoto("The message could not be displayed due to API restrictions"),
+    expect: { ai_reply: "", reply_class: "silent", support_mode: "" },
+  },
+  {
+    name: "V2 baş harfli ataç sorusu 50 cm kalır",
+    input: waitingPhoto("Baş harfinin olduğu kolye yapıyor msnz peki"),
+    includes: ["Harfli Ataç Kolye", "50 cm", "harfli-atac-kolye-bileklik-hediye"],
+    notIncludes: "60 cm",
+    expect: { behavior_category: "faq_answered", support_mode: "" },
+  },
+  {
+    name: "V2 Instagram model linki hangi model döngüsüne girmez",
+    input: emptyV2("https://www.instagram.com/reel/ABC", { conversation_stage: "waiting_product" }),
+    includes: ["Resimli Lazer Kolye", "https://www.yudumjewels.com/lazer-resimli-kolye"],
+    notIncludes: ["Hangi model ile ilgileniyorsunuz", "ekibimize iletiyorum"],
+    expect: { behavior_category: "faq_answered", support_mode: "" },
+  },  {
+    name: "V2 aynı model olsun lazer linki verir",
+    input: emptyV2("Aynı model olsun", { conversation_stage: "waiting_product" }),
+    includes: ["Resimli Lazer Kolye", "https://www.yudumjewels.com/lazer-resimli-kolye"],
+    notIncludes: ["Hangi model ile ilgileniyorsunuz", "ekibimize iletiyorum"],
+    expect: { behavior_category: "faq_answered", support_mode: "" },
+  },
+  {
+    name: "V2 ikinci ürüne indirim sorusu sepet yüzde 15 cevabı verir",
+    input: emptyV2("ikinci ürüne indirim var mı?"),
+    includes: ["ikinci ürünü eklediğinizde", "sepete toplam %15 indirim"],
+    expect: { behavior_category: "faq_answered", support_mode: "" },
+  },];
 
 const result = await runSuite("POLICY_V2_CURRENT_KNOWLEDGE", cases);
 process.exit(result.fail > 0 ? 1 : 0);
+
+
+
+
+
+

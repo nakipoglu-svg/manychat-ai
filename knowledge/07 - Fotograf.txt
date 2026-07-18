@@ -2,9 +2,7 @@
 
 Fotoğraf Bilgileri
 
-Siparişinizi buradan oluşturmak isterseniz fotoğrafınızı buradan gönderebilirsiniz.
-
-Kredi kartı ile sipariş vermek isterseniz fotoğrafınızı web sitemiz üzerinden sipariş sırasında yükleyebilirsiniz.
+Siparişinizi web sitemiz üzerinden oluştururken fotoğrafınızı ürün sayfasındaki fotoğraf yükleme alanından ekleyebilirsiniz.
 
 Gerekli netleştirme, arka plan temizliği ve düzenlemeleri biz yapıyoruz. Tek ricamız; fotoğraftaki kişilerin kafalarının tamamının görünmesi ve fotoğrafın mümkün olduğunca net olmasıdır.
 

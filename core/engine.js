@@ -69,6 +69,7 @@ function buildContext(body) {
     name_received: unwrap(body.name_received),
     policy_version: unwrap(body.policy_version || body.policy || ""),
   };
+  const policyVersion = resolvePolicyVersion(body, fields);
   // ── NUMARALI MENÜ SEÇİMİ ──
   // Ürün seçim aşamasında (waiting_product veya boş) müşteri "1".."6" yazarsa ilgili
   // ürüne çevrilir. Aktif sipariş akışında (foto/ödeme/adres) devreye GİRMEZ — orada
@@ -137,7 +138,7 @@ function buildContext(body) {
     else if (!hasAny(norm, EXPLICIT_SWITCH_PHRASES) && (
       hasAny(norm, KW.price) || hasAny(norm, KW.shipping) || hasAny(norm, KW.trust) ||
       hasAny(norm, KW.chain) || hasAny(norm, KW.payment) || hasAny(norm, KW.material_question)
-    )) {
+    ) && !(policyVersion === "v2" && previousProduct === PRODUCT.LAZER && explicitProduct)) {
       product = previousProduct;
     }
     else {
@@ -234,6 +235,20 @@ function buildContext(body) {
     product = PRODUCT.LAZER;
   }
 
+  // V2 reklam hattı: ürün belirsizse Resimli Lazer Kolye varsayılır.
+  // Müşteri açıkça başka ürün yazarsa explicitProduct yukarıda öncelik alır.
+  const wantsAllProducts = hasAny(norm, [
+    "fiyat listesi", "fiyatlar", "tum fiyat", "tüm fiyat", "butun fiyat", "bütün fiyat",
+    "urunleriniz", "ürünleriniz", "hangi urunler", "hangi ürünler", "modelleriniz", "tum modeller", "tüm modeller"
+  ]);
+  const previousBotProductHint = detectProductFromText(normalizeText(fields.ai_reply || ""), fields.conversation_stage);
+  if (policyVersion === "v2" && !product && !previousBotProductHint && !wantsAllProducts && !unsupportedProductVariant) {
+    product = PRODUCT.LAZER;
+    fields.ilgilenilen_urun = PRODUCT.LAZER;
+    fields.user_product = PRODUCT.LAZER;
+    fields.ad_default_product = "1";
+  }
+
   if (unsupportedProductVariant) {
     fields.conversation_stage = "";
     fields.photo_received = "";
@@ -267,7 +282,6 @@ function buildContext(body) {
     askedAboutPreview: /on izleme|ön izleme|prova|bitmis urun fotografi|bitmiş ürün fotoğrafı|uretim sonrasi|üretim sonrası/.test(lastReplyNorm),
     lastIntent: fields.last_intent || "",
   };
-  const policyVersion = resolvePolicyVersion(body, fields);
   return { message, norm, product, previousProduct: effectivePreviousProduct, rawInputProduct, intent, secondary_intent, fields, extracted, lastContext, policyVersion };
 }
 
@@ -301,7 +315,7 @@ function buildOutput(ctx, reply, committed, meta) {
     siparisAlindi = "";
     supportMode = "1";
     supportReason = SUPPORT_REASON.SELLER;
-    replyText = "Bilgilerinizi aldım efendim 😊 Mezar taşı siparişiniz için ekibimiz en kısa sürede sizinle iletişime geçip tasarım sürecini başlatacaktır.";
+    replyText = siteOrderBlock(s.product);
   } else if (s.product === PRODUCT.OTHER) {
     orderStatus = "";
     siparisAlindi = "";
@@ -404,10 +418,10 @@ export async function processChat(body = {}) {
     // Fallback (silent = bilinçli sessizlik, fallback doldurma)
     if (!reply.text && !reply.silent) {
       const st = ctx.fields.conversation_stage;
-      if (st === STAGE.WAITING_PHOTO) reply.text = "Fotoğrafınızı buradan iletebilirsiniz efendim 😊";
+      if (st === STAGE.WAITING_PHOTO) reply.text = "Siparişinizi web sitemizden oluştururken görselinizi ürün sayfasındaki fotoğraf yükleme alanından ekleyebilirsiniz efendim 😊";
       else if (st === STAGE.WAITING_PAYMENT) reply.text = "EFT / Havale veya kapıda ödeme seçeneklerimiz mevcuttur efendim 😊";
-      else if (st === STAGE.WAITING_ADDRESS) { reply.text = "Ad soyad, cep telefonu ve açık adres bilgileriniz ile devam edelim efendim 😊"; }
-      else if (st === STAGE.WAITING_LETTERS) reply.text = "Yapılmasını istediğiniz harfleri yazabilirsiniz efendim 😊";
+      else if (st === STAGE.WAITING_ADDRESS) { reply.text = siteOrderBlock(s.product); }
+      else if (st === STAGE.WAITING_LETTERS) reply.text = siteOrderBlock(s.product);
       else reply.text = TEXT.FALLBACK;
       meta.replySource = "fallback";
     }
@@ -470,7 +484,7 @@ export async function processChat(body = {}) {
         !/allah razı olsun|teşekkür ederiz|rica ederiz|rica ederim/i.test(replyText) &&
         !/amin efendim|sağlıkla kullansın/i.test(replyText) &&
         !/otomatik mesajla yardımcı oluyoruz|ekibimiz de gerekli durumlarda/i.test(replyText) &&
-        !/tüm ürünlerimizin örnekleri profilimizde|modellerimizi ve ürün detaylarımızı/i.test(replyText) &&
+        !/tüm ürünlerimizin örnekleri profilimizde|modellerimizi ve ürün detaylarımızı|atölyemizden çıkmış ürün fotoğraflarını|lazer-resimli-kolye\?renk=altin-kaplama/i.test(replyText) &&
         // Fiyat listesi zaten TÜM ürünleri gösteriyor → "Hangi model?" eklemek gereksiz/rahatsız edici
         !/Güncel Fiyat Listemiz/i.test(replyText) &&
         ctx.intent !== "price" && ctx.intent !== "price_confirmation" &&
@@ -487,7 +501,19 @@ export async function processChat(body = {}) {
     committed._nextStage = derived.nextStage;
     const output = buildOutput(ctx, reply, committed, meta);
     output._debug = { intent: ctx.intent, source: meta.replySource, product: ctx.product };
-    output.behavior_category = ctx.policyDecision?.behavior_category || categorizeCurrentBehavior(output);
+        const sourceBehaviorMap = {
+      faq_answered: "faq_answered",
+      operational_handoff: "operational_handoff",
+      post_order_update_handoff: "post_order_update_handoff",
+      recovered_context_handoff: "recovered_context_handoff",
+      partial_slot_update: "partial_slot_update",
+      product_context_recovered: "product_context_recovered",
+      reference_model_handoff: "operational_handoff",
+      reference_model_lazer_link: "faq_answered",
+      completed_gratitude: "contextual_ack",
+      system_message: "contextual_ack",
+    };
+    output.behavior_category = sourceBehaviorMap[meta.replySource] || ctx.policyDecision?.behavior_category || categorizeCurrentBehavior(output);
     output.policy_version = ctx.policyVersion;
 
     // ═══ DÖNGÜ KIRICI ═══
@@ -540,3 +566,7 @@ export default async function handler(req, res) {
   try { const { logConversationRow } = await import("../lib/sheetsLogger.js"); logConversationRow({ body: req.body, result }).catch(() => {}); } catch {}
   return res.status(200).json(result);
 }
+
+
+
+
